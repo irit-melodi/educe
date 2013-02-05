@@ -1,3 +1,7 @@
+[![Build Status](https://secure.travis-ci.org/kowey/educe.png)](http://travis-ci.org/kowey/educe)
+
+## About
+
 Abstract representation of a discourse-annotated corpus.
 
 Currently, this library is geared towards the needs of the [STAC
