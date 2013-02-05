@@ -99,7 +99,7 @@ def read_unit(node):
     span = onElementWithName(node, Span(-1,-1), read_positioning, 'positioning')
     return Unit(span, unit_type, fs)
 
-doc = minidom.parse('example-aa.xml')
+doc = minidom.parse('example.aa')
 units = map(read_unit, doc.getElementsByTagName('unit'))
 for u in units:
     print u
