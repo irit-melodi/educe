@@ -58,48 +58,52 @@ def onElementWithName(root, default, f, name):
         return f(nodes[0])
 
 # ---------------------------------------------------------------------
-# playing around with an example
+# glozz files
 # ---------------------------------------------------------------------
 
-# TODO: learn how to use one of these Python XML libs correctly
-# surely this painful dom-walking code is not the way to go
+def read_node(node):
+    def get_one(name, default):
+        return onElementWithName(node, default, read_node, name)
 
-def read_singlePosition(node):
-    def read_sp(n):
-        return int(n.attrib['index'])
-    return onElementWithName(node,-3, read_sp, 'singlePosition')
+    def get_all(name):
+        return map(read_node, node.findall(name))
 
-def read_positioning(node):
-    start = onElementWithName(node, -2, read_singlePosition, 'start')
-    end   = onElementWithName(node, -2, read_singlePosition, 'end')
-    return Span(start,end)
+    if node.tag == 'annotations':
+    elif node.tag == 'unit':
+        (unit_type, fs) = get_one('characterisation', GlozzException)
+        span            = get_one('positioning',      Span(-1,-1))
+        return Unit(span, unit_type, fs)
+    elif node.tag == 'characterisation':
+        fs        = get_one('featureSet', [])
+        unit_type = get_one('type'      , GlozzException)
+        return (unit_type, fs)
+    elif node.tag == 'feature':
+        attr=node.attrib['name']
+        val =node.text
+        return(attr, val)
+    elif node.tag == 'featureSet':
+        return get_all('feature')
+    elif node.tag == 'positioning':
+        start = get_one('start', -2)
+        end   = get_one('end',   -2)
+        return Span(start,end)
+    elif node.tag == 'singlePosition':
+        return int(node.attrib['index'])
+    elif node.tag == 'start' or node.tag == 'end':
+        return get_one('singlePosition', -3)
+    elif node.tag == 'type':
+        return node.text
+    elif node.tag == 'unit':
+        (unit_type, fs) = get_one('characterisation', GlozzException)
+        span            = get_one('positioning',      Span(-1,-1))
+        return Unit(span, unit_type, fs)
 
-def read_type(node):
-    return node.text
-
-def read_featureSet(node):
-    return map(read_feature, node.findall('feature'))
-
-def read_feature(node):
-    attr=node.attrib['name']
-    val =node.text
-    return(attr, val)
-
-def read_characterisation(node):
-    fs        = onElementWithName(node, [],             read_featureSet, 'featureSet')
-    unit_type = onElementWithName(node, GlozzException, read_type,       'type')
-    return (unit_type, fs)
-
-def read_unit(node):
-    (unit_type, fs) = onElementWithName(node, GlozzException, read_characterisation, 'characterisation')
-    span            = onElementWithName(node, Span(-1,-1),    read_positioning,      'positioning')
-    return Unit(span, unit_type, fs)
-
-def read_glozz(node):
-    return map(read_unit, node.findall('unit'))
+# ---------------------------------------------------------------------
+# example
+# ---------------------------------------------------------------------
 
 tree = ET.parse('example.aa')
 root = tree.getroot()
-units = read_glozz(root)
+units = read_node(root)
 for u in units:
     print u
