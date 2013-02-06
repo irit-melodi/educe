@@ -27,24 +27,29 @@ class RelSpan(Span):
         return ('%s -> %s' % (self.t1, self.t2))
 
 class Unit:
-    def __init__(self, span, type, features):
+    def __init__(self, unit_id, span, type, features):
+        self.unit_id=unit_id
         self.span=span
         self.type=type
         self.features=features
 
     def __str__(self):
         feats=", ".join(map(feature_str,self.features))
-        return ('%s %s %s' % (self.type, self.span, feats))
+        return ('%s [%s] %s %s' % (self.unit_id,self.type, self.span, feats))
 
 class Relation(Unit):
-    def __init__(self, span, type, features):
-        Unit.__init__(self, span, type, features)
+    def __init__(self, rel_id, span, type, features):
+        Unit.__init__(self, rel_id, span, type, features)
 
 def feature_str((a,v)):
     if v is None:
         return a
     else:
         return ('%s:%s' % (a,v))
+
+# ---------------------------------------------------------------------
+# xml processing
+# -----------------------------------------------------------
 
 # TODO: learn how exceptions work in Python; can I embed
 # arbitrary strings in them?
@@ -112,9 +117,10 @@ def read_node(node, context=None):
             return RelSpan(terms[0], terms[1])
 
     elif node.tag == 'relation':
+        rel_id          = node.attrib['id']
         (unit_type, fs) = get_one('characterisation', GlozzException)
         span            = get_one('positioning',      RelSpan(-1,-1), 'relation')
-        return Relation(span, unit_type, fs)
+        return Relation(rel_id, span, unit_type, fs)
 
     elif node.tag == 'singlePosition':
         return int(node.attrib['index'])
@@ -129,9 +135,10 @@ def read_node(node, context=None):
         return node.text
 
     elif node.tag == 'unit':
+        unit_id         = node.attrib['id']
         (unit_type, fs) = get_one('characterisation', GlozzException)
         span            = get_one('positioning',      Span(-1,-1), 'unit')
-        return Unit(span, unit_type, fs)
+        return Unit(unit_id, span, unit_type, fs)
 
 # ---------------------------------------------------------------------
 # example
