@@ -1,7 +1,7 @@
 # Author: Eric Kow
 # License: BSD3
 
-from xml.dom import minidom
+import xml.etree.ElementTree as ET
 
 # Glozz annotations
 # The aim here is to be fairly low-level and just model how glozz
@@ -29,7 +29,7 @@ class Unit:
         return ('%s %s %s' % (self.type, self.span, feats))
 
 def feature_str((a,v)):
-    if v == None:
+    if v is None:
         return a
     else:
         return ('%s:%s' % (a,v))
@@ -49,7 +49,7 @@ def onElementWithName(root, default, f, name):
        * f(the node) if one element
        * an exception if more than one
     """
-    nodes=root.getElementsByTagName(name)
+    nodes=root.findall(name)
     if len(nodes) == 0:
         return default
     elif len(nodes) > 1:
@@ -66,40 +66,40 @@ def onElementWithName(root, default, f, name):
 
 def read_singlePosition(node):
     def read_sp(n):
-        return int(n.getAttribute('index'))
+        return int(n.attrib['index'])
     return onElementWithName(node,-3, read_sp, 'singlePosition')
 
 def read_positioning(node):
-    start=onElementWithName(node,-2,read_singlePosition,'start')
-    end=onElementWithName(node,-2,read_singlePosition,'end')
+    start = onElementWithName(node, -2, read_singlePosition, 'start')
+    end   = onElementWithName(node, -2, read_singlePosition, 'end')
     return Span(start,end)
 
 def read_type(node):
-    return node.firstChild.wholeText
+    return node.text
 
 def read_featureSet(node):
-    return map(read_feature, node.getElementsByTagName('feature'))
+    return map(read_feature, node.findall('feature'))
 
 def read_feature(node):
-    attr=node.getAttribute('name')
-    val_node=node.firstChild
-    if val_node==None:
-        val=None
-    else:
-        val=val_node.wholeText
+    attr=node.attrib['name']
+    val =node.text
     return(attr, val)
 
 def read_characterisation(node):
-    fs=onElementWithName(node, [], read_featureSet, 'featureSet')
-    unit_type=onElementWithName(node, GlozzException, read_type, 'type')
+    fs        = onElementWithName(node, [],             read_featureSet, 'featureSet')
+    unit_type = onElementWithName(node, GlozzException, read_type,       'type')
     return (unit_type, fs)
 
 def read_unit(node):
     (unit_type, fs) = onElementWithName(node, GlozzException, read_characterisation, 'characterisation')
-    span = onElementWithName(node, Span(-1,-1), read_positioning, 'positioning')
+    span            = onElementWithName(node, Span(-1,-1),    read_positioning,      'positioning')
     return Unit(span, unit_type, fs)
 
-doc = minidom.parse('example.aa')
-units = map(read_unit, doc.getElementsByTagName('unit'))
+def read_glozz(node):
+    return map(read_unit, node.findall('unit'))
+
+tree = ET.parse('example.aa')
+root = tree.getroot()
+units = read_glozz(root)
 for u in units:
     print u
