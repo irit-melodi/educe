@@ -18,6 +18,14 @@ class Span:
     def  __str__(self):
         return ('(%d,%d)' % (self.char_start, self.char_end))
 
+class RelSpan(Span):
+    def __init__(self, t1, t2):
+        self.t1=t1
+        self.t2=t2
+
+    def  __str__(self):
+        return ('%s -> %s' % (self.t1, self.t2))
+
 class Unit:
     def __init__(self, span, type, features):
         self.span=span
@@ -27,6 +35,10 @@ class Unit:
     def __str__(self):
         feats=", ".join(map(feature_str,self.features))
         return ('%s %s %s' % (self.type, self.span, feats))
+
+class Relation(Unit):
+    def __init__(self, span, type, features):
+        Unit.__init__(self, span, type, features)
 
 def feature_str((a,v)):
     if v is None:
@@ -61,41 +73,64 @@ def onElementWithName(root, default, f, name):
 # glozz files
 # ---------------------------------------------------------------------
 
-def read_node(node):
-    def get_one(name, default):
-        return onElementWithName(node, default, read_node, name)
+def read_node(node, context=None):
+    def get_one(name, default, ctx=None):
+        f = lambda n : read_node(n, ctx)
+        return onElementWithName(node, default, f, name)
 
     def get_all(name):
         return map(read_node, node.findall(name))
 
     if node.tag == 'annotations':
-    elif node.tag == 'unit':
-        (unit_type, fs) = get_one('characterisation', GlozzException)
-        span            = get_one('positioning',      Span(-1,-1))
-        return Unit(span, unit_type, fs)
+        units = get_all('unit')
+        rels  = get_all('relation')
+        return (units, rels)
+
     elif node.tag == 'characterisation':
         fs        = get_one('featureSet', [])
         unit_type = get_one('type'      , GlozzException)
         return (unit_type, fs)
+
     elif node.tag == 'feature':
         attr=node.attrib['name']
         val =node.text
         return(attr, val)
+
     elif node.tag == 'featureSet':
         return get_all('feature')
-    elif node.tag == 'positioning':
+
+    elif node.tag == 'positioning' and context == 'unit':
         start = get_one('start', -2)
         end   = get_one('end',   -2)
         return Span(start,end)
+
+    elif node.tag == 'positioning' and context == 'relation':
+        terms = get_all('term')
+        if len(terms) != 2:
+            raise GlozzException()
+        else:
+            return RelSpan(terms[0], terms[1])
+
+    elif node.tag == 'relation':
+        (unit_type, fs) = get_one('characterisation', GlozzException)
+        span            = get_one('positioning',      RelSpan(-1,-1), 'relation')
+        return Relation(span, unit_type, fs)
+
     elif node.tag == 'singlePosition':
         return int(node.attrib['index'])
+
     elif node.tag == 'start' or node.tag == 'end':
         return get_one('singlePosition', -3)
+
+    elif node.tag == 'term':
+        return node.attrib['id']
+
     elif node.tag == 'type':
         return node.text
+
     elif node.tag == 'unit':
         (unit_type, fs) = get_one('characterisation', GlozzException)
-        span            = get_one('positioning',      Span(-1,-1))
+        span            = get_one('positioning',      Span(-1,-1), 'unit')
         return Unit(span, unit_type, fs)
 
 # ---------------------------------------------------------------------
@@ -104,6 +139,9 @@ def read_node(node):
 
 tree = ET.parse('example.aa')
 root = tree.getroot()
-units = read_node(root)
+(units, rels) = read_node(root)
 for u in units:
     print u
+print '###############'
+for r in rels:
+    print r
