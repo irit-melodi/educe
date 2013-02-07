@@ -140,15 +140,6 @@ def read_node(node, context=None):
         span            = get_one('positioning',      Span(-1,-1), 'unit')
         return Unit(unit_id, span, unit_type, fs)
 
-# ---------------------------------------------------------------------
-# example
-# ---------------------------------------------------------------------
-
-tree = ET.parse('example.aa')
-root = tree.getroot()
-(units, rels) = read_node(root)
-for u in units:
-    print u
-print '###############'
-for r in rels:
-    print r
+def read_annotation_file(filename):
+    tree = ET.parse(filename)
+    return read_node(tree.getroot())

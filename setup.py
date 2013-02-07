@@ -3,7 +3,7 @@ setup(name='educe',
       version='0.1',
       author='Eric Kow',
       author_email='eric.kow@gmail.com',
-      #py_modules=['educe'],
-      scripts=['glozz.py'],
+      packages=['educe'],
+      scripts=['glozz-example'],
       requires=[]
       )

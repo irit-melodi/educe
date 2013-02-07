@@ -1,0 +1,15 @@
+# Author: Eric Kow
+# License: BSD3
+
+import educe.glozz as educe
+
+# ---------------------------------------------------------------------
+# example
+# ---------------------------------------------------------------------
+
+(units, rels) = educe.read_annotation_file('example.aa')
+for u in units:
+    print u
+print '###############'
+for r in rels:
+    print r
