@@ -53,6 +53,12 @@ class Feature():
         else:
             return ('%s:%s' % (self.attribute,self.value))
 
+class Annotations:
+    def __init__(self, units, rels):
+        self.units=units
+        self.rels=rels
+
+
 # ---------------------------------------------------------------------
 # xml processing
 # -----------------------------------------------------------
@@ -148,4 +154,5 @@ def read_node(node, context=None):
 
 def read_annotation_file(filename):
     tree = ET.parse(filename)
-    return read_node(tree.getroot())
+    res  = read_node(tree.getroot())
+    return Annotations(res[0],res[1])
