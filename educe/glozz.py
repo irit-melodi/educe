@@ -41,11 +41,17 @@ class Relation(Unit):
     def __init__(self, rel_id, span, type, features):
         Unit.__init__(self, rel_id, span, type, features)
 
-def feature_str((a,v)):
-    if v is None:
-        return a
-    else:
-        return ('%s:%s' % (a,v))
+class Feature():
+    """Attribute-value pair"""
+    def __init__(self, attribute, value):
+        self.attribute=attribute
+        self.value=value
+
+    def __str__(self):
+        if self.value is None:
+            return self.attribute
+        else:
+            return ('%s:%s' % (self.attribute,self.value))
 
 # ---------------------------------------------------------------------
 # xml processing
@@ -99,7 +105,7 @@ def read_node(node, context=None):
     elif node.tag == 'feature':
         attr=node.attrib['name']
         val =node.text
-        return(attr, val)
+        return Feature(attr, val)
 
     elif node.tag == 'featureSet':
         return get_all('feature')
