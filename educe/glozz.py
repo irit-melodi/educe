@@ -2,6 +2,7 @@
 # License: BSD3
 
 import xml.etree.ElementTree as ET
+import sys
 
 # Glozz annotations
 # The aim here is to be fairly low-level and just model how glozz
@@ -156,3 +157,19 @@ def read_annotation_file(filename):
     tree = ET.parse(filename)
     res  = read_node(tree.getroot())
     return Annotations(res[0],res[1])
+
+def slurp_corpus(cfiles, verbose=False):
+    """
+    Given a dictionary that maps keys to filepaths, return a dictionary
+    mapping keys to the annotations within that file
+    """
+    corpus={}
+    counter=0
+    for k in cfiles.keys():
+        if verbose:
+            sys.stderr.write("\rSlurping corpus dir [%d/%d]" % (counter, len(cfiles)))
+        corpus[k]=read_annotation_file(cfiles[k])
+        counter=counter+1
+    if verbose:
+        sys.stderr.write("\rSlurping corpus dir [%d/%d done]\n" % (counter, len(cfiles)))
+    return corpus
