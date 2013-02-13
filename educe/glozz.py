@@ -72,7 +72,7 @@ class GlozzException(Exception):
     def __init__(self, *args, **kw):
         Exception.__init__(self, *args, **kw)
 
-def onElementWithName(root, default, f, name):
+def on_single_element(root, default, f, name):
     """Return
        * the default if no elements
        * f(the node) if one element
@@ -93,7 +93,7 @@ def onElementWithName(root, default, f, name):
 def read_node(node, context=None):
     def get_one(name, default, ctx=None):
         f = lambda n : read_node(n, ctx)
-        return onElementWithName(node, default, f, name)
+        return on_single_element(node, default, f, name)
 
     def get_all(name):
         return map(read_node, node.findall(name))
