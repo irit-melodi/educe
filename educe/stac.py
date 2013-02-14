@@ -36,6 +36,8 @@ def corpus_files(dir, cglob='*', anno_glob='*.aa'):
                 annotator_files=glob(os.path.join(annotator_dir, anno_glob))
                 for f in annotator_files:
                     subdoc=os.path.splitext(os.path.basename(f))[0]
+                    if "_" in subdoc:
+                        subdoc=subdoc.split("_",1)[1]
                     file_id=FileId(doc, subdoc, stage, annotator)
                     corpus[file_id]=f
     return corpus
