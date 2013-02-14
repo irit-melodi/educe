@@ -1,0 +1,3 @@
+#!/bin/sh
+rm -rf api-doc
+sphinx-apidoc educe -o api-doc
