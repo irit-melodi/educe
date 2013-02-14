@@ -1,3 +1,6 @@
 #!/bin/sh
-rm -rf api-doc
-sphinx-apidoc educe -o api-doc
+git status -s | grep api-doc
+if [ $? -ne 0 ]; then
+    rm -rf api-doc
+    sphinx-apidoc educe -o api-doc
+fi
