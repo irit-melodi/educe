@@ -28,15 +28,39 @@ class RelSpan(Span):
         return ('%s -> %s' % (self.t1, self.t2))
 
 class Unit:
-    def __init__(self, unit_id, span, type, features):
-        self.unit_id=unit_id
+    def __init__(self, unit_id, span, type, features, origin=None):
+        self.origin=origin
+        self.__unit_id=unit_id
         self.span=span
         self.type=type
         self.features=features
 
     def __str__(self):
         feats=", ".join(map(str,self.features))
-        return ('%s [%s] %s %s' % (self.unit_id,self.type, self.span, feats))
+        return ('%s [%s] %s %s' % (self.identifier(),self.type, self.span, feats))
+
+    def identifier(self):
+        """
+        String representation of an identifier that should be unique
+        to this corpus at least.
+
+        If the unit has an origin (see "FileId"), we use the
+
+        * document
+        * subdocument
+        * stage
+        * (but not the annotator!)
+        * and the id from the XML file
+
+        If we don't have an origin we fall back to just the id provided
+        by the XML file
+        """
+        o=self.origin
+        if o is None:
+            ostuff=[]
+        else:
+            ostuff=[o.doc, o.subdoc, o.stage]
+        return ":".join(ostuff + [self.__unit_id])
 
 class Relation(Unit):
     def __init__(self, rel_id, span, type, features):
@@ -168,7 +192,10 @@ def slurp_corpus(cfiles, verbose=False):
     for k in cfiles.keys():
         if verbose:
             sys.stderr.write("\rSlurping corpus dir [%d/%d]" % (counter, len(cfiles)))
-        corpus[k]=read_annotation_file(cfiles[k])
+        annotations=read_annotation_file(cfiles[k])
+        for u in annotations.units:
+            u.origin=k
+        corpus[k]=annotations
         counter=counter+1
     if verbose:
         sys.stderr.write("\rSlurping corpus dir [%d/%d done]\n" % (counter, len(cfiles)))
