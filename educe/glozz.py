@@ -35,7 +35,7 @@ class Unit:
         self.features=features
 
     def __str__(self):
-        feats=", ".join(map(feature_str,self.features))
+        feats=", ".join(map(str,self.features))
         return ('%s [%s] %s %s' % (self.unit_id,self.type, self.span, feats))
 
 class Relation(Unit):
