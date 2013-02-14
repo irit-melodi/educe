@@ -1,0 +1,259 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>educe Package &mdash; educe 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="educe 0.1 documentation" href="../index.html" />
+    <link rel="up" title="educe" href="modules.html" />
+    <link rel="prev" title="educe" href="modules.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="modules.html" title="educe"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">educe 0.1 documentation</a> &raquo;</li>
+          <li><a href="modules.html" accesskey="U">educe</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="educe-package">
+<h1>educe Package<a class="headerlink" href="#educe-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-educe.corpus">
+<span id="corpus-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">corpus</span></tt> Module<a class="headerlink" href="#module-educe.corpus" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="educe.corpus.FileId">
+<em class="property">class </em><tt class="descclassname">educe.corpus.</tt><tt class="descname">FileId</tt><big>(</big><em>doc</em>, <em>subdoc</em>, <em>stage</em>, <em>annotator</em><big>)</big><a class="headerlink" href="#educe.corpus.FileId" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="educe.corpus.file_pattern">
+<tt class="descclassname">educe.corpus.</tt><tt class="descname">file_pattern</tt><big>(</big><em>doc=None</em>, <em>subdoc=None</em>, <em>stage=None</em>, <em>annotator=None</em><big>)</big><a class="headerlink" href="#educe.corpus.file_pattern" title="Permalink to this definition">¶</a></dt>
+<dd><p>A file pattern is can be fed into matches_file_pattern.
+Set as many fields as you know</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="educe.corpus.matches_file_pattern">
+<tt class="descclassname">educe.corpus.</tt><tt class="descname">matches_file_pattern</tt><big>(</big><em>pattern</em>, <em>instance</em><big>)</big><a class="headerlink" href="#educe.corpus.matches_file_pattern" title="Permalink to this definition">¶</a></dt>
+<dd><p>matches_file_pattern(pattern, instance) returns True if case
+the pattern is satisfied by instance</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="educe.corpus.subcorpus">
+<tt class="descclassname">educe.corpus.</tt><tt class="descname">subcorpus</tt><big>(</big><em>pattern</em>, <em>corpus</em><big>)</big><a class="headerlink" href="#educe.corpus.subcorpus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the portion of a corpus for which matches the given file
+pattern.</p>
+<p>See the file_pattern function</p>
+<p>Hint: this works on any dictionary which uses file_id as its keys
+For example, if you wanted to avoid reading in the whole corpus,
+you could apply this function to take a slice of results from the
+corpus_files function so you&#8217;re not reading all of them</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-educe.glozz">
+<span id="glozz-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">glozz</span></tt> Module<a class="headerlink" href="#module-educe.glozz" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="educe.glozz.Annotations">
+<em class="property">class </em><tt class="descclassname">educe.glozz.</tt><tt class="descname">Annotations</tt><big>(</big><em>units</em>, <em>rels</em><big>)</big><a class="headerlink" href="#educe.glozz.Annotations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="educe.glozz.Feature">
+<em class="property">class </em><tt class="descclassname">educe.glozz.</tt><tt class="descname">Feature</tt><big>(</big><em>attribute</em>, <em>value</em><big>)</big><a class="headerlink" href="#educe.glozz.Feature" title="Permalink to this definition">¶</a></dt>
+<dd><p>Attribute-value pair</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="educe.glozz.GlozzException">
+<em class="property">exception </em><tt class="descclassname">educe.glozz.</tt><tt class="descname">GlozzException</tt><big>(</big><em>*args</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#educe.glozz.GlozzException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">exceptions.Exception</span></tt></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="educe.glozz.RelSpan">
+<em class="property">class </em><tt class="descclassname">educe.glozz.</tt><tt class="descname">RelSpan</tt><big>(</big><em>t1</em>, <em>t2</em><big>)</big><a class="headerlink" href="#educe.glozz.RelSpan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#educe.glozz.Span" title="educe.glozz.Span"><tt class="xref py py-class docutils literal"><span class="pre">educe.glozz.Span</span></tt></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="educe.glozz.Relation">
+<em class="property">class </em><tt class="descclassname">educe.glozz.</tt><tt class="descname">Relation</tt><big>(</big><em>rel_id</em>, <em>span</em>, <em>type</em>, <em>features</em><big>)</big><a class="headerlink" href="#educe.glozz.Relation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#educe.glozz.Unit" title="educe.glozz.Unit"><tt class="xref py py-class docutils literal"><span class="pre">educe.glozz.Unit</span></tt></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="educe.glozz.Span">
+<em class="property">class </em><tt class="descclassname">educe.glozz.</tt><tt class="descname">Span</tt><big>(</big><em>start</em>, <em>end</em><big>)</big><a class="headerlink" href="#educe.glozz.Span" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="educe.glozz.Unit">
+<em class="property">class </em><tt class="descclassname">educe.glozz.</tt><tt class="descname">Unit</tt><big>(</big><em>unit_id</em>, <em>span</em>, <em>type</em>, <em>features</em>, <em>origin=None</em><big>)</big><a class="headerlink" href="#educe.glozz.Unit" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="educe.glozz.Unit.identifier">
+<tt class="descname">identifier</tt><big>(</big><big>)</big><a class="headerlink" href="#educe.glozz.Unit.identifier" title="Permalink to this definition">¶</a></dt>
+<dd><p>String representation of an identifier that should be unique
+to this corpus at least.</p>
+<p>If the unit has an origin (see &#8220;FileId&#8221;), we use the</p>
+<ul class="simple">
+<li>document</li>
+<li>subdocument</li>
+<li>stage</li>
+<li>(but not the annotator!)</li>
+<li>and the id from the XML file</li>
+</ul>
+<p>If we don&#8217;t have an origin we fall back to just the id provided
+by the XML file</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="educe.glozz.on_single_element">
+<tt class="descclassname">educe.glozz.</tt><tt class="descname">on_single_element</tt><big>(</big><em>root</em>, <em>default</em>, <em>f</em>, <em>name</em><big>)</big><a class="headerlink" href="#educe.glozz.on_single_element" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return
+* the default if no elements
+* f(the node) if one element
+* an exception if more than one</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="educe.glozz.read_annotation_file">
+<tt class="descclassname">educe.glozz.</tt><tt class="descname">read_annotation_file</tt><big>(</big><em>filename</em><big>)</big><a class="headerlink" href="#educe.glozz.read_annotation_file" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="educe.glozz.read_node">
+<tt class="descclassname">educe.glozz.</tt><tt class="descname">read_node</tt><big>(</big><em>node</em>, <em>context=None</em><big>)</big><a class="headerlink" href="#educe.glozz.read_node" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="educe.glozz.slurp_corpus">
+<tt class="descclassname">educe.glozz.</tt><tt class="descname">slurp_corpus</tt><big>(</big><em>cfiles</em>, <em>verbose=False</em><big>)</big><a class="headerlink" href="#educe.glozz.slurp_corpus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a dictionary that maps keys to filepaths, return a dictionary
+mapping keys to the annotations within that file</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-educe.stac">
+<span id="stac-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">stac</span></tt> Module<a class="headerlink" href="#module-educe.stac" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="educe.stac.corpus_files">
+<tt class="descclassname">educe.stac.</tt><tt class="descname">corpus_files</tt><big>(</big><em>dir</em>, <em>cglob='*'</em>, <em>anno_glob='*.aa'</em><big>)</big><a class="headerlink" href="#educe.stac.corpus_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Traverse the corpus, looking for files in directories that match
+a certain unix glob, eg</p>
+<p>corpus_files(&#8216;data/pilot&#8217;, cglob=&#8217;pilot??&#8217;)</p>
+<p>Return a dictionary mapping FileId data structures to filepaths</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="educe.stac.is_real_annotation">
+<tt class="descclassname">educe.stac.</tt><tt class="descname">is_real_annotation</tt><big>(</big><em>annotation</em><big>)</big><a class="headerlink" href="#educe.stac.is_real_annotation" title="Permalink to this definition">¶</a></dt>
+<dd><p>the subset of annotations which come from an annotator,
+as opposed to be prefilled &#8216;structural&#8217; annotations</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">educe Package</a><ul>
+<li><a class="reference internal" href="#module-educe.corpus"><tt class="docutils literal"><span class="pre">corpus</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-educe.glozz"><tt class="docutils literal"><span class="pre">glozz</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-educe.stac"><tt class="docutils literal"><span class="pre">stac</span></tt> Module</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="modules.html"
+                        title="previous chapter">educe</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api-doc/educe.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="modules.html" title="educe"
+             >previous</a> |</li>
+        <li><a href="../index.html">educe 0.1 documentation</a> &raquo;</li>
+          <li><a href="modules.html" >educe</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Eric Kow.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
