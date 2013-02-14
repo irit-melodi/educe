@@ -1,7 +1,9 @@
 # Author: Eric Kow
 # License: BSD3
 
-# Corpus management
+"""
+Corpus management
+"""
 #
 # A corpus consists of a set of annotation files organised by
 #
@@ -22,6 +24,13 @@
 import sys
 
 class FileId:
+    """
+    Information needed to uniquely identify an annotation file.
+
+    Note that this includes the annotator, so if you want to do
+    comparisons on the `same' file between annotators you'll want
+    to ignore this field.
+    """
     def __init__(self, doc, subdoc, stage, annotator):
        self.doc=doc
        self.subdoc=subdoc
@@ -36,7 +45,7 @@ def subcorpus(pattern, corpus):
     Return the portion of a corpus for which matches the given file
     pattern.
 
-    See the file_pattern function
+    See the `file_pattern` function
 
     Hint: this works on any dictionary which uses file_id as its keys
     For example, if you wanted to avoid reading in the whole corpus,
@@ -51,15 +60,18 @@ def subcorpus(pattern, corpus):
 
 def file_pattern(doc=None, subdoc=None, stage=None, annotator=None):
     """
-    A file pattern is can be fed into matches_file_pattern.
+    A file pattern is can be fed into `matches_file_pattern`.
     Set as many fields as you know
     """
     return FileId(doc, subdoc, stage, annotator)
 
 def matches_file_pattern(pattern, instance):
     """
-    matches_file_pattern(pattern, instance) returns True if case
-    the pattern is satisfied by instance
+    Return `True` if the pattern is satisfied by the given instance.
+    Basically, we treat fields that are set to None as wildcards.
+
+
+    See `file_pattern`
     """
     def match(f):
         return (f(pattern) is None or f(pattern) == f(instance))
