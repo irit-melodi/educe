@@ -7,11 +7,11 @@ import educe.glozz as educe
 # example
 # ---------------------------------------------------------------------
 
-(units, rels) = educe.read_annotation_file('example.aa')
-for u in units:
+annotations = educe.read_annotation_file('example.aa')
+for u in annotations.units:
     print u
 print '###############'
-for r in rels:
+for r in annotations.rels:
     print r
 
 # vim: syntax=python:
