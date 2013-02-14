@@ -14,3 +14,7 @@ In particular, it assumes
 
 But we are keeping sight of the longer term objectives of generalising
 it to at least a wider range of domains
+
+## See also
+
+* [Documentation](https://educe.readthedocs.org/en/latest/api-doc/educe.html)
