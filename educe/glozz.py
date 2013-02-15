@@ -205,7 +205,7 @@ def read_node(node, context=None):
         return node.attrib['id']
 
     elif node.tag == 'type':
-        return node.text
+        return node.text.strip()
 
     elif node.tag == 'unit':
         unit_id         = node.attrib['id']
