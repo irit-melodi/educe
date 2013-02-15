@@ -39,6 +39,39 @@ class Unit:
         feats=", ".join(map(str,self.features))
         return ('%s [%s] %s %s' % (self.identifier(),self.type, self.span, feats))
 
+
+    def position(self):
+        """
+        The position is the set of "geographical" information only to identify
+        an item. So instead of relying on some sort of name, we might rely on
+        its text span. We assume that some name-based elements (document name,
+        subdocument name, stage) can double as being positional.
+
+        If the unit has an origin (see "FileId"), we use the
+
+        * document
+        * subdocument
+        * stage
+        * (but not the annotator!)
+        * and its text span
+
+        ** position vs identifier **
+
+        This is a trade-off.  One the hand, you can see the position as being
+        a safer way to identify a unit, because it obviates having to worry
+        about your naming mechanism guaranteeing stability across the board
+        (eg. two annotators stick an annotation in the same place; does it have
+        the same name). On the *other* hand, it's a bit harder to uniquely
+        identify objects that may coincidentally fall in the same span.  So
+        how much do you trust your IDs?
+        """
+        o=u.origin
+        if o is None:
+            ostuff=[]
+        else:
+            ostuff=[o.doc, o.subdoc, o.stage]
+        return ":".join(ostuff + map(str,[self.span.char_start, self.span.char_end]))
+
     def identifier(self):
         """
         String representation of an identifier that should be unique
@@ -54,6 +87,9 @@ class Unit:
 
         If we don't have an origin we fall back to just the id provided
         by the XML file
+
+        See also `position` as potentially a safer alternative to this
+        (and what we mean by safer)
         """
         o=self.origin
         if o is None:
