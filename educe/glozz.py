@@ -65,7 +65,7 @@ class Unit:
         identify objects that may coincidentally fall in the same span.  So
         how much do you trust your IDs?
         """
-        o=u.origin
+        o=self.origin
         if o is None:
             ostuff=[]
         else:
