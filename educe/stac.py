@@ -13,7 +13,7 @@ def is_real_annotation(annotation):
     the subset of annotations which come from an annotator,
     as opposed to be prefilled 'structural' annotations
     """
-    blacklist=['Turn','paragraph','dialogue']
+    blacklist=['Turn','paragraph','dialogue','Dialogue','Segment','default']
     return (annotation.type not in blacklist)
 
 def corpus_files(dir, cglob='*', anno_glob='*.aa'):
