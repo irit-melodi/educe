@@ -1,6 +1,14 @@
 educe Package
 =============
 
+:mod:`annotation` Module
+------------------------
+
+.. automodule:: educe.annotation
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`corpus` Module
 --------------------
 
