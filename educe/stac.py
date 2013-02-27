@@ -8,6 +8,43 @@ from educe.corpus import *
 from glob import glob
 import os
 
+def dialogue_act(x):
+    """
+    Set of dialogue act annotations for a Unit, taking into
+    consideration STAC conventions like collapsing
+    Strategic_comment into Other
+    """
+    renames={'Strategic_comment':'Other'}
+
+    def rename(k):
+        if k in renames.keys():
+            return renames[k]
+        else:
+            return k
+
+    return frozenset([rename(k) for k in split_type(x)])
+
+def relation_labels(x):
+    """
+    Set of relation labels (eg. Elaboration, Explanation),
+    taking into consideration any applicable STAC-isms
+    """
+    renames={}
+
+    def rename(k):
+        if k in renames.keys():
+            return renames[k]
+        else:
+            return k
+
+    return frozenset([rename(k) for k in split_type(x)])
+
+def split_type(x):
+    """
+    An object's type as a (frozen)set of items
+    """
+    return frozenset(x.type.split("/"))
+
 def is_real_annotation(annotation):
     """
     the subset of annotations which come from an annotator,
