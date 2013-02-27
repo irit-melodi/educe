@@ -1,6 +1,17 @@
 # Author: Eric Kow
 # License: BSD3
 
+"""
+Low-level representation of corpus annotations.
+
+This is low-level in the sense that we make little attempt to interpret the
+information stored in these annotations. For example, a relation might claim to
+link two units of id unit42 and unit43. This being a low-level representation,
+we simply note the fact. A higher-level representation might attempt to
+actually make the corresponding units available to you, or perhaps provide
+some sort of graph representation of them
+"""
+
 class Span:
     """
     What portion of text an annotation corresponds to.
@@ -25,6 +36,13 @@ class RelSpan():
         return ('%s -> %s' % (self.t1, self.t2))
 
 class Annotation:
+    """
+    Any sort of annotation. Annotations tend to have
+
+    * span:     some sort of location (what they are annotating)
+    * type:     some key label (we call a type)
+    * features: a set of attribute value-pairs
+    """
     def __init__(self, anno_id, span, type, features, origin=None):
         self.origin=origin
         self.__anno_id=anno_id
@@ -63,6 +81,9 @@ class Annotation:
         return ":".join(ostuff + [self.__anno_id])
 
 class Unit(Annotation):
+    """
+    An annotation over a span of text
+    """
     def __init__(self, unit_id, span, type, features, origin=None):
         Annotation.__init__(self, unit_id, span, type, features, origin)
 
@@ -81,7 +102,7 @@ class Unit(Annotation):
         * (but not the annotator!)
         * and its text span
 
-        ** position vs identifier **
+        **position vs identifier**
 
         This is a trade-off.  One the hand, you can see the position as being
         a safer way to identify a unit, because it obviates having to worry
@@ -99,6 +120,10 @@ class Unit(Annotation):
         return ":".join(ostuff + map(str,[self.span.char_start, self.span.char_end]))
 
 class Relation(Annotation):
+    """
+    An annotation between two units.
+    Relations are directed; see `RelSpan` for details
+    """
     def __init__(self, rel_id, span, type, features):
         Annotation.__init__(self, rel_id, span, type, features)
 
@@ -115,6 +140,11 @@ class Feature():
             return ('%s:%s' % (self.attribute,self.value))
 
 class Document:
+    """
+    A single (sub)-document.
+
+    This can be seen as collections of unit and relation annotations
+    """
     def __init__(self, units, rels):
         self.units=units
         self.rels=rels
