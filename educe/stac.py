@@ -1,8 +1,17 @@
 # Author: Eric Kow
 # License: BSD3
 
-# Things which are specific to the STAC project
-# Not sure if these should really live in educe
+"""
+Conventions specific to the STAC_ project
+
+This includes things like
+
+* corpus layout (see `corpus_files`)
+* which annotations are of interest
+* renaming/deleting/collapsing annotation labels
+
+.. _STAC: http://www.irit.fr/STAC/
+"""
 
 from educe.corpus import *
 from glob import glob

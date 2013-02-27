@@ -1,14 +1,19 @@
 # Author: Eric Kow
 # License: BSD3
 
+"""
+The Glozz_ file format in `educe.annotation` form
+
+You're likely most interested in
+`slurp_corpus` and `read_annotation_file`
+
+.. _Glozz: http://www.glozz.org/
+"""
+
 import xml.etree.ElementTree as ET
 import sys
 
 from educe.annotation import *
-
-# Glozz annotations
-# The aim here is to be fairly low-level and just capture how glozz
-# thinks about things.
 
 # ---------------------------------------------------------------------
 # xml processing
@@ -104,6 +109,9 @@ def read_node(node, context=None):
         return Unit(unit_id, span, unit_type, fs)
 
 def read_annotation_file(filename):
+    """
+    Read a single glozz annotation file.
+    """
     tree = ET.parse(filename)
     res  = read_node(tree.getroot())
     return Document(res[0],res[1])
