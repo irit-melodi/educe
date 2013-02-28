@@ -4,6 +4,6 @@ setup(name='educe',
       author='Eric Kow',
       author_email='eric.kow@gmail.com',
       packages=['educe'],
-      scripts=['glozz-example'],
+      scripts=['glozz-dump'],
       requires=[]
       )
