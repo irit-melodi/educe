@@ -69,7 +69,8 @@ def corpus_files(dir, cglob='*', anno_glob='*.aa'):
 
     corpus_files('data/pilot', cglob='pilot??')
 
-    Return a dictionary mapping FileId data structures to filepaths
+    Return a dictionary mapping FileId data structures to tuples of
+    (annotation_file, text_file)
     """
     corpus={}
     full_glob=os.path.join(dir, cglob)
@@ -81,9 +82,11 @@ def corpus_files(dir, cglob='*', anno_glob='*.aa'):
                 annotator_dir=os.path.join(stage_dir,annotator)
                 annotator_files=glob(os.path.join(annotator_dir, anno_glob))
                 for f in annotator_files:
-                    subdoc=os.path.splitext(os.path.basename(f))[0]
+                    prefix=os.path.splitext(f)[0]
+                    subdoc=os.path.basename(prefix)
+                    tf    =prefix + ".ac"
                     if "_" in subdoc:
                         subdoc=subdoc.split("_",1)[1]
                     file_id=FileId(doc, subdoc, stage, annotator)
-                    corpus[file_id]=f
+                    corpus[file_id]=(f,tf)
     return corpus

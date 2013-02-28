@@ -109,13 +109,18 @@ def read_node(node, context=None):
         span            = get_one('positioning',      Span(-1,-1), 'unit')
         return Unit(unit_id, span, unit_type, fs)
 
-def read_annotation_file(filename):
+def read_annotation_file(anno_filename, text_filename=None):
     """
-    Read a single glozz annotation file.
+    Read a single glozz annotation file and its corresponding text
+    (if any).
     """
-    tree = ET.parse(filename)
+    tree = ET.parse(anno_filename)
     res  = read_node(tree.getroot())
-    return Document(res[0],res[1])
+    text = None
+    if text_filename is not None:
+        with open(text_filename) as tf:
+            text = tf.read()
+    return Document(res[0],res[1],text)
 
 def slurp_corpus(cfiles, verbose=False):
     """
@@ -127,7 +132,7 @@ def slurp_corpus(cfiles, verbose=False):
     for k in cfiles.keys():
         if verbose:
             sys.stderr.write("\rSlurping corpus dir [%d/%d]" % (counter, len(cfiles)))
-        annotations=read_annotation_file(cfiles[k])
+        annotations=read_annotation_file(*cfiles[k])
         for u in annotations.units:
             u.origin=k
         corpus[k]=annotations

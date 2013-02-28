@@ -133,6 +133,20 @@ class Document:
 
     This can be seen as collections of unit and relation annotations
     """
-    def __init__(self, units, rels):
+    def __init__(self, units, rels, text):
         self.units=units
         self.rels=rels
+        self._text=text
+
+    def text(self, unit=None):
+        """
+        Return a string representing the text covered by either this document
+        or unit.
+        """
+        if self.text is None:
+            return None
+        elif unit is None:
+            return self.text
+        else:
+            sp = unit.span
+            return self._text[sp.char_start:sp.char_end]
