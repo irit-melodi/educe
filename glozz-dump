@@ -1,0 +1,40 @@
+#!/usr/bin/env python
+
+# Author: Eric Kow
+# License: BSD3
+
+"""
+Example script using the library to dump the contents of a single glozz file
+"""
+
+import educe.glozz      as educe
+import os.path
+import sys
+
+# ---------------------------------------------------------------------
+# example
+# ---------------------------------------------------------------------
+
+default_file='example.aa'
+
+if len(sys.argv) > 1:
+   files=sys.argv[1:]
+elif os.path.isfile(default_file):
+   files=[default_file]
+else:
+   print >> sys.stderr ("Usage: %s glozz-file [glozz-file..]" % sys.argv[0])
+
+def dump(filename, annotations):
+    lines = ['############### %s units' % filename]\
+          + map(str, annotations.units)\
+          + ['############### %s relations' % filename]\
+          + map(str, annotations.rels)
+    return "\n".join(lines)
+
+
+for file in files:
+    annotations = educe.read_annotation_file(file)
+    print dump(file, annotations)
+    print ""
+
+# vim: syntax=python:
