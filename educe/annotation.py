@@ -41,7 +41,7 @@ class Annotation:
 
     * span:     some sort of location (what they are annotating)
     * type:     some key label (we call a type)
-    * features: a set of attribute value-pairs
+    * features: an attribute to value dictionary
     """
     def __init__(self, anno_id, span, type, features, origin=None):
         self.origin=origin
@@ -51,7 +51,7 @@ class Annotation:
         self.features=features
 
     def __str__(self):
-        feats=", ".join(map(str,self.features))
+        feats=str(self.features)
         return ('%s [%s] %s %s' % (self.identifier(),self.type, self.span, feats))
 
     def identifier(self):
@@ -126,18 +126,6 @@ class Relation(Annotation):
     """
     def __init__(self, rel_id, span, type, features):
         Annotation.__init__(self, rel_id, span, type, features)
-
-class Feature():
-    """Attribute-value pair"""
-    def __init__(self, attribute, value):
-        self.attribute=attribute
-        self.value=value
-
-    def __str__(self):
-        if self.value is None:
-            return self.attribute
-        else:
-            return ('%s:%s' % (self.attribute,self.value))
 
 class Document:
     """

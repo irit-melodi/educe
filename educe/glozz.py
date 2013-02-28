@@ -67,10 +67,11 @@ def read_node(node, context=None):
     elif node.tag == 'feature':
         attr=node.attrib['name']
         val =node.text
-        return Feature(attr, val)
+        return (attr, val)
 
+    ## TODO throw exception if we see more than one instance of a key
     elif node.tag == 'featureSet':
-        return get_all('feature')
+        return dict(get_all('feature'))
 
     elif node.tag == 'positioning' and context == 'unit':
         start = get_one('start', -2)
