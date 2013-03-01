@@ -24,6 +24,14 @@ class Span:
     def  __str__(self):
         return ('(%d,%d)' % (self.char_start, self.char_end))
 
+    def encloses(self, sp):
+        """
+        Return True if this span includes the argument
+
+        Note that x.encloses(x) == True
+        """
+        return (self.char_start <= sp.char_start and self.char_end >= sp.char_end)
+
 class RelSpan():
     """
     Which two units a relation connections.
@@ -53,6 +61,13 @@ class Annotation:
     def __str__(self):
         feats=str(self.features)
         return ('%s [%s] %s %s' % (self.identifier(),self.type, self.span, feats))
+
+    def local_id(self):
+        """
+        An identifier which is sufficient to pick out this annotation within a
+        single annotation file
+        """
+        return self.__anno_id
 
     def identifier(self):
         """
@@ -118,6 +133,13 @@ class Unit(Annotation):
         else:
             ostuff=[o.doc, o.subdoc, o.stage]
         return ":".join(ostuff + map(str,[self.span.char_start, self.span.char_end]))
+
+    def encloses(self,u):
+        """
+        Return True if this unit's span encloses the span of the argument unit.
+        See `Span` for details
+        """
+        return self.span.encloses(u.span)
 
 class Relation(Annotation):
     """
