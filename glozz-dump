@@ -26,7 +26,7 @@ else:
 
 
 def dump(filename, doc):
-    show_unit = lambda u:"%s | %s" % (u, doc.text(u))
+    show_unit = lambda u:"%s | %s" % (u, doc.text_for(u))
     lines = ['############### %s units' % filename]\
           + map(show_unit, annotations.units)\
           + ['############### %s relations' % filename]\
