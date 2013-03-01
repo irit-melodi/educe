@@ -121,22 +121,3 @@ def read_annotation_file(anno_filename, text_filename=None):
         with open(text_filename) as tf:
             text = tf.read()
     return Document(res[0],res[1],text)
-
-def slurp_corpus(cfiles, verbose=False):
-    """
-    Given a dictionary that maps keys to filepaths, return a dictionary
-    mapping keys to the annotations within that file
-    """
-    corpus={}
-    counter=0
-    for k in cfiles.keys():
-        if verbose:
-            sys.stderr.write("\rSlurping corpus dir [%d/%d]" % (counter, len(cfiles)))
-        annotations=read_annotation_file(*cfiles[k])
-        for u in annotations.units:
-            u.origin=k
-        corpus[k]=annotations
-        counter=counter+1
-    if verbose:
-        sys.stderr.write("\rSlurping corpus dir [%d/%d done]\n" % (counter, len(cfiles)))
-    return corpus

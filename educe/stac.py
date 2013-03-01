@@ -15,6 +15,8 @@ This includes things like
 
 from educe.corpus import *
 from glob import glob
+import educe.corpus
+import educe.glozz as glozz
 import os
 
 def dialogue_act(x):
@@ -62,31 +64,50 @@ def is_real_annotation(annotation):
     blacklist=['Turn','paragraph','dialogue','Dialogue','Segment','default']
     return (annotation.type not in blacklist)
 
-def corpus_files(dir, cglob='*', anno_glob='*.aa'):
-    """
-    Traverse the corpus, looking for files in directories that match
-    a certain unix glob, eg
+def cleanup_comments(x):
+    placeholder = "Please write in remarks..."
+    ckey        = "Comments"
+    if ckey in x.features.keys() and x.features[ckey] == placeholder:
+        del x.features[ckey]
 
-    corpus_files('data/pilot', cglob='pilot??')
-
-    Return a dictionary mapping FileId data structures to tuples of
-    (annotation_file, text_file)
+class Reader(educe.corpus.Reader):
     """
-    corpus={}
-    full_glob=os.path.join(dir, cglob)
-    for doc_dir in glob(full_glob):
-        doc=os.path.basename(doc_dir)
-        for stage in ['units', 'discourse']:
-            stage_dir=os.path.join(doc_dir,stage)
-            for annotator in os.listdir(stage_dir):
-                annotator_dir=os.path.join(stage_dir,annotator)
-                annotator_files=glob(os.path.join(annotator_dir, anno_glob))
-                for f in annotator_files:
-                    prefix=os.path.splitext(f)[0]
-                    subdoc=os.path.basename(prefix)
-                    tf    =prefix + ".ac"
-                    if "_" in subdoc:
-                        subdoc=subdoc.split("_",1)[1]
-                    file_id=FileId(doc, subdoc, stage, annotator)
-                    corpus[file_id]=(f,tf)
-    return corpus
+    See `educe.corpus.Reader` for details
+    """
+    def __init__(self, dir):
+        educe.corpus.Reader.__init__(self, dir)
+
+    def files(self):
+        corpus={}
+        full_glob=os.path.join(self.rootdir, 'pilot??')
+        for doc_dir in glob(full_glob):
+            doc=os.path.basename(doc_dir)
+            for stage in ['units', 'discourse']:
+                stage_dir=os.path.join(doc_dir,stage)
+                for annotator in os.listdir(stage_dir):
+                    annotator_dir=os.path.join(stage_dir,annotator)
+                    annotator_files=glob(os.path.join(annotator_dir, '*.aa'))
+                    for f in annotator_files:
+                        prefix=os.path.splitext(f)[0]
+                        subdoc=os.path.basename(prefix)
+                        tf    =prefix + ".ac"
+                        if "_" in subdoc:
+                            subdoc=subdoc.split("_",1)[1]
+                        file_id=FileId(doc, subdoc, stage, annotator)
+                        corpus[file_id]=(f,tf)
+        return corpus
+
+    def slurp_subcorpus(self, cfiles, verbose=False):
+        corpus={}
+        counter=0
+        for k in cfiles.keys():
+            if verbose:
+                sys.stderr.write("\rSlurping corpus dir [%d/%d]" % (counter, len(cfiles)))
+            annotations=glozz.read_annotation_file(*cfiles[k])
+            for u in annotations.units:
+                u.origin=k
+            corpus[k]=annotations
+            counter=counter+1
+        if verbose:
+            sys.stderr.write("\rSlurping corpus dir [%d/%d done]\n" % (counter, len(cfiles)))
+        return corpus

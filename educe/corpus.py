@@ -17,10 +17,6 @@ Corpus management
 # the above. Give us a mapping from FileId to filepaths and we
 # do the rest.
 
-# TODO: do we *really* want slurp_corpus to live here?
-# Seems kind of yucky to have educe.glozz as an import
-#
-
 import sys
 
 class FileId:
@@ -40,47 +36,74 @@ class FileId:
     def __str__(self):
         return "%s [%s] %s %s" % (self.doc, self.subdoc, self.stage, self.annotator)
 
-def subcorpus(pattern, corpus):
+class Reader:
     """
-    Return the portion of a corpus for which matches the given file
-    pattern.
+    `Reader` provides little more than dictionaries from `FileId`
+    to data.
 
-    See the `file_pattern` function
+    A potentially useful pattern to apply here is to take a slice of
+    these dictionaries for processing. For example, you might not want
+    to read the whole corpus, but only the files which are modified by
+    certain annotators.
 
-    Hint: this works on any dictionary which uses file_id as its keys
-    For example, if you wanted to avoid reading in the whole corpus,
-    you could apply this function to take a slice of results from the
-    corpus_files function so you're not reading all of them
+        reader    = Reader(corpus_dir)
+        files     = reader.files()
+        subfiles  = { k:v in files.items() if k.annotator in [ 'Bob', 'Alice' ] }
+        corpus    = reader.slurp(subfiles)
+
+    Alternatively, having read in the entire corpus, you might be doing
+    processing on various slices of it at a time
+
+        corpus    = reader.slurp()
+        subcorpus = { k:v in corpus.items() if k.doc = 'pilot14' }
+
+    This is an abstract class; you should use the version from a
+    data-set, eg. `educe.stac.Reader` instead
+
+    Fields:
+
+        * rootdir - the top directory of the corpus
     """
-    corpus2=corpus.copy()
-    for k in corpus.keys():
-        if not matches_file_pattern(pattern, k):
-            del corpus2[k]
-    return corpus2
+    def __init__(self, dir):
+        self.rootdir=dir
 
-def file_pattern(doc=None, subdoc=None, stage=None, annotator=None):
-    """
-    A file pattern is can be fed into `matches_file_pattern`.
-    Set as many fields as you know
-    """
-    return FileId(doc, subdoc, stage, annotator)
+    def files():
+        """
+        Return a dictionary from FileId to (tuples of) filepaths.
+        The tuples correspond to files that are considered to 'belong'
+        together; for example, in the case of standoff annotation, both
+        the text file and its annotations
 
-def matches_file_pattern(pattern, instance):
-    """
-    Return `True` if the pattern is satisfied by the given instance.
-    Basically, we treat fields that are set to None as wildcards.
+        Derived classes
+        """
 
+    def slurp(self, cfiles=None, verbose=False):
+        """
+        Read the entire corpus if `cfiles` is `None` or else the
+        subset specified by `cfiles`.
 
-    See `file_pattern`
-    """
-    def match(f):
-        return (f(pattern) is None or f(pattern) == f(instance))
+        Return a dictionary from FileId to `educe.Annotation.Document`
 
-    return (all(map(match,
-                    [ lambda x : x.doc
-                    , lambda x : x.subdoc
-                    , lambda x : x.annotator
-                    , lambda x : x.stage
-                    ])))
+        Cfiles is expected to be a dictionary like what `Corpus.files`
+        would return.
+        """
+        if cfiles is None:
+            subcorpus=self.files()
+        else:
+            subcorpus=cfiles
+        return self.slurp_subcorpus(subcorpus, verbose)
 
+    def slurp_subcorpus(self, cfiles, verbose=False):
+        """
+        Derived classes should implement this function
+        """
+        return {}
+
+    def filter(self, d, pred):
+        """
+        Convenience function equivalent to
+
+            `{ k:v for k,v in d.items() if pred(k) }`
+        """
+        return { k:v for k,v in d.items() if pred(k) }
 
