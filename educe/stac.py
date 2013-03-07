@@ -10,6 +10,18 @@ This includes things like
 * which annotations are of interest
 * renaming/deleting/collapsing annotation labels
 
+Some notes worth keeping in mind.
+
+STAC/Glozz annotations are divided into units and relations.
+
+Units
+-----
+There is a typology of unit types worth noting:
+
+* structure : represent the document structure (eg. Dialogue, Turn, paragraph)
+* segments  : spans of text associated with a dialogue act (eg. Offer, CounterOffer)
+* resources : subspans of segments (Resource)
+
 .. _STAC: http://www.irit.fr/STAC/
 """
 
@@ -19,13 +31,17 @@ import educe.corpus
 import educe.glozz as glozz
 import os
 
+structure_types=['Turn','paragraph','dialogue','Dialogue']
+resource_types =['default','Resource']
+
 def dialogue_act(x):
     """
-    Set of dialogue act annotations for a Unit, taking into
-    consideration STAC conventions like collapsing
-    Strategic_comment into Other
+    Set of dialogue act (aka speech act) annotations for a Unit, taking into
+    consideration STAC conventions like collapsing Strategic_comment into Other
     """
-    renames={'Strategic_comment':'Other'}
+    renames={ 'Strategic_comment':'Other'
+            , 'Segment':'Other'
+            }
 
     def rename(k):
         if k in renames.keys():
@@ -56,13 +72,24 @@ def split_type(x):
     """
     return frozenset(x.type.split("/"))
 
-def is_real_annotation(annotation):
+
+def is_resource(annotation):
     """
-    the subset of annotations which come from an annotator,
-    as opposed to be prefilled 'structural' annotations
+    See Unit typology above
     """
-    blacklist=['Turn','paragraph','dialogue','Dialogue','Segment','default']
+    return (annotation.type in resource_types)
+
+def is_dialogue_act(annotation):
+    """
+    See Unit typology above
+    """
+    blacklist = structure_types + resource_types
     return (annotation.type not in blacklist)
+
+def is_structure(annotation):
+    """
+    """
+    return (annotation.type not in structure_types)
 
 def cleanup_comments(x):
     placeholder = "Please write in remarks..."
