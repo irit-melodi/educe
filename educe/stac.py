@@ -107,21 +107,31 @@ class Reader(educe.corpus.Reader):
     def files(self):
         corpus={}
         full_glob=os.path.join(self.rootdir, 'pilot??')
+        anno_glob='*.aa'
+
         for doc_dir in glob(full_glob):
             doc=os.path.basename(doc_dir)
-            for stage in ['units', 'discourse']:
+            for stage in ['unannotated', 'units', 'discourse']:
+                def register(annotator, f):
+                    prefix = os.path.splitext(f)[0]
+                    subdoc = os.path.basename(prefix)
+                    if "_" in subdoc:
+                        subdoc=subdoc.split("_",1)[1]
+                        tf = prefix + ".ac"
+                        file_id = FileId(doc, subdoc, stage, annotator)
+                    corpus[file_id] = (f,tf)
+
                 stage_dir=os.path.join(doc_dir,stage)
-                for annotator in os.listdir(stage_dir):
-                    annotator_dir=os.path.join(stage_dir,annotator)
-                    annotator_files=glob(os.path.join(annotator_dir, '*.aa'))
-                    for f in annotator_files:
-                        prefix=os.path.splitext(f)[0]
-                        subdoc=os.path.basename(prefix)
-                        tf    =prefix + ".ac"
-                        if "_" in subdoc:
-                            subdoc=subdoc.split("_",1)[1]
-                        file_id=FileId(doc, subdoc, stage, annotator)
-                        corpus[file_id]=(f,tf)
+                if stage == 'unannotated':
+                    unannotated_files=glob(os.path.join(stage_dir, anno_glob))
+                    for f in unannotated_files:
+                        register(None,f)
+                else:
+                    for annotator in os.listdir(stage_dir):
+                        annotator_dir=os.path.join(stage_dir,annotator)
+                        annotator_files=glob(os.path.join(annotator_dir, anno_glob))
+                        for f in annotator_files:
+                            register(annotator,f)
         return corpus
 
     def slurp_subcorpus(self, cfiles, verbose=False):
