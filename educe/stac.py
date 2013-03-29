@@ -148,3 +148,10 @@ class Reader(educe.corpus.Reader):
         if verbose:
             sys.stderr.write("\rSlurping corpus dir [%d/%d done]\n" % (counter, len(cfiles)))
         return corpus
+
+
+def write_annotation_file(anno_filename, doc):
+    """
+    Write a GlozzDocument to XML in the given path
+    """
+    glozz.write_annotation_file(anno_filename, doc)
