@@ -51,12 +51,13 @@ class Annotation:
     * type:     some key label (we call a type)
     * features: an attribute to value dictionary
     """
-    def __init__(self, anno_id, span, type, features, origin=None):
+    def __init__(self, anno_id, span, type, features, metadata=None, origin=None):
         self.origin=origin
         self.__anno_id=anno_id
         self.span=span
         self.type=type
         self.features=features
+        self.metadata=metadata
 
     def __str__(self):
         feats=str(self.features)
@@ -99,8 +100,8 @@ class Unit(Annotation):
     """
     An annotation over a span of text
     """
-    def __init__(self, unit_id, span, type, features, origin=None):
-        Annotation.__init__(self, unit_id, span, type, features, origin)
+    def __init__(self, unit_id, span, type, features, metadata=None, origin=None):
+        Annotation.__init__(self, unit_id, span, type, features, metadata, origin)
 
     def position(self):
         """
@@ -146,8 +147,8 @@ class Relation(Annotation):
     An annotation between two units.
     Relations are directed; see `RelSpan` for details
     """
-    def __init__(self, rel_id, span, type, features):
-        Annotation.__init__(self, rel_id, span, type, features)
+    def __init__(self, rel_id, span, type, features, metadata=None):
+        Annotation.__init__(self, rel_id, span, type, features, metadata)
 
 class Document:
     """
