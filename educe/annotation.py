@@ -155,9 +155,10 @@ class Document:
 
     This can be seen as collections of unit and relation annotations
     """
-    def __init__(self, units, rels, text):
+    def __init__(self, units, relations, text):
         self.units=units
-        self.rels=rels
+        self.relations=relations
+        self.rels=relations # FIXME should find a way to deprecate this
         self._text=text
 
     def text_for(self, unit):

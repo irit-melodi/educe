@@ -30,7 +30,7 @@ def dump(filename, doc):
     lines = ['############### %s units' % filename]\
           + map(show_unit, annotations.units)\
           + ['############### %s relations' % filename]\
-          + map(str, annotations.rels)
+          + map(str, annotations.relations)
     return "\n".join(lines)
 
 for file in files:
