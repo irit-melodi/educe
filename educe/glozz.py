@@ -298,4 +298,4 @@ def write_annotation_file(anno_filename, doc):
 
     elem = doc.to_xml()
     reformat(elem) # ugh, imperative
-    ET.ElementTree(elem).write(anno_filename, encoding='utf-8')
+    ET.ElementTree(elem).write(anno_filename, encoding='utf-8', xml_declaration=True)
