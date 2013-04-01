@@ -31,6 +31,7 @@ import copy
 import educe.corpus
 import educe.glozz as glozz
 import itertools
+import math
 import os
 
 structure_types=['Turn','paragraph','dialogue','Dialogue']
@@ -160,16 +161,17 @@ class PartialUnit:
     A partially instantiated unit does not have any metadata (creation date,
     etc); as these will be derived automatically
     """
-    def __init__(self, type, span, features):
-        self.type     = type
+    def __init__(self, span, type, features):
         self.span     = span
+        self.type     = type
         self.features = features
 
-def create_units(doc, author, partial_units):
+def create_units(k, doc, author, partial_units):
     """
-    Return a collection of instantiated new unit objects
+    Return a collection of instantiated new unit objects.
 
-    units should be of type `PartialUnit`
+    * `k` is of type `FileId`; it's used to create identifiers
+    * `partial_units` should be of type `PartialUnit`
     """
     # It seems like Glozz uses the creation-date metadata field to
     # identify units (symptom: units that have different ids, but
@@ -208,7 +210,7 @@ def create_units(doc, author, partial_units):
         unit_id = '_'.join([author,k.doc,k.subdoc,str(i)])
         return glozz.GlozzUnit(unit_id, x.span, x.type, x.features, metadata)
 
-    return [ mk_unit(*p) for p in itertools.izip(units, itertools.count(1)) ]
+    return [ mk_unit(x,i) for x,i in itertools.izip(partial_units, itertools.count(1)) ]
 
 def write_annotation_file(anno_filename, doc):
     """
