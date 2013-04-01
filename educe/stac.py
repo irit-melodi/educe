@@ -27,8 +27,10 @@ There is a typology of unit types worth noting:
 
 from educe.corpus import *
 from glob import glob
+import copy
 import educe.corpus
 import educe.glozz as glozz
+import itertools
 import os
 
 structure_types=['Turn','paragraph','dialogue','Dialogue']
@@ -149,6 +151,64 @@ class Reader(educe.corpus.Reader):
             sys.stderr.write("\rSlurping corpus dir [%d/%d done]\n" % (counter, len(cfiles)))
         return corpus
 
+
+class PartialUnit:
+    """
+    Partially instantiated unit, for use when you want to programmatically
+    insert annotations into a document
+
+    A partially instantiated unit does not have any metadata (creation date,
+    etc); as these will be derived automatically
+    """
+    def __init__(self, type, span, features):
+        self.type     = type
+        self.span     = span
+        self.features = features
+
+def create_units(doc, author, partial_units):
+    """
+    Return a collection of instantiated new unit objects
+
+    units should be of type `PartialUnit`
+    """
+    # It seems like Glozz uses the creation-date metadata field to
+    # identify units (symptom: units that have different ids, but
+    # some date don't appear in UI).
+    #
+    # Also, other tools in the STAC pipeline seem to use the convention
+    # of negative numbers for fields where the notion of a creation date
+    # isn't very appropriate (automatically derived annotations)
+    #
+    # So we take the smallest negative date (largest absolute value)
+    # and subtract from there.
+    #
+    # For readability, we'll jump up a couple powers of 10
+    creation_dates    = [ int(u.metadata['creation-date']) for u in doc.units ]
+    smallest_neg_date = min(creation_dates)
+    if smallest_neg_date > 0:
+        smallest_neg_date = 0
+    # next two power of 10
+    id_base = 10 ** (int(math.log10(abs(smallest_neg_date))) + 2)
+
+    def mk_creation_date(i):
+        return str(0 - (id_base + i))
+
+    def mk_unit(x,i):
+        # Glozz seems to use creation date internally to identify
+        # units, something ms based here doesn't seem so good
+        # because not unique (too fast); using a counter instead
+        # although by rights we also need to filter out
+        # existing creation dates
+        creation_date = mk_creation_date(i)
+        metadata = { 'author'        : author
+                   , 'creation-date' : creation_date
+                   , 'lastModifier'  : 'n/a'
+                   , 'lastModificationDate' : '0'
+                   }
+        unit_id = '_'.join([author,k.doc,k.subdoc,str(i)])
+        return glozz.GlozzUnit(unit_id, x.span, x.type, x.features, metadata)
+
+    return [ mk_unit(*p) for p in itertools.izip(units, itertools.count(1)) ]
 
 def write_annotation_file(anno_filename, doc):
     """
