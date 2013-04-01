@@ -210,7 +210,7 @@ def create_units(k, doc, author, partial_units):
         unit_id = '_'.join([author,k.doc,k.subdoc,str(i)])
         return glozz.GlozzUnit(unit_id, x.span, x.type, x.features, metadata)
 
-    return [ mk_unit(x,i) for x,i in itertools.izip(partial_units, itertools.count(1)) ]
+    return [ mk_unit(x,i) for x,i in itertools.izip(partial_units, itertools.count(0)) ]
 
 def write_annotation_file(anno_filename, doc):
     """
