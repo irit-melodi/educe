@@ -33,3 +33,10 @@ educe Package
     :undoc-members:
     :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+
+    educe.stac
+
