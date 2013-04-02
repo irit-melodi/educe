@@ -22,6 +22,12 @@ There is a typology of unit types worth noting:
 * segments  : spans of text associated with a dialogue act (eg. Offer, CounterOffer)
 * resources : subspans of segments (Resource)
 
+Corpus management and reading
+-----------------------------
+
+This module
+-----------
+
 .. _STAC: http://www.irit.fr/STAC/
 """
 
@@ -34,8 +40,13 @@ import itertools
 import math
 import os
 
+
 structure_types=['Turn','paragraph','dialogue','Dialogue']
 resource_types =['default','Resource']
+
+# ---------------------------------------------------------------------
+# Document
+# ---------------------------------------------------------------------
 
 def dialogue_act(x):
     """
@@ -100,6 +111,10 @@ def cleanup_comments(x):
     if ckey in x.features.keys() and x.features[ckey] == placeholder:
         del x.features[ckey]
 
+# ---------------------------------------------------------------------
+# Corpus
+# ---------------------------------------------------------------------
+
 class Reader(educe.corpus.Reader):
     """
     See `educe.corpus.Reader` for details
@@ -152,6 +167,9 @@ class Reader(educe.corpus.Reader):
             sys.stderr.write("\rSlurping corpus dir [%d/%d done]\n" % (counter, len(cfiles)))
         return corpus
 
+# ---------------------------------------------------------------------
+# Adding annotations
+# ---------------------------------------------------------------------
 
 class PartialUnit:
     """

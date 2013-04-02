@@ -24,7 +24,7 @@ class FileId:
     Information needed to uniquely identify an annotation file.
 
     Note that this includes the annotator, so if you want to do
-    comparisons on the `same' file between annotators you'll want
+    comparisons on the "same" file between annotators you'll want
     to ignore this field.
     """
     def __init__(self, doc, subdoc, stage, annotator):
