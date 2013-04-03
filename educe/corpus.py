@@ -105,5 +105,5 @@ class Reader:
 
             `{ k:v for k,v in d.items() if pred(k) }`
         """
-        return { k:v for k,v in d.items() if pred(k) }
+        return dict([(k,v) for k,v in d.items() if pred(k)])
 
