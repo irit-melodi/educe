@@ -25,14 +25,6 @@ educe Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`stac` Module
-------------------
-
-.. automodule:: educe.stac
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 Subpackages
 -----------
 
