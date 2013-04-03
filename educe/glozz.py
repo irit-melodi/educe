@@ -216,7 +216,7 @@ def read_node(node, context=None):
         return node.attrib['corpusHashcode']
 
     elif node.tag == 'metadata':
-        return dict([(t.tag:t.text) for t in node ])
+        return dict([(t.tag,t.text) for t in node ])
 
     elif node.tag == 'positioning' and context == 'unit':
         start = get_one('start', -2)
