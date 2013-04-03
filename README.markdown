@@ -5,16 +5,19 @@
 Abstract representation of a discourse-annotated corpus.
 
 Currently, this library is geared towards the needs of the [STAC
-research project](http://www.irit.fr/STAC/).
-In particular, it assumes
+research project][stac].  In particular, it assumes
 
 - Settlers of Catan non-cooperative conversation domain
 - Segmented Discourse Representation Theory (SDRT)
-- [Glozz annotation platform](http://www.glozz.org/)
+- [Glozz annotation platform][glozz]
 
 But we are keeping sight of the longer term objectives of generalising
 it to at least a wider range of domains
 
 ## See also
 
-* [Documentation](https://educe.readthedocs.org/en/latest/api-doc/educe.html)
+* [Documentation][docs]
+
+[stac]:  http://www.irit.fr/STAC/
+[glozz]: http://www.glozz.org/
+[docs]:  https://educe.readthedocs.org/en/latest/api-doc/educe.html
