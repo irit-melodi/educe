@@ -36,6 +36,27 @@ class FileId:
     def __str__(self):
         return "%s [%s] %s %s" % (self.doc, self.subdoc, self.stage, self.annotator)
 
+    def mk_global_id(self, local_id):
+        """
+        String representation of an identifier that should be unique
+        to this corpus at least.
+
+        If the unit has an origin (see "FileId"), we use the
+
+        * document
+        * subdocument
+        * stage
+        * (but not the annotator!)
+        * and the id from the XML file
+
+        If we don't have an origin we fall back to just the id provided
+        by the XML file
+
+        See also `position` as potentially a safer alternative to this
+        (and what we mean by safer)
+        """
+        return "_".join([self.doc, self.subdoc, self.stage, local_id])
+
 class Reader:
     """
     `Reader` provides little more than dictionaries from `FileId`
