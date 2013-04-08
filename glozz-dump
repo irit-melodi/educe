@@ -22,7 +22,7 @@ if len(sys.argv) > 1:
 elif os.path.isfile(default_file):
    files=[default_file]
 else:
-   print >> sys.stderr ("Usage: %s glozz-file [glozz-file..]" % sys.argv[0])
+   print >> sys.stderr, "Usage: %s glozz-file [glozz-file..]" % sys.argv[0]
 
 
 def dump(filename, doc):
