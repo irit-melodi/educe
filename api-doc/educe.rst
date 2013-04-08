@@ -25,6 +25,14 @@ educe Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`util` Module
+------------------
+
+.. automodule:: educe.util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Subpackages
 -----------
 
