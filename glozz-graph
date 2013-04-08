@@ -1,0 +1,151 @@
+#!/usr/bin/env python
+
+# Author: Eric Kow
+# License: BSD3
+
+"""
+Example script using the library to dump graphs for all files
+in a STAC corpus
+"""
+
+from educe import glozz, corpus, stac, util
+import argparse
+import re
+import os.path
+import sys
+
+import pygraph.classes.digraph as gr
+from pygraph.readwrite import dot
+
+# ---------------------------------------------------------------------
+# args
+# ---------------------------------------------------------------------
+
+arg_parser = argparse.ArgumentParser(description='Visualise discourse graphs.')
+arg_parser.add_argument( 'idir', metavar='DIR'
+                       , help='Input directory'
+                       )
+arg_parser.add_argument( 'odir', metavar='DIR'
+                       , help='Output directory'
+                       )
+arg_parser.add_argument('--png'
+                       , action='store_const'
+                       , const=True
+                       , default=False
+                       , help='Create png files (can be slow)'
+                       )
+util.add_corpus_filters(arg_parser)
+args=arg_parser.parse_args()
+is_interesting=util.mk_is_interesting(args)
+
+# ---------------------------------------------------------------------
+# create graph files
+# ---------------------------------------------------------------------
+
+reader     = stac.Reader(args.idir)
+anno_files = reader.filter(reader.files(), is_interesting)
+corpus     = reader.slurp(anno_files, verbose=True)
+bad_docs = []
+
+class GraphBuilder:
+    def __init__(self, doc_key, doc):
+        self.doc_key = doc_key
+        self.doc     = doc
+
+    def mk_guid(self, x):
+        return self.doc_key.mk_global_id(x)
+
+    def unit_node(self, anno):
+        anno_id     = anno.identifier()
+        speech_acts = ", ".join(stac.dialogue_act(anno))
+        label       = "%s [%s]" % (self.doc.text_for(anno), speech_acts)
+        attrs = { 'label'      : label
+                , 'shape'      : 'plaintext'
+                } #'annotation' : anno
+        return (anno_id, attrs)
+
+    def rel_node(self, anno):
+        anno_id = anno.identifier()
+        attrs = { 'label'      : anno.type
+                , 'shape'      : 'plaintext'
+                , 'fontcolor'  : 'blue'
+                } #'annotation' : anno
+        return (anno_id, attrs)
+
+    def schema_node(self, anno):
+        anno_id = anno.identifier()
+        attrs = { 'label'      : 'CDU'
+                , 'shape'      : 'box'
+                } # 'annotation' : anno
+        return (anno_id, attrs)
+
+    def rel_edges(self, anno):
+        span    = anno.span
+        anno_id = x.identifier()
+        edge1   = (self.mk_guid(span.t1), anno_id)
+        edge2   = (anno_id, self.mk_guid(span.t2))
+        attrs1  = { 'arrowhead' : 'none' }
+        attrs2  = {}
+        return [(edge1,attrs1),(edge2,attrs2)]
+
+    def schema_edges(self, anno):
+        anno_id = anno.identifier()
+        edges   = [ (anno_id, self.mk_guid(m)) for m in anno.span ]
+        attrs   = { 'style' : 'dashed' }
+        return [ (e, attrs) for e in edges ]
+
+for doc_key in corpus:
+    doc      = corpus[doc_key]
+    doc_file = anno_files[doc_key][0]
+    builder  = GraphBuilder(doc_key, doc)
+
+
+    # objects that are pointed to by a relations or schemas
+    pointed_to = []
+    for x in doc.relations: pointed_to.extend([x.span.t1, x.span.t2])
+    for x in doc.schemas:   pointed_to.extend(x.span)
+
+    nodes = []
+    edges = []
+    for x in doc.units:
+        if x.local_id() in pointed_to:
+            nodes.append(builder.unit_node(x))
+    for x in doc.relations:
+        nodes.append(builder.rel_node(x))
+        edges.extend(builder.rel_edges(x))
+    for x in doc.schemas:
+        if x.type != 'default':
+            nodes.append(builder.schema_node(x))
+            edges.extend(builder.schema_edges(x))
+
+
+    g = gr.digraph()
+
+    for node, attrs in nodes:
+        if not g.has_node(node):
+            g.add_node(node)
+            for x in attrs.items():
+                g.add_node_attribute(node,x)
+        elif doc_key not in bad_docs:
+                warning  = "WARNING: %s has duplicate annotation ids" % doc_file
+                print >> sys.stderr, warning
+                bad_docs.append(doc_key)
+
+    for edge, attrs in edges:
+        if not g.has_edge(edge):
+            g.add_edge(edge)
+            g.add_edge_attributes(edge, attrs.items())
+
+    doc_dir        = os.path.dirname(doc_file)
+    ofile_dirname  = os.path.join(args.odir,os.path.relpath(doc_dir, args.idir))
+    ofile_basename = os.path.splitext(os.path.basename(doc_file))[0]
+    dot_file       = os.path.join(ofile_dirname, ofile_basename + '.dot')
+    png_file       = os.path.join(ofile_dirname, ofile_basename + '.png')
+    if not os.path.exists(ofile_dirname):
+        os.makedirs(ofile_dirname)
+    with open(dot_file, 'w') as f: print >> f, dot.write(g)
+    if args.png:
+        print >> sys.stderr, "Creating %s" % png_file
+        os.system('dot -T png -o %s %s' % (png_file, dot_file))
+
+# vim: syntax=python:
