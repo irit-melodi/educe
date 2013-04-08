@@ -35,6 +35,11 @@ class GlozzDocument(Document):
         elm.extend(self.schemas)
         return elm
 
+    def set_origin(self, origin):
+        Document.set_origin(self, origin)
+        for x in self.schemas:
+            x.origin = origin
+
 def ordered_keys(preferred, d):
     """
     Keys from a dictionary starting with 'preferred' ones
@@ -143,6 +148,17 @@ class GlozzRelSpan(RelSpan):
         set_pos(elm,self.t2)
         return elm
 
+class GlozzSchema(Annotation):
+    """
+    A set of annotations
+
+    Parameters:
+
+        * members: the of annotations contained in this schema
+    """
+    def __init__(self, rel_id, members, type, features, metadata=None):
+        Annotation.__init__(self, rel_id, members, type, features, metadata)
+
 
 # ---------------------------------------------------------------------
 # xml processing
@@ -186,9 +202,6 @@ def read_node(node, context=None):
     def get_all(name):
         return map(read_node, node.findall(name))
 
-    if node.tag == 'schema':
-        return node
-
     if node.tag == 'annotations':
         hashcode = get_one('metadata', '', 'annotations')
         if hashcode is '':
@@ -230,6 +243,9 @@ def read_node(node, context=None):
         else:
             return GlozzRelSpan(terms[0], terms[1])
 
+    elif node.tag == 'positioning' and context == 'schema':
+        return frozenset(get_all('embedded-unit'))
+
     elif node.tag == 'relation':
         rel_id          = node.attrib['id']
         (unit_type, fs) = get_one('characterisation', None)
@@ -237,13 +253,20 @@ def read_node(node, context=None):
         metadata        = get_one('metadata',         {})
         return GlozzRelation(rel_id, span, unit_type, fs, metadata=metadata)
 
+    if node.tag == 'schema':
+        anno_id         = node.attrib['id']
+        (anno_type, fs) = get_one('characterisation', None)
+        members         = get_one('positioning',      None, 'schema')
+        metadata        = get_one('metadata',         {})
+        return GlozzSchema(anno_id, members, anno_type, fs, metadata=metadata)
+
     elif node.tag == 'singlePosition':
         return int(node.attrib['index'])
 
     elif node.tag == 'start' or node.tag == 'end':
         return get_one('singlePosition', -3)
 
-    elif node.tag == 'term':
+    elif node.tag in [ 'term', 'embedded-unit' ]:
         return node.attrib['id']
 
     elif node.tag == 'type':

@@ -90,11 +90,11 @@ class Annotation:
         (and what we mean by safer)
         """
         o=self.origin
+        local_id=self.__anno_id
         if o is None:
-            ostuff=[]
+            return local_id
         else:
-            ostuff=[o.doc, o.subdoc, o.stage]
-        return ":".join(ostuff + [self.__anno_id])
+            return o.mk_global_id(local_id)
 
 class Unit(Annotation):
     """
@@ -162,6 +162,28 @@ class Document:
         self.rels=relations # FIXME should find a way to deprecate this
         self._text=text
 
+    def set_origin(self, origin):
+        """
+        If you have more than one document, it's a good idea to
+        set its origin to an `educe.corpus.file_id` so that you
+        can more reliably the annotations apart.
+        """
+        for u in self.units:
+            u.origin = origin
+        for r in self.relations:
+            r.origin = origin
+
+    def global_id(self, local_id):
+        """
+        String representation of an identifier that should be unique
+        to this corpus at least.
+        """
+        o=self.origin
+        if o is None:
+            return local_id
+        else:
+            return o.mk_global_id(local_id)
+
     def text_for(self, unit):
         """
         Return a string representing the text covered by either this document
@@ -172,3 +194,4 @@ class Document:
         else:
             sp = unit.span
             return self._text[sp.char_start:sp.char_end]
+

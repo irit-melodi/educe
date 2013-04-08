@@ -154,8 +154,7 @@ class Reader(educe.corpus.Reader):
             if verbose:
                 sys.stderr.write("\rSlurping corpus dir [%d/%d]" % (counter, len(cfiles)))
             annotations=glozz.read_annotation_file(*cfiles[k])
-            for u in annotations.units:
-                u.origin=k
+            annotations.set_origin(k)
             corpus[k]=annotations
             counter=counter+1
         if verbose:
