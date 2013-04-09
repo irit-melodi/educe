@@ -50,11 +50,11 @@ class Graph(gr.hypergraph):
         rels  = doc.relations
         cdus  = [ s for s in doc.schemas if s.type != 'default' ]
 
-        for x in edus: nodes.append(self.unit_node(x))
-        for x in rels: nodes.append(self.rel_node(x))
-        for x in cdus: nodes.append(self.schema_node(x))
-        for x in rels: edges.append(self.rel_edge(x))
-        for x in cdus: edges.append(self.schema_edge(x))
+        for x in edus: nodes.append(self._unit_node(x))
+        for x in rels: nodes.append(self._rel_node(x))
+        for x in cdus: nodes.append(self._schema_node(x))
+        for x in rels: edges.append(self._rel_edge(x))
+        for x in cdus: edges.append(self._schema_edge(x))
 
         for node, attrs in nodes:
             if not self.has_node(node):
@@ -70,48 +70,46 @@ class Graph(gr.hypergraph):
                 self.add_edge_attributes(edge, attrs.items())
                 for l in links: self.link(l,edge)
 
-    def mk_guid(self, x):
+    def _mk_guid(self, x):
         return self.doc_key.mk_global_id(x)
 
-    def mk_node(self, anno, type):
+    def _mk_node(self, anno, type):
         anno_id     = anno.identifier()
         attrs = { 'type'       : type
                 , 'annotation' : anno
                 }
         return (anno_id, attrs)
 
-    def mk_edge(self, anno, type, members):
+    def _mk_edge(self, anno, type, members):
         anno_id = anno.identifier()
         attrs   = { 'type'       : type
                   , 'annotation' : anno
                   }
-        links   = [ self.mk_guid(m) for m in members ]
+        links   = [ self._mk_guid(m) for m in members ]
         return (anno_id,attrs,links)
 
-    def unit_node(self, anno):
-        return self.mk_node(anno, 'EDU')
+    def _unit_node(self, anno):
+        return self._mk_node(anno, 'EDU')
 
-    def rel_node(self, anno):
+    def _rel_node(self, anno):
         # by rights, there are no such things as nodes corresponding to
         # relations, but we do have relations pointing to relations
         # and python-graph reasonably enough gets confused if we try to
         # create edges to nodes that don't exist
-        return self.mk_node(anno, 'rel')
+        return self._mk_node(anno, 'rel')
 
-    def schema_node(self, anno):
-        # see rel_node comments
-        return self.mk_node(anno, 'CDU')
+    def _schema_node(self, anno):
+        # see _rel_node comments
+        return self._mk_node(anno, 'CDU')
 
-    def rel_edge(self, anno):
+    def _rel_edge(self, anno):
         members = [ anno.span.t1, anno.span.t2 ]
-        return self.mk_edge(anno, 'rel', members)
+        return self._mk_edge(anno, 'rel', members)
 
-    def schema_edge(self, anno):
-        return self.mk_edge(anno, 'CDU', anno.members)
+    def _schema_edge(self, anno):
+        return self._mk_edge(anno, 'CDU', anno.span)
 
-        return g
-
-    def get_speaker(self, u):
+    def _get_speaker(self, u):
         """
         Helper function for to_dot
         """
@@ -121,7 +119,7 @@ class Graph(gr.hypergraph):
         else:
             return None
 
-    def get_speech_acts(self, anno):
+    def _get_speech_acts(self, anno):
         """
         Helper function for to_dot
         """
@@ -142,12 +140,12 @@ class Graph(gr.hypergraph):
         else:
             return fallback
 
-    def edu_label(self, anno):
+    def _edu_label(self, anno):
         """
         Helper function for to_dot
         """
-        speech_acts = ", ".join(self.get_speech_acts(anno))
-        speaker     = self.get_speaker(anno)
+        speech_acts = ", ".join(self._get_speech_acts(anno))
+        speaker     = self._get_speaker(anno)
         if speaker is None:
             speaker_prefix = ''
         else:
@@ -177,7 +175,7 @@ class Graph(gr.hypergraph):
             node_ty = attrs['type']
             if node_ty == 'EDU':
                 anno  = attrs['annotation']
-                label = self.edu_label(anno)
+                label = self._edu_label(anno)
                 attr_list = { 'label' : textwrap.fill(label, 30)
                             , 'shape' : 'plaintext'
                             }
