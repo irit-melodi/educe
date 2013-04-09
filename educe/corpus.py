@@ -36,6 +36,20 @@ class FileId:
     def __str__(self):
         return "%s [%s] %s %s" % (self.doc, self.subdoc, self.stage, self.annotator)
 
+
+    def _tuple(self):
+        """
+        For internal use by __hash__, __eq__, etc
+        """
+        return (self.doc, self.subdoc, self.stage, self.annotator)
+
+    def __hash__(self):
+        return hash(self._tuple())
+
+    def __eq__(self, other):
+        return self._tuple() == other._tuple()
+
+
     def mk_global_id(self, local_id):
         """
         String representation of an identifier that should be unique
