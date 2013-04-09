@@ -8,7 +8,12 @@ Miscellaneous utility functions
 import argparse
 import re
 
-def add_corpus_filters(arg_parser):
+fileid_fields = [ 'stage', 'doc', 'subdoc', 'annotator' ]
+"""
+String representation of fields recognised in an educe.corpus.FileId
+"""
+
+def add_corpus_filters(arg_parser, fields=fileid_fields):
     """
     For help with script-building:
 
@@ -19,7 +24,7 @@ def add_corpus_filters(arg_parser):
     Meant to be used in conjunction with `mk_is_interesting`
     """
 
-    for x in [ 'stage', 'doc', 'subdoc', 'annotator' ]:
+    for x in fields:
         arg_parser.add_argument( ('--%s' % x)
                                , metavar='PY_REGEX'
                                , help=('Limit to a particular %s(s)' % x)
