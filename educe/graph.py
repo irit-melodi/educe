@@ -237,10 +237,14 @@ class Graph(gr.hypergraph):
                 #              }
                 #point = pydot.Node(hyperedge, **point_attrs)
                 #dot_subg.add_node(point)
-                for link in self.links(hyperedge):
-                    dot_node = pydot.Node(link)
-                    dot_subg.add_node(dot_node)
-                    rlinks = [ l for l in self.links(link) if l != hyperedge ]
+                local_nodes = self.links(hyperedge)
+                for node in local_nodes:
+                    dot_subg.add_node(pydot.Node(node))
+                    def is_enclosed(l):
+                        return l != hyperedge and\
+                               all( [x in local_nodes for x in self.links(l)] )
+
+                    rlinks = [ l for l in self.links(node) if is_enclosed(l) ]
                     for rlink in rlinks: # relations
                         dot_rnode = pydot.Node(rlink)
                         dot_subg.add_node(dot_rnode)
