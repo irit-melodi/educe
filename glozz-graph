@@ -9,7 +9,7 @@ Example script using the library to dump graphs for all files
 in a STAC corpus
 """
 
-from educe import glozz, corpus, stac, util
+from educe import glozz, corpus, stac, util, graph
 import argparse
 import copy
 import re
@@ -17,7 +17,6 @@ import os.path
 import sys
 import textwrap
 
-import pygraph.classes.hypergraph as gr
 from pygraph.readwrite import dot
 import pydot
 
@@ -44,257 +43,14 @@ args.stage = 'discourse|units'
 is_interesting=util.mk_is_interesting(args)
 
 # ---------------------------------------------------------------------
-# create graph files
+# main
 # ---------------------------------------------------------------------
 
 reader     = stac.Reader(args.idir)
 anno_files = reader.filter(reader.files(), is_interesting)
 corpus     = reader.slurp(anno_files, verbose=True)
-bad_docs = []
 
-class GraphBuilder:
-    def __init__(self, corpus, doc_key, doc):
-        self.corpus  = corpus
-        self.doc_key = doc_key
-        self.doc     = doc
-
-    def mk_guid(self, x):
-        return self.doc_key.mk_global_id(x)
-
-    def unit_node(self, anno):
-        anno_id     = anno.identifier()
-        attrs = { 'type'       : 'EDU'
-                , 'annotation' : anno
-                }
-        return (anno_id, attrs)
-
-    def rel_node(self, anno):
-        anno_id = anno.identifier()
-        attrs = { 'type'       : 'rel'
-                , 'annotation' : anno
-                }
-        return (anno_id, attrs)
-
-    def schema_node(self, anno):
-        anno_id = anno.identifier()
-        attrs = { 'type'       : 'CDU'
-                , 'annotation' : anno
-                }
-        return (anno_id, attrs)
-
-    def rel_edges(self, anno):
-        anno_id = anno.identifier()
-        span    = anno.span
-        attrs   = { 'type'       : 'rel'
-                  , 'annotation' : anno
-                  }
-        links   = [ self.mk_guid(x) for x in [ span.t1, span.t2 ] ]
-        return [(anno_id,attrs,links)]
-
-    def schema_edges(self, anno):
-        anno_id = anno.identifier()
-        attrs   = { 'type'       : 'CDU'
-                  , 'annotation' : anno
-                  }
-        links   = [ self.mk_guid(m) for m in anno.span ]
-        return [(anno_id,attrs,links)]
-
-# ---------------------------------------------------------------------
-# create graph files
-# ---------------------------------------------------------------------
-
-
-# adapted from python-graph; the default implementation doesn't
-# quite do what we want
-def to_dot(builder, hgr):
-    """
-    Return a string specifying the given hypergraph in DOT Language.
-
-    @type  hgr: hypergraph
-    @param hgr: Hypergraph.
-
-    @rtype:  string
-    @return: String specifying the hypergraph in DOT Language.
-    """
-    dot_g = pydot.Dot(compound='true')
-
-    if not 'name' in dir(hgr):
-        dot_g.set_name('hypergraph')
-    else:
-        dot_g.set_name(hgr.name)
-
-    colorcount = 0
-
-    def gv_id(raw_id):
-        attr_list = hgr.node_attributes(raw_id)
-        if len(attr_list) == 0:
-            attr_list = hgr.edge_attributes(raw_id)
-        attrs = dict(attr_list)
-        if attrs['type'] == 'CDU':
-            return 'cluster_' + raw_id
-        else:
-            return raw_id
-
-    turns = [ u for u in builder.doc.units if u.type == 'Turn' ]
-
-    def get_speaker(u):
-        enclosing_turns = [ t for t in turns if t.span.encloses(u.span) ]
-        if len(enclosing_turns) > 0:
-            return enclosing_turns[0].features['Emitter']
-        else:
-            return None
-
-    def get_speech_acts(anno):
-        # In discourse annotated part of the corpus, all segments have
-        # type 'Other', which isn't too helpful. Try to recover the
-        # speech act from the unit equivalent to this document
-        anno_local_id  = anno.local_id()
-        fallback       = stac.dialogue_act(anno)
-        unit_key       = copy.copy(doc_key)
-        unit_key.stage = 'units'
-        keys = builder.corpus
-        if unit_key in builder.corpus:
-            udoc  = builder.corpus[unit_key]
-            doppelgangers = [ u for u in udoc.units if u.local_id() == anno_local_id ]
-            if len(doppelgangers) > 0:
-                return stac.dialogue_act(doppelgangers[0])
-            else:
-                return fallback
-        else:
-            return fallback
-
-    # Add all of the nodes first
-    for node in hgr.nodes():
-        attrs   = dict(hgr.node_attributes(node))
-        node_ty = attrs['type']
-        if node_ty == 'EDU':
-            anno        = attrs['annotation']
-            speech_acts = ", ".join(get_speech_acts(anno))
-            speaker     = get_speaker(anno)
-            if speaker is None:
-                speaker_prefix = ''
-            else:
-                speaker_prefix = '(%s) ' % speaker
-            label = speaker_prefix + "%s [%s]" % (builder.doc.text_for(anno), speech_acts)
-            label = textwrap.fill(label, 30)
-            attr_list = { 'label'      : label
-                        , 'shape'      : 'plaintext'
-                        }
-            if not stac.is_dialogue_act(anno):
-                attr_list['fontcolor'] = 'red'
-            dot_node = pydot.Node(str(node), **attr_list)
-            dot_g.add_node(dot_node)
-
-    for hyperedge in hgr.hyperedges():
-        attrs   = dict(hgr.edge_attributes(hyperedge))
-        edge_ty = attrs['type']
-        if edge_ty == 'rel':
-            # it's a bit more useful to represent relations as 'midpoint'
-            # nodes rather than edges directly
-            #
-            # this allows for relations to point to relations for one thing
-            # and for another, generally makes for nicer-looking output
-            anno           = attrs['annotation']
-            anno_id = hyperedge
-            links   = hgr.links(hyperedge)
-            link1_, link2_ = links
-            midpoint_attrs =\
-                { 'label'      : anno.type
-                , 'shape'      : 'plaintext'
-                , 'fontcolor'  : 'blue'
-                }
-
-            attrs1  = { 'arrowhead' : 'none'
-                      }
-            attrs2  = {
-                      }
-            clink1 = gv_id(link1_)
-            clink2 = gv_id(link2_)
-            if clink1 != link1_:
-                attrs1['ltail'] = clink1
-                link1 = hgr.links(link1_)[0]
-            else:
-                link1 = link1_
-
-            if clink2 != link2_:
-                attrs2['lhead'] = clink2
-                link2 = hgr.links(link2_)[0]
-            else:
-                link2 = link2_
-
-            midpoint = pydot.Node(hyperedge, **midpoint_attrs)
-            edge1    = pydot.Edge(link1, hyperedge, **attrs1)
-            edge2    = pydot.Edge(hyperedge, link2, **attrs2)
-            dot_g.add_node(midpoint)
-            dot_g.add_edge(edge1)
-            dot_g.add_edge(edge2)
-
-        elif edge_ty == 'CDU':
-            attrs    = { 'color' : 'lightgrey'
-                       }
-            dot_subg = pydot.Subgraph(gv_id(hyperedge), **attrs)
-            #point_attrs = { 'label' : '∙'
-            #              , 'shape' : 'plaintext'
-            #              }
-            #point = pydot.Node(hyperedge, **point_attrs)
-            #dot_subg.add_node(point)
-            for link in hgr.links(hyperedge):
-                dot_node = pydot.Node(link)
-                dot_subg.add_node(dot_node)
-                rlinks = [ l for l in hgr.links(link) if l != hyperedge ]
-                for rlink in rlinks: # relations
-                    dot_rnode = pydot.Node(rlink)
-                    dot_subg.add_node(dot_rnode)
-
-            dot_g.add_subgraph(dot_subg)
-
-    return dot_g
-
-
-for doc_key in [ k for k in corpus if k.stage == 'discourse' ]:
-    doc      = corpus[doc_key]
-    doc_file = anno_files[doc_key][0]
-    builder  = GraphBuilder(corpus, doc_key, doc)
-
-
-    # objects that are pointed to by a relations or schemas
-    pointed_to = []
-    for x in doc.relations: pointed_to.extend([x.span.t1, x.span.t2])
-    for x in doc.schemas:   pointed_to.extend(x.span)
-
-    nodes = []
-    edges = []
-    for x in doc.units:
-        if x.local_id() in pointed_to:
-            nodes.append(builder.unit_node(x))
-    for x in doc.relations:
-        nodes.append(builder.rel_node(x))
-        edges.extend(builder.rel_edges(x))
-    for x in doc.schemas:
-        if x.type != 'default':
-            nodes.append(builder.schema_node(x))
-            edges.extend(builder.schema_edges(x))
-
-
-    g = gr.hypergraph()
-
-    for node, attrs in nodes:
-        if not g.has_node(node):
-            g.add_node(node)
-            for x in attrs.items():
-                g.add_node_attribute(node,x)
-        elif doc_key not in bad_docs:
-                warning  = "WARNING: %s has duplicate annotation ids" % doc_file
-                print >> sys.stderr, warning
-                bad_docs.append(doc_key)
-
-    for edge, attrs, links in edges:
-        if not g.has_edge(edge):
-            g.add_edge(edge)
-            g.add_edge_attributes(edge, attrs.items())
-            for l in links:
-                g.link(l,edge)
-
+def write_dot_graph(doc_file, dot_graph):
     doc_dir        = os.path.dirname(doc_file)
     ofile_dirname  = os.path.join(args.odir,os.path.relpath(doc_dir, args.idir))
     ofile_basename = os.path.splitext(os.path.basename(doc_file))[0]
@@ -302,9 +58,20 @@ for doc_key in [ k for k in corpus if k.stage == 'discourse' ]:
     png_file       = os.path.join(ofile_dirname, ofile_basename + '.png')
     if not os.path.exists(ofile_dirname):
         os.makedirs(ofile_dirname)
-    with open(dot_file, 'w') as f: print >> f, to_dot(builder,g).to_string()
+    with open(dot_file, 'w') as f: print >> f, dot_graph.to_string()
     if args.png:
         print >> sys.stderr, "Creating %s" % png_file
         os.system('dot -T png -o %s %s' % (png_file, dot_file))
+
+for doc_key in [ k for k in corpus if k.stage == 'discourse' ]:
+    doc      = corpus[doc_key]
+    doc_file = anno_files[doc_key][0]
+    try:
+        g = graph.Graph(corpus, doc_key, doc)
+        write_dot_graph(doc_file, g.to_dot())
+    except graph.DuplicateIdException:
+        warning  = "WARNING: %s has duplicate annotation ids" % doc_file
+        print >> sys.stderr, warning
+
 
 # vim: syntax=python:
