@@ -68,7 +68,7 @@ for doc_key in [ k for k in corpus if k.stage == 'discourse' ]:
     doc_file = anno_files[doc_key][0]
     try:
         g = graph.Graph(corpus, doc_key, doc)
-        write_dot_graph(doc_file, g.to_dot())
+        write_dot_graph(doc_file, graph.DotGraph(g))
     except graph.DuplicateIdException:
         warning  = "WARNING: %s has duplicate annotation ids" % doc_file
         print >> sys.stderr, warning

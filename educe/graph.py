@@ -34,7 +34,6 @@ class Graph(gr.hypergraph):
         self.corpus  = corpus
         self.doc_key = doc_key
         self.doc     = doc
-        self.turns   = [ u for u in doc.units if u.type == 'Turn' ]
 
         gr.hypergraph.__init__(self)
 
@@ -109,10 +108,14 @@ class Graph(gr.hypergraph):
     def _schema_edge(self, anno):
         return self._mk_edge(anno, 'CDU', anno.span)
 
+
+class DotGraph(pydot.Dot):
+    """
+    A dot representation of this graph for visualisation.
+    The `to_string()` method is most likely to be of interest here
+    """
+
     def _get_speaker(self, u):
-        """
-        Helper function for to_dot
-        """
         enclosing_turns = [ t for t in self.turns if t.span.encloses(u.span) ]
         if len(enclosing_turns) > 0:
             return enclosing_turns[0].features['Emitter']
@@ -120,9 +123,6 @@ class Graph(gr.hypergraph):
             return None
 
     def _get_speech_acts(self, anno):
-        """
-        Helper function for to_dot
-        """
         # In discourse annotated part of the corpus, all segments have
         # type 'Other', which isn't too helpful. Try to recover the
         # speech act from the unit equivalent to this document
@@ -141,9 +141,6 @@ class Graph(gr.hypergraph):
             return fallback
 
     def _edu_label(self, anno):
-        """
-        Helper function for to_dot
-        """
         speech_acts = ", ".join(self._get_speech_acts(anno))
         speaker     = self._get_speaker(anno)
         if speaker is None:
@@ -152,103 +149,141 @@ class Graph(gr.hypergraph):
             speaker_prefix = '(%s) ' % speaker
         return speaker_prefix + "%s [%s]" % (self.doc.text_for(anno), speech_acts)
 
-    def to_dot(self):
-        """
-        Return a pydot representation of this graph for visualisation
-        """
-        dot_g = pydot.Dot(compound='true')
-        dot_g.set_name('hypergraph')
+    def _node_attributes(self, x):
+        return dict(self.anno_graph.node_attributes(x))
 
-        def gv_id(raw_id):
-            attr_list = self.node_attributes(raw_id)
-            if len(attr_list) == 0:
-                attr_list = self.edge_attributes(raw_id)
-            attrs = dict(attr_list)
-            if attrs['type'] == 'CDU':
-                return 'cluster_' + raw_id
-            else:
-                return raw_id
+    def _edge_attributes(self, x):
+        return dict(self.anno_graph.edge_attributes(x))
+
+    def _type(self, x):
+        if self.anno_graph.has_edge(x):
+            attrs = self._edge_attributes(x)
+        elif self.anno_graph.has_node(x):
+            attrs = self._node_attributes(x)
+        else:
+            raise Exception('Tried to get type of non-existing object ' + x)
+        return attrs['type']
+
+    def _has_rel_link(self, rel):
+        """
+        True if the relation points or is pointed to be another relation
+        """
+        neighbors = self.anno_graph.links(rel)
+        return any([self._type(n) == 'rel' for n in neighbors])
+
+    def _dot_id(self, raw_id):
+        if self._type(raw_id) == 'CDU':
+            return 'cluster_' + raw_id
+        else:
+            return raw_id
+
+    def _add_edu(self, node):
+        anno  = self._node_attributes(node)['annotation']
+        label = self._edu_label(anno)
+        attrs = { 'label' : textwrap.fill(label, 30)
+                , 'shape' : 'plaintext'
+                }
+        if not stac.is_dialogue_act(anno):
+            attrs['fontcolor'] = 'red'
+        self.add_node(pydot.Node(node, **attrs))
+
+    def _add_simple_rel(self, hyperedge):
+        anno  = self._edge_attributes(hyperedge)['annotation']
+        links = self.anno_graph.links(hyperedge)
+        link1_, link2_ = links
+        attrs =\
+            { 'label'      : anno.type
+            , 'shape'      : 'plaintext'
+            , 'fontcolor'  : 'blue'
+            }
+
+        clink1 = self._dot_id(link1_)
+        clink2 = self._dot_id(link2_)
+        if clink1 != link1_:
+            attrs['ltail'] = clink1
+            link1 = self.anno_graph.links(link1_)[0]
+        else:
+            link1 = link1_
+
+        if clink2 != link2_:
+            attrs['lhead'] = clink2
+            link2 = self.anno_graph.links(link2_)[0]
+        else:
+            link2 = link2_
+
+        self.add_edge(pydot.Edge(link1, link2, **attrs))
+
+    def _add_complex_rel(self, hyperedge):
+        anno  = self._edge_attributes(hyperedge)['annotation']
+        links = self.anno_graph.links(hyperedge)
+        link1_, link2_ = links
+        midpoint_attrs =\
+            { 'label'      : anno.type
+            , 'shape'      : 'plaintext'
+            , 'fontcolor'  : 'blue'
+            }
+
+        attrs1  = { 'arrowhead' : 'tee'
+                  , 'arrowsize' : '0.5'
+                  }
+        attrs2  = {
+                  }
+        clink1 = self._dot_id(link1_)
+        clink2 = self._dot_id(link2_)
+        if clink1 != link1_:
+            attrs1['ltail'] = clink1
+            link1 = self.anno_graph.links(link1_)[0]
+        else:
+            link1 = link1_
+
+        if clink2 != link2_:
+            attrs2['lhead'] = clink2
+            link2 = self.anno_graph.links(link2_)[0]
+        else:
+            link2 = link2_
+
+        midpoint = pydot.Node(hyperedge, **midpoint_attrs)
+        edge1    = pydot.Edge(link1, hyperedge, **attrs1)
+        edge2    = pydot.Edge(hyperedge, link2, **attrs2)
+        self.add_node(midpoint)
+        self.add_edge(edge1)
+        self.add_edge(edge2)
+
+    def _add_cdu(self, hyperedge):
+        attrs    = { 'color' : 'lightgrey'
+                   }
+        subg = pydot.Subgraph(self._dot_id(hyperedge), **attrs)
+        local_nodes = self.anno_graph.links(hyperedge)
+        for node in local_nodes:
+            subg.add_node(pydot.Node(node))
+            def is_enclosed(l):
+                return l != hyperedge and\
+                       all( [x in local_nodes for x in self.anno_graph.links(l)] )
+
+            rlinks = [ l for l in self.anno_graph.links(node) if is_enclosed(l) ]
+            for rlink in rlinks: # relations
+                subg.add_node(pydot.Node(rlink))
+
+        self.add_subgraph(subg)
+
+    def __init__(self, anno_graph):
+        self.anno_graph = anno_graph
+        self.doc        = anno_graph.doc
+        self.doc_key    = anno_graph.doc_key
+        self.corpus     = anno_graph.corpus
+        self.turns      = [ u for u in anno_graph.doc.units if u.type == 'Turn' ]
+        pydot.Dot.__init__(self, compound='true')
+        self.set_name('hypergraph')
 
         # Add all of the nodes first
-        for node in self.nodes():
-            attrs   = dict(self.node_attributes(node))
-            node_ty = attrs['type']
-            if node_ty == 'EDU':
-                anno  = attrs['annotation']
-                label = self._edu_label(anno)
-                attr_list = { 'label' : textwrap.fill(label, 30)
-                            , 'shape' : 'plaintext'
-                            }
-                if not stac.is_dialogue_act(anno):
-                    attr_list['fontcolor'] = 'red'
-                dot_node = pydot.Node(str(node), **attr_list)
-                dot_g.add_node(dot_node)
+        for node in self.anno_graph.nodes():
+            if self._type(node) == 'EDU': self._add_edu(node)
 
-        for hyperedge in self.hyperedges():
-            attrs   = dict(self.edge_attributes(hyperedge))
-            edge_ty = attrs['type']
+        for edge in self.anno_graph.hyperedges():
+            edge_ty  = self._type(edge)
             if edge_ty == 'rel':
-                # it's a bit more useful to represent relations as 'midpoint'
-                # nodes rather than edges directly
-                #
-                # this allows for relations to point to relations for one thing
-                # and for another, generally makes for nicer-looking output
-                anno           = attrs['annotation']
-                anno_id = hyperedge
-                links   = self.links(hyperedge)
-                link1_, link2_ = links
-                midpoint_attrs =\
-                    { 'label'      : anno.type
-                    , 'shape'      : 'plaintext'
-                    , 'fontcolor'  : 'blue'
-                    }
-
-                attrs1  = { 'arrowhead' : 'none'
-                          }
-                attrs2  = {
-                          }
-                clink1 = gv_id(link1_)
-                clink2 = gv_id(link2_)
-                if clink1 != link1_:
-                    attrs1['ltail'] = clink1
-                    link1 = self.links(link1_)[0]
+                if True: #self._has_rel_link(edge):
+                    self._add_complex_rel(edge)
                 else:
-                    link1 = link1_
-
-                if clink2 != link2_:
-                    attrs2['lhead'] = clink2
-                    link2 = self.links(link2_)[0]
-                else:
-                    link2 = link2_
-
-                midpoint = pydot.Node(hyperedge, **midpoint_attrs)
-                edge1    = pydot.Edge(link1, hyperedge, **attrs1)
-                edge2    = pydot.Edge(hyperedge, link2, **attrs2)
-                dot_g.add_node(midpoint)
-                dot_g.add_edge(edge1)
-                dot_g.add_edge(edge2)
-
-            elif edge_ty == 'CDU':
-                attrs    = { 'color' : 'lightgrey'
-                           }
-                dot_subg = pydot.Subgraph(gv_id(hyperedge), **attrs)
-                #point_attrs = { 'label' : '∙'
-                #              , 'shape' : 'plaintext'
-                #              }
-                #point = pydot.Node(hyperedge, **point_attrs)
-                #dot_subg.add_node(point)
-                local_nodes = self.links(hyperedge)
-                for node in local_nodes:
-                    dot_subg.add_node(pydot.Node(node))
-                    def is_enclosed(l):
-                        return l != hyperedge and\
-                               all( [x in local_nodes for x in self.links(l)] )
-
-                    rlinks = [ l for l in self.links(node) if is_enclosed(l) ]
-                    for rlink in rlinks: # relations
-                        dot_rnode = pydot.Node(rlink)
-                        dot_subg.add_node(dot_rnode)
-
-                dot_g.add_subgraph(dot_subg)
-
-        return dot_g
+                    self._add_simple_rel(edge)
+            elif edge_ty == 'CDU': self._add_cdu(edge)
