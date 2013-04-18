@@ -25,6 +25,14 @@ educe Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`graph` Module
+-------------------
+
+.. automodule:: educe.graph
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`util` Module
 ------------------
 
