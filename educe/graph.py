@@ -192,7 +192,7 @@ class DotGraph(pydot.Dot):
         links = self.anno_graph.links(hyperedge)
         link1_, link2_ = links
         attrs =\
-            { 'label'      : anno.type
+            { 'label'      : ' ' + anno.type
             , 'shape'      : 'plaintext'
             , 'fontcolor'  : 'blue'
             }
