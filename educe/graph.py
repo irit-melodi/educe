@@ -258,6 +258,7 @@ class DotGraph(pydot.Dot):
             subg.add_node(pydot.Node(node))
             def is_enclosed(l):
                 return l != hyperedge and\
+                       l in self.fancy_edges and\
                        all( [x in local_nodes for x in self.anno_graph.links(l)] )
 
             rlinks = [ l for l in self.anno_graph.links(node) if is_enclosed(l) ]
@@ -275,6 +276,15 @@ class DotGraph(pydot.Dot):
         pydot.Dot.__init__(self, compound='true')
         self.set_name('hypergraph')
 
+        # rels which are the target of links
+        all_nodes   = anno_graph.nodes()
+        self.fancy_edges = set([])
+        for n in all_nodes:
+            for n2 in anno_graph.neighbors(n):
+                attrs = dict(anno_graph.node_attributes(n2))
+                if attrs['type'] == 'rel':
+                    self.fancy_edges.add(n2)
+
         # Add all of the nodes first
         for node in self.anno_graph.nodes():
             if self._type(node) == 'EDU': self._add_edu(node)
@@ -282,7 +292,7 @@ class DotGraph(pydot.Dot):
         for edge in self.anno_graph.hyperedges():
             edge_ty  = self._type(edge)
             if edge_ty == 'rel':
-                if True: #self._has_rel_link(edge):
+                if edge in self.fancy_edges:
                     self._add_complex_rel(edge)
                 else:
                     self._add_simple_rel(edge)
