@@ -251,24 +251,12 @@ class DotGraph(pydot.Dot):
             speaker_prefix = '(%s) ' % speaker
         return speaker_prefix + "%s [%s]" % (self.doc.text_for(anno), speech_acts)
 
-    def _is_cdu(self, x):
-        return self.anno_graph.is_cdu(x)
-
-    def _is_edu(self, x):
-        return self.anno_graph.is_edu(x)
-
-    def _is_rel(self, x):
-        return self.anno_graph.is_rel(x)
-
-    def _annotation(self, x):
-        return self.anno_graph.annotation(x)
-
     def _has_rel_link(self, rel):
         """
         True if the relation points or is pointed to be another relation
         """
-        neighbors = self.anno_graph.links(rel)
-        return any([self._is_rel(n) for n in neighbors])
+        neighbors = self.core.links(rel)
+        return any([self.core.is_rel(n) for n in neighbors])
 
     def _dot_id(self, raw_id):
         """
@@ -276,7 +264,7 @@ class DotGraph(pydot.Dot):
         to start with `cluster`, so if we have a CDU, prefix it
         accordingly
         """
-        if self._is_cdu(raw_id) and raw_id not in self.complex_cdus:
+        if self.core.is_cdu(raw_id) and raw_id not in self.complex_cdus:
             return 'cluster_' + raw_id
         else:
             return raw_id
@@ -310,7 +298,7 @@ class DotGraph(pydot.Dot):
         if dot_target == logical_target:
             res = (logical_target, {})
         else:
-            proxies = self.anno_graph.links(logical_target)
+            proxies = self.core.links(logical_target)
             proxy_target = proxies[0]
             res = (proxy_target, {key:dot_target})
 
@@ -329,7 +317,7 @@ class DotGraph(pydot.Dot):
         return self.__point(logical_target, 'lhead')
 
     def _add_edu(self, node):
-        anno  = self._annotation(node)
+        anno  = self.core.annotation(node)
         label = self._edu_label(anno)
         attrs = { 'label' : textwrap.fill(label, 30)
                 , 'shape' : 'plaintext'
@@ -339,8 +327,8 @@ class DotGraph(pydot.Dot):
         self.add_node(pydot.Node(node, **attrs))
 
     def _add_simple_rel(self, hyperedge):
-        anno  = self._annotation(hyperedge)
-        links = self.anno_graph.links(hyperedge)
+        anno  = self.core.annotation(hyperedge)
+        links = self.core.links(hyperedge)
         link1_, link2_ = links
         attrs =\
             { 'label'      : ' ' + anno.type
@@ -355,8 +343,8 @@ class DotGraph(pydot.Dot):
         self.add_edge(pydot.Edge(link1, link2, **attrs))
 
     def _add_complex_rel(self, hyperedge):
-        anno  = self._annotation(hyperedge)
-        links = self.anno_graph.links(hyperedge)
+        anno  = self.core.annotation(hyperedge)
+        links = self.core.links(hyperedge)
         link1_, link2_ = links
         midpoint_attrs =\
             { 'label'      : anno.type
@@ -393,15 +381,15 @@ class DotGraph(pydot.Dot):
             # CDUs so the user knows it's the same thing
             attrs['label'] = 'CDU'
         subg = pydot.Subgraph(self._dot_id(hyperedge), **attrs)
-        local_nodes = self.anno_graph.links(hyperedge)
+        local_nodes = self.core.links(hyperedge)
         for node in local_nodes:
             subg.add_node(pydot.Node(node))
             def is_enclosed(l):
                 return l != hyperedge and\
                        l in self.complex_rels and\
-                       all( [x in local_nodes for x in self.anno_graph.links(l)] )
+                       all( [x in local_nodes for x in self.core.links(l)] )
 
-            rlinks = [ l for l in self.anno_graph.links(node) if is_enclosed(l) ]
+            rlinks = [ l for l in self.core.links(node) if is_enclosed(l) ]
             for rlink in rlinks: # relations
                 subg.add_node(pydot.Node(rlink))
 
@@ -424,7 +412,7 @@ class DotGraph(pydot.Dot):
                    }
         cdu_id   = self._dot_id(hyperedge)
         self.add_node(pydot.Node(cdu_id,  **attrs))
-        for node in self.anno_graph.links(hyperedge):
+        for node in self.core.links(hyperedge):
             edge_attrs = { 'style' : 'dashed'
                          , 'color' : 'grey'
                          }
@@ -433,46 +421,51 @@ class DotGraph(pydot.Dot):
             self.add_edge(pydot.Edge(cdu_id, dest, **edge_attrs))
 
     def __init__(self, anno_graph):
-        self.anno_graph = anno_graph
-        self.doc        = anno_graph.doc
-        self.doc_key    = anno_graph.doc_key
-        self.corpus     = anno_graph.corpus
-        self.turns      = [ u for u in anno_graph.doc.units if u.type == 'Turn' ]
+        """
+        Params:
+
+        * anno_graph - the abstract annotation graph
+        """
+        self.core       = anno_graph
+        self.doc        = self.core.doc
+        self.doc_key    = self.core.doc_key
+        self.corpus     = self.core.corpus
+        self.turns      = [ u for u in self.core.doc.units if u.type == 'Turn' ]
         pydot.Dot.__init__(self, compound='true')
         self.set_name('hypergraph')
 
         # rels which are the target of links
         self.complex_rels = set()
-        for n in self.anno_graph.nodes():
-            for n2 in self.anno_graph.neighbors(n):
-                if self._is_rel(n2):
+        for n in self.core.nodes():
+            for n2 in self.core.neighbors(n):
+                if self.core.is_rel(n2):
                     self.complex_rels.add(n2)
 
         # CDUs which are contained in other CDUs or which overlap other
         # CDUs
-        #self.complex_cdus = self.anno_graph.cdus()
+        #self.complex_cdus = self.core.cdus()
         self.complex_cdus = set()
-        for e in self.anno_graph.cdus():
-            members       = self.anno_graph.cdu_members(e)
+        for e in self.core.cdus():
+            members       = self.core.cdu_members(e)
             other_members = set()
-            for e2 in self.anno_graph.cdus():
-                if e != e2: other_members.update(self.anno_graph.cdu_members(e2))
+            for e2 in self.core.cdus():
+                if e != e2: other_members.update(self.core.cdu_members(e2))
             def is_complex(n):
-                return self._is_cdu(n) or n in other_members
+                return self.core.is_cdu(n) or n in other_members
             if any([is_complex(n) for n in members]):
                 self.complex_cdus.add(e)
 
         # Add all of the nodes first
-        for node in self.anno_graph.edus():
+        for node in self.core.edus():
             self._add_edu(node)
 
-        for edge in self.anno_graph.relations():
+        for edge in self.core.relations():
             if edge in self.complex_rels:
                 self._add_complex_rel(edge)
             else:
                 self._add_simple_rel(edge)
 
-        for edge in self.anno_graph.cdus():
+        for edge in self.core.cdus():
             if edge in self.complex_cdus:
                 self._add_complex_cdu(edge)
             else:
