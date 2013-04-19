@@ -5,5 +5,5 @@ setup(name='educe',
       author_email='eric.kow@gmail.com',
       packages=['educe', 'educe.stac'],
       scripts=['glozz-dump'],
-      requires=[]
+      requires=['python_graph (>= 1.8.2)', 'pydot', 'python_graph_dot']
       )
