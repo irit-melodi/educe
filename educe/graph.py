@@ -22,20 +22,123 @@ from educe import corpus, stac
 from pygraph.readwrite import dot
 import pydot
 import pygraph.classes.hypergraph as gr
+from pygraph.algorithms import traversal
 
 class DuplicateIdException(Exception):
     def __init__(self, duplicate):
         self.duplicate = duplicate
         Exception.__init__(self, "Duplicate node id: %s" % duplicate)
 
+class GraphBase(gr.hypergraph):
+    """
+    Use Graph instead; this is just an intermediary class so we can
+    share functionality between Graph and its testing equivalent
+    """
+    def __init__(self):
+        gr.hypergraph.__init__(self)
 
-class Graph(gr.hypergraph):
+    def node_attributes_dict(self, x):
+        return dict(self.node_attributes(x))
+
+    def edge_attributes_dict(self, x):
+        return dict(self.edge_attributes(x))
+
+    def _attrs(self, x):
+        if self.has_edge(x):
+            return self.edge_attributes_dict(x)
+        elif self.has_node(x):
+            return self.node_attributes_dict(x)
+        else:
+            raise Exception('Tried to get attributes of non-existing object ' + x)
+
+    def type(self, x):
+        """
+        Return if a node/edge is of type 'EDU', 'rel', or 'CDU'
+        """
+        return self._attrs(x)['type']
+
+    def is_cdu(self, x):
+        return self.type(x) == 'CDU'
+
+    def is_edu(self, x):
+        return self.type(x) == 'EDU'
+
+    def is_rel(self, x):
+        return self.type(x) == 'rel'
+
+    def annotation(self, x):
+        """
+        Return the annotation object corresponding to a node or edge
+        """
+        return self._attrs(x)['annotation']
+
+    def relations(self):
+        """
+        Set of relation edges representing the relations in the graph.
+        By convention, the first link is considered the source and the
+        the second is considered the target.
+        """
+        xs = [ e for e in self.hyperedges() if self.is_rel(e) ]
+        return frozenset(xs)
+
+    def edus(self):
+        """
+        Set of nodes representing elementary discourse units
+        """
+        xs = [ e for e in self.nodes() if self.is_edu(e) ]
+        return frozenset(xs)
+
+    def cdus(self):
+        """
+        Set of hyperedges representing complex discourse units.
+
+        See also `cdu_members`
+        """
+        xs = [ e for e in self.hyperedges() if self.is_cdu(e) ]
+        return frozenset(xs)
+
+    def cdu_members(self, hyperedge):
+        """
+        Return the set of EDUs and CDUs which can be considered as
+        members of this CDU.
+
+        TODO: For now, this is just straightforwardly the set of nodes that
+        were explicitly included, but if there is a way to infer membership
+        by some notion of transitivity.  I guess it depends on two things,
+
+        1. whether you want to be able to point outside of the CDU
+        2. whether you want to point from outside the CDU to individual
+           members of the CDU
+
+        If one of the above is true, I think all bets are off
+        """
+        return frozenset(self.links(hyperedge))
+
+class Graph(GraphBase):
+    """
+    Graph with a
+
+        * a node for every elementary discourse unit
+        * relations as two-node hyperedges
+        * CDUs as both nodes and multi-node hyperedges
+
+    Every node/hyperedge is associated with these attributes
+
+        * type       - a string: EDU, CDU, rel
+        * annotation - an educe.annotation object
+
+    Pitfalls:
+
+        * Relations, in addition to being edges are also represented as nodes;
+          this is because we can sometimes have relations pointing to other
+          relations
+    """
     def __init__(self, corpus, doc_key, doc):
         self.corpus  = corpus
         self.doc_key = doc_key
         self.doc     = doc
 
-        gr.hypergraph.__init__(self)
+        GraphBase.__init__(self)
 
         # objects that are pointed to by a relations or schemas
         pointed_to = []
@@ -108,7 +211,6 @@ class Graph(gr.hypergraph):
     def _schema_edge(self, anno):
         return self._mk_edge(anno, 'CDU', anno.span)
 
-
 class DotGraph(pydot.Dot):
     """
     A dot representation of this graph for visualisation.
@@ -149,36 +251,85 @@ class DotGraph(pydot.Dot):
             speaker_prefix = '(%s) ' % speaker
         return speaker_prefix + "%s [%s]" % (self.doc.text_for(anno), speech_acts)
 
-    def _node_attributes(self, x):
-        return dict(self.anno_graph.node_attributes(x))
+    def _is_cdu(self, x):
+        return self.anno_graph.is_cdu(x)
 
-    def _edge_attributes(self, x):
-        return dict(self.anno_graph.edge_attributes(x))
+    def _is_edu(self, x):
+        return self.anno_graph.is_edu(x)
 
-    def _type(self, x):
-        if self.anno_graph.has_edge(x):
-            attrs = self._edge_attributes(x)
-        elif self.anno_graph.has_node(x):
-            attrs = self._node_attributes(x)
-        else:
-            raise Exception('Tried to get type of non-existing object ' + x)
-        return attrs['type']
+    def _is_rel(self, x):
+        return self.anno_graph.is_rel(x)
+
+    def _annotation(self, x):
+        return self.anno_graph.annotation(x)
 
     def _has_rel_link(self, rel):
         """
         True if the relation points or is pointed to be another relation
         """
         neighbors = self.anno_graph.links(rel)
-        return any([self._type(n) == 'rel' for n in neighbors])
+        return any([self._is_rel(n) for n in neighbors])
 
     def _dot_id(self, raw_id):
-        if self._type(raw_id) == 'CDU':
+        """
+        Basic story here is that in in graphviz, cluster names have
+        to start with `cluster`, so if we have a CDU, prefix it
+        accordingly
+        """
+        if self._is_cdu(raw_id) and raw_id not in self.complex_cdus:
             return 'cluster_' + raw_id
         else:
             return raw_id
 
+    def __point(self, logical_target, key):
+        """
+        Tricky graphviz'ery (helper for `_point_to` and `_point_from`)
+
+        Point from/to a node. If it's a cluster, graphviz is a bit of
+        a pain because we can't point directly to it.  Instead we have
+        to point to an element within the cluster, and set an
+        lhead/ltail attribute on the edge pointing to the cluster.
+
+        So this gives us:
+
+            * logical target  - what we are trying to point to
+            * dot target      - the dot_id of the target (edge target)
+            * proxy target    - what we have to point to (edge attribute)
+
+        Return a tuple of (target, edge_attrs), the idea being
+        that you set your graphviz edge to the target and update
+        its attributes accordingly.  Notice we only handle one end
+        of the connection.  If you link a potential CDU to another
+        potential CDU, you'll need to call this for both ends.
+
+        Crazy!
+        """
+
+        dot_target = self._dot_id(logical_target)
+
+        if dot_target == logical_target:
+            res = (logical_target, {})
+        else:
+            proxies = self.anno_graph.links(logical_target)
+            proxy_target = proxies[0]
+            res = (proxy_target, {key:dot_target})
+
+        return res
+
+    def _point_from(self, logical_target):
+        """
+        See `__point`
+        """
+        return self.__point(logical_target, 'ltail')
+
+    def _point_to(self, logical_target):
+        """
+        See `__point`
+        """
+        return self.__point(logical_target, 'lhead')
+
     def _add_edu(self, node):
-        anno  = self._node_attributes(node)['annotation']
+        anno  = self._annotation(node)
         label = self._edu_label(anno)
         attrs = { 'label' : textwrap.fill(label, 30)
                 , 'shape' : 'plaintext'
@@ -188,7 +339,7 @@ class DotGraph(pydot.Dot):
         self.add_node(pydot.Node(node, **attrs))
 
     def _add_simple_rel(self, hyperedge):
-        anno  = self._edge_attributes(hyperedge)['annotation']
+        anno  = self._annotation(hyperedge)
         links = self.anno_graph.links(hyperedge)
         link1_, link2_ = links
         attrs =\
@@ -197,29 +348,19 @@ class DotGraph(pydot.Dot):
             , 'fontcolor'  : 'blue'
             }
 
-        clink1 = self._dot_id(link1_)
-        clink2 = self._dot_id(link2_)
-        if clink1 != link1_:
-            attrs['ltail'] = clink1
-            link1 = self.anno_graph.links(link1_)[0]
-        else:
-            link1 = link1_
-
-        if clink2 != link2_:
-            attrs['lhead'] = clink2
-            link2 = self.anno_graph.links(link2_)[0]
-        else:
-            link2 = link2_
-
+        link1, attrs1 = self._point_from(link1_)
+        link2, attrs2 = self._point_to(link2_)
+        attrs.update(attrs1)
+        attrs.update(attrs2)
         self.add_edge(pydot.Edge(link1, link2, **attrs))
 
     def _add_complex_rel(self, hyperedge):
-        anno  = self._edge_attributes(hyperedge)['annotation']
+        anno  = self._annotation(hyperedge)
         links = self.anno_graph.links(hyperedge)
         link1_, link2_ = links
         midpoint_attrs =\
             { 'label'      : anno.type
-            , 'shape'      : 'plaintext'
+            , 'style'      : 'dotted'
             , 'fontcolor'  : 'blue'
             }
 
@@ -228,19 +369,10 @@ class DotGraph(pydot.Dot):
                   }
         attrs2  = {
                   }
-        clink1 = self._dot_id(link1_)
-        clink2 = self._dot_id(link2_)
-        if clink1 != link1_:
-            attrs1['ltail'] = clink1
-            link1 = self.anno_graph.links(link1_)[0]
-        else:
-            link1 = link1_
-
-        if clink2 != link2_:
-            attrs2['lhead'] = clink2
-            link2 = self.anno_graph.links(link2_)[0]
-        else:
-            link2 = link2_
+        link1, attrs1_ = self._point_from(link1_)
+        link2, attrs2_ = self._point_to(link2_)
+        attrs1.update(attrs1_)
+        attrs2.update(attrs2_)
 
         midpoint = pydot.Node(hyperedge, **midpoint_attrs)
         edge1    = pydot.Edge(link1, hyperedge, **attrs1)
@@ -249,16 +381,24 @@ class DotGraph(pydot.Dot):
         self.add_edge(edge1)
         self.add_edge(edge2)
 
-    def _add_cdu(self, hyperedge):
+    def _add_simple_cdu(self, hyperedge):
+        """
+        Straightforward CDU that can be supported as a cluster.
+        """
         attrs    = { 'color' : 'lightgrey'
                    }
+        if len(self.complex_cdus) > 0:
+            # complex CDUs have a CDU node, so I thought it might be
+            # less confusing in those cases to also label the simple
+            # CDUs so the user knows it's the same thing
+            attrs['label'] = 'CDU'
         subg = pydot.Subgraph(self._dot_id(hyperedge), **attrs)
         local_nodes = self.anno_graph.links(hyperedge)
         for node in local_nodes:
             subg.add_node(pydot.Node(node))
             def is_enclosed(l):
                 return l != hyperedge and\
-                       l in self.fancy_edges and\
+                       l in self.complex_rels and\
                        all( [x in local_nodes for x in self.anno_graph.links(l)] )
 
             rlinks = [ l for l in self.anno_graph.links(node) if is_enclosed(l) ]
@@ -266,6 +406,31 @@ class DotGraph(pydot.Dot):
                 subg.add_node(pydot.Node(rlink))
 
         self.add_subgraph(subg)
+
+    def _add_complex_cdu(self, hyperedge):
+        """
+        Yes, a complex "complex discourse unit".
+
+        The idea is to to have a node representing a CDU and dotted lines
+        pointing to its members.  It's actually simpler in implementation
+        terms but more complex visually
+
+        This is an artefact of graphviz 2.28's inability to
+        work with nested subgraphs.
+        """
+        attrs    = { 'color' : 'grey'
+                   , 'label' : 'CDU'
+                   , 'shape' : 'rectangle'
+                   }
+        cdu_id   = self._dot_id(hyperedge)
+        self.add_node(pydot.Node(cdu_id,  **attrs))
+        for node in self.anno_graph.links(hyperedge):
+            edge_attrs = { 'style' : 'dashed'
+                         , 'color' : 'grey'
+                         }
+            dest, attrs_ = self._point_to(node)
+            edge_attrs.update(attrs_)
+            self.add_edge(pydot.Edge(cdu_id, dest, **edge_attrs))
 
     def __init__(self, anno_graph):
         self.anno_graph = anno_graph
@@ -277,23 +442,33 @@ class DotGraph(pydot.Dot):
         self.set_name('hypergraph')
 
         # rels which are the target of links
-        all_nodes   = anno_graph.nodes()
-        self.fancy_edges = set([])
-        for n in all_nodes:
-            for n2 in anno_graph.neighbors(n):
-                attrs = dict(anno_graph.node_attributes(n2))
-                if attrs['type'] == 'rel':
-                    self.fancy_edges.add(n2)
+        self.complex_rels = set()
+        for n in self.anno_graph.nodes():
+            for n2 in self.anno_graph.neighbors(n):
+                if self._is_rel(n2):
+                    self.complex_rels.add(n2)
+
+        # CDUs which are contained in other CDUs
+        # (for now, we pretend this is all the CDUs because we don't fully
+        # understand the nature of the annotations)
+        #self.complex_cdus = self.anno_graph.cdus()
+        self.complex_cdus = set()
+        for e in [ e for e in self.anno_graph.hyperedges() if self._is_cdu(e) ]:
+            if any([self._is_cdu(n) for n in self.anno_graph.cdu_members(e)]):
+                self.complex_cdus.add(e)
 
         # Add all of the nodes first
-        for node in self.anno_graph.nodes():
-            if self._type(node) == 'EDU': self._add_edu(node)
+        for node in self.anno_graph.edus():
+            self._add_edu(node)
 
-        for edge in self.anno_graph.hyperedges():
-            edge_ty  = self._type(edge)
-            if edge_ty == 'rel':
-                if edge in self.fancy_edges:
-                    self._add_complex_rel(edge)
-                else:
-                    self._add_simple_rel(edge)
-            elif edge_ty == 'CDU': self._add_cdu(edge)
+        for edge in self.anno_graph.relations():
+            if edge in self.complex_rels:
+                self._add_complex_rel(edge)
+            else:
+                self._add_simple_rel(edge)
+
+        for edge in self.anno_graph.cdus():
+            if edge in self.complex_cdus:
+                self._add_complex_cdu(edge)
+            else:
+                self._add_simple_cdu(edge)
