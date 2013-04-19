@@ -448,13 +448,18 @@ class DotGraph(pydot.Dot):
                 if self._is_rel(n2):
                     self.complex_rels.add(n2)
 
-        # CDUs which are contained in other CDUs
-        # (for now, we pretend this is all the CDUs because we don't fully
-        # understand the nature of the annotations)
+        # CDUs which are contained in other CDUs or which overlap other
+        # CDUs
         #self.complex_cdus = self.anno_graph.cdus()
         self.complex_cdus = set()
-        for e in [ e for e in self.anno_graph.hyperedges() if self._is_cdu(e) ]:
-            if any([self._is_cdu(n) for n in self.anno_graph.cdu_members(e)]):
+        for e in self.anno_graph.cdus():
+            members       = self.anno_graph.cdu_members(e)
+            other_members = set()
+            for e2 in self.anno_graph.cdus():
+                if e != e2: other_members.update(self.anno_graph.cdu_members(e2))
+            def is_complex(n):
+                return self._is_cdu(n) or n in other_members
+            if any([is_complex(n) for n in members]):
                 self.complex_cdus.add(e)
 
         # Add all of the nodes first
