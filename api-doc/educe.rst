@@ -33,6 +33,14 @@ educe Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`tests` Module
+-------------------
+
+.. automodule:: educe.tests
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`util` Module
 ------------------
 
