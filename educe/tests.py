@@ -8,7 +8,6 @@ Tests for educe
 """
 
 import copy
-import pydot
 import pygraph.classes.hypergraph as gr
 import educe.graph as educe
 import sys
