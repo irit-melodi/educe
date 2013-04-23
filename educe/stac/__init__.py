@@ -119,7 +119,7 @@ class Reader(educe.corpus.Reader):
 
     def files(self):
         corpus={}
-        full_glob=os.path.join(self.rootdir, 'pilot??')
+        full_glob=os.path.join(self.rootdir, '*')
         anno_glob='*.aa'
 
         for doc_dir in glob(full_glob):
@@ -139,7 +139,7 @@ class Reader(educe.corpus.Reader):
                     unannotated_files=glob(os.path.join(stage_dir, anno_glob))
                     for f in unannotated_files:
                         register(None,f)
-                else:
+                elif os.path.exists(stage_dir):
                     for annotator in os.listdir(stage_dir):
                         annotator_dir=os.path.join(stage_dir,annotator)
                         annotator_files=glob(os.path.join(annotator_dir, anno_glob))
