@@ -73,6 +73,31 @@ def test_cdu_members_trivial():
     expected = frozenset(['1','2'])
     assert members == expected
 
+gr_cdu_neighbors = FakeGraph()
+gr_cdu_neighbors.add_edus('a1','a2','b')
+gr_cdu_neighbors.add_cdu('A',['a1','a2'])
+
+def test_cdu_neighbors():
+    "does belong in the same CDU make you a neighbour?"
+
+    # this is probably not a desirable property, but is a consequence
+    # of CDUs being represented as hyperedges
+    #
+    # the API may have to expose a notion of being a neighbor only
+    # via relations
+    ns1       = frozenset(gr_cdu_neighbors.neighbors('a1'))
+    expected1 = frozenset(['a2'])
+    assert ns1 == expected1
+
+    ns2       = frozenset(gr_cdu_neighbors.neighbors('a2'))
+    expected2 = frozenset(['a1'])
+    assert ns2 == expected2
+
+    ns3       = frozenset(gr_cdu_neighbors.neighbors('b'))
+    expected3 = frozenset([])
+    assert ns3 == expected3
+
+
 #def test_cdu_members():
 #    "CDU membership with a bit of depth"
 #    members  = gr_fancy_cdus.cdu_members('X')
