@@ -22,6 +22,7 @@ from educe import corpus, stac
 from pygraph.readwrite import dot
 import pydot
 import pygraph.classes.hypergraph as gr
+import pygraph.classes.digraph    as dgr
 from pygraph.algorithms import traversal
 
 class DuplicateIdException(Exception):
@@ -29,13 +30,13 @@ class DuplicateIdException(Exception):
         self.duplicate = duplicate
         Exception.__init__(self, "Duplicate node id: %s" % duplicate)
 
-class GraphBase(gr.hypergraph):
+class AttrsMixin():
     """
-    Use Graph instead; this is just an intermediary class so we can
-    share functionality between Graph and its testing equivalent
+    Attributes common to both the hypergraph and directed graph
+    representation of discourse structure
     """
     def __init__(self):
-        gr.hypergraph.__init__(self)
+        pass
 
     def node_attributes_dict(self, x):
         return dict(self.node_attributes(x))
@@ -44,12 +45,10 @@ class GraphBase(gr.hypergraph):
         return dict(self.edge_attributes(x))
 
     def _attrs(self, x):
-        if self.has_edge(x):
-            return self.edge_attributes_dict(x)
-        elif self.has_node(x):
-            return self.node_attributes_dict(x)
-        else:
-            raise Exception('Tried to get attributes of non-existing object ' + x)
+        """
+        (abstract) should be implemented
+        """
+        pass
 
     def type(self, x):
         """
@@ -63,7 +62,7 @@ class GraphBase(gr.hypergraph):
     def is_edu(self, x):
         return self.type(x) == 'EDU'
 
-    def is_rel(self, x):
+    def is_relation(self, x):
         return self.type(x) == 'rel'
 
     def annotation(self, x):
@@ -72,13 +71,30 @@ class GraphBase(gr.hypergraph):
         """
         return self._attrs(x)['annotation']
 
+class HypergraphBase(gr.hypergraph, AttrsMixin):
+    """
+    Use Graph instead; this is just an intermediary class so we can
+    share functionality between Graph and its testing equivalent
+    """
+    def __init__(self):
+        AttrsMixin.__init__(self)
+        gr.hypergraph.__init__(self)
+
+    def _attrs(self, x):
+        if self.has_edge(x):
+            return self.edge_attributes_dict(x)
+        elif self.has_node(x):
+            return self.node_attributes_dict(x)
+        else:
+            raise Exception('Tried to get attributes of non-existing object ' + x)
+
     def relations(self):
         """
         Set of relation edges representing the relations in the graph.
         By convention, the first link is considered the source and the
         the second is considered the target.
         """
-        xs = [ e for e in self.hyperedges() if self.is_rel(e) ]
+        xs = [ e for e in self.hyperedges() if self.is_relation(e) ]
         return frozenset(xs)
 
     def edus(self):
@@ -114,9 +130,10 @@ class GraphBase(gr.hypergraph):
         """
         return frozenset(self.links(hyperedge))
 
-class Graph(GraphBase):
+
+class Graph(HypergraphBase):
     """
-    Graph with a
+    Hypergraph representation of discourse structure
 
         * a node for every elementary discourse unit
         * relations as two-node hyperedges
@@ -138,7 +155,7 @@ class Graph(GraphBase):
         self.doc_key = doc_key
         self.doc     = doc
 
-        GraphBase.__init__(self)
+        HyperGraphBase.__init__(self)
 
         # objects that are pointed to by a relations or schemas
         pointed_to = []
@@ -211,6 +228,64 @@ class Graph(GraphBase):
     def _schema_edge(self, anno):
         return self._mk_edge(anno, 'CDU', anno.span)
 
+
+# ---------------------------------------------------------------------
+# flattening
+# ---------------------------------------------------------------------
+
+class FlatGraph(dgr.digraph, AttrsMixin):
+    """
+    A flattened structure is a straightforward directed graph
+    representation of this discourse structure.
+
+    * CDUs are represented as nodes that point to their contents
+
+    * All relations are at least represented by an edge.  If the
+      relation happens to have things pointing at it, it is also
+      represented as a node.  Note that this node is just a
+      placeholder; attributes are tied to the edge and not the node.
+    """
+    def __init__(self, gr):
+        AttrsMixin.__init__(self)
+        dgr.digraph.__init__(self)
+
+        # a node for every EDU ...
+        for n in gr.edus():
+            self.add_node(n, gr.node_attributes(n))
+        # ... and relation that is pointed to by another
+        for n in gr.nodes():
+            for n2 in gr.neighbors(n):
+                if gr.is_relation(n2):
+                    self.add_node(n2, gr.node_attributes(n2))
+        # ... and CDU
+        for e in gr.cdus():
+            self.add_node(e, gr.edge_attributes(e))
+
+        # an edge for every relation
+        for e in gr.relations():
+            links = gr.links(e)
+            if len(links) != 2:
+                msg = "Bug: relation %s has %d links (should be exactly 2)"\
+                    % (e, len(links))
+                raise Exception(msg)
+            self.add_edge(tuple(links), gr.edge_attributes(e))
+
+        # an edge for every CDU member
+        for e in gr.cdus():
+            for m in gr.links(e):
+                self.add_edge((e,m))
+
+    def _attrs(self, x):
+        if self.has_node(x):
+            return self.node_attributes_dict(x)
+        else:
+            raise Exception('Tried to get attributes of non-existing node %s' % x)
+
+
+# ---------------------------------------------------------------------
+# visualisation
+# ---------------------------------------------------------------------
+
 class DotGraph(pydot.Dot):
     """
     A dot representation of this graph for visualisation.
@@ -256,7 +331,7 @@ class DotGraph(pydot.Dot):
         True if the relation points or is pointed to be another relation
         """
         neighbors = self.core.links(rel)
-        return any([self.core.is_rel(n) for n in neighbors])
+        return any([self.core.is_relation(n) for n in neighbors])
 
     def _dot_id(self, raw_id):
         """
@@ -438,7 +513,7 @@ class DotGraph(pydot.Dot):
         self.complex_rels = set()
         for n in self.core.nodes():
             for n2 in self.core.neighbors(n):
-                if self.core.is_rel(n2):
+                if self.core.is_relation(n2):
                     self.complex_rels.add(n2)
 
         # CDUs which are contained in other CDUs or which overlap other
@@ -470,3 +545,5 @@ class DotGraph(pydot.Dot):
                 self._add_complex_cdu(edge)
             else:
                 self._add_simple_cdu(edge)
+
+
