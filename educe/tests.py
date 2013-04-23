@@ -37,31 +37,29 @@ class FakeGraph(educe.GraphBase):
         self.add_edge_attributes(anno_id, attrs.items())
         for l in members: self.link(l, anno_id)
 
+    def add_edus(self, *anno_ids):
+        for anno_id in anno_ids: self.add_edu(str(anno_id))
+
     def add_edu(self, anno_id):
         self._add_fake_node(anno_id, 'EDU')
 
     def add_rel(self, anno_id, node1, node2):
-        self._add_fake_edge(anno_id, 'rel', [node1, node2])
+        self._add_fake_edge(anno_id, 'rel', [str(node1), str(node2)])
 
     def add_cdu(self, anno_id, members):
-        self._add_fake_edge(anno_id, 'rel', members)
+        self._add_fake_edge(anno_id, 'rel', map(str,members))
 
 
 gr_simple_cdus = FakeGraph()
-gr_simple_cdus.add_edu('1')
-gr_simple_cdus.add_edu('2')
-gr_simple_cdus.add_edu('3')
-gr_simple_cdus.add_rel('a','1','2')
-gr_simple_cdus.add_cdu('X',['1','2'])
+gr_simple_cdus.add_edus(1,2,3)
+gr_simple_cdus.add_rel('a',1,2)
+gr_simple_cdus.add_cdu('X',[1,2])
 
 # TODO: is this test legitimate?
 gr_fancy_cdus = FakeGraph()
-gr_fancy_cdus.add_edu('1')
-gr_fancy_cdus.add_edu('1.1')
-gr_fancy_cdus.add_edu('2')
-gr_fancy_cdus.add_edu('2.1')
-gr_fancy_cdus.add_edu('2.1.1')
-gr_fancy_cdus.add_edu('3')
+gr_fancy_cdus.add_edus('1', '1.1', '1.2')
+gr_fancy_cdus.add_edus('2', '2.1', '2.1.1')
+gr_fancy_cdus.add_edus('3')
 gr_fancy_cdus.add_rel('a','1','2')
 gr_fancy_cdus.add_rel('b','2','2.1')
 gr_fancy_cdus.add_rel('c','2.1','2.1.1')
