@@ -71,14 +71,152 @@ class AttrsMixin():
         """
         return self._attrs(x)['annotation']
 
-class HypergraphBase(gr.hypergraph, AttrsMixin):
+class Graph(gr.hypergraph, AttrsMixin):
     """
-    Use Graph instead; this is just an intermediary class so we can
-    share functionality between Graph and its testing equivalent
+    Hypergraph representation of discourse structure
+
+        * a node for every elementary discourse unit
+        * relations as two-node hyperedges
+        * CDUs as both nodes and multi-node hyperedges
+
+    Every node/hyperedge is associated with these attributes
+
+        * type       - a string: EDU, CDU, rel
+        * annotation - an educe.annotation object
+
+    Pitfalls:
+
+        * Relations, in addition to being edges are also represented as nodes;
+          this is because we can sometimes have relations pointing to other
+          relations
+
+    You most likely want to use `Graph.from_doc` instead of
+    instantiating an instance directly
     """
+
     def __init__(self):
         AttrsMixin.__init__(self)
         gr.hypergraph.__init__(self)
+
+    @classmethod
+    def from_doc(cls, corpus, doc_key):
+        """
+        Return a graph representation of a document
+
+        Parameters:
+
+        * corpus  : educe corpus dictionary
+        * doc_key : FileId key pointing to the document
+        * nodeset : limit the graph to things with ids in this
+                    set (no limits by default)
+
+        """
+        self         = cls()
+        doc          = corpus[doc_key]
+        self.corpus  = corpus
+        self.doc_key = doc_key
+        self.doc     = doc
+
+        # objects that are pointed to by a relations or schemas
+        pointed_to = []
+        for x in doc.relations: pointed_to.extend([x.span.t1, x.span.t2])
+        for x in doc.schemas:   pointed_to.extend(x.span)
+
+        nodes = []
+        edges = []
+
+        edus  = [ x for x in doc.units   if x.local_id() in pointed_to ]
+        rels  = doc.relations
+        cdus  = [ s for s in doc.schemas if s.type != 'default' ]
+
+        for x in edus: nodes.append(self._unit_node(x))
+        for x in rels: nodes.append(self._rel_node(x))
+        for x in cdus: nodes.append(self._schema_node(x))
+        for x in rels: edges.append(self._rel_edge(x))
+        for x in cdus: edges.append(self._schema_edge(x))
+
+        for node, attrs in nodes:
+            if not self.has_node(node):
+                self.add_node(node)
+                for x in attrs.items():
+                    self.add_node_attribute(node,x)
+            else:
+                raise DuplicateIdException(node)
+
+        for edge, attrs, links in edges:
+            if not self.has_edge(edge):
+                self.add_edge(edge)
+                self.add_edge_attributes(edge, attrs.items())
+                for l in links: self.link(l,edge)
+
+        return self
+
+    def copy(self, nodeset=None):
+        """
+        Return a copy of the graph, optionally restricted to a subset
+        of EDUs and CDUs.
+
+        Note that if you include a CDU, then anything contained by that
+        CDU will also be included.
+
+        You don't specify (or otherwise have control over) what
+        relations are copied.  The graph will include all
+        hyperedges whose links are all
+        (a) members of the subset or
+        (b) (recursively) hyperedges included because of (a) and (b)
+
+        Note that any non-EDUs you include in the copy set will be
+        silently ignored.
+
+        This is a shallow copy in the sense that the underlying
+        layer of annotations and documents remains the same.
+        """
+        g=Graph()
+        g.corpus  = self.corpus
+        g.doc_key = self.doc_key
+        g.doc     = self.doc
+
+        if nodeset is None:
+            to_copy = set(self.nodes())
+        else:
+            to_copy = set([x for x in nodeset])
+
+        cdus = [ x for x in to_copy if self.is_cdu(x) ]
+        for x in cdus:
+            to_copy.update(self.deep_cdu_members(x))
+
+        def is_wanted_edge(e):
+            return all([l in to_copy for l in self.links(e)])
+
+
+        # keep expanding the copyable edge list until we've
+        # covered everything that exclusively points
+        # (indirectly or otherwise) to our copy set
+        keep_growing    = True
+        edges_remaining = self.hyperedges()
+        while keep_growing:
+            keep_growing = False
+            for e in edges_remaining:
+                if is_wanted_edge(e):
+                    to_copy.add(e)
+                    edges_remaining.remove(e)
+                    keep_growing = True
+
+        for n in self.nodes():
+            if n in to_copy:
+                g.add_node(n)
+                for kv in self.node_attributes(n):
+                    g.add_node_attribute(n,kv)
+
+        for e in self.hyperedges():
+            if e in to_copy:
+                g.add_hyperedge(e)
+                for kv in self.edge_attributes(e):
+                    g.add_edge_attribute(e,kv)
+                for l in self.links(e):
+                    g.link(l,e)
+
+        return g
 
     def _attrs(self, x):
         if self.has_edge(x):
@@ -113,9 +251,22 @@ class HypergraphBase(gr.hypergraph, AttrsMixin):
         xs = [ e for e in self.hyperedges() if self.is_cdu(e) ]
         return frozenset(xs)
 
+    def deep_cdu_members(self, cdu):
+        """
+        Return the set of EDUs, CDUs, and relations that are members of the
+        CDU, or that members or some CDU which is (indirectly or otherwise) a
+        member of the CDU.
+        """
+        members = set()
+        for m in self.cdu_members(cdu):
+            members.add(m)
+            if self.is_cdu(m):
+                members.update(self.deep_cdu_members(m))
+        return frozenset(members)
+
     def cdu_members(self, hyperedge):
         """
-        Return the set of EDUs and CDUs which can be considered as
+        Return the set of EDUs, CDUs, and relations which can be considered as
         members of this CDU.
 
         TODO: For now, this is just straightforwardly the set of nodes that
@@ -131,63 +282,6 @@ class HypergraphBase(gr.hypergraph, AttrsMixin):
         return frozenset(self.links(hyperedge))
 
 
-class Graph(HypergraphBase):
-    """
-    Hypergraph representation of discourse structure
-
-        * a node for every elementary discourse unit
-        * relations as two-node hyperedges
-        * CDUs as both nodes and multi-node hyperedges
-
-    Every node/hyperedge is associated with these attributes
-
-        * type       - a string: EDU, CDU, rel
-        * annotation - an educe.annotation object
-
-    Pitfalls:
-
-        * Relations, in addition to being edges are also represented as nodes;
-          this is because we can sometimes have relations pointing to other
-          relations
-    """
-    def __init__(self, corpus, doc_key, doc):
-        self.corpus  = corpus
-        self.doc_key = doc_key
-        self.doc     = doc
-
-        HyperGraphBase.__init__(self)
-
-        # objects that are pointed to by a relations or schemas
-        pointed_to = []
-        for x in doc.relations: pointed_to.extend([x.span.t1, x.span.t2])
-        for x in doc.schemas:   pointed_to.extend(x.span)
-
-        nodes = []
-        edges = []
-
-        edus  = [ x for x in doc.units   if x.local_id() in pointed_to ]
-        rels  = doc.relations
-        cdus  = [ s for s in doc.schemas if s.type != 'default' ]
-
-        for x in edus: nodes.append(self._unit_node(x))
-        for x in rels: nodes.append(self._rel_node(x))
-        for x in cdus: nodes.append(self._schema_node(x))
-        for x in rels: edges.append(self._rel_edge(x))
-        for x in cdus: edges.append(self._schema_edge(x))
-
-        for node, attrs in nodes:
-            if not self.has_node(node):
-                self.add_node(node)
-                for x in attrs.items():
-                    self.add_node_attribute(node,x)
-            else:
-                raise DuplicateIdException(node)
-
-        for edge, attrs, links in edges:
-            if not self.has_edge(edge):
-                self.add_edge(edge)
-                self.add_edge_attributes(edge, attrs.items())
-                for l in links: self.link(l,edge)
 
     def _mk_guid(self, x):
         return self.doc_key.mk_global_id(x)
@@ -280,6 +374,61 @@ class FlatGraph(dgr.digraph, AttrsMixin):
             return self.node_attributes_dict(x)
         else:
             raise Exception('Tried to get attributes of non-existing node %s' % x)
+
+
+    def relations(self):
+        """
+        Set of relation tuples representing relations in the graph.
+        By convention, the first item is considered the source
+        and the the second is considered the target.
+        """
+
+        # this is a bit annoying; one difference with the hypergraph
+        # representation is that we no longer use labels for edges,
+        # because they are represented as tuples of of the nodes they
+        # connect
+        #
+        # TODO: one tricky bit here is that we continue to represent
+        # the relations that we have relations on as nodes, which is
+        # fairly awkward
+        def is_rel(e):
+            return self.edge_attributes_dict(e)['type'] == 'rel'
+
+        xs = [ e for e in self.edges() if is_rel(e) ]
+        return frozenset(xs)
+
+    def edus(self):
+        """
+        Set of nodes representing elementary discourse units
+        """
+        xs = [ e for e in self.nodes() if self.is_edu(e) ]
+        return frozenset(xs)
+
+    def cdus(self):
+        """
+        Set of hyperedges representing complex discourse units.
+
+        See also `cdu_members`
+        """
+        xs = [ e for e in self.nodes() if self.is_cdu(e) ]
+        return frozenset(xs)
+
+    def cdu_members(self, cdu):
+        """
+        Return the set of EDUs and CDUs which can be considered as
+        members of this CDU.
+
+        TODO: For now, this is just straightforwardly the set of nodes that
+        were explicitly included, but if there is a way to infer membership
+        by some notion of transitivity.  I guess it depends on two things,
+
+        1. whether you want to be able to point outside of the CDU
+        2. whether you want to point from outside the CDU to individual
+           members of the CDU
+
+        If one of the above is true, I think all bets are off
+        """
+        return frozenset(self.neighbors(cdu))
 
 
 # ---------------------------------------------------------------------
