@@ -1,2 +1,2 @@
 pydot
-python-graph
+python-graph-core
