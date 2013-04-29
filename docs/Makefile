@@ -49,7 +49,7 @@ apidoc: $(APIDOCDIR)/educe.rst
 
 $(APIDOCDIR)/educe.rst: $(SOURCE_FILES)
 	rm -rf $(APIDOCDIR)
-	$(SPHINXAPIDOC) educe -o $(APIDOCDIR)
+	$(SPHINXAPIDOC) ../educe -o $(APIDOCDIR)
 
 html: apidoc
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
