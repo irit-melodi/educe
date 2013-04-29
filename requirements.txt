@@ -1,2 +1,3 @@
-pydot
-python-graph-core
+pyparsing         == 1.5.7
+pydot             == 1.0.28
+python-graph-core == 1.8.2
