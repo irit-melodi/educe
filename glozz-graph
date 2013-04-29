@@ -16,8 +16,10 @@ import re
 import os.path
 import sys
 import textwrap
+import collections
 
 from pygraph.readwrite import dot
+from pygraph.algorithms import accessibility
 import pydot
 
 # ---------------------------------------------------------------------
@@ -37,6 +39,12 @@ arg_parser.add_argument('--png'
                        , default=False
                        , help='Create png files (can be slow)'
                        )
+arg_parser.add_argument('--split'
+                       , action='store_const'
+                       , const=True
+                       , default=False
+                       , help='Separate file for each connected component'
+                       )
 util.add_corpus_filters(arg_parser, fields=[ 'doc', 'subdoc', 'annotator' ])
 args=arg_parser.parse_args()
 args.stage = 'discourse|units'
@@ -50,10 +58,12 @@ reader     = stac.Reader(args.idir)
 anno_files = reader.filter(reader.files(), is_interesting)
 corpus     = reader.slurp(anno_files, verbose=True)
 
-def write_dot_graph(doc_file, dot_graph):
+def write_dot_graph(doc_file, dot_graph, part=None):
     doc_dir        = os.path.dirname(doc_file)
     ofile_dirname  = os.path.join(args.odir,os.path.relpath(doc_dir, args.idir))
     ofile_basename = os.path.splitext(os.path.basename(doc_file))[0]
+    if part is not None:
+        ofile_basename += '_' + str(part)
     dot_file       = os.path.join(ofile_dirname, ofile_basename + '.dot')
     png_file       = os.path.join(ofile_dirname, ofile_basename + '.png')
     if not os.path.exists(ofile_dirname):
@@ -64,11 +74,22 @@ def write_dot_graph(doc_file, dot_graph):
         os.system('dot -T png -o %s %s' % (png_file, dot_file))
 
 for doc_key in [ k for k in corpus if k.stage == 'discourse' ]:
-    doc      = corpus[doc_key]
     doc_file = anno_files[doc_key][0]
     try:
-        g = graph.Graph(corpus, doc_key, doc)
+        g = graph.Graph.from_doc(corpus, doc_key)
         write_dot_graph(doc_file, graph.DotGraph(g))
+        if args.split:
+            ccs       = accessibility.connected_components(g)
+            subgraphs = collections.defaultdict(list)
+            for x,c in ccs.items():
+                subgraphs[c].append(x)
+            for k,v in subgraphs.items():
+                if len(v) == 1 and not g.is_edu(v[0]):
+                    del subgraphs[k]
+
+            for k,nodes in subgraphs.items():
+                g2 = g.copy(nodes)
+                write_dot_graph(doc_file, graph.DotGraph(g2), part=k)
     except graph.DuplicateIdException:
         warning  = "WARNING: %s has duplicate annotation ids" % doc_file
         print >> sys.stderr, warning
