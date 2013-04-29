@@ -183,7 +183,7 @@ class Graph(gr.hypergraph, AttrsMixin):
 
         cdus = [ x for x in to_copy if self.is_cdu(x) ]
         for x in cdus:
-            to_copy.update(self.deep_cdu_members(x))
+            to_copy.update(self.cdu_members(x, deep=True))
 
         def is_wanted_edge(e):
             return all([l in to_copy for l in self.links(e)])
@@ -251,37 +251,24 @@ class Graph(gr.hypergraph, AttrsMixin):
         xs = [ e for e in self.hyperedges() if self.is_cdu(e) ]
         return frozenset(xs)
 
-    def deep_cdu_members(self, cdu):
-        """
-        Return the set of EDUs, CDUs, and relations that are members of the
-        CDU, or that members or some CDU which is (indirectly or otherwise) a
-        member of the CDU.
-        """
-        members = set()
-        for m in self.cdu_members(cdu):
-            members.add(m)
-            if self.is_cdu(m):
-                members.update(self.deep_cdu_members(m))
-        return frozenset(members)
-
-    def cdu_members(self, hyperedge):
+    def cdu_members(self, cdu, deep=False):
         """
         Return the set of EDUs, CDUs, and relations which can be considered as
         members of this CDU.
 
-        TODO: For now, this is just straightforwardly the set of nodes that
-        were explicitly included, but if there is a way to infer membership
-        by some notion of transitivity.  I guess it depends on two things,
-
-        1. whether you want to be able to point outside of the CDU
-        2. whether you want to point from outside the CDU to individual
-           members of the CDU
-
-        If one of the above is true, I think all bets are off
+        This is shallow by default, in that we only return the immediate
+        members of the CDU.  If `deep==True`, also return members of CDUs
+        that are members of (members of ..) this CDU.
         """
-        return frozenset(self.links(hyperedge))
-
-
+        if deep:
+            members = set()
+            for m in self.cdu_members(cdu):
+                members.add(m)
+                if self.is_cdu(m):
+                    members.update(self.cdu_members(m,deep))
+            return frozenset(members)
+        else:
+            return frozenset(self.links(cdu))
 
     def _mk_guid(self, x):
         return self.doc_key.mk_global_id(x)
