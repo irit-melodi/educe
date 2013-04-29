@@ -116,7 +116,7 @@ def test_flattening():
     gr.add_cdu('Y', [5,'X'])
 
     dgr = educe.FlatGraph(gr)
-    expected_nodes = frozenset(map(str,range(1,6)) + ['X','Y','1.2'])
+    expected_nodes = frozenset(['1','2','3','4','5','X','Y','1.2'])
     actual_nodes   = frozenset(dgr.nodes())
     assert actual_nodes == expected_nodes
      # relates a relation but isn't itself pointed to
