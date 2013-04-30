@@ -36,6 +36,7 @@ class FakeGraph(educe.Graph):
 
     def _add_fake_edge(self, anno_id, type, members):
         attrs   = { 'type'       : type
+                  , 'mirror'     : anno_id
                   }
         self.add_node(anno_id)
         self.add_edge(anno_id)
