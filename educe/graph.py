@@ -71,6 +71,27 @@ class AttrsMixin():
         """
         return self._attrs(x)['annotation']
 
+    def mirror(self, x):
+        """
+        For objects (particularly, relations/CDUs) that have a mirror image,
+        ie. an edge representation if it's a node or vice-versa, return the
+        identifier for that image
+        """
+        return self._attrs(x)['mirror']
+
+    def node(self, x):
+        """
+        Return the argument if it is a node id, or its mirror if it's an
+        edge id
+
+        (This is possible because every edge in the graph has a node that
+        corresponds to it)
+        """
+        if self.has_node(x):
+            return x
+        else:
+            return self.mirror(x)
+
 class Graph(gr.hypergraph, AttrsMixin):
     """
     Hypergraph representation of discourse structure
@@ -79,16 +100,34 @@ class Graph(gr.hypergraph, AttrsMixin):
         * relations as two-node hyperedges
         * CDUs as both nodes and multi-node hyperedges
 
-    Every node/hyperedge is associated with these attributes
+    Every node/hyperedge is represented as string unique
+    within the graph. Given one of these identifiers `x`
+    and a graph `g`:
 
-        * type       - a string: EDU, CDU, rel
-        * annotation - an educe.annotation object
+        * `g.type(x)` returns one of the strings
+          "EDU", "CDU", "rel"
+        * `g.annotation(x)` returns an
+          educe.annotation object
+        * for relations and CDUs, if `x` is the edge representation
+          of the relation/cdu, return the node representation, and
+          vice-versa
 
-    Pitfalls:
+    Pitfalls and TODOS:
 
         * Relations, in addition to being edges are also represented as nodes;
           this is because we can sometimes have relations pointing to other
           relations
+
+        * There is some awkwardness in the fact that we systematically have
+          both nodes and hyperedges for relations/cdus.  These nodes and
+          edges are different objects with different names. To go from node
+          to edge and vice versa, use the `mirror` function. By default,
+          API functions will return the edge representation of something.
+
+        * TODO: Currently we use educe.annotation objects to represent the
+          EDUs, CDUs and relations, but this is likely a bit too low-level to
+          be helpful. It may be nice to have higher-level EDU and CDU
+          objects instead
 
     You most likely want to use `Graph.from_doc` instead of
     instantiating an instance directly
@@ -199,6 +238,7 @@ class Graph(gr.hypergraph, AttrsMixin):
             for e in edges_remaining:
                 if is_wanted_edge(e):
                     to_copy.add(e)
+                    to_copy.add(self.mirror(e))
                     edges_remaining.remove(e)
                     keep_growing = True
 
@@ -260,6 +300,7 @@ class Graph(gr.hypergraph, AttrsMixin):
         members of the CDU.  If `deep==True`, also return members of CDUs
         that are members of (members of ..) this CDU.
         """
+
         if deep:
             members = set()
             for m in self.cdu_members(cdu):
@@ -268,25 +309,45 @@ class Graph(gr.hypergraph, AttrsMixin):
                     members.update(self.cdu_members(m,deep))
             return frozenset(members)
         else:
-            return frozenset(self.links(cdu))
+            if self.has_node(cdu):
+                hyperedge = self.mirror(cdu)
+            else:
+                hyperedge = cdu
+            return frozenset(self.links(hyperedge))
 
     def _mk_guid(self, x):
         return self.doc_key.mk_global_id(x)
 
-    def _mk_node(self, anno, type):
-        anno_id     = anno.identifier()
+    def _mk_edge_id(self, x):
+        return 'e_' + self._mk_guid(x)
+
+    def _mk_node_id(self, x):
+        return 'n_' + self._mk_guid(x)
+
+    def _mk_node(self, anno, type, mirrored=False):
+        # a node is mirrored if there is a also an edge
+        # corresponding to the same object
+        local_id = anno.local_id()
+        node_id  = self._mk_node_id(local_id)
+        edge_id  = self._mk_edge_id(local_id)
         attrs = { 'type'       : type
                 , 'annotation' : anno
                 }
-        return (anno_id, attrs)
+        if mirrored:
+            attrs['mirror'] = self._mk_edge_id(local_id)
+        return (node_id, attrs)
 
-    def _mk_edge(self, anno, type, members):
-        anno_id = anno.identifier()
+    def _mk_edge(self, anno, type, members, mirrored=False):
+        local_id = anno.local_id()
+        node_id  = self._mk_node_id(local_id)
+        edge_id  = self._mk_edge_id(local_id)
         attrs   = { 'type'       : type
                   , 'annotation' : anno
                   }
-        links   = [ self._mk_guid(m) for m in members ]
-        return (anno_id,attrs,links)
+        if mirrored:
+            attrs['mirror'] = self._mk_node_id(local_id)
+        links   = [ self._mk_node_id(m) for m in members ]
+        return (edge_id,attrs,links)
 
     def _unit_node(self, anno):
         return self._mk_node(anno, 'EDU')
@@ -296,18 +357,18 @@ class Graph(gr.hypergraph, AttrsMixin):
         # relations, but we do have relations pointing to relations
         # and python-graph reasonably enough gets confused if we try to
         # create edges to nodes that don't exist
-        return self._mk_node(anno, 'rel')
+        return self._mk_node(anno, 'rel', mirrored=True)
 
     def _schema_node(self, anno):
         # see _rel_node comments
-        return self._mk_node(anno, 'CDU')
+        return self._mk_node(anno, 'CDU', mirrored=True)
 
     def _rel_edge(self, anno):
         members = [ anno.span.t1, anno.span.t2 ]
-        return self._mk_edge(anno, 'rel', members)
+        return self._mk_edge(anno, 'rel', members, mirrored=True)
 
     def _schema_edge(self, anno):
-        return self._mk_edge(anno, 'CDU', anno.span)
+        return self._mk_edge(anno, 'CDU', anno.span, mirrored=True)
 
 
 # ---------------------------------------------------------------------
@@ -393,7 +454,7 @@ class FlatGraph(dgr.digraph, AttrsMixin):
 
     def cdus(self):
         """
-        Set of hyperedges representing complex discourse units.
+        Set of nodes representing complex discourse units.
 
         See also `cdu_members`
         """
@@ -473,12 +534,20 @@ class DotGraph(pydot.Dot):
         """
         Basic story here is that in in graphviz, cluster names have
         to start with `cluster`, so if we have a CDU, prefix it
-        accordingly
+        accordingly.
         """
-        if self.core.is_cdu(raw_id) and raw_id not in self.complex_cdus:
-            return 'cluster_' + raw_id
+        node_id = self.core.node(raw_id)
+
+        if self.core.is_cdu(node_id):
+            edge_id = self.core.mirror(node_id)
+            is_simple_cdu = edge_id not in self.complex_cdus
         else:
-            return raw_id
+            is_simple_cdu = False
+
+        if is_simple_cdu:
+            return 'cluster_' + node_id
+        else:
+            return node_id
 
     def __point(self, logical_target, key):
         """
@@ -504,13 +573,17 @@ class DotGraph(pydot.Dot):
         Crazy!
         """
 
-        dot_target = self._dot_id(logical_target)
+        logical_target_node = self.core.node(logical_target)
+        dot_target = self._dot_id(logical_target_node)
 
-        if dot_target == logical_target:
-            res = (logical_target, {})
+        if dot_target == logical_target_node:
+            res = (logical_target_node, {})
         else:
-            proxies = self.core.links(logical_target)
+            logical_target_edge = self.core.mirror(logical_target_node)
+            proxies = self.core.links(logical_target_edge)
             proxy_target = proxies[0]
+            if self.core.has_edge(proxy_target):
+                proxy_target = self.core.mirror(proxy_target)
             res = (proxy_target, {key:dot_target})
 
         return res
@@ -549,6 +622,7 @@ class DotGraph(pydot.Dot):
 
         link1, attrs1 = self._point_from(link1_)
         link2, attrs2 = self._point_to(link2_)
+
         attrs.update(attrs1)
         attrs.update(attrs2)
         self.add_edge(pydot.Edge(link1, link2, **attrs))
@@ -573,9 +647,10 @@ class DotGraph(pydot.Dot):
         attrs1.update(attrs1_)
         attrs2.update(attrs2_)
 
-        midpoint = pydot.Node(hyperedge, **midpoint_attrs)
-        edge1    = pydot.Edge(link1, hyperedge, **attrs1)
-        edge2    = pydot.Edge(hyperedge, link2, **attrs2)
+        midpoint_id = self.core.node(hyperedge)
+        midpoint = pydot.Node(midpoint_id, **midpoint_attrs)
+        edge1    = pydot.Edge(link1, midpoint_id, **attrs1)
+        edge2    = pydot.Edge(midpoint_id, link2, **attrs2)
         self.add_node(midpoint)
         self.add_edge(edge1)
         self.add_edge(edge2)
@@ -650,7 +725,8 @@ class DotGraph(pydot.Dot):
         for n in self.core.nodes():
             for n2 in self.core.neighbors(n):
                 if self.core.is_relation(n2):
-                    self.complex_rels.add(n2)
+                    e2 = self.core.mirror(n2)
+                    self.complex_rels.add(e2)
 
         # CDUs which are contained in other CDUs or which overlap other
         # CDUs
