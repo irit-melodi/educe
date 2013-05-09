@@ -16,6 +16,7 @@ The STAC bits are really just for visualisation in graphviz
 """
 
 import copy
+import collections
 import textwrap
 
 from educe import corpus, stac
@@ -24,6 +25,7 @@ import pydot
 import pygraph.classes.hypergraph as gr
 import pygraph.classes.digraph    as dgr
 from pygraph.algorithms import traversal
+from pygraph.algorithms import accessibility
 
 class DuplicateIdException(Exception):
     def __init__(self, duplicate):
@@ -257,6 +259,27 @@ class Graph(gr.hypergraph, AttrsMixin):
                     g.link(l,e)
 
         return g
+
+    def connected_components(self):
+        """
+        Return a set of a connected components.
+
+        Each connected component set can be passed to `self.subgraph()`
+        to be selected as subgraph.
+
+        This builds on python-graph's version of a function with the
+        same name but also adds awareness of our conventions about there
+        being both a node/edge for relations/CDUs.
+        """
+        ccs       = accessibility.connected_components(self)
+        subgraphs = collections.defaultdict(list)
+        for x,c in ccs.items():
+            subgraphs[c].append(x)
+        for k,v in subgraphs.items():
+            if len(v) == 1 and not self.is_edu(v[0]):
+                del subgraphs[k]
+
+        return frozenset([frozenset(v) for v in subgraphs.values()])
 
     def _attrs(self, x):
         if self.has_edge(x):

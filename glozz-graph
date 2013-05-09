@@ -79,15 +79,8 @@ for doc_key in [ k for k in corpus if k.stage == 'discourse' ]:
         g = graph.Graph.from_doc(corpus, doc_key)
         write_dot_graph(doc_file, graph.DotGraph(g))
         if args.split:
-            ccs       = accessibility.connected_components(g)
-            subgraphs = collections.defaultdict(list)
-            for x,c in ccs.items():
-                subgraphs[c].append(x)
-            for k,v in subgraphs.items():
-                if len(v) == 1 and not g.is_edu(v[0]):
-                    del subgraphs[k]
-
-            for k,nodes in subgraphs.items():
+            ccs = g.connected_components()
+            for k,nodes in enumerate(ccs,1):
                 g2 = g.copy(nodes)
                 write_dot_graph(doc_file, graph.DotGraph(g2), part=k)
     except graph.DuplicateIdException:
