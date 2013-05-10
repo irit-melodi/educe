@@ -275,11 +275,36 @@ class Graph(gr.hypergraph, AttrsMixin):
         subgraphs = collections.defaultdict(list)
         for x,c in ccs.items():
             subgraphs[c].append(x)
-        for k,v in subgraphs.items():
-            if len(v) == 1 and not self.is_edu(v[0]):
-                del subgraphs[k]
 
-        return frozenset([frozenset(v) for v in subgraphs.values()])
+        # the basic idea here: if any member of connected component is
+        # one of our hybrid node/edge creatures, we need to help the
+        # graph library recognise that that anything connected *via*
+        # the edge should also be considered as connected *to* the
+        # edge, so we merge the components
+        eaten  = set ()
+        merged = {}
+        prior  = subgraphs.keys()
+        rrr = 0
+        while sorted(merged.keys()) != prior:
+            rrr += 1
+            prior     = sorted(merged.keys())
+            merged    = {}
+            for k in subgraphs:
+                if k in eaten: continue
+                cc = subgraphs[k]
+                merged[k] = copy.copy(cc)
+                for n in cc:
+                    if self.has_edge(n):
+                        links = set(self.links(n))
+                        for k2 in subgraphs.keys():
+                            links2 = set(subgraphs[k2])
+                            if k2 != k and not links2.isdisjoint(links):
+                                eaten.add(k2)
+                                merged[k].extend(links2)
+            subgraphs = merged
+
+        ccs = frozenset([frozenset(v) for v in subgraphs.values()])
+        return ccs
 
     def _attrs(self, x):
         if self.has_edge(x):
