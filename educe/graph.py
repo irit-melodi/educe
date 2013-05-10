@@ -218,40 +218,40 @@ class Graph(gr.hypergraph, AttrsMixin):
         g.doc     = self.doc
 
         if nodeset is None:
-            to_copy = set(self.nodes())
+            nodes_wanted = set(self.nodes())
         else:
-            to_copy = set([x for x in nodeset])
+            nodes_wanted = set(nodeset)
 
-        cdus = [ x for x in to_copy if self.is_cdu(x) ]
+        cdus = [ x for x in nodes_wanted if self.is_cdu(x) ]
         for x in cdus:
-            to_copy.update(self.cdu_members(x, deep=True))
+            nodes_wanted.update(self.cdu_members(x, deep=True))
 
         def is_wanted_edge(e):
-            return all([l in to_copy for l in self.links(e)])
-
+            return all([l in nodes_wanted for l in self.links(e)])
 
         # keep expanding the copyable edge list until we've
         # covered everything that exclusively points
         # (indirectly or otherwise) to our copy set
         keep_growing    = True
         edges_remaining = self.hyperedges()
+        edges_wanted    = set()
         while keep_growing:
             keep_growing = False
             for e in edges_remaining:
                 if is_wanted_edge(e):
-                    to_copy.add(e)
-                    to_copy.add(self.mirror(e))
+                    edges_wanted.add(e)
+                    nodes_wanted.add(self.mirror(e)) # obligatory node mirror
                     edges_remaining.remove(e)
                     keep_growing = True
 
         for n in self.nodes():
-            if n in to_copy:
+            if n in nodes_wanted:
                 g.add_node(n)
                 for kv in self.node_attributes(n):
                     g.add_node_attribute(n,kv)
 
         for e in self.hyperedges():
-            if e in to_copy:
+            if e in edges_wanted:
                 g.add_hyperedge(e)
                 for kv in self.edge_attributes(e):
                     g.add_edge_attribute(e,kv)
