@@ -1,8 +1,11 @@
 # Author: Eric Kow
 # License: BSD3
 
+from   itertools import chain
+
 """
-Low-level representation of corpus annotations.
+Low-level representation of corpus annotations, following somewhat faithfully
+the Glozz_ model for annotations.
 
 This is low-level in the sense that we make little attempt to interpret the
 information stored in these annotations. For example, a relation might claim to
@@ -10,6 +13,8 @@ link two units of id unit42 and unit43. This being a low-level representation,
 we simply note the fact. A higher-level representation might attempt to
 actually make the corresponding units available to you, or perhaps provide
 some sort of graph representation of them
+
+.. _Glozz: http://erickow.com/posts/anno-models-glozz.html
 """
 
 class Span:
@@ -144,23 +149,45 @@ class Unit(Annotation):
 
 class Relation(Annotation):
     """
-    An annotation between two units.
+    An annotation between two annotations.
     Relations are directed; see `RelSpan` for details
     """
     def __init__(self, rel_id, span, type, features, metadata=None):
         Annotation.__init__(self, rel_id, span, type, features, metadata)
 
+    def _members(self, doc):
+        member_ids = [ self.span.t1, self.span.t2 ]
+        return [ u for u in doc.annotations() if u.local_id() in member_ids ]
+
+class Schema(Annotation):
+    """
+    An annotation between a set of annotations
+    """
+    def __init__(self, rel_id, members, type, features, metadata=None):
+        Annotation.__init__(self, rel_id, members, type, features, metadata)
+
+    def _members(self, doc):
+        member_ids = self.span
+        return [ u for u in doc.annotations() if u.local_id() in member_ids ]
+
 class Document:
     """
     A single (sub)-document.
 
-    This can be seen as collections of unit and relation annotations
+    This can be seen as collections of unit, relation, and schema annotations
     """
-    def __init__(self, units, relations, text):
+    def __init__(self, units, relations, schemas, text):
         self.units=units
         self.relations=relations
         self.rels=relations # FIXME should find a way to deprecate this
+        self.schemas=schemas
         self._text=text
+
+    def annotations(self):
+        """
+        All annotations associated with this document
+        """
+        return self.units + self.relations + self.schemas
 
     def set_origin(self, origin):
         """
@@ -168,10 +195,8 @@ class Document:
         set its origin to an `educe.corpus.file_id` so that you
         can more reliably the annotations apart.
         """
-        for u in self.units:
-            u.origin = origin
-        for r in self.relations:
-            r.origin = origin
+        for x in self.annotations():
+            x.origin = origin
 
     def global_id(self, local_id):
         """

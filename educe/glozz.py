@@ -21,17 +21,16 @@ import sys
 from educe.annotation import *
 
 class GlozzDocument(Document):
-    def __init__(self, hashcode, unit, rels, text, schemas):
-        Document.__init__(self, unit, rels, text)
+    def __init__(self, hashcode, unit, rels, schemas, text):
+        Document.__init__(self, unit, rels, schemas, text)
         self.hashcode = hashcode
-        self.schemas  = schemas # Element
 
     def to_xml(self):
         elm = ET.Element('annotations')
         if self.hashcode is not None:
             elm.append(ET.Element('metadata', corpusHashcode=self.hashcode))
-        elm.extend([x.to_xml() for x in self.units])
-        elm.extend([x.to_xml() for x in self.relations])
+        elm.extend([glozz_annotation_to_xml(x, 'unit')     for x in self.units])
+        elm.extend([glozz_annotation_to_xml(x, 'relation') for x in self.relations])
         elm.extend(self.schemas)
         return elm
 
@@ -102,63 +101,33 @@ def glozz_annotation_to_xml(self, tag='annotation'):
     char_elm.extend([char_tag_elm, char_tag_fs])
 
     elm = ET.Element(tag, id=self.local_id())
-    elm.extend([meta_elm, char_elm, self.span.to_xml()])
+    if (tag == 'unit'):
+        span_elm = glozz_span_to_xml(self.span)
+    elif (tag == 'relation'):
+        span_elm = glozz_relspan_to_xml(self.span)
+    else:
+        raise Exception("Don't know how to emit XML for non unit/relation annotations")
+    elm.extend([meta_elm, char_elm, span_elm])
     return elm
 
-class GlozzUnit(Unit):
-    def __init__(self, *args, **kwargs):
-        Unit.__init__(self, *args, **kwargs)
+def glozz_span_to_xml(self):
+    def set_pos(elm,x):
+        elm.append(ET.Element('singlePosition', index=str(x)))
+    elm = ET.Element('positioning')
+    start_elm = ET.Element('start')
+    end_elm   = ET.Element('end')
+    set_pos(start_elm, self.char_start)
+    set_pos(end_elm,   self.char_end)
+    elm.extend([start_elm, end_elm])
+    return elm
 
-    def to_xml(self):
-        elm = glozz_annotation_to_xml(self, 'unit')
-        return elm
-
-class GlozzRelation(Relation):
-    def __init__(self, *args, **kwargs):
-        Relation.__init__(self, *args, **kwargs)
-
-    def to_xml(self):
-        elm = glozz_annotation_to_xml(self, 'relation')
-        return elm
-
-class GlozzSpan(Span):
-    def __init__(*args, **kwargs):
-        Span.__init__(*args, **kwargs)
-
-    def to_xml(self):
-        def set_pos(elm,x):
-            elm.append(ET.Element('singlePosition', index=str(x)))
-        elm = ET.Element('positioning')
-        start_elm = ET.Element('start')
-        end_elm   = ET.Element('end')
-        set_pos(start_elm, self.char_start)
-        set_pos(end_elm,   self.char_end)
-        elm.extend([start_elm, end_elm])
-        return elm
-
-class GlozzRelSpan(RelSpan):
-    def __init__(*args, **kwargs):
-        RelSpan.__init__(*args, **kwargs)
-
-    def to_xml(self):
-        def set_pos(elm,x):
-            elm.append(ET.Element('term', id=str(x)))
-        elm = ET.Element('positioning')
-        set_pos(elm,self.t1)
-        set_pos(elm,self.t2)
-        return elm
-
-class GlozzSchema(Annotation):
-    """
-    A set of annotations
-
-    Parameters:
-
-        * members: the of annotations contained in this schema
-    """
-    def __init__(self, rel_id, members, type, features, metadata=None):
-        Annotation.__init__(self, rel_id, members, type, features, metadata)
-
+def glozz_relspan_to_xml(self):
+    def set_pos(elm,x):
+        elm.append(ET.Element('term', id=str(x)))
+    elm = ET.Element('positioning')
+    set_pos(elm,self.t1)
+    set_pos(elm,self.t2)
+    return elm
 
 # ---------------------------------------------------------------------
 # xml processing
@@ -234,14 +203,14 @@ def read_node(node, context=None):
     elif node.tag == 'positioning' and context == 'unit':
         start = get_one('start', -2)
         end   = get_one('end',   -2)
-        return GlozzSpan(start,end)
+        return Span(start,end)
 
     elif node.tag == 'positioning' and context == 'relation':
         terms = get_all('term')
         if len(terms) != 2:
             raise GlozzException("Was expecting exactly 2 terms, but got %d" % len(terms))
         else:
-            return GlozzRelSpan(terms[0], terms[1])
+            return RelSpan(terms[0], terms[1])
 
     elif node.tag == 'positioning' and context == 'schema':
         return frozenset(get_all('embedded-unit'))
@@ -251,14 +220,14 @@ def read_node(node, context=None):
         (unit_type, fs) = get_one('characterisation', None)
         span            = get_one('positioning',      None, 'relation')
         metadata        = get_one('metadata',         {})
-        return GlozzRelation(rel_id, span, unit_type, fs, metadata=metadata)
+        return Relation(rel_id, span, unit_type, fs, metadata=metadata)
 
     if node.tag == 'schema':
         anno_id         = node.attrib['id']
         (anno_type, fs) = get_one('characterisation', None)
         members         = get_one('positioning',      None, 'schema')
         metadata        = get_one('metadata',         {})
-        return GlozzSchema(anno_id, members, anno_type, fs, metadata=metadata)
+        return Schema(anno_id, members, anno_type, fs, metadata=metadata)
 
     elif node.tag == 'singlePosition':
         return int(node.attrib['index'])
@@ -277,7 +246,7 @@ def read_node(node, context=None):
         (unit_type, fs) = get_one('characterisation', None)
         span            = get_one('positioning',      None, 'unit')
         metadata        = get_one('metadata',         {})
-        return GlozzUnit(unit_id, span, unit_type, fs, metadata=metadata)
+        return Unit(unit_id, span, unit_type, fs, metadata=metadata)
 
 
 def read_annotation_file(anno_filename, text_filename=None):
@@ -291,7 +260,7 @@ def read_annotation_file(anno_filename, text_filename=None):
     if text_filename is not None:
         with open(text_filename) as tf:
             text = tf.read()
-    return GlozzDocument(hashcode, units, rels, text, schemas)
+    return GlozzDocument(hashcode, units, rels, schemas, text)
 
 
 def write_annotation_file(anno_filename, doc):
