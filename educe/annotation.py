@@ -255,14 +255,21 @@ class Document(Standoff):
         else:
             return o.mk_global_id(local_id)
 
+    def text(self, span=None):
+        """
+        Return the text associated with these annotations (or None),
+        optionally limited to a span
+        """
+        if self._text is None:
+            return None
+        elif span is None:
+            return self._text
+        else:
+            return self._text[span.char_start:span.char_end]
+
     def text_for(self, unit):
         """
         Return a string representing the text covered by either this document
         or unit.
         """
-        if self._text is None:
-            return None
-        else:
-            sp = unit.span
-            return self._text[sp.char_start:sp.char_end]
-
+        return self.text(unit.span)
