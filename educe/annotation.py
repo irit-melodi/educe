@@ -101,6 +101,9 @@ class Annotation(Standoff):
         self.features=features
         self.metadata=metadata
 
+    def __lt__(self, other):
+        return self.__anno_id < other.__anno_id
+
     def __str__(self):
         feats=str(self.features)
         return ('%s [%s] %s %s' % (self.identifier(),self.type, self.span, feats))
