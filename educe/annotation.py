@@ -62,7 +62,7 @@ class Standoff:
         """
         return []
 
-    def _terminals(self, doc):
+    def _terminals(self, doc, seen=[]):
         """
         For terminal annotations, this is just the annotation itself.
         For non-terminal annotations, this recursively fetches the
@@ -70,7 +70,8 @@ class Standoff:
         """
         my_members = self._members(doc)
         if len(my_members) > 0:
-            return chain.from_iterable([m._terminals(doc) for m in my_members])
+            return chain.from_iterable([m._terminals(doc, seen + my_members)
+                                        for m in my_members if m not in seen])
         else:
             return [self]
 
