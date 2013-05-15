@@ -12,6 +12,53 @@ import pygraph.classes.hypergraph as gr
 import educe.graph as educe
 import sys
 from pygraph.algorithms import accessibility, traversal, searching
+from educe.annotation import *
+
+# ---------------------------------------------------------------------
+# annotations
+# ---------------------------------------------------------------------
+
+class TestUnit(Unit):
+    def __init__(self, id, start, end):
+        Unit.__init__(self, id, Span(start, end), '', {})
+
+class TestRelation(Relation):
+    def __init__(self, id, start, end):
+        Relation.__init__(self, id, RelSpan(start, end), '', {})
+
+class TestSchema(Schema):
+    def __init__(self, id, members):
+        Schema.__init__(self, id, members, '', {})
+
+class TestDocument(Document):
+    def __init__(self, units, rels, schemas, txt):
+        Document.__init__(self, units, rels, schemas, txt)
+
+def test_members():
+    u1  = TestUnit('u1', 2, 4)
+    u2  = TestUnit('u2', 3, 9)
+    u3  = TestUnit('distractor', 1,10)
+    u4  = TestUnit('u4', 12,13)
+    u5  = TestUnit('u5', 4,12)
+    u6  = TestUnit('u6', 7,14)
+    s1  = TestSchema('s1', ['u4','u5','u6'])
+    r1  = TestRelation('r1', 's1','u2')
+
+    doc = TestDocument([u1,u2,u3,u4,u5,u6],[r1],[s1], "why hello there!")
+    assert u1._members(doc) == []
+    assert sorted(s1._members(doc)) == sorted([u4,u5,u6])
+    assert sorted(r1._members(doc)) == sorted([u2,s1])
+
+    assert u1._terminals(doc) == [u1]
+    assert sorted(s1._terminals(doc)) == sorted([u4,u5,u6])
+    assert sorted(r1._terminals(doc)) == sorted([u2,u4,u5,u6])
+
+    doc_sp = doc.text_span(doc)
+    for x in doc.annotations():
+        sp = x.text_span(doc)
+        assert sp.char_start <= sp.char_end
+        assert sp.char_start >= doc_sp.char_start
+        assert sp.char_end   <= doc_sp.char_end
 
 # ---------------------------------------------------------------------
 # graph

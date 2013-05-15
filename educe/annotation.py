@@ -48,7 +48,42 @@ class RelSpan():
     def  __str__(self):
         return ('%s -> %s' % (self.t1, self.t2))
 
-class Annotation:
+class Standoff:
+    """
+    A standoff object ultimately points to some piece of text.
+    The pointing is not necessarily direct though
+    """
+    def __init__(self, origin=None):
+        self.origin=origin
+
+    def _members(self, doc):
+        """
+        Any annotations contained within this annotation.
+        """
+        return []
+
+    def _terminals(self, doc):
+        """
+        For terminal annotations, this is just the annotation itself.
+        For non-terminal annotations, this recursively fetches the
+        terminals
+        """
+        my_members = self._members(doc)
+        if len(my_members) > 0:
+            return chain.from_iterable([m._terminals(doc) for m in my_members])
+        else:
+            return [self]
+
+    def text_span(self, doc):
+        """
+        Return the span from the earliest terminal annotation contained here
+        to the latest.
+        """
+        start = min( [t.span.char_start for t in self._terminals(doc)] )
+        end   = max( [t.span.char_end   for t in self._terminals(doc)] )
+        return Span(start, end)
+
+class Annotation(Standoff):
     """
     Any sort of annotation. Annotations tend to have
 
@@ -57,6 +92,7 @@ class Annotation:
     * features: an attribute to value dictionary
     """
     def __init__(self, anno_id, span, type, features, metadata=None, origin=None):
+        Standoff.__init__(self, origin)
         self.origin=origin
         self.__anno_id=anno_id
         self.span=span
@@ -170,13 +206,14 @@ class Schema(Annotation):
         member_ids = self.span
         return [ u for u in doc.annotations() if u.local_id() in member_ids ]
 
-class Document:
+class Document(Standoff):
     """
     A single (sub)-document.
 
     This can be seen as collections of unit, relation, and schema annotations
     """
     def __init__(self, units, relations, schemas, text):
+        Standoff.__init__(self, None)
         self.units=units
         self.relations=relations
         self.rels=relations # FIXME should find a way to deprecate this
@@ -189,12 +226,17 @@ class Document:
         """
         return self.units + self.relations + self.schemas
 
+    def _members(self, doc):
+        assert doc is self
+        return self.annotations()
+
     def set_origin(self, origin):
         """
         If you have more than one document, it's a good idea to
         set its origin to an `educe.corpus.file_id` so that you
         can more reliably the annotations apart.
         """
+        self.origin = origin
         for x in self.annotations():
             x.origin = origin
 
