@@ -84,8 +84,8 @@ class AttrsMixin():
     def node(self, x):
         """
         Return the argument if it is a node id, or its mirror if it's an
-        edge id
-
+ ab       edge id
+l
         (This is possible because every edge in the graph has a node that
         corresponds to it)
         """
@@ -96,11 +96,86 @@ class AttrsMixin():
 
 class Graph(gr.hypergraph, AttrsMixin):
     """
-    Hypergraph representation of discourse structure
+    Somewhat tricky hypergraph representation of discourse structure.
+    At the very heart we have this idea of having
 
-        * a node for every elementary discourse unit
-        * relations as two-node hyperedges
-        * CDUs as both nodes and multi-node hyperedges
+        * a node  for every elementary discourse unit
+        * an edge for every relation instance [#]_
+        * a hyperedge for every complex discourse unit, BUT...
+
+    Two tricky issues arise: (A) how do we point to a CDU? Our hypergraph
+    formalism and library doesn't have a notion of pointing to hyperedges
+    (only nodes) and (B) what do we do about misannotations where
+    we have relation instances pointing to relation instances? In principle,
+    we could treat (B) as an error case and eg. raise an exception, but this
+    still leaves the core problem of (A).  For now, we opt to handle B and A
+    in the same way.
+
+    Our provisional solution is to introduce the following wrinkle:
+
+        * for every (hyper)edge `e_x` in the graph, introduce a "mirror node"
+          `n_x` for that edge (this mirror node is also assigned `e_x` as
+          its "mirror edge" so you can go back and forth)
+
+    The mirror nodes allow us to point to relations and CDUs alike, but note
+    that the connection between mirror nodes and edges does not really exist
+    as far as graph processing is concerned (think of the mirror information
+    as just part of the node/edge labels).  This could lead to some seriously
+    unintuitive consequences when traversing the graph.
+
+    For example, if you two DUs A and B connected by an Elab instance, and
+    if that instance is itself (bizarrely) connected to some other DU, you
+    might intuitively expect A, B, and C to all form one connected component
+
+    ::
+
+                A
+                |
+           Elab |
+                o--------->C
+                | Comment
+                |
+                v
+                B
+
+    Alas, this is not so!  The reality looks more like this
+
+    ::
+
+                A
+                |
+           Elab |  n_ab
+                |  o--------->C
+                |    Comment
+                |
+                v
+                B
+
+    The same goes for the connectedness of things pointing to CDUs
+    and with their members.  What intuitively looks like this
+
+    ::
+
+                A
+                |
+           Elab |
+                |
+                v
+                +-----+
+                | B C |
+                +-----+
+
+    Is in reality more something like this
+
+    ::
+
+                A
+                |
+           Elab |      +-----+ e_bc
+                |      | B C |
+                v      +-----+
+                n_bc
+
 
     Every node/hyperedge is represented as string unique
     within the graph. Given one of these identifiers `x`
@@ -110,21 +185,11 @@ class Graph(gr.hypergraph, AttrsMixin):
           "EDU", "CDU", "rel"
         * `g.annotation(x)` returns an
           educe.annotation object
-        * for relations and CDUs, if `x` is the edge representation
-          of the relation/cdu, return the node representation, and
-          vice-versa
+        * for relations and CDUs, if `e_x` is the edge representation
+          of the relation/cdu, `g.mirror(x)` will return its mirror
+          node `n_x` and vice-versa
 
-    Pitfalls and TODOS:
-
-        * Relations, in addition to being edges are also represented as nodes;
-          this is because we can sometimes have relations pointing to other
-          relations
-
-        * There is some awkwardness in the fact that we systematically have
-          both nodes and hyperedges for relations/cdus.  These nodes and
-          edges are different objects with different names. To go from node
-          to edge and vice versa, use the `mirror` function. By default,
-          API functions will return the edge representation of something.
+    TODOS:
 
         * TODO: Currently we use educe.annotation objects to represent the
           EDUs, CDUs and relations, but this is likely a bit too low-level to
@@ -133,6 +198,10 @@ class Graph(gr.hypergraph, AttrsMixin):
 
     You most likely want to use `Graph.from_doc` instead of
     instantiating an instance directly
+
+    .. [#] actually a binary hyperedge. As these are undirected, we take the
+    convention that the the first link is the tail (from) and the second link
+    is the tail (to).
     """
 
     def __init__(self):
