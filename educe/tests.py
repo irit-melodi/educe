@@ -153,36 +153,6 @@ def test_cdu_neighbors():
 #        print >> sys.stderr, "traverse: " + n
 #    pass
 
-def test_flattening():
-    gr = FakeGraph()
-    gr.add_edus(*range(1,6))
-    gr.add_rel('1.2', 1, 2)
-    gr.add_rel('1.3', 1, 3)
-    gr.add_rel('3.5', 3, 5)
-    gr.add_rel('r', '1.2', '5')
-    gr.add_cdu('X', [2,3,4])
-    gr.add_cdu('Y', [5,'X'])
-
-    dgr = educe.FlatGraph(gr)
-    expected_nodes = frozenset(['1','2','3','4','5','X','Y','1.2'])
-    actual_nodes   = frozenset(dgr.nodes())
-    assert actual_nodes == expected_nodes
-     # relates a relation but isn't itself pointed to
-    assert 'r' not in actual_nodes
-    assert ('3','5') in dgr.edges()
-    assert ('X','3') in dgr.edges()
-    assert ('Y','X') in dgr.edges()
-
-    assert dgr.is_cdu('Y')
-    assert not dgr.is_edu('Y')
-    assert dgr.is_edu('5')
-
-    assert dgr.cdu_members('X') == gr.cdu_members('X')
-    assert dgr.cdu_members('Y') == gr.cdu_members('Y')
-    assert dgr.edus()           == gr.edus()
-    assert dgr.cdus()           == gr.cdus()
-
-
 def test_copy():
     """
     graph in essentially two components but some links
