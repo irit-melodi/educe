@@ -84,8 +84,8 @@ class AttrsMixin():
     def node(self, x):
         """
         Return the argument if it is a node id, or its mirror if it's an
- ab       edge id
-l
+        edge id
+
         (This is possible because every edge in the graph has a node that
         corresponds to it)
         """
