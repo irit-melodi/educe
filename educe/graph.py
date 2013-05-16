@@ -284,9 +284,7 @@ class Graph(gr.hypergraph, AttrsMixin):
         eaten  = set ()
         merged = {}
         prior  = subgraphs.keys()
-        rrr = 0
         while sorted(merged.keys()) != prior:
-            rrr += 1
             prior     = sorted(merged.keys())
             merged    = {}
             for k in subgraphs:
@@ -294,8 +292,9 @@ class Graph(gr.hypergraph, AttrsMixin):
                 cc = subgraphs[k]
                 merged[k] = copy.copy(cc)
                 for n in cc:
-                    if self.has_edge(n):
-                        links = set(self.links(n))
+                    e = self.mirror(n)
+                    if e is not None:
+                        links = set(self.links(e))
                         for k2 in subgraphs.keys():
                             links2 = set(subgraphs[k2])
                             if k2 != k and not links2.isdisjoint(links):
@@ -383,6 +382,8 @@ class Graph(gr.hypergraph, AttrsMixin):
                 }
         if mirrored:
             attrs['mirror'] = self._mk_edge_id(local_id)
+        else:
+            attrs['mirror'] = None
         return (node_id, attrs)
 
     def _mk_edge(self, anno, type, members, mirrored=False):
@@ -394,6 +395,9 @@ class Graph(gr.hypergraph, AttrsMixin):
                   }
         if mirrored:
             attrs['mirror'] = self._mk_node_id(local_id)
+        else:
+            attrs['mirror'] = None
+
         links   = [ self._mk_node_id(m) for m in members ]
         return (edge_id,attrs,links)
 
