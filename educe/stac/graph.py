@@ -1,0 +1,68 @@
+# -*- coding: utf-8 -*-
+#
+# Author: Eric Kow
+# License: BSD3
+
+"""
+STAC-specific conventions related to graphs.
+"""
+
+import copy
+import collections
+import textwrap
+
+from educe import corpus, stac
+from educe.graph import *
+import educe.graph
+from pygraph.readwrite import dot
+import pydot
+import pygraph.classes.hypergraph as gr
+import pygraph.classes.digraph    as dgr
+from pygraph.algorithms import traversal
+from pygraph.algorithms import accessibility
+
+class DotGraph(educe.graph.DotGraph):
+    """
+    A dot representation of this graph for visualisation.
+    The `to_string()` method is most likely to be of interest here
+    """
+
+    def __init__(self, anno_graph):
+        educe.graph.DotGraph.__init__(self, anno_graph)
+
+    def _get_speaker(self, u):
+        enclosing_turns = [ t for t in self.turns if t.span.encloses(u.span) ]
+        if len(enclosing_turns) > 0:
+            return enclosing_turns[0].features['Emitter']
+        else:
+            return None
+
+    def _get_speech_acts(self, anno):
+        # In discourse annotated part of the corpus, all segments have
+        # type 'Other', which isn't too helpful. Try to recover the
+        # speech act from the unit equivalent to this document
+        anno_local_id  = anno.local_id()
+        fallback       = stac.dialogue_act(anno)
+        unit_key       = copy.copy(self.doc_key)
+        unit_key.stage = 'units'
+        if unit_key in self.corpus:
+            udoc  = self.corpus[unit_key]
+            doppelgangers = [ u for u in udoc.units if u.local_id() == anno_local_id ]
+            if len(doppelgangers) > 0:
+                return stac.dialogue_act(doppelgangers[0])
+            else:
+                return fallback
+        else:
+            return fallback
+
+    def _edu_label(self, anno):
+        speech_acts = ", ".join(self._get_speech_acts(anno))
+        speaker     = self._get_speaker(anno)
+        if speaker is None:
+            speaker_prefix = ''
+        else:
+            speaker_prefix = '(%s) ' % speaker
+        return speaker_prefix + "%s [%s]" % (self.doc.text_for(anno), speech_acts)
+
+    def _rel_label(self, anno):
+        return anno.type

@@ -10,6 +10,8 @@ in a STAC corpus
 """
 
 from educe import glozz, corpus, stac, util, graph
+import educe.stac.graph as stacgraph
+
 import argparse
 import copy
 import re
@@ -77,7 +79,7 @@ for doc_key in [ k for k in corpus if k.stage == 'discourse' ]:
     doc_file = anno_files[doc_key][0]
     try:
         g = graph.Graph.from_doc(corpus, doc_key)
-        write_dot_graph(doc_file, graph.DotGraph(g))
+        write_dot_graph(doc_file, stacgraph.DotGraph(g))
         if args.split:
             ccs = g.connected_components()
             for k,nodes in enumerate(ccs,1):

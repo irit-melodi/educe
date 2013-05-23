@@ -19,7 +19,7 @@ import copy
 import collections
 import textwrap
 
-from educe import corpus, stac
+from educe import corpus
 from pygraph.readwrite import dot
 import pydot
 import pygraph.classes.hypergraph as gr
@@ -488,41 +488,22 @@ class DotGraph(pydot.Dot):
     """
     A dot representation of this graph for visualisation.
     The `to_string()` method is most likely to be of interest here
+
+    This is fairly abstract and unhelpful.  You probably want the
+    project-layer extension instead, eg. `educe.stac.graph`
     """
 
-    def _get_speaker(self, u):
-        enclosing_turns = [ t for t in self.turns if t.span.encloses(u.span) ]
-        if len(enclosing_turns) > 0:
-            return enclosing_turns[0].features['Emitter']
-        else:
-            return None
-
-    def _get_speech_acts(self, anno):
-        # In discourse annotated part of the corpus, all segments have
-        # type 'Other', which isn't too helpful. Try to recover the
-        # speech act from the unit equivalent to this document
-        anno_local_id  = anno.local_id()
-        fallback       = stac.dialogue_act(anno)
-        unit_key       = copy.copy(self.doc_key)
-        unit_key.stage = 'units'
-        if unit_key in self.corpus:
-            udoc  = self.corpus[unit_key]
-            doppelgangers = [ u for u in udoc.units if u.local_id() == anno_local_id ]
-            if len(doppelgangers) > 0:
-                return stac.dialogue_act(doppelgangers[0])
-            else:
-                return fallback
-        else:
-            return fallback
-
     def _edu_label(self, anno):
-        speech_acts = ", ".join(self._get_speech_acts(anno))
-        speaker     = self._get_speaker(anno)
-        if speaker is None:
-            speaker_prefix = ''
-        else:
-            speaker_prefix = '(%s) ' % speaker
-        return speaker_prefix + "%s [%s]" % (self.doc.text_for(anno), speech_acts)
+        return anno.type
+
+    def _rel_label(self, anno):
+        return anno.type
+
+    def _edu_is_error(self, anno):
+        """
+        If there is something seemingly wrong with this EDU
+        """
+        return not stac.is_dialogue_act(anno)
 
     def _has_rel_link(self, rel):
         """
@@ -607,7 +588,7 @@ class DotGraph(pydot.Dot):
         attrs = { 'label' : textwrap.fill(label, 30)
                 , 'shape' : 'plaintext'
                 }
-        if not stac.is_dialogue_act(anno):
+        if not self._edu_label(anno):
             attrs['fontcolor'] = 'red'
         self.add_node(pydot.Node(node, **attrs))
 
@@ -616,7 +597,7 @@ class DotGraph(pydot.Dot):
         links = self.core.links(hyperedge)
         link1_, link2_ = links
         attrs =\
-            { 'label'      : ' ' + anno.type
+            { 'label'      : ' ' + self._rel_label(anno)
             , 'shape'      : 'plaintext'
             , 'fontcolor'  : 'blue'
             }
@@ -633,7 +614,7 @@ class DotGraph(pydot.Dot):
         links = self.core.links(hyperedge)
         link1_, link2_ = links
         midpoint_attrs =\
-            { 'label'      : anno.type
+            { 'label'      : self._rel_label(anno)
             , 'style'      : 'dotted'
             , 'fontcolor'  : 'blue'
             }
