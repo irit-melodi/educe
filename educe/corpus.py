@@ -79,7 +79,9 @@ class Reader:
     A potentially useful pattern to apply here is to take a slice of
     these dictionaries for processing. For example, you might not want
     to read the whole corpus, but only the files which are modified by
-    certain annotators. ::
+    certain annotators.
+
+    .. code-block:: python
 
         reader    = Reader(corpus_dir)
         files     = reader.files()
@@ -87,7 +89,9 @@ class Reader:
         corpus    = reader.slurp(subfiles)
 
     Alternatively, having read in the entire corpus, you might be doing
-    processing on various slices of it at a time ::
+    processing on various slices of it at a time
+
+    .. code-block:: python
 
         corpus    = reader.slurp()
         subcorpus = { k:v in corpus.items() if k.doc = 'pilot14' }
