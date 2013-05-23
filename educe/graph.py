@@ -31,8 +31,8 @@ The tricky bit is a response to two issues that arise: (A) how do we point
 to a CDU? Our hypergraph formalism and library doesn't have a notion of
 pointing to hyperedges (only nodes) and (B) what do we do about
 misannotations where we have relation instances pointing to relation
-instances?  (A) is the most important one to address (in principle, we could
-just treat (B) as an error and raise an exception), but for now we decide to
+instances? *A* is the most important one to address (in principle, we could
+just treat *B* as an error and raise an exception), but for now we decide to
 model both scenarios, and the same "mirror" mechanism above.
 
 The mirrors are a bit problematic because are not part of the formal graph
@@ -212,13 +212,11 @@ class Graph(gr.hypergraph, AttrsMixin):
         """
         Return a graph representation of a document
 
-        Parameters:
+        Args:
 
-        * corpus  : educe corpus dictionary
-        * doc_key : FileId key pointing to the document
-        * nodeset : limit the graph to things with ids in this
-                    set (no limits by default)
+            corpus  : educe corpus dictionary
 
+            doc_key (FileId):  key pointing to the document
         """
         self         = cls()
         doc          = corpus[doc_key]
@@ -279,6 +277,11 @@ class Graph(gr.hypergraph, AttrsMixin):
 
         This is a shallow copy in the sense that the underlying
         layer of annotations and documents remains the same.
+
+        Kwargs:
+
+            nodeset (iterable of strings): only copy nodes with these
+            names
         """
         g=Graph()
         g.corpus  = self.corpus
@@ -701,9 +704,9 @@ class DotGraph(pydot.Dot):
 
     def __init__(self, anno_graph):
         """
-        Params:
+        Args
 
-        * anno_graph - the abstract annotation graph
+            anno_graph (Graph):  abstract annotation graph
         """
         self.core       = anno_graph
         self.doc        = self.core.doc

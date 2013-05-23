@@ -33,7 +33,7 @@ class Span:
         """
         Return True if this span includes the argument
 
-        Note that x.encloses(x) == True
+        Note that `x.encloses(x) == True`
         """
         return (self.char_start <= sp.char_start and self.char_end >= sp.char_end)
 

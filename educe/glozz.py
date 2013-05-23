@@ -7,11 +7,6 @@ The Glozz_ file format in `educe.annotation` form
 You're likely most interested in
 `slurp_corpus` and `read_annotation_file`
 
-There is a parallel tree of Glozz annotation objects
-that are based on the stock objects in
-`educe.annotation` but with glozz-specific metadata,
-and a to_xml() function
-
 .. _Glozz: http://www.glozz.org/
 """
 
@@ -143,7 +138,9 @@ class GlozzException(Exception):
         Exception.__init__(self, *args, **kw)
 
 def on_single_element(root, default, f, name):
-    """Return
+    """
+    Return
+
        * the default if no elements
        * f(the node) if one element
        * an exception if more than one

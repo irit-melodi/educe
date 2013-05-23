@@ -61,4 +61,9 @@ Educe is still its early stages.  Some departures you may want to be aware of:
 * layer violations: ideally we want lower layers to be abstract from things
   above them, but you may find eg. glozz-specific assumptions in the base
   layer, which isn't great.
+
+* inconsistency in encapsulation: `educe.stac` doesn't wrap everything
+  below it (it's also not clear yet if it should).  It currently wraps
+  educe.glozz and educe.corpus (so by rights you shouldn't really need
+  to import them), but not the graph stuff for example.
 """

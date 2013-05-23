@@ -123,8 +123,11 @@ class Reader:
 
         Return a dictionary from FileId to `educe.Annotation.Document`
 
-        Cfiles is expected to be a dictionary like what `Corpus.files`
-        would return.
+        Kwargs:
+
+            cfiles (dict): a dictionary like what `Corpus.files` would return.
+
+            verbose (bool)
         """
         if cfiles is None:
             subcorpus=self.files()
