@@ -125,9 +125,7 @@ class Graph(gr.hypergraph, AttrsMixin):
 
     For example, if you two DUs A and B connected by an Elab instance, and
     if that instance is itself (bizarrely) connected to some other DU, you
-    might intuitively expect A, B, and C to all form one connected component
-
-    ::
+    might intuitively expect A, B, and C to all form one connected component ::
 
                 A
                 |
@@ -138,9 +136,8 @@ class Graph(gr.hypergraph, AttrsMixin):
                 v
                 B
 
-    Alas, this is not so!  The reality looks more like this
-
-    ::
+    Alas, this is not so! The reality is a bit messier, with there being no
+    formal relationship between edge and mirror ::
 
                 A
                 |
@@ -152,9 +149,9 @@ class Graph(gr.hypergraph, AttrsMixin):
                 B
 
     The same goes for the connectedness of things pointing to CDUs
-    and with their members.  What intuitively looks like this
-
-    ::
+    and with their members.  Looking at pictures, you might
+    intuitively think that if a discourse unit (A) were connected to
+    a CDU, it would also be connected to the discourse units within ::
 
                 A
                 |
@@ -165,9 +162,7 @@ class Graph(gr.hypergraph, AttrsMixin):
                 | B C |
                 +-----+
 
-    Is in reality more something like this
-
-    ::
+    The reality is messier for the same reasons above ::
 
                 A
                 |
