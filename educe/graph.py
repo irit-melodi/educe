@@ -97,35 +97,28 @@ class AttrsMixin():
 class Graph(gr.hypergraph, AttrsMixin):
     """
     Somewhat tricky hypergraph representation of discourse structure.
-    At the very heart we have this idea of having
 
         * a node  for every elementary discourse unit
-        * an edge for every relation instance [#]_
-        * a hyperedge for every complex discourse unit, BUT...
+        * a hyperedge for every relation instance [#]_
+        * a hyperedge for every complex discourse unit
+        * (the tricky bit) for every (hyper)edge `e_x` in the graph,
+          introduce a "mirror node" `n_x` for that edge
+          (this node also has `e_x` as its "mirror edge")
 
-    Two tricky issues arise: (A) how do we point to a CDU? Our hypergraph
-    formalism and library doesn't have a notion of pointing to hyperedges
-    (only nodes) and (B) what do we do about misannotations where
-    we have relation instances pointing to relation instances? In principle,
-    we could treat (B) as an error case and eg. raise an exception, but this
-    still leaves the core problem of (A).  For now, we opt to handle B and A
-    in the same way.
+    The tricky bit is a response to two issues that arise: (A) how do we point
+    to a CDU? Our hypergraph formalism and library doesn't have a notion of
+    pointing to hyperedges (only nodes) and (B) what do we do about
+    misannotations where we have relation instances pointing to relation
+    instances?  (A) is the most important one to address (in principle, we could
+    just treat (B) as an error and raise an exception), but for now we decide to
+    model both scenarios, and the same "mirror" mechanism above.
 
-    Our provisional solution is to introduce the following wrinkle:
-
-        * for every (hyper)edge `e_x` in the graph, introduce a "mirror node"
-          `n_x` for that edge (this mirror node is also assigned `e_x` as
-          its "mirror edge" so you can go back and forth)
-
-    The mirror nodes allow us to point to relations and CDUs alike, but note
-    that the connection between mirror nodes and edges does not really exist
-    as far as graph processing is concerned (think of the mirror information
-    as just part of the node/edge labels).  This could lead to some seriously
-    unintuitive consequences when traversing the graph.
-
-    For example, if you two DUs A and B connected by an Elab instance, and
-    if that instance is itself (bizarrely) connected to some other DU, you
-    might intuitively expect A, B, and C to all form one connected component ::
+    The mirrors are a bit problematic because are not part of the formal graph
+    structure (think of them as extra labels). This could lead to some
+    seriously unintuitive consequences when traversing the graph. For example,
+    if you two DUs A and B connected by an Elab instance, and if that instance
+    is itself (bizarrely) connected to some other DU, you might intuitively
+    expect A, B, and C to all form one connected component ::
 
                 A
                 |
