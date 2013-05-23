@@ -94,6 +94,11 @@ pygments_style = 'sphinx'
 # a list of builtin themes.
 html_theme = 'default'
 
+# This is to force Read The Docs to use the default blue Sphinx theme.
+# I actually quite like the grey RTD one, but it's less useful for autodoc
+# because it doesn't have the horizontal rule marking out modules.
+html_style = '/default.css'
+
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
