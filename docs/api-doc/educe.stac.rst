@@ -17,3 +17,11 @@ stac Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`graph` Module
+-------------------
+
+.. automodule:: educe.stac.graph
+    :members:
+    :undoc-members:
+    :show-inheritance:
+

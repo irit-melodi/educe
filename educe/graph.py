@@ -5,14 +5,93 @@
 
 """
 Graph representation of discourse structure.
+Classes of interest:
 
-Currently a bit tied to `educe.stac`, but it may be possible in
-time to tease the STAC-specific bits from it.
+* Graph: the core structure, use the `Graph.from_doc` factory
+  method to build one out of an `educe.annotation` document.
 
-The core structure currently assumes a Glozz representation
-(ie. CDUs as schemas)
+* DotGraph: visual representation, built from `Graph`.
+  You probably want a project-specific variant to get more
+  helpful graphs, see eg. `educe.stac.Graph.DotGraph`
 
-The STAC bits are really just for visualisation in graphviz
+.. _hypergraphs:
+
+Educe hypergraphs
+~~~~~~~~~~~~~~~~~
+Somewhat tricky hypergraph representation of discourse structure.
+
+    * a node  for every elementary discourse unit
+    * a hyperedge for every relation instance [#]_
+    * a hyperedge for every complex discourse unit
+    * (the tricky bit) for every (hyper)edge `e_x` in the graph,
+      introduce a "mirror node" `n_x` for that edge
+      (this node also has `e_x` as its "mirror edge")
+
+The tricky bit is a response to two issues that arise: (A) how do we point
+to a CDU? Our hypergraph formalism and library doesn't have a notion of
+pointing to hyperedges (only nodes) and (B) what do we do about
+misannotations where we have relation instances pointing to relation
+instances?  (A) is the most important one to address (in principle, we could
+just treat (B) as an error and raise an exception), but for now we decide to
+model both scenarios, and the same "mirror" mechanism above.
+
+The mirrors are a bit problematic because are not part of the formal graph
+structure (think of them as extra labels). This could lead to some
+seriously unintuitive consequences when traversing the graph. For example,
+if you two DUs A and B connected by an Elab instance, and if that instance
+is itself (bizarrely) connected to some other DU, you might intuitively
+expect A, B, and C to all form one connected component ::
+
+            A
+            |
+       Elab |
+            o--------->C
+            | Comment
+            |
+            v
+            B
+
+Alas, this is not so! The reality is a bit messier, with there being no
+formal relationship between edge and mirror ::
+
+            A
+            |
+       Elab |  n_ab
+            |  o--------->C
+            |    Comment
+            |
+            v
+            B
+
+The same goes for the connectedness of things pointing to CDUs
+and with their members.  Looking at pictures, you might
+intuitively think that if a discourse unit (A) were connected to
+a CDU, it would also be connected to the discourse units within ::
+
+            A
+            |
+       Elab |
+            |
+            v
+            +-----+
+            | B C |
+            +-----+
+
+The reality is messier for the same reasons above ::
+
+            A
+            |
+       Elab |      +-----+ e_bc
+            |      | B C |
+            v      +-----+
+            n_bc
+
+.. [#] just a binary hyperedge, ie. like an edge in a regular graph. As
+   these are undirected, we take the convention that the the first link is
+   the tail (from) and the second link is the tail (to).
+
+Classes
+~~~~~~~
 """
 
 import copy
@@ -96,74 +175,11 @@ class AttrsMixin():
 
 class Graph(gr.hypergraph, AttrsMixin):
     """
-    Somewhat tricky hypergraph representation of discourse structure.
+    Hypergraph representation of discourse structure.
+    See the section on Educe hypergraphs_
 
-        * a node  for every elementary discourse unit
-        * a hyperedge for every relation instance [#]_
-        * a hyperedge for every complex discourse unit
-        * (the tricky bit) for every (hyper)edge `e_x` in the graph,
-          introduce a "mirror node" `n_x` for that edge
-          (this node also has `e_x` as its "mirror edge")
-
-    The tricky bit is a response to two issues that arise: (A) how do we point
-    to a CDU? Our hypergraph formalism and library doesn't have a notion of
-    pointing to hyperedges (only nodes) and (B) what do we do about
-    misannotations where we have relation instances pointing to relation
-    instances?  (A) is the most important one to address (in principle, we could
-    just treat (B) as an error and raise an exception), but for now we decide to
-    model both scenarios, and the same "mirror" mechanism above.
-
-    The mirrors are a bit problematic because are not part of the formal graph
-    structure (think of them as extra labels). This could lead to some
-    seriously unintuitive consequences when traversing the graph. For example,
-    if you two DUs A and B connected by an Elab instance, and if that instance
-    is itself (bizarrely) connected to some other DU, you might intuitively
-    expect A, B, and C to all form one connected component ::
-
-                A
-                |
-           Elab |
-                o--------->C
-                | Comment
-                |
-                v
-                B
-
-    Alas, this is not so! The reality is a bit messier, with there being no
-    formal relationship between edge and mirror ::
-
-                A
-                |
-           Elab |  n_ab
-                |  o--------->C
-                |    Comment
-                |
-                v
-                B
-
-    The same goes for the connectedness of things pointing to CDUs
-    and with their members.  Looking at pictures, you might
-    intuitively think that if a discourse unit (A) were connected to
-    a CDU, it would also be connected to the discourse units within ::
-
-                A
-                |
-           Elab |
-                |
-                v
-                +-----+
-                | B C |
-                +-----+
-
-    The reality is messier for the same reasons above ::
-
-                A
-                |
-           Elab |      +-----+ e_bc
-                |      | B C |
-                v      +-----+
-                n_bc
-
+    You most likely want to use `Graph.from_doc` instead of
+    instantiating an instance directly
 
     Every node/hyperedge is represented as string unique
     within the graph. Given one of these identifiers `x`
@@ -184,12 +200,7 @@ class Graph(gr.hypergraph, AttrsMixin):
           be helpful. It may be nice to have higher-level EDU and CDU
           objects instead
 
-    You most likely want to use `Graph.from_doc` instead of
-    instantiating an instance directly
 
-    .. [#] actually a binary hyperedge. As these are undirected, we take the
-    convention that the the first link is the tail (from) and the second link
-    is the tail (to).
     """
 
     def __init__(self):
