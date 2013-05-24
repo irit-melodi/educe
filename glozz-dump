@@ -40,7 +40,7 @@ for file in files:
     else:
         ac_file = fbase + ".ac"
     annotations = educe.read_annotation_file(file,ac_file)
-    print dump(file, annotations)
+    print dump(file, annotations).encode('utf-8')
     print ""
 
 # vim: syntax=python:

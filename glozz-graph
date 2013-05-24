@@ -19,6 +19,7 @@ import os.path
 import sys
 import textwrap
 import collections
+import codecs
 
 from pygraph.readwrite import dot
 from pygraph.algorithms import accessibility
@@ -70,7 +71,8 @@ def write_dot_graph(doc_file, dot_graph, part=None):
     png_file       = os.path.join(ofile_dirname, ofile_basename + '.png')
     if not os.path.exists(ofile_dirname):
         os.makedirs(ofile_dirname)
-    with open(dot_file, 'w') as f: print >> f, dot_graph.to_string()
+    with codecs.open(dot_file, 'w', encoding='utf-8') as f:
+        print >> f, dot_graph.to_string()
     if args.png:
         print >> sys.stderr, "Creating %s" % png_file
         os.system('dot -T png -o %s %s' % (png_file, dot_file))

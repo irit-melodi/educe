@@ -33,16 +33,45 @@ def mk_plain_csv_writer(outfile):
     """
     return csv.writer(outfile, dialect='stac')
 
-def mk_csv_writer(writer):
+class Utf8DictWriter:
+    """
+    A CSV writer which will write rows to CSV file "f",
+    which is encoded in UTF-8.
+    """
+
+    def __init__(self, f, headers, dialect=csv.excel, **kwds):
+        b_headers   = [ s.encode('utf-8') for s in headers ]
+        self.writer = csv.DictWriter(f, b_headers, dialect=dialect, **kwds)
+
+    def writeheader(self):
+        self.writer.writeheader()
+
+    def writerow(self, row):
+        def b(x):
+            return x.encode('utf-8')
+        self.writer.writerow(dict([(b(k),b(v)) for k,v in row.items()]))
+
+    def writerows(self, rows):
+        for row in rows:
+            self.writerow(row)
+
+
+def mk_csv_writer(ofile):
     """
     Writes dictionaries.
     See `csv_headers` for details
     """
-    return csv.DictWriter(writer, csv_headers, dialect='stac')
+    return Utf8DictWriter(ofile, csv_headers, dialect='stac')
 
 def mk_csv_reader(infile):
     """
-    Reads into dictionaries.
+    Assumes UTF-8 encoded files.
+    Reads into dictionaries with Unicode strings.
+
     See `csv_headers` for details
     """
-    return csv.DictReader(infile, dialect='stac')
+    def u(x):
+        return unicode(x, 'utf-8')
+
+    for row in csv.DictReader(infile, dialect='stac'):
+        yield dict([(u(k), u(v)) for k,v in row.items()])

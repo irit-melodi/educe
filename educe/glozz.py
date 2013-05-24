@@ -10,6 +10,7 @@ You're likely most interested in
 .. _Glozz: http://www.glozz.org/
 """
 
+import codecs
 import xml.etree.ElementTree as ET
 import sys
 
@@ -255,7 +256,7 @@ def read_annotation_file(anno_filename, text_filename=None):
     (hashcode, units, rels, schemas) = read_node(tree.getroot())
     text = None
     if text_filename is not None:
-        with open(text_filename) as tf:
+        with codecs.open(text_filename, 'r', 'utf-8') as tf:
             text = tf.read()
     return GlozzDocument(hashcode, units, rels, schemas, text)
 
