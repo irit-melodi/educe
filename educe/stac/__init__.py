@@ -35,6 +35,7 @@ import educe.glozz as glozz
 import itertools
 import math
 import os
+import warnings
 
 structure_types=['Turn','paragraph','dialogue','Dialogue']
 resource_types =['default','Resource']
@@ -88,12 +89,19 @@ def is_resource(annotation):
     """
     return (annotation.type in resource_types)
 
-def is_dialogue_act(annotation):
+def is_edu(annotation):
     """
     See Unit typology above
     """
     blacklist = structure_types + resource_types
     return (annotation.type not in blacklist)
+
+def is_dialogue_act(annotation):
+    """
+    Deprecated in favour of is_edu
+    """
+    warnings.warn("deprecated, use is_edu instead", DeprecationWarning)
+    return is_edu(annotation)
 
 def is_structure(annotation):
     """
