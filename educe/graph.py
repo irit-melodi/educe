@@ -335,8 +335,8 @@ class Graph(gr.hypergraph, AttrsMixin):
         """
         Return a set of a connected components.
 
-        Each connected component set can be passed to `self.subgraph()`
-        to be selected as subgraph.
+        Each connected component set can be passed to `self.copy()`
+        to be copied as a subgraph.
 
         This builds on python-graph's version of a function with the
         same name but also adds awareness of our conventions about there
