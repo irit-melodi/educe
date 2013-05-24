@@ -94,7 +94,7 @@ class Reader:
     .. code-block:: python
 
         corpus    = reader.slurp()
-        subcorpus = { k:v in corpus.items() if k.doc = 'pilot14' }
+        subcorpus = { k:v in corpus.items() if k.doc == 'pilot14' }
 
     This is an abstract class; you should use the version from a
     data-set, eg. `educe.stac.Reader` instead
