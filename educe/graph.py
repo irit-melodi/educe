@@ -409,6 +409,16 @@ class Graph(gr.hypergraph, AttrsMixin):
         xs = [ e for e in self.hyperedges() if self.is_cdu(e) ]
         return frozenset(xs)
 
+    def containing_cdu(self, node):
+        """
+        Given an EDU (or CDU, or relation instance), return its immediate
+        containing CDU (the hyperedge) if there is one or None otherwise
+        """
+        for e in self.links(node):
+            if self.is_cdu(e): return e
+        return None
+
+
     def cdu_members(self, cdu, deep=False):
         """
         Return the set of EDUs, CDUs, and relations which can be considered as
