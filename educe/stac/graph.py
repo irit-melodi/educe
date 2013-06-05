@@ -66,3 +66,22 @@ class DotGraph(educe.graph.DotGraph):
 
     def _rel_label(self, anno):
         return anno.type
+
+    def _simple_rel_attrs(self, anno):
+        attrs = educe.graph.DotGraph._simple_rel_attrs(self, anno)
+        if anno.type not in stac.subordinating_relations:
+            attrs['fontcolor'] = 'dodgerblue4'
+            attrs['color'    ] = 'gray13'
+        return attrs
+
+    def _complex_rel_attrs(self, anno):
+        midpoint_attrs, attrs1, attrs2 =\
+                educe.graph.DotGraph._complex_rel_attrs(self, anno)
+        if anno.type not in stac.subordinating_relations:
+            midpoint_attrs['fontcolor'] = 'dodgerblue4'
+        return (midpoint_attrs, attrs1, attrs2)
+
+    def _simple_cdu_attrs(self, anno):
+        attrs = educe.graph.DotGraph._simple_cdu_attrs(self, anno)
+        attrs['rank'] = 'same'
+        return attrs
