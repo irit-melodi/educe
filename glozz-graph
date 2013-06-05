@@ -86,7 +86,7 @@ for doc_key in [ k for k in corpus if k.stage == 'discourse' ]:
             ccs = g.connected_components()
             for k,nodes in enumerate(ccs,1):
                 g2 = g.copy(nodes)
-                write_dot_graph(doc_file, graph.DotGraph(g2), part=k)
+                write_dot_graph(doc_file, stacgraph.DotGraph(g2), part=k)
     except graph.DuplicateIdException:
         warning  = "WARNING: %s has duplicate annotation ids" % doc_file
         print >> sys.stderr, warning
