@@ -523,6 +523,34 @@ class DotGraph(pydot.Dot):
     def _rel_label(self, anno):
         return anno.type
 
+    def _simple_rel_attrs(self, anno):
+        return\
+            { 'label'      : ' ' + self._rel_label(anno)
+            , 'shape'      : 'plaintext'
+            , 'fontcolor'  : 'blue'
+            }
+
+    def _complex_rel_attrs(self, anno):
+        """
+        Return attributes for
+        (midpoint, to midpoint, from midpoint)
+        """
+        midpoint_attrs =\
+            { 'label'      : self._rel_label(anno)
+            , 'style'      : 'dotted'
+            , 'fontcolor'  : 'blue'
+            }
+        attrs1  = { 'arrowhead' : 'tee'
+                  , 'arrowsize' : '0.5'
+                  }
+        attrs2  = {
+                  }
+        return (midpoint_attrs, attrs1, attrs2)
+
+    def _simple_cdu_attrs(self, anno):
+        return { 'color' : 'lightgrey'
+               }
+
     def _edu_is_error(self, anno):
         """
         If there is something seemingly wrong with this EDU
@@ -620,12 +648,7 @@ class DotGraph(pydot.Dot):
         anno  = self.core.annotation(hyperedge)
         links = self.core.links(hyperedge)
         link1_, link2_ = links
-        attrs =\
-            { 'label'      : ' ' + self._rel_label(anno)
-            , 'shape'      : 'plaintext'
-            , 'fontcolor'  : 'blue'
-            }
-
+        attrs = self._simple_rel_attrs(anno)
         link1, attrs1 = self._point_from(link1_)
         link2, attrs2 = self._point_to(link2_)
 
@@ -637,17 +660,7 @@ class DotGraph(pydot.Dot):
         anno  = self.core.annotation(hyperedge)
         links = self.core.links(hyperedge)
         link1_, link2_ = links
-        midpoint_attrs =\
-            { 'label'      : self._rel_label(anno)
-            , 'style'      : 'dotted'
-            , 'fontcolor'  : 'blue'
-            }
-
-        attrs1  = { 'arrowhead' : 'tee'
-                  , 'arrowsize' : '0.5'
-                  }
-        attrs2  = {
-                  }
+        midpoint_attrs, attrs1, attrs2 = self._complex_rel_attrs(anno)
         link1, attrs1_ = self._point_from(link1_)
         link2, attrs2_ = self._point_to(link2_)
         attrs1.update(attrs1_)
@@ -665,8 +678,8 @@ class DotGraph(pydot.Dot):
         """
         Straightforward CDU that can be supported as a cluster.
         """
-        attrs    = { 'color' : 'lightgrey'
-                   }
+        anno  = self.core.annotation(hyperedge)
+        attrs = self._simple_cdu_attrs(anno)
         if len(self.complex_cdus) > 0:
             # complex CDUs have a CDU node, so I thought it might be
             # less confusing in those cases to also label the simple
