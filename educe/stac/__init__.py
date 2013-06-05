@@ -40,6 +40,32 @@ import warnings
 structure_types=['Turn','paragraph','dialogue','Dialogue']
 resource_types =['default','Resource']
 
+subordinating_relations =\
+   [ 'Explanation'
+   , 'Background'
+   , 'Elaboration'
+   , 'Correction'
+   , 'Q-Elab'
+   , 'Comment'
+   ]
+
+coordinating_relations =\
+   [ 'Result'
+   , 'Narration'
+   , 'Continuation'
+   , 'Contrast'
+   , 'Parallel'
+   ]
+
+# TODO: I don't yet know how to classify these
+unknown_relations =\
+   [ 'Question-answer_pair'
+   , 'Conditional'
+   , 'Clarification_question'
+   , 'Alternation'
+   , 'Acknowledgement'
+   ]
+
 # ---------------------------------------------------------------------
 # Document
 # ---------------------------------------------------------------------
