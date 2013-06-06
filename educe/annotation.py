@@ -29,6 +29,11 @@ class Span:
     def  __str__(self):
         return ('(%d,%d)' % (self.char_start, self.char_end))
 
+    def __lt__(self, other):
+        return self.char_start < other.char_start or\
+            (self.char_start == other.char_start and
+             self.char_end   <  other.char_end)
+
     def encloses(self, sp):
         """
         Return True if this span includes the argument
