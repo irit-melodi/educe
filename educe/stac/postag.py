@@ -86,11 +86,12 @@ def read_tags(corpus, dir):
 
         tagged_file = tagger_file_name(k, dir)
         raw_toks    = ext.read_token_file(tagged_file)
+        pos_tags[k] = []
         for turn, seg in zip(turns, raw_toks):
             toks = ext.token_spans(doc.text_for(turn), seg, turn.span.char_start)
             for t in toks:
                 t.origin = doc
                 dtxt = doc.text_for(t)
                 assert dtxt == t.word
-            pos_tags[k] = toks
+            pos_tags[k].extend(toks)
     return pos_tags
