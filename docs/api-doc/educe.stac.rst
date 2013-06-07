@@ -25,3 +25,11 @@ stac Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`postag` Module
+--------------------
+
+.. automodule:: educe.stac.postag
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
