@@ -49,7 +49,7 @@ class Utf8DictWriter:
     def writerow(self, row):
         def b(x):
             return x.encode('utf-8')
-        self.writer.writerow(dict([(b(k),b(v)) for k,v in row.items()]))
+        self.writer.writerow(dict([(b(k),b(unicode(v))) for k,v in row.items()]))
 
     def writerows(self, rows):
         for row in rows:
