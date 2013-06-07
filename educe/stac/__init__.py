@@ -195,6 +195,27 @@ class Reader(educe.corpus.Reader):
             sys.stderr.write("\rSlurping corpus dir [%d/%d done]\n" % (counter, len(cfiles)))
         return corpus
 
+def id_to_path(k):
+    """
+    Given a fleshed out FileId (none of the fields are None),
+    return a filepath for it following STAC conventions.
+
+    You will likely want to add your own filename extensions to
+    this path
+    """
+    for field in [ "doc", "subdoc", "stage" ]:
+        if k.__dict__[field] is None:
+            raise Exception('Need all FileId fields to be set (%s is unset)' % field)
+    root = k.doc + '_' + k.subdoc
+    pathparts = [k.doc, k.stage]
+    if k.annotator is not None:
+        pathparts.append(k.annotator)
+    elif k.stage in [ "units", "discourse" ]:
+        raise Exception('FileId.annotator must be set for unit/discourse items')
+    pathparts.append(root)
+    return os.path.join(*pathparts)
+
+
 # ---------------------------------------------------------------------
 # Adding annotations
 # ---------------------------------------------------------------------
