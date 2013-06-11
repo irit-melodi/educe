@@ -53,8 +53,10 @@ def run_tagger(corpus, outdir, tagger_jar):
         txt_dir  = os.path.split(txt_file)[0]
         if not os.path.exists(txt_dir):
             os.makedirs(txt_dir)
+        def ttext(turn):
+            return stac.split_turn_text(doc.text_for(x))[1]
         with codecs.open(txt_file, 'w', 'utf-8') as f:
-            print >> f, "\n".join([doc.text_for(x) for x in turns])
+            print >> f, "\n".join([ttext(x) for x in turns])
 
         tagged_file = tagger_file_name(k, outdir)
         tagged_dir  = os.path.split(tagged_file)[0]
@@ -88,7 +90,9 @@ def read_tags(corpus, dir):
         raw_toks    = ext.read_token_file(tagged_file)
         pos_tags[k] = []
         for turn, seg in zip(turns, raw_toks):
-            toks = ext.token_spans(doc.text_for(turn), seg, turn.span.char_start)
+            prefix, body = stac.split_turn_text(doc.text_for(turn))
+            start        = turn.span.char_start + len(prefix)
+            toks = ext.token_spans(body, seg, start)
             for t in toks:
                 t.origin = doc
                 dtxt = doc.text_for(t)

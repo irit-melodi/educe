@@ -35,6 +35,7 @@ import educe.glozz as glozz
 import itertools
 import math
 import os
+import re
 import warnings
 
 structure_types=['Turn','paragraph','dialogue','Dialogue']
@@ -65,6 +66,28 @@ unknown_relations =\
    , 'Alternation'
    , 'Acknowledgement'
    ]
+
+def split_turn_text(t):
+    """
+    STAC turn texts are prefixed with a turn number and speaker
+    to help the annotators
+    (eg. "379: Bob: I think it's your go, Alice").
+
+    Given the text for a turn, split the string into a prefix
+    containing this turn/speaker information (eg. "379: Bob: "),
+    and a body containing the turn text itself (eg. "I think it's
+    your go, Alice").
+
+    Mind your offsets! They're based on the whole turn string.
+    """
+    prefix_re = re.compile(r'(^[0-9]+ ?: .*? ?: )(.*)$')
+    match     = prefix_re.match(t)
+    if match:
+        return (match.group(1),match.group(2))
+    else:
+        # it's easy to just return the body here, but when this arises
+        # it's a sign that something weird has happened
+        raise Exception("Turn does not start with number/speaker prefix: " + t)
 
 # ---------------------------------------------------------------------
 # Document
