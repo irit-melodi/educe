@@ -54,7 +54,7 @@ def run_tagger(corpus, outdir, tagger_jar):
         if not os.path.exists(txt_dir):
             os.makedirs(txt_dir)
         def ttext(turn):
-            return stac.split_turn_text(doc.text_for(x))[1]
+            return stac.split_turn_text(doc.text_for(turn))[1]
         with codecs.open(txt_file, 'w', 'utf-8') as f:
             print >> f, "\n".join([ttext(x) for x in turns])
 
