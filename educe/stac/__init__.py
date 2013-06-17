@@ -48,6 +48,9 @@ subordinating_relations =\
    , 'Correction'
    , 'Q-Elab'
    , 'Comment'
+   , 'Question-answer_pair'
+   , 'Clarification_question'
+   , 'Acknowledgement'
    ]
 
 coordinating_relations =\
@@ -56,15 +59,8 @@ coordinating_relations =\
    , 'Continuation'
    , 'Contrast'
    , 'Parallel'
-   ]
-
-# TODO: I don't yet know how to classify these
-unknown_relations =\
-   [ 'Question-answer_pair'
    , 'Conditional'
-   , 'Clarification_question'
    , 'Alternation'
-   , 'Acknowledgement'
    ]
 
 def split_turn_text(t):
