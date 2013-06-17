@@ -187,8 +187,9 @@ class Reader(educe.corpus.Reader):
                     subdoc = os.path.basename(prefix)
                     if "_" in subdoc:
                         subdoc=subdoc.split("_",1)[1]
-                        tf = prefix + ".ac"
-                        file_id = FileId(doc, subdoc, stage, annotator)
+                        file_id    = FileId(doc, subdoc, stage, annotator)
+                        ac_file_id = FileId(doc, subdoc, 'unannotated', None)
+                        tf = os.path.join(self.rootdir, id_to_path(ac_file_id)) + ".ac"
                     corpus[file_id] = (f,tf)
 
                 stage_dir=os.path.join(doc_dir,stage)
