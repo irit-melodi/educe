@@ -74,8 +74,11 @@ class Standoff:
     def _members(self, doc):
         """
         Any annotations contained within this annotation.
+
+        Must return None if is a terminal annotation (not the same
+        meaning as returning the empty list)
         """
-        return []
+        return None
 
     def _terminals(self, doc, seen=[]):
         """
@@ -84,20 +87,35 @@ class Standoff:
         terminals
         """
         my_members = self._members(doc)
-        if len(my_members) > 0:
+        if my_members is None:
+            return [self]
+        else:
             return chain.from_iterable([m._terminals(doc, seen + my_members)
                                         for m in my_members if m not in seen])
-        else:
-            return [self]
 
     def text_span(self, doc):
         """
         Return the span from the earliest terminal annotation contained here
         to the latest.
+
+        Corner case: if this is an empty non-terminal (which would be a very
+        weird thing indeed), return None
         """
-        start = min( [t.span.char_start for t in self._terminals(doc)] )
-        end   = max( [t.span.char_end   for t in self._terminals(doc)] )
-        return Span(start, end)
+        terminals = list(self._terminals(doc))
+        if len(terminals) > 0:
+            start = min( [t.span.char_start for t in terminals] )
+            end   = max( [t.span.char_end   for t in terminals] )
+            return Span(start, end)
+        else:
+            return None
+
+    def encloses(self,u):
+        """
+        Return True if this unit's span encloses the span of the argument unit.
+        See `Span` for details
+        """
+        return self.text_span().encloses(u.span)
+
 
 class Annotation(Standoff):
     """
@@ -194,13 +212,6 @@ class Unit(Annotation):
         else:
             ostuff=[o.doc, o.subdoc, o.stage]
         return ":".join(ostuff + map(str,[self.span.char_start, self.span.char_end]))
-
-    def encloses(self,u):
-        """
-        Return True if this unit's span encloses the span of the argument unit.
-        See `Span` for details
-        """
-        return self.span.encloses(u.span)
 
 class Relation(Annotation):
     """
