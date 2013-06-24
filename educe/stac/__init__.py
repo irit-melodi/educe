@@ -208,6 +208,33 @@ def cleanup_comments(x):
     if ckey in x.features.keys() and x.features[ckey] == placeholder:
         del x.features[ckey]
 
+def twin(corpus, anno, stage='units'):
+    """
+    Given an annotation in a corpus, retrieve the equivalent annotation
+    (by local identifier) from a a different stage of the corpus.
+    Return this "twin" annotation or None if it is not found
+
+    Note that the annotation's origin must be set
+
+    The typical use of this would be if you have an EDU in the 'discourse'
+    stage and need to get its 'units' stage equvialent to have its
+    dialogue act.
+    """
+    if anno.origin is None:
+        raise Exception('Annotation origin must be set')
+    anno_local_id  = anno.local_id()
+    twin_key       = copy.copy(anno.origin)
+    twin_key.stage = stage
+    if twin_key in corpus:
+        udoc  = corpus[twin_key]
+        twins = [ u for u in udoc.annotations() if u.local_id() == anno_local_id ]
+        if len(twins) > 0:
+            return twins[0]
+        else:
+            return None
+    else:
+        return None
+
 # ---------------------------------------------------------------------
 # Corpus
 # ---------------------------------------------------------------------

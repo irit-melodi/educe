@@ -41,19 +41,9 @@ class DotGraph(educe.graph.DotGraph):
         # In discourse annotated part of the corpus, all segments have
         # type 'Other', which isn't too helpful. Try to recover the
         # speech act from the unit equivalent to this document
-        anno_local_id  = anno.local_id()
-        fallback       = stac.dialogue_act(anno)
-        unit_key       = copy.copy(self.doc_key)
-        unit_key.stage = 'units'
-        if unit_key in self.corpus:
-            udoc  = self.corpus[unit_key]
-            doppelgangers = [ u for u in udoc.units if u.local_id() == anno_local_id ]
-            if len(doppelgangers) > 0:
-                return stac.dialogue_act(doppelgangers[0])
-            else:
-                return fallback
-        else:
-            return fallback
+        twin = stac.twin(self.corpus, anno)
+        edu  = twin if twin is not None else anno
+        return stac.dialogue_act(edu)
 
     def _edu_label(self, anno):
         speech_acts = ", ".join(self._get_speech_acts(anno))
