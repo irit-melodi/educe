@@ -45,7 +45,7 @@ def test_members():
     r1  = TestRelation('r1', 's1','u2')
 
     doc = TestDocument([u1,u2,u3,u4,u5,u6],[r1],[s1], "why hello there!")
-    assert u1._members(doc) == []
+    assert u1._members(doc) is None
     assert sorted(s1._members(doc)) == sorted([u4,u5,u6])
     assert sorted(r1._members(doc)) == sorted([u2,s1])
 
