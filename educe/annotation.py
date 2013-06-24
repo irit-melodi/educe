@@ -34,13 +34,23 @@ class Span:
             (self.char_start == other.char_start and
              self.char_end   <  other.char_end)
 
+    def __eq__(self, other):
+        return self.char_start == other.char_start or\
+               self.char_end   == other.char_end
+
     def encloses(self, sp):
         """
         Return True if this span includes the argument
 
         Note that `x.encloses(x) == True`
+
+        Corner case: `x.encloses(None) == False`
         """
-        return (self.char_start <= sp.char_start and self.char_end >= sp.char_end)
+        if sp is None:
+            return False
+        else:
+            return self.char_start <= sp.char_start and\
+                   self.char_end   >= sp.char_end
 
 class RelSpan():
     """
