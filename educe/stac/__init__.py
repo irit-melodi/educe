@@ -10,17 +10,55 @@ This includes things like
 * which annotations are of interest
 * renaming/deleting/collapsing annotation labels
 
-Some notes worth keeping in mind.
+STAC/Glozz annotations can be a bit confusing because for two reasons, first
+that Glozz objects are used to annotate very different things; and second
+that annotations are done on different stages
 
-STAC/Glozz annotations are divided into units and relations.
+Stage 1 (units)
+
++-----------+----------------------------------+
+| Glozz     | Uses                             |
++===========+==================================+
+| units     | doc structure, EDUs, resources   |
++-----------+----------------------------------+
+| relations | coreference                      |
++-----------+----------------------------------+
+| schemas   | composite resources              |
++-----------+----------------------------------+
+
+Stage 2 (discourse)
+
++-----------+----------------------------------+
+| Glozz     | Uses                             |
++===========+==================================+
+| units     | doc structure, EDUs              |
++-----------+----------------------------------+
+| relations | relation instances, coreference  |
++-----------+----------------------------------+
+| schemas   | CDUs                             |
++-----------+----------------------------------+
 
 **Units**
 
 There is a typology of unit types worth noting:
 
-* structure : represent the document structure (eg. Dialogue, Turn, paragraph)
-* segments  : spans of text associated with a dialogue act (eg. Offer, CounterOffer)
-* resources : subspans of segments (Resource)
+* doc structure : type eg. `Dialogue`, `Turn`, `paragraph`
+* resources     : subspans of segments (type `Resource`)
+* EDUs          : spans of text associated with a dialogue act (eg. type
+  `Offer`, `Accept`) (during discourse stage, these are just type `Segment`)
+
+**Relations**
+
+* coreference : (type `Anaphora`)
+* relation instances : links between EDUs, annotated with relation label
+  (eg. type `Elaboration`, type `Contrast`, etc).  These can be further
+  divided in suboordinating or coordination relation instances according
+  to their label
+
+**Schemas**
+
+* composite resources : boolean combinations of resources (eg. "sheep or ore")
+* CDUs: type `Complex_discourse_unit` (discourse stage)
 
 ----
 
@@ -138,8 +176,19 @@ def is_edu(annotation):
     """
     See Unit typology above
     """
-    blacklist = structure_types + resource_types
-    return (annotation.type not in blacklist)
+    origin = annotation.origin
+    if origin is not None and origin.stage == 'discourse':
+        return annotation.type == 'Segment'
+    else:
+        blacklist = structure_types + resource_types
+        return (annotation.type not in blacklist)
+
+def is_relation_instance(annotation):
+    """
+    See Relation typology above
+    """
+    return annotation.type in subordinating_relations or\
+           annotation.type in coordinating_relations
 
 def is_dialogue_act(annotation):
     """
