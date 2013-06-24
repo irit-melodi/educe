@@ -27,7 +27,7 @@ class GlozzDocument(Document):
             elm.append(ET.Element('metadata', corpusHashcode=self.hashcode))
         elm.extend([glozz_annotation_to_xml(x, 'unit')     for x in self.units])
         elm.extend([glozz_annotation_to_xml(x, 'relation') for x in self.relations])
-        elm.extend(self.schemas)
+        elm.extend([glozz_annotation_to_xml(x, 'schema')   for x in self.schemas])
         return elm
 
     def set_origin(self, origin):
@@ -101,8 +101,10 @@ def glozz_annotation_to_xml(self, tag='annotation'):
         span_elm = glozz_span_to_xml(self.span)
     elif (tag == 'relation'):
         span_elm = glozz_relspan_to_xml(self.span)
+    elif (tag == 'schema'):
+        span_elm = glozz_schema_span_to_xml(self.span)
     else:
-        raise Exception("Don't know how to emit XML for non unit/relation annotations")
+        raise Exception("Don't know how to emit XML for non unit/relation annotations (%s)" % tag)
     elm.extend([meta_elm, char_elm, span_elm])
     return elm
 
@@ -123,6 +125,14 @@ def glozz_relspan_to_xml(self):
     elm = ET.Element('positioning')
     set_pos(elm,self.t1)
     set_pos(elm,self.t2)
+    return elm
+
+def glozz_schema_span_to_xml(self):
+    def set_pos(elm,x):
+        elm.append(ET.Element('embedded-unit', id=str(x)))
+    elm = ET.Element('positioning')
+    for x in self:
+        set_pos(elm,x)
     return elm
 
 # ---------------------------------------------------------------------
