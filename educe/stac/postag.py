@@ -35,6 +35,26 @@ def tagger_file_name(k, dir):
     k2.annotator = 'ark-tweet-nlp'
     return os.path.join(dir, stac.id_to_path(k2) + '.conll')
 
+def extract_turns(doc):
+    """
+    Return a string representation of the document's turn text
+    for use by a tagger
+    """
+    turns = sorted_by_span(filter(is_turn, doc.units))
+    def ttext(turn):
+        return stac.split_turn_text(doc.text_for(turn))[1]
+    return "\n".join(map(ttext, turns))
+
+def tagger_cmd(tagger_jar, txt_file):
+    return [ 'java'
+           , '-XX:ParallelGCThreads=2'
+           , '-Xmx500m'
+           , '-jar', tagger_jar
+           , '--input-format', 'text'
+           , '--output-format', 'conll'
+           , txt_file
+           ]
+ 
 def run_tagger(corpus, outdir, tagger_jar):
     """
     Run the ark-tweet-tagger on all the (unannotated) documents in
@@ -42,7 +62,6 @@ def run_tagger(corpus, outdir, tagger_jar):
     """
     for k in corpus:
         doc   = corpus[k]
-        turns = sorted_by_span(filter(is_turn, doc.units))
 
         k_txt           = copy.copy(k)
         k_txt.stage     = 'turns'
@@ -53,24 +72,15 @@ def run_tagger(corpus, outdir, tagger_jar):
         txt_dir  = os.path.split(txt_file)[0]
         if not os.path.exists(txt_dir):
             os.makedirs(txt_dir)
-        def ttext(turn):
-            return stac.split_turn_text(doc.text_for(turn))[1]
         with codecs.open(txt_file, 'w', 'utf-8') as f:
-            print >> f, "\n".join([ttext(x) for x in turns])
+            print >> f, extract_turns(doc)
 
         tagged_file = tagger_file_name(k, outdir)
         tagged_dir  = os.path.split(tagged_file)[0]
         if not os.path.exists(tagged_dir):
             os.makedirs(tagged_dir)
         # from the runTagger srcipt
-        cmd = [ 'java'
-              , '-XX:ParallelGCThreads=2'
-              , '-Xmx500m'
-              , '-jar', tagger_jar
-              , '--input-format', 'text'
-              , '--output-format', 'conll'
-              , txt_file
-              ]
+        cmd = tagger_cmd(tagger_jar, txt_file)
         with open(tagged_file, 'wb') as tf:
             subprocess.call(cmd, stdout=tf)
 
