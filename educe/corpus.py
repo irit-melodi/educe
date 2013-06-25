@@ -69,7 +69,8 @@ class FileId:
         See also `position` as potentially a safer alternative to this
         (and what we mean by safer)
         """
-        return "_".join([self.doc, self.subdoc, self.stage, local_id])
+        parts = [self.doc, self.subdoc, self.stage, local_id]
+        return "_".join(p for p in parts if p is not None)
 
 class Reader:
     """

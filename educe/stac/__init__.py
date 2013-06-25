@@ -291,6 +291,33 @@ class Reader(educe.corpus.Reader):
             sys.stderr.write("\rSlurping corpus dir [%d/%d done]\n" % (counter, len(cfiles)))
         return corpus
 
+class LiveInputReader(Reader):
+    """
+    Reader for unannotated 'live' data that we want to parse.
+
+    The data is assumed to be in a directory with one aa/ac file
+    pair.
+
+    There is no notion of subdocument (`subdoc = None`) and the
+    stage is `'unannotated'`
+    """
+
+    def __init__(self, dir):
+        Reader.__init__(self, dir)
+
+    def files(self):
+        corpus = {}
+        for aa in glob(os.path.join(self.rootdir, '*.aa')):
+            print aa
+            prefix = os.path.splitext(aa)[0]
+            pair   = (aa, prefix + '.ac')
+            k   = educe.corpus.FileId(doc=os.path.basename(prefix),
+                                      subdoc=None,
+                                      stage='unannotated',
+                                      annotator=None)
+            corpus[k] = pair
+        return corpus
+
 def id_to_path(k):
     """
     Given a fleshed out FileId (none of the fields are None),
@@ -299,10 +326,12 @@ def id_to_path(k):
     You will likely want to add your own filename extensions to
     this path
     """
-    for field in [ "doc", "subdoc", "stage" ]:
+    for field in [ "doc", "stage" ]:
         if k.__dict__[field] is None:
             raise Exception('Need all FileId fields to be set (%s is unset)' % field)
-    root = k.doc + '_' + k.subdoc
+    root = k.doc
+    if k.subdoc is not None:
+        root += '_' + k.subdoc
     pathparts = [k.doc, k.stage]
     if k.annotator is not None:
         pathparts.append(k.annotator)
