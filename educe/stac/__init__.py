@@ -308,7 +308,6 @@ class LiveInputReader(Reader):
     def files(self):
         corpus = {}
         for aa in glob(os.path.join(self.rootdir, '*.aa')):
-            print aa
             prefix = os.path.splitext(aa)[0]
             pair   = (aa, prefix + '.ac')
             k   = educe.corpus.FileId(doc=os.path.basename(prefix),
