@@ -48,8 +48,11 @@ class Utf8DictWriter:
 
     def writerow(self, row):
         def b(x):
-            return x.encode('utf-8')
-        self.writer.writerow(dict([(b(k),b(unicode(v))) for k,v in row.items()]))
+            if isinstance(x, basestring):
+                return unicode(x).encode('utf-8')
+            else:
+                return x
+        self.writer.writerow(dict([(b(k),b(v)) for k,v in row.items()]))
 
     def writerows(self, rows):
         for row in rows:
@@ -71,7 +74,10 @@ def mk_csv_reader(infile):
     See `csv_headers` for details
     """
     def u(x):
-        return unicode(x, 'utf-8')
+        if isinstance(x, basestring):
+            return unicode(x, 'utf-8')
+        else:
+            return x
 
     for row in csv.DictReader(infile, dialect='stac'):
         yield dict([(u(k), u(v)) for k,v in row.items()])
