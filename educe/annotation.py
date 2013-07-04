@@ -128,14 +128,14 @@ class Annotation(Standoff):
     def __init__(self, anno_id, span, type, features, metadata=None, origin=None):
         Standoff.__init__(self, origin)
         self.origin=origin
-        self.__anno_id=anno_id
+        self._anno_id=anno_id
         self.span=span
         self.type=type
         self.features=features
         self.metadata=metadata
 
     def __lt__(self, other):
-        return self.__anno_id < other.__anno_id
+        return self._anno_id < other._anno_id
 
     def __str__(self):
         feats=str(self.features)
@@ -146,7 +146,7 @@ class Annotation(Standoff):
         An identifier which is sufficient to pick out this annotation within a
         single annotation file
         """
-        return self.__anno_id
+        return self._anno_id
 
     def identifier(self):
         """
@@ -168,7 +168,7 @@ class Annotation(Standoff):
         (and what we mean by safer)
         """
         o=self.origin
-        local_id=self.__anno_id
+        local_id=self._anno_id
         if o is None:
             return local_id
         else:
