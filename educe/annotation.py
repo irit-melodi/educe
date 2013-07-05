@@ -38,6 +38,31 @@ class Span:
         return self.char_start == other.char_start or\
                self.char_end   == other.char_end
 
+    def shift(self, offset):
+        """
+        Return a copy of this span, shifted to the right
+        (if offset is positive) or left (if negative).
+
+        It may be a bit more convenient to use 'absolute/relative'
+        if you're trying to work with spans that are within other
+        spans.
+        """
+        return Span(self.char_start + offset, self.char_end + offset)
+
+    def absolute(self, other):
+        """
+        Assuming this span is relative to some other span,
+        return a suitably shifted "absolute" copy.
+        """
+        return self.shift(other.char_start)
+
+    def relative(self, other):
+        """
+        Assuming this span is relative to some other span,
+        return a suitably shifted "absolute" copy.
+        """
+        return self.shift(0 - other.char_start)
+
     def encloses(self, sp):
         """
         Return True if this span includes the argument
