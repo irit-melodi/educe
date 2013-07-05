@@ -195,7 +195,7 @@ def read_node(node, context=None):
 
     elif node.tag == 'feature':
         attr=node.attrib['name']
-        val =node.text
+        val =node.text.strip() if node.text else None
         return (attr, val)
 
     ## TODO throw exception if we see more than one instance of a key
@@ -206,7 +206,7 @@ def read_node(node, context=None):
         return node.attrib['corpusHashcode']
 
     elif node.tag == 'metadata':
-        return dict([(t.tag,t.text) for t in node ])
+        return dict([(t.tag,t.text.strip()) for t in node ])
 
     elif node.tag == 'positioning' and context == 'unit':
         start = get_one('start', -2)
