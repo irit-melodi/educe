@@ -58,6 +58,26 @@ class Utf8DictWriter:
         for row in rows:
             self.writerow(row)
 
+class Utf8DictReader:
+    """
+    A CSV reader which assumes strings are encoded in UTF-8.
+    """
+
+    def __init__(self, f, **kwds):
+        self.reader = csv.DictReader(f, **kwds)
+
+    def next(self):
+        def u(x):
+            if isinstance(x, basestring):
+                return unicode(x, 'utf-8')
+            else:
+                return x
+
+        row = self.reader.next()
+        return dict([(u(k), u(v)) for k,v in row.items()])
+
+    def __iter__(self):
+        return self
 
 def mk_csv_writer(ofile):
     """
@@ -71,13 +91,7 @@ def mk_csv_reader(infile):
     Assumes UTF-8 encoded files.
     Reads into dictionaries with Unicode strings.
 
-    See `csv_headers` for details
+    See `Utf8DictReader` if you just want a generic UTF-8 dict
+    reader, ie. not using the stac dialect
     """
-    def u(x):
-        if isinstance(x, basestring):
-            return unicode(x, 'utf-8')
-        else:
-            return x
-
-    for row in csv.DictReader(infile, dialect='stac'):
-        yield dict([(u(k), u(v)) for k,v in row.items()])
+    return Utf8DictReader(infile, dialect='stac')
