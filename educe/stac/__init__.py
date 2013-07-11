@@ -172,6 +172,12 @@ def is_resource(annotation):
     """
     return (annotation.type in resource_types)
 
+def is_turn(annotation):
+    """
+    See Unit typology above
+    """
+    return annotation.type == 'Turn'
+
 def is_edu(annotation):
     """
     See Unit typology above

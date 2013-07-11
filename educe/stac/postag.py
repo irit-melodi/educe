@@ -22,9 +22,6 @@ def sorted_by_span(xs):
     """
     return sorted(xs, key=lambda x:x.span)
 
-def is_turn(x):
-    return x.type == 'Turn'
-
 def tagger_file_name(k, dir):
     """
     Given an educe.corpus.FileId and directory, return the file path
@@ -40,7 +37,7 @@ def extract_turns(doc):
     Return a string representation of the document's turn text
     for use by a tagger
     """
-    turns = sorted_by_span(filter(is_turn, doc.units))
+    turns = sorted_by_span(filter(stac.is_turn, doc.units))
     def ttext(turn):
         return stac.split_turn_text(doc.text_for(turn))[1]
     return "\n".join(map(ttext, turns))
@@ -94,7 +91,7 @@ def read_tags(corpus, dir):
     pos_tags = {}
     for k in corpus:
         doc   = corpus[k]
-        turns = sorted_by_span(filter(is_turn, doc.units))
+        turns = sorted_by_span(filter(stac.is_turn, doc.units))
 
         tagged_file = tagger_file_name(k, dir)
         raw_toks    = ext.read_token_file(tagged_file)
