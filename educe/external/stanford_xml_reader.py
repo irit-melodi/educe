@@ -94,13 +94,7 @@ class Preprocessing_Source( object ):
 
         parser = ET.XMLParser( encoding=self._encoding )
         file2parse = base_file + suffix
-        try:
-            root = ET.parse( file2parse )
-        except SyntaxError: # Hack around fact that stanford outputs
-                            # are not always proper UTF8
-            os.system("iconv -f ISO-8859-1 -t UTF-8 %s > tmp; mv tmp %s" \
-                      %(file2parse,file2parse))
-            root = ET.parse( file2parse )
+        root = ET.parse( file2parse )
         """ register sentences """
         s_elts = root.findall(".//sentences/sentence")
         for s in s_elts:
