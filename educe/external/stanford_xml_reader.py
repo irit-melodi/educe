@@ -66,6 +66,14 @@ except ImportError:
 except ImportError:
     raise ImportError("cElementTree missing!")
 
+def xml_unescape( _str ):
+    # you can also use
+    # from xml.sax.saxutils import escape
+    # Caution: you have to escape '&' first!
+    _str = _str.replace(u'&amp;',u'&')
+    _str = _str.replace(u'&lt;',u'<')
+    _str = _str.replace(u'&gt;',u'>')
+    return _str
 
 class Preprocessing_Source( object ):
     ''' Reads in document annotations produced by CoreNLP pipeline '''
