@@ -9,6 +9,14 @@ stac Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`corenlp` Module
+---------------------
+
+.. automodule:: educe.stac.corenlp
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`csv` Module
 -----------------
 
