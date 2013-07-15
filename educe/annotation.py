@@ -37,7 +37,7 @@ class Span:
              self.char_end   <  other.char_end)
 
     def __eq__(self, other):
-        return self.char_start == other.char_start or\
+        return self.char_start == other.char_start and\
                self.char_end   == other.char_end
 
     def shift(self, offset):
