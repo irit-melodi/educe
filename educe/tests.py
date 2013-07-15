@@ -15,6 +15,22 @@ from pygraph.algorithms import accessibility, traversal, searching
 from educe.annotation import *
 
 # ---------------------------------------------------------------------
+# spans
+# ---------------------------------------------------------------------
+
+def test_span():
+    assert not Span(5,10).overlaps(Span(11,12))
+    assert not Span(11,12).overlaps(Span(5,10))
+    def matches((x1,y1),(x2,y2),(rx,ry)):
+        o = Span(x1,y1).overlaps(Span(x2,y2))
+        assert o
+        assert o == Span(rx,ry)
+    matches((5,10),(6,9),(6,9))
+    matches((6,9),(5,10),(6,9))
+    matches((5,10),(7,12),(7,10))
+    matches((7,12),(5,10),(7,10))
+
+# ---------------------------------------------------------------------
 # annotations
 # ---------------------------------------------------------------------
 

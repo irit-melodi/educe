@@ -79,6 +79,21 @@ class Span:
             return self.char_start <= sp.char_start and\
                    self.char_end   >= sp.char_end
 
+    def overlaps(self, sp):
+        """
+        Return the overlapping region if two spans have regions
+        in common, or else None
+        """
+        if sp is None:
+            return None
+        else:
+            common_start = max(self.char_start, sp.char_start)
+            common_end   = min(self.char_end,   sp.char_end)
+            if common_start < common_end:
+                return Span(common_start, common_end)
+            else:
+                return None
+
 class RelSpan():
     """
     Which two units a relation connections.
