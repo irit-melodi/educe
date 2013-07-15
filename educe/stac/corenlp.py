@@ -199,8 +199,13 @@ def read_corenlp_result(doc, corenlp_doc, tid=None):
     for turn, a in zip(turns, sentences):
         sid = a['id']
 
+        # the token offsets are global, ie. for all sentences/turns
+        # in the file; so we have to shift them to left to zero them
+        # and then shift them back to the right
+        sentence_begin = min(t['extent'][0] for t in sentence_toks[sid])
+
         ttext  = doc.text_for(turn)
-        offset = turn.span.char_start + len(stac.split_turn_text(ttext)[0])
+        offset = turn.span.char_start + len(stac.split_turn_text(ttext)[0]) - sentence_begin
         educe_tokens = [ CoreNlpToken(t, offset) for t in sentence_toks[sid] ]
 
         tree       = nltk.tree.Tree(a['parse'])
