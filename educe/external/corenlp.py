@@ -40,14 +40,14 @@ class CoreNlpDocument(Standoff):
 
     def annotations(self):
         """
-        Return all annotations in flattened form
-        (so for any trees we have, return not just the tree but the
-        subtrees of those trees, etc)
+        Return all annotations. Note that some of the annotations are trees,
+        and may themselves contain annotations.
+
+        A crude way to search these would be to use `Tree.subtrees`, but you
+        may find it more efficient to do a first pass with `Tree.topdown`
+        function.
         """
-        annos = self.tokens
-        for t in self.trees:
-            annos.extend(t.subtrees())
-        return annos
+        return self.tokens + self.trees
 
 class CoreNlpToken(postag.Token):
     """

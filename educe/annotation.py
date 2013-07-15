@@ -225,15 +225,43 @@ class Tree(nltk.Tree, Standoff):
     in a way that can be later queried on the basis of Span
     enclosure.
 
+    Note that all children must have a `span` member of type
+    `Span`
+
     The `subtrees()` function can useful here.
     """
     def __init__(self, node, children, origin=None):
         nltk.Tree.__init__(self, node, children)
         Standoff.__init__(self, origin)
+        if not children:
+            raise Exception("Can't create a tree with no children")
         self.children = children
+        start = min(x.span.char_start for x in children)
+        end   = max(x.span.char_end   for x in children)
+        self.span = Span(start, end)
 
     def _members(self, doc):
         return self.children
+
+    def text_span(self, doc):
+        """
+        Note: doc is ignored here
+        """
+        return self.span
+
+    def topdown(self, pred, prunable=None):
+        """
+        Searching from the top down, return the biggest subtrees for which the
+        predicate is True.  The optional prunable function can be used to
+        throw out subtrees for more efficient search (note that pred always
+        overrides prunable though).  Note that leaf nodes are ignored.
+        """
+        if pred(self):
+            return [self]
+        elif prunable and prunable(self):
+            return []
+        else:
+            return chain.from_iterable(x.topdown(pred) for x in self.children if isinstance(x,Tree))
 
     @classmethod
     def build(cls, tree, tokens):
