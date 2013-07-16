@@ -17,19 +17,27 @@ import sys
 import nltk.tree
 
 from educe            import stac, corpus
-from educe.annotation import Span, Standoff, Tree
+from educe.annotation import Span, Standoff
 from educe.external   import postag
+from educe.external.parser import *
 import educe.external.stanford_xml_reader as corenlp_xml
 
 class CoreNlpDocument(Standoff):
     """
     All of the CoreNLP annotations for a particular document as instances of
-    `educe.annotation.Standoff`.
+    `educe.annotation.Standoff` or as structures that contain such instances.
+
+    Fields:
+
+        * tokens   - `CoreNlpToken` annotations
+        * trees    - constituency trees
+        * deptrees - dependency   trees
     """
-    def __init__(self, tokens, trees):
+    def __init__(self, tokens, trees, deptrees):
         Standoff.__init__(self, None)
-        self.tokens = tokens
-        self.trees  = trees
+        self.tokens   = tokens
+        self.trees    = trees
+        self.deptrees = deptrees
 
     def _members(self, doc):
         """
@@ -66,3 +74,7 @@ class CoreNlpToken(postag.Token):
 
     def __str__(self):
         return postag.Token.__str__(self) + ' ' + str(self.features)
+
+    # for debugging
+    def __repr__(self):
+        return self.word

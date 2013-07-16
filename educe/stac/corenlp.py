@@ -24,9 +24,10 @@ import sys
 import nltk.tree
 
 from educe            import stac, corpus
-from educe.annotation import Span, Standoff, Tree
+from educe.annotation import Span, Standoff
 from educe.external   import postag
 from educe.external.corenlp import *
+from educe.external.parser  import *
 import educe.external.stanford_xml_reader as corenlp_xml
 
 # ---------------------------------------------------------------------
@@ -196,6 +197,7 @@ def read_corenlp_result(doc, corenlp_doc, tid=None):
 
     all_tokens = []
     all_trees  = []
+    all_dtrees = []
     for turn, a in zip(turns, sentences):
         sid = a['id']
 
@@ -206,14 +208,24 @@ def read_corenlp_result(doc, corenlp_doc, tid=None):
 
         ttext  = doc.text_for(turn)
         offset = turn.span.char_start + len(stac.split_turn_text(ttext)[0]) - sentence_begin
-        educe_tokens = [ CoreNlpToken(t, offset) for t in sentence_toks[sid] ]
 
-        tree       = nltk.tree.Tree(a['parse'])
-        educe_tree = Tree.build(tree, educe_tokens)
+        def local_id(x):
+            return x['id'][len(sid) + 1:]
+        educe_tokens = dict((local_id(t), CoreNlpToken(t, offset)) for t in sentence_toks[sid])
 
-        all_tokens.extend(educe_tokens)
+        tree        = nltk.tree.Tree(a['parse'])
+        educe_tree  = ConstituencyTree.build(tree, educe_tokens.values())
+
+        deps   = collections.defaultdict(list)
+        for ty, gov_id, dep_id in a['collapsed_dependencies']:
+            deps[gov_id].append((ty,dep_id))
+        educe_dtree = DependencyTree.build(deps, educe_tokens, '0')
+
+        all_tokens.extend(educe_tokens.values())
         all_trees.append(educe_tree)
-    return CoreNlpDocument(all_tokens, all_trees)
+        all_dtrees.append(educe_dtree)
+
+    return CoreNlpDocument(all_tokens, all_trees, all_dtrees)
 
 def read_results(corpus, dir):
     """

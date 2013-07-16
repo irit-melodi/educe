@@ -3,7 +3,6 @@
 
 import collections
 from   itertools import chain
-import nltk.tree
 
 """
 Low-level representation of corpus annotations, following somewhat faithfully
@@ -215,73 +214,6 @@ class Annotation(Standoff):
             return local_id
         else:
             return o.mk_global_id(local_id)
-
-class Tree(nltk.Tree, Standoff):
-    """
-    A variant of the NLTK Tree data structure which can be
-    treated as an educe Standoff annotation.
-
-    This can be useful for representing syntactic parse trees
-    in a way that can be later queried on the basis of Span
-    enclosure.
-
-    Note that all children must have a `span` member of type
-    `Span`
-
-    The `subtrees()` function can useful here.
-    """
-    def __init__(self, node, children, origin=None):
-        nltk.Tree.__init__(self, node, children)
-        Standoff.__init__(self, origin)
-        if not children:
-            raise Exception("Can't create a tree with no children")
-        self.children = children
-        start = min(x.span.char_start for x in children)
-        end   = max(x.span.char_end   for x in children)
-        self.span = Span(start, end)
-
-    def _members(self, doc):
-        return self.children
-
-    def text_span(self, doc):
-        """
-        Note: doc is ignored here
-        """
-        return self.span
-
-    def topdown(self, pred, prunable=None):
-        """
-        Searching from the top down, return the biggest subtrees for which the
-        predicate is True.  The optional prunable function can be used to
-        throw out subtrees for more efficient search (note that pred always
-        overrides prunable though).  Note that leaf nodes are ignored.
-        """
-        if pred(self):
-            return [self]
-        elif prunable and prunable(self):
-            return []
-        else:
-            return chain.from_iterable(x.topdown(pred) for x in self.children if isinstance(x,Tree))
-
-    @classmethod
-    def build(cls, tree, tokens):
-        """
-        Build an educe tree by combining an existing NLTK tree with
-        some replacement leaves.
-
-        The replacement leaves should correspond 1:1 to the leaves of the
-        original tree (for example, they may contain features related to
-        those words
-        """
-        toks = collections.deque(tokens)
-        def step(t):
-            if not isinstance(t, nltk.tree.Tree):
-                if toks:
-                    return toks.popleft()
-                else:
-                    raise Exception('Must have same number of input tokens as leaves in the tree')
-            return cls(t.node, map(step, t))
-        return step(tree)
 
 class Unit(Annotation):
     """
