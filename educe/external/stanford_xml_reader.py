@@ -112,7 +112,7 @@ class Preprocessing_Source( object ):
                 # token dictionary with basic attributes
                 t_start = int(t.find("CharacterOffsetBegin").text)
                 t_end = int(t.find("CharacterOffsetEnd").text) - 1 # NB: not inclusive
-                t_dict = dict(id = sid+"-"+tid, # original token ID not unique
+                t_dict = dict(id = self._mk_token_id(sid)(tid), # original token ID not unique
                               extent = (t_start, t_end),
                               word = xml_unescape(t.find("word").text),
                               s_id = sid) # pointer to sentence ID
@@ -149,9 +149,9 @@ class Preprocessing_Source( object ):
                 s_dict.update(parse = None)
 
             """ register dependencies """ 
-            s_dict.update(dependencies              = self._read_deps(s, 'basic-dependencies'),
-                          collapsed_dependencies    = self._read_deps(s, 'collapsed-dependencies'),
-                          collapsed_cc_dependencies = self._read_deps(s, 'collapsed-ccprocessed-dependencies'))
+            s_dict.update(dependencies              = self._read_deps(sid, s, 'basic-dependencies'),
+                          collapsed_dependencies    = self._read_deps(sid, s, 'collapsed-dependencies'),
+                          collapsed_cc_dependencies = self._read_deps(sid, s, 'collapsed-ccprocessed-dependencies'))
 
             # store sentence annotation
             self._sentences[sid] = s_dict
@@ -166,15 +166,18 @@ class Preprocessing_Source( object ):
 
         return
 
+    def _mk_token_id(self, sid):
+        return lambda x : sid + '-' + x
 
-    def _read_deps(self, xml, type):
+    def _read_deps(self, sid, xml, type):
         xpath       = ".//dependencies[@type='%s']/dep" % type
         dep_triples = []
+        mk_id = self._mk_token_id(sid)
         for d in xml.findall(xpath):
             d_rel  = d.get("type")
             gov_id = d.find("governor").get("idx")
             dep_id = d.find("dependent").get("idx")
-            dep_triples.append( (d_rel, gov_id, dep_id) )
+            dep_triples.append( (d_rel, mk_id(gov_id), mk_id(dep_id)) )
         return dep_triples
 
     def _read_chain(self, xml):
@@ -182,11 +185,16 @@ class Preprocessing_Source( object ):
         return [ self._read_mentions(x) for x in xml.findall(xpath) ]
 
     def _read_mentions(self, xml):
-        return {'start' : xml.find('start').text.strip(),
-                'end'   : xml.find('end').text.strip(),
-                'head'  : xml.find('head').text.strip(),
-                'sentence' : xml.find('sentence').text.strip(),
-                'most_representative' : xml.get('representative','').strip() == 'true'
+        sid   = xml.find('sentence').text.strip()
+        mk_id = self._mk_token_id(sid)
+        def get_id(name):
+            return mk_id(xml.find(name).text.strip())
+        representative = xml.get('representative','').strip() == 'true'
+        return {'start' : get_id('start'),
+                'end'   : get_id('end'),
+                'head'  : get_id('head'),
+                'sentence' : sid,
+                'most_representative' : representative
                 }
 
     def get_document_id( self ):

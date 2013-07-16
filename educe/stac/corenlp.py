@@ -209,9 +209,7 @@ def read_corenlp_result(doc, corenlp_doc, tid=None):
         ttext  = doc.text_for(turn)
         offset = turn.span.char_start + len(stac.split_turn_text(ttext)[0]) - sentence_begin
 
-        def local_id(x):
-            return x['id'][len(sid) + 1:]
-        educe_tokens = dict((local_id(t), CoreNlpToken(t, offset)) for t in sentence_toks[sid])
+        educe_tokens = dict( (t['id'], CoreNlpToken(t, offset)) for t in sentence_toks[sid] )
 
         tree        = nltk.tree.Tree(a['parse'])
         educe_tree  = ConstituencyTree.build(tree, educe_tokens.values())
@@ -219,7 +217,7 @@ def read_corenlp_result(doc, corenlp_doc, tid=None):
         deps   = collections.defaultdict(list)
         for ty, gov_id, dep_id in a['collapsed_dependencies']:
             deps[gov_id].append((ty,dep_id))
-        educe_dtree = DependencyTree.build(deps, educe_tokens, '0')
+        educe_dtree = DependencyTree.build(deps, educe_tokens, sid + '-0')
 
         all_tokens.extend(educe_tokens.values())
         all_trees.append(educe_tree)
