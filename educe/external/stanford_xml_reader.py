@@ -89,12 +89,13 @@ class Preprocessing_Source( object ):
         self._tokens = {} # include word form, lemma, pos, and NE tag
         self._offset2sentence = {} # NB: not inclusive
         self._offset2token = {}
-        # self._coref_links = {} ## TODO
+        self._coref_chains = [] # from sentence to chain
         # parse -------------------------------------
 
         parser = ET.XMLParser( encoding=self._encoding )
         file2parse = base_file + suffix
         root = ET.parse( file2parse )
+
         """ register sentences """
         s_elts = root.findall(".//sentences/sentence")
         for s in s_elts:
@@ -158,6 +159,11 @@ class Preprocessing_Source( object ):
             for pos in xrange(s_start,s_end+1):
                 assert pos not in self._offset2sentence
                 self._offset2sentence[pos] = s_dict
+
+        """ register coreference chains """
+        coref_elts = root.findall('.//coreference/coreference')
+        self._coref_chains = [ self._read_chain(x) for x in coref_elts ]
+
         return
 
 
@@ -171,6 +177,18 @@ class Preprocessing_Source( object ):
             dep_triples.append( (d_rel, gov_id, dep_id) )
         return dep_triples
 
+    def _read_chain(self, xml):
+        xpath    = './mention'
+        return [ self._read_mentions(x) for x in xml.findall(xpath) ]
+
+    def _read_mentions(self, xml):
+        return {'start' : xml.find('start').text.strip(),
+                'end'   : xml.find('end').text.strip(),
+                'head'  : xml.find('head').text.strip(),
+                'sentence' : xml.find('sentence').text.strip(),
+                'most_representative' : xml.get('representative','').strip() == 'true'
+                }
+
     def get_document_id( self ):
         doc_id = self._doc_id
         assert doc_id != None and doc_id != "", "Stanford XML reader error: document ID is None or empty string!"
@@ -180,6 +198,8 @@ class Preprocessing_Source( object ):
     def get_sentence_annotations(self):
         return self._sentences
 
+    def get_coref_chains(self):
+        return self._coref_chains
 
     def get_ordered_sentence_list(self, sort_attr="extent"):
         sentences = self.get_sentence_annotations().values()
