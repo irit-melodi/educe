@@ -223,8 +223,9 @@ def read_corenlp_result(doc, corenlp_doc, tid=None):
         educe_tree  = ConstituencyTree.build(tree, tokens.values())
 
         deps   = collections.defaultdict(list)
-        for ty, gov_id, dep_id in sent['collapsed_dependencies']:
+        for ty, gov_id, dep_id in sent['dependencies']:
             deps[gov_id].append((ty,dep_id))
+
         educe_dtree = DependencyTree.build(deps, tokens, sid + '-0')
 
         all_tokens.extend(tokens.values())
