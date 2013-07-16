@@ -195,11 +195,10 @@ def read_corenlp_result(doc, corenlp_doc, tid=None):
         sid    = t['s_id']
         sentence_toks[sid].append(t)
 
-    all_tokens = []
-    all_trees  = []
-    all_dtrees = []
-    for turn, a in zip(turns, sentences):
-        sid = a['id']
+    # build dict from sid to (dict from tid to fancy token)
+    educe_tokens = collections.defaultdict(dict)
+    for turn, sent in zip(turns, sentences):
+        sid = sent['id']
 
         # the token offsets are global, ie. for all sentences/turns
         # in the file; so we have to shift them to left to zero them
@@ -209,17 +208,25 @@ def read_corenlp_result(doc, corenlp_doc, tid=None):
         ttext  = doc.text_for(turn)
         offset = turn.span.char_start + len(stac.split_turn_text(ttext)[0]) - sentence_begin
 
-        educe_tokens = dict( (t['id'], CoreNlpToken(t, offset)) for t in sentence_toks[sid] )
+        for t in sentence_toks[sid]:
+            tid = t['id']
+            educe_tokens[sid][tid] = CoreNlpToken(t, offset)
 
-        tree        = nltk.tree.Tree(a['parse'])
-        educe_tree  = ConstituencyTree.build(tree, educe_tokens.values())
+    all_tokens = []
+    all_trees  = []
+    all_dtrees = []
+    for turn, sent in zip(turns, sentences):
+        sid         = sent['id']
+        tokens      = educe_tokens[sid]
+        tree        = nltk.tree.Tree(sent['parse'])
+        educe_tree  = ConstituencyTree.build(tree, tokens.values())
 
         deps   = collections.defaultdict(list)
-        for ty, gov_id, dep_id in a['collapsed_dependencies']:
+        for ty, gov_id, dep_id in sent['collapsed_dependencies']:
             deps[gov_id].append((ty,dep_id))
-        educe_dtree = DependencyTree.build(deps, educe_tokens, sid + '-0')
+        educe_dtree = DependencyTree.build(deps, tokens, sid + '-0')
 
-        all_tokens.extend(educe_tokens.values())
+        all_tokens.extend(tokens.values())
         all_trees.append(educe_tree)
         all_dtrees.append(educe_dtree)
 
