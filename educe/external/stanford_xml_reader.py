@@ -147,15 +147,10 @@ class Preprocessing_Source( object ):
             except AttributeError:
                 s_dict.update(parse = None)
 
-            """ register dependencies """ # FIXME: distinguish basic/collapsed dependencies!
-            d_elts = s.findall(".//dep")
-            dep_triples = []
-            for d in d_elts:
-                d_rel = d.get("type")
-                gov_id = d.find("governor").get("idx")
-                dep_id = d.find("dependent").get("idx")
-                dep_triples.append( (d_rel, gov_id, dep_id) )
-            s_dict.update( dependencies = dep_triples )
+            """ register dependencies """ 
+            s_dict.update(dependencies              = self._read_deps(s, 'basic-dependencies'),
+                          collapsed_dependencies    = self._read_deps(s, 'collapsed-dependencies'),
+                          collapsed_cc_dependencies = self._read_deps(s, 'collapsed-ccprocessed-dependencies'))
 
             # store sentence annotation
             self._sentences[sid] = s_dict
@@ -165,6 +160,16 @@ class Preprocessing_Source( object ):
                 self._offset2sentence[pos] = s_dict
         return
 
+
+    def _read_deps(self, xml, type):
+        xpath       = ".//dependencies[@type='%s']/dep" % type
+        dep_triples = []
+        for d in xml.findall(xpath):
+            d_rel  = d.get("type")
+            gov_id = d.find("governor").get("idx")
+            dep_id = d.find("dependent").get("idx")
+            dep_triples.append( (d_rel, gov_id, dep_id) )
+        return dep_triples
 
     def get_document_id( self ):
         doc_id = self._doc_id
