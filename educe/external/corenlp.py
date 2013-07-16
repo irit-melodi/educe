@@ -32,12 +32,14 @@ class CoreNlpDocument(Standoff):
         * tokens   - `CoreNlpToken` annotations
         * trees    - constituency trees
         * deptrees - dependency   trees
+        * chains   - coreference chains
     """
-    def __init__(self, tokens, trees, deptrees):
+    def __init__(self, tokens, trees, deptrees, chains):
         Standoff.__init__(self, None)
         self.tokens   = tokens
         self.trees    = trees
         self.deptrees = deptrees
+        self.chains   = chains
 
     def _members(self, doc):
         """

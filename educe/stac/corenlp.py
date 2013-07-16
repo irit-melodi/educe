@@ -27,6 +27,7 @@ from educe            import stac, corpus
 from educe.annotation import Span, Standoff
 from educe.external   import postag
 from educe.external.corenlp import *
+from educe.external.coref   import *
 from educe.external.parser  import *
 import educe.external.stanford_xml_reader as corenlp_xml
 
@@ -230,7 +231,24 @@ def read_corenlp_result(doc, corenlp_doc, tid=None):
         all_trees.append(educe_tree)
         all_dtrees.append(educe_dtree)
 
-    return CoreNlpDocument(all_tokens, all_trees, all_dtrees)
+    all_chains = []
+    for ctr,chain in enumerate(corenlp_doc.get_coref_chains()):
+        mentions = []
+        for m in chain:
+            sid         = m['sentence']
+
+            local_id    = lambda x : int(x[len(sid) + 1:])
+            global_id   = lambda x : sid + '-' + str(x)
+
+            start       = local_id(m['start'])
+            end         = local_id(m['end'])
+            token_range = map(global_id, range(start, end))
+            tokens      = [ educe_tokens[sid][t] for t in token_range ]
+            head        = educe_tokens[sid][m['head']]
+            mentions.append(Mention(tokens, head, m['most_representative']))
+        all_chains.append(Chain(mentions))
+
+    return CoreNlpDocument(all_tokens, all_trees, all_dtrees, all_chains)
 
 def read_results(corpus, dir):
     """
