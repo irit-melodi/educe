@@ -7,7 +7,7 @@
 """
 CONLL_ formatted POS tagger output into educe
 standoff annotations
-(at least as emitted by CMU's ark-tweet-nlp.
+(at least as emitted by CMU's ark-tweet-nlp_.
 
 Files are assumed to be UTF-8 encoded.
 
@@ -15,8 +15,8 @@ Note: NLTK has a CONLL reader too which looks a lot
 more general than this one
 
 
-.. CONLL:         http://ifarm.nl/signll/conll/
-.. ark-tweet-nlp: http://www.ark.cs.cmu.edu/TweetNLP/
+.. _CONLL:         http://ifarm.nl/signll/conll/
+.. _ark-tweet-nlp: http://www.ark.cs.cmu.edu/TweetNLP/
 """
 
 import codecs

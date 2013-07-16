@@ -12,7 +12,7 @@ This currently builds off the NLTK Tree class, but if the
 NLTK dependency proves too heavy, we could consider doing
 without.
 
-.. CoreNLP:       http://nlp.stanford.edu/software/corenlp.shtml
+.. _CoreNLP:       http://nlp.stanford.edu/software/corenlp.shtml
 """
 
 import collections
