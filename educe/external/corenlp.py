@@ -48,17 +48,6 @@ class CoreNlpDocument(Standoff):
         """
         return self.tokens + self.trees
 
-    def annotations(self):
-        """
-        Return all annotations. Note that some of the annotations are trees,
-        and may themselves contain annotations.
-
-        A crude way to search these would be to use `Tree.subtrees`, but you
-        may find it more efficient to do a first pass with `Tree.topdown`
-        function.
-        """
-        return self.tokens + self.trees
-
 class CoreNlpToken(postag.Token):
     """
     A single token and its POS tag. Other information is stored in `features`
