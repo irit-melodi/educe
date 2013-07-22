@@ -98,41 +98,43 @@ def glozz_annotation_to_xml(self, tag='annotation'):
 
     elm = ET.Element(tag, id=self.local_id())
     if (tag == 'unit'):
-        span_elm = glozz_span_to_xml(self.span)
+        span_elm = glozz_unit_to_span_xml(self)
     elif (tag == 'relation'):
-        span_elm = glozz_relspan_to_xml(self.span)
+        span_elm = glozz_relation_to_span_xml(self)
     elif (tag == 'schema'):
-        span_elm = glozz_schema_span_to_xml(self.span)
+        span_elm = glozz_schema_to_span_xml(self)
     else:
         raise Exception("Don't know how to emit XML for non unit/relation annotations (%s)" % tag)
     elm.extend([meta_elm, char_elm, span_elm])
     return elm
 
-def glozz_span_to_xml(self):
+def glozz_unit_to_span_xml(self):
     def set_pos(elm,x):
         elm.append(ET.Element('singlePosition', index=str(x)))
     elm = ET.Element('positioning')
     start_elm = ET.Element('start')
     end_elm   = ET.Element('end')
-    set_pos(start_elm, self.char_start)
-    set_pos(end_elm,   self.char_end)
+    set_pos(start_elm, self.span.char_start)
+    set_pos(end_elm,   self.span.char_end)
     elm.extend([start_elm, end_elm])
     return elm
 
-def glozz_relspan_to_xml(self):
+def glozz_relation_to_span_xml(self):
     def set_pos(elm,x):
         elm.append(ET.Element('term', id=str(x)))
     elm = ET.Element('positioning')
-    set_pos(elm,self.t1)
-    set_pos(elm,self.t2)
+    set_pos(elm,self.span.t1)
+    set_pos(elm,self.span.t2)
     return elm
 
-def glozz_schema_span_to_xml(self):
-    def set_pos(elm,x):
-        elm.append(ET.Element('embedded-unit', id=str(x)))
+def glozz_schema_to_span_xml(self):
     elm = ET.Element('positioning')
-    for x in self:
-        set_pos(elm,x)
+    for x in self.units:
+        elm.append(ET.Element('embedded-unit', id=str(x)))
+    for x in self.relations:
+        elm.append(ET.Element('embedded-relation', id=str(x)))
+    for x in self.schemas:
+        elm.append(ET.Element('embedded-schema', id=str(x)))
     return elm
 
 # ---------------------------------------------------------------------
@@ -221,7 +223,10 @@ def read_node(node, context=None):
             return RelSpan(terms[0], terms[1])
 
     elif node.tag == 'positioning' and context == 'schema':
-        return frozenset(get_all('embedded-unit'))
+        units     = frozenset(get_all('embedded-unit'))
+        relations = frozenset(get_all('embedded-relation'))
+        schemas   = frozenset(get_all('embedded-schema'))
+        return units, relations, schemas
 
     elif node.tag == 'relation':
         rel_id          = node.attrib['id']
@@ -233,9 +238,9 @@ def read_node(node, context=None):
     if node.tag == 'schema':
         anno_id         = node.attrib['id']
         (anno_type, fs) = get_one('characterisation', None)
-        members         = get_one('positioning',      None, 'schema')
+        units, rels, schemas = get_one('positioning',      None, 'schema')
         metadata        = get_one('metadata',         {})
-        return Schema(anno_id, members, anno_type, fs, metadata=metadata)
+        return Schema(anno_id, units, rels, schemas, anno_type, fs, metadata=metadata)
 
     elif node.tag == 'singlePosition':
         return int(node.attrib['index'])
@@ -243,7 +248,7 @@ def read_node(node, context=None):
     elif node.tag == 'start' or node.tag == 'end':
         return get_one('singlePosition', -3)
 
-    elif node.tag in [ 'term', 'embedded-unit' ]:
+    elif node.tag in [ 'term', 'embedded-unit', 'embedded-relation', 'embedded-schema' ]:
         return node.attrib['id']
 
     elif node.tag == 'type':

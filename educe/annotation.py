@@ -270,7 +270,11 @@ class Schema(Annotation):
     """
     An annotation between a set of annotations
     """
-    def __init__(self, rel_id, members, type, features, metadata=None):
+    def __init__(self, rel_id, units, relations, schemas, type, features, metadata=None):
+        self.units     = units
+        self.relations = relations
+        self.schemas   = schemas
+        members        = units | relations | schemas
         Annotation.__init__(self, rel_id, members, type, features, metadata)
 
     def _members(self, doc):
