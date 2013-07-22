@@ -43,8 +43,8 @@ class TestRelation(Relation):
         Relation.__init__(self, id, RelSpan(start, end), '', {})
 
 class TestSchema(Schema):
-    def __init__(self, id, members):
-        Schema.__init__(self, id, members, '', {})
+    def __init__(self, id, units, relations, schemas):
+        Schema.__init__(self, id, frozenset(units), frozenset(relations), frozenset(schemas), '', {})
 
 class TestDocument(Document):
     def __init__(self, units, rels, schemas, txt):
@@ -57,7 +57,7 @@ def test_members():
     u4  = TestUnit('u4', 12,13)
     u5  = TestUnit('u5', 4,12)
     u6  = TestUnit('u6', 7,14)
-    s1  = TestSchema('s1', ['u4','u5','u6'])
+    s1  = TestSchema('s1', ['u4','u5','u6'], [], [])
     r1  = TestRelation('r1', 's1','u2')
 
     doc = TestDocument([u1,u2,u3,u4,u5,u6],[r1],[s1], "why hello there!")
