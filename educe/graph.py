@@ -616,8 +616,11 @@ class DotGraph(pydot.Dot):
             logical_target_edge = self.core.mirror(logical_target_node)
             proxies = self.core.links(logical_target_edge)
             proxy_target = proxies[0]
-            if self.core.has_edge(proxy_target):
+            if self.core.is_cdu(proxy_target):
+                proxy_target, _ = self.__point(proxy_target, key)
+            elif self.core.has_edge(proxy_target):
                 proxy_target = self.core.mirror(proxy_target)
+            proxy_target = self._dot_id(proxy_target)
             res = (proxy_target, {key:dot_target})
 
         return res
@@ -674,7 +677,7 @@ class DotGraph(pydot.Dot):
         self.add_edge(edge1)
         self.add_edge(edge2)
 
-    def _add_simple_cdu(self, hyperedge):
+    def _add_simple_cdu(self, hyperedge, parent=None):
         """
         Straightforward CDU that can be supported as a cluster.
         """
@@ -688,7 +691,11 @@ class DotGraph(pydot.Dot):
         subg = pydot.Subgraph(self._dot_id(hyperedge), **attrs)
         local_nodes = self.core.links(hyperedge)
         for node in local_nodes:
-            subg.add_node(pydot.Node(node))
+            if self.core.is_cdu(node):
+                self._add_simple_cdu(self.core.mirror(node), parent=subg)
+            else:
+                subg.add_node(pydot.Node(node))
+
             def is_enclosed(l):
                 return l != hyperedge and\
                        l in self.complex_rels and\
@@ -698,7 +705,10 @@ class DotGraph(pydot.Dot):
             for rlink in rlinks: # relations
                 subg.add_node(pydot.Node(rlink))
 
-        self.add_subgraph(subg)
+        if parent:
+            parent.add_subgraph(subg)
+        else:
+            self.add_subgraph(subg)
 
     def _add_complex_cdu(self, hyperedge):
         """
@@ -747,8 +757,7 @@ class DotGraph(pydot.Dot):
                     e2 = self.core.mirror(n2)
                     self.complex_rels.add(e2)
 
-        # CDUs which are contained in other CDUs or which overlap other
-        # CDUs
+        # CDUs which overlap other CDUs
         #self.complex_cdus = self.core.cdus()
         self.complex_cdus = set()
         for e in self.core.cdus():
@@ -757,7 +766,7 @@ class DotGraph(pydot.Dot):
             for e2 in self.core.cdus():
                 if e != e2: other_members.update(self.core.cdu_members(e2))
             def is_complex(n):
-                return self.core.is_cdu(n) or n in other_members
+                return n in other_members
             if any([is_complex(n) for n in members]):
                 self.complex_cdus.add(e)
 
