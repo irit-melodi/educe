@@ -1,0 +1,103 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Author: Eric Kow
+# License: BSD3
+
+"""
+Swiss-army-knife for working with glozz files
+"""
+
+from educe import glozz, corpus, stac, util, graph
+import educe.corpus
+import educe.stac.graph as stacgraph
+
+import argparse
+import copy
+import re
+import os.path
+import sys
+import textwrap
+import collections
+import codecs
+
+import educe.glozz      as glozz
+from educe.annotation import Span
+
+# ---------------------------------------------------------------------
+# utility functions
+# ---------------------------------------------------------------------
+
+def seek_ac_file(aa_file):
+    fbase,fext = os.path.splitext(aa_file)
+    if fext is None:
+        ac_file = None
+    else:
+        ac_file = fbase + ".ac"
+    return ac_file
+
+# ---------------------------------------------------------------------
+# dump
+# ---------------------------------------------------------------------
+
+def dump(filename, doc):
+    show_unit = lambda u:"%s | %s" % (u, doc.text_for(u))
+    lines = ['############### %s units' % filename]\
+          + map(show_unit, doc.units)\
+          + ['############### %s relations' % filename]\
+          + map(str, doc.relations)
+    return "\n".join(lines)
+
+def main_dump(args):
+    for file in args.files:
+        ac_file = seek_ac_file(file)
+        doc = glozz.read_annotation_file(file,ac_file)
+        print dump(file, doc).encode('utf-8')
+        print ""
+
+# ---------------------------------------------------------------------
+# cut
+# ---------------------------------------------------------------------
+
+def cut_glozz_file(file, span):
+    ac_file = seek_ac_file(file)
+    doc = glozz.read_annotation_file(file,ac_file)
+    def slice(xs):
+        return [ x for x in xs if span.encloses(x.text_span(doc)) ]
+    doc2 = copy.copy(doc)
+    doc2.units     = slice(doc.units)
+    doc2.schemas   = slice(doc.schemas)
+    doc2.relations = slice(doc.relations)
+    return doc2
+
+def main_cut(args):
+    span = Span(int(args.start), int(args.end))
+    doc  = cut_glozz_file(args.input, span)
+    glozz.write_annotation_file(args.output, doc)
+
+
+# ---------------------------------------------------------------------
+# args
+# ---------------------------------------------------------------------
+
+arg_parser = argparse.ArgumentParser(description='Glozz Swiss Army Knife')
+subparsers = arg_parser.add_subparsers(help='sub-command help')
+
+ap_dump = subparsers.add_parser('dump', help='Dump glozz file in an ad-hoc debug format')
+ap_dump.set_defaults(func=main_dump)
+ap_dump.add_argument('files', nargs='*')
+
+ap_cut = subparsers.add_parser('cut', help='Select a slice of glozz anotations from text span')
+ap_cut.add_argument('input', metavar='FILE', help='Glozz aa file')
+ap_cut.add_argument('start', metavar='INT',
+                    help='Character offset of left of included window')
+ap_cut.add_argument( 'end', metavar='INT',
+                    help='Character offset of right of included window')
+ap_cut.add_argument('output', metavar='FILE',
+                    help='Output file')
+ap_cut.set_defaults(func=main_cut)
+
+args = arg_parser.parse_args()
+args.func(args)
+
+# vim: syntax=python:
