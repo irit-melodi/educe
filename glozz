@@ -77,6 +77,14 @@ def main_cut(args):
 
 
 # ---------------------------------------------------------------------
+# hashcode
+# ---------------------------------------------------------------------
+
+def main_hashcode(args):
+    print glozz.hashcode(args.input)
+
+
+# ---------------------------------------------------------------------
 # args
 # ---------------------------------------------------------------------
 
@@ -96,6 +104,10 @@ ap_cut.add_argument( 'end', metavar='INT',
 ap_cut.add_argument('output', metavar='FILE',
                     help='Output file')
 ap_cut.set_defaults(func=main_cut)
+
+ap_hashcode = subparsers.add_parser('hashcode', help='Print corpus hashcode for Glozz ac file')
+ap_hashcode.add_argument('input', metavar='FILE', help='Glozz ac file')
+ap_hashcode.set_defaults(func=main_hashcode)
 
 args = arg_parser.parse_args()
 args.func(args)
