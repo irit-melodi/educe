@@ -208,15 +208,21 @@ class Graph(gr.hypergraph, AttrsMixin):
         gr.hypergraph.__init__(self)
 
     @classmethod
-    def from_doc(cls, corpus, doc_key):
+    def from_doc(cls, corpus, doc_key, pred=lambda x:True):
         """
         Return a graph representation of a document
+
+        Note: check the project layer for a version of this function
+        which may be more appropriate to your project
 
         Args:
 
             corpus  : educe corpus dictionary
 
             doc_key (FileId):  key pointing to the document
+
+            pred : predicate on annotations saying if they should
+            be included
         """
         self         = cls()
         doc          = corpus[doc_key]
@@ -226,15 +232,17 @@ class Graph(gr.hypergraph, AttrsMixin):
 
         # objects that are pointed to by a relations or schemas
         pointed_to = []
-        for x in doc.relations: pointed_to.extend([x.span.t1, x.span.t2])
-        for x in doc.schemas:   pointed_to.extend(x.span)
+        for x in filter(pred, doc.relations):
+            pointed_to.extend([x.span.t1, x.span.t2])
+        for x in filter(pred, doc.schemas):
+            pointed_to.extend(x.span)
 
         nodes = []
         edges = []
 
-        edus  = [ x for x in doc.units   if x.local_id() in pointed_to ]
-        rels  = doc.relations
-        cdus  = [ s for s in doc.schemas if s.type != 'default' ]
+        edus  = [ x for x in doc.units   if x.local_id() in pointed_to and pred(x) ]
+        rels  = filter(pred, doc.relations)
+        cdus  = [ s for s in doc.schemas if pred(s) ]
 
         for x in edus: nodes.append(self._unit_node(x))
         for x in rels: nodes.append(self._rel_node(x))

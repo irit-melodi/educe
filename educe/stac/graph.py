@@ -21,6 +21,24 @@ import pygraph.classes.digraph    as dgr
 from pygraph.algorithms import traversal
 from pygraph.algorithms import accessibility
 
+class Graph(educe.graph.Graph):
+    def __init__(self):
+        return educe.graph.Graph.__init__(self)
+
+    @classmethod
+    def from_doc(_cls, corpus, doc_key):
+        """
+        Note that this returns an educe.graph.Graph
+        """
+        def valid(x):
+            if isinstance(x, educe.annotation.Relation):
+                return stac.is_relation_instance(x)
+            elif isinstance(x, educe.annotation.Schema):
+                return stac.is_cdu(x)
+            elif isinstance(x, educe.annotation.Unit):
+                return stac.is_edu(x)
+        return super(Graph, cls).from_doc(corpus, doc_key, pred=valid)
+
 class DotGraph(educe.graph.DotGraph):
     """
     A dot representation of this graph for visualisation.
