@@ -72,6 +72,16 @@ class DotGraph(educe.graph.DotGraph):
             speaker_prefix = '(%s) ' % speaker
         return speaker_prefix + "%s [%s]" % (self.doc.text_for(anno), speech_acts)
 
+    def _add_edu(self, node):
+        anno  = self.core.annotation(node)
+        label = self._edu_label(anno)
+        attrs = { 'label' : textwrap.fill(label, 30)
+                , 'shape' : 'plaintext'
+                }
+        if not self._edu_label(anno) or not stac.is_edu(anno):
+            attrs['fontcolor'] = 'red'
+        self.add_node(pydot.Node(node, **attrs))
+
     def _rel_label(self, anno):
         return anno.type
 
