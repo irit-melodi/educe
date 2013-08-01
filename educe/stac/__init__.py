@@ -16,15 +16,15 @@ that annotations are done on different stages
 
 Stage 1 (units)
 
-+-----------+----------------------------------+
-| Glozz     | Uses                             |
-+===========+==================================+
-| units     | doc structure, EDUs, resources   |
-+-----------+----------------------------------+
-| relations | coreference                      |
-+-----------+----------------------------------+
-| schemas   | composite resources              |
-+-----------+----------------------------------+
++-----------+---------------------------------------------+
+| Glozz     | Uses                                        |
++===========+=============================================+
+| units     | doc structure, EDUs, resources, preferences |
++-----------+---------------------------------------------+
+| relations | coreference                                 |
++-----------+---------------------------------------------+
+| schemas   | composite resources                         |
++-----------+---------------------------------------------+
 
 Stage 2 (discourse)
 
@@ -44,6 +44,7 @@ There is a typology of unit types worth noting:
 
 * doc structure : type eg. `Dialogue`, `Turn`, `paragraph`
 * resources     : subspans of segments (type `Resource`)
+* preferences   : subspans of segments (type `Preference`)
 * EDUs          : spans of text associated with a dialogue act (eg. type
   `Offer`, `Accept`) (during discourse stage, these are just type `Segment`)
 
@@ -78,6 +79,7 @@ import warnings
 
 structure_types=['Turn','paragraph','dialogue','Dialogue']
 resource_types =['default','Resource']
+preference_types = ['Preference']
 
 subordinating_relations =\
    [ 'Explanation'
@@ -172,6 +174,12 @@ def is_resource(annotation):
     """
     return (annotation.type in resource_types)
 
+def is_preference(annotation):
+    """
+    See Unit typology above
+    """
+    return (annotation.type in preference_types)
+
 def is_turn(annotation):
     """
     See Unit typology above
@@ -182,12 +190,8 @@ def is_edu(annotation):
     """
     See Unit typology above
     """
-    origin = annotation.origin
-    if origin is not None and origin.stage == 'discourse':
-        return annotation.type == 'Segment'
-    else:
-        blacklist = structure_types + resource_types
-        return (annotation.type not in blacklist)
+    blacklist = structure_types + resource_types + preference_types
+    return (annotation.type not in blacklist)
 
 def is_relation_instance(annotation):
     """
@@ -195,6 +199,12 @@ def is_relation_instance(annotation):
     """
     return annotation.type in subordinating_relations or\
            annotation.type in coordinating_relations
+
+def is_cdu(annotation):
+    """
+    See CDUs typology above
+    """
+    return annotation.type == 'Complex_discourse_unit'
 
 def is_dialogue_act(annotation):
     """
