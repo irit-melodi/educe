@@ -39,6 +39,12 @@ class Span:
         return self.char_start == other.char_start and\
                self.char_end   == other.char_end
 
+    def len(self):
+        """
+        Return the length of this span
+        """
+        return self.char_end - self.char_start
+
     def shift(self, offset):
         """
         Return a copy of this span, shifted to the right
