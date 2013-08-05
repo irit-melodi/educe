@@ -53,7 +53,7 @@ There is a typology of unit types worth noting:
 * coreference : (type `Anaphora`)
 * relation instances : links between EDUs, annotated with relation label
   (eg. type `Elaboration`, type `Contrast`, etc).  These can be further
-  divided in suboordinating or coordination relation instances according
+  divided in subordinating or coordination relation instances according
   to their label
 
 **Schemas**
@@ -199,6 +199,18 @@ def is_relation_instance(annotation):
     """
     return annotation.type in subordinating_relations or\
            annotation.type in coordinating_relations
+
+def is_subordinating(annotation):
+    """
+    See Relation typology above
+    """
+    return annotation.type in subordinating_relations
+
+def is_coordinating(annotation):
+    """
+    See Relation typology above
+    """
+    return annotation.type in coordinating_relations
 
 def is_cdu(annotation):
     """

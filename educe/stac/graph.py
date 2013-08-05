@@ -46,6 +46,14 @@ class DotGraph(educe.graph.DotGraph):
     """
 
     def __init__(self, anno_graph):
+        def sp(x):
+            return anno_graph.annotation(x).span
+        def is_edu(x):
+            return anno_graph.is_edu(x)
+        nodes = sorted(filter(is_edu, anno_graph.nodes()), key=sp)
+        self.edu_order = {}
+        for i,n in enumerate(nodes):
+            self.edu_order[n] = i
         educe.graph.DotGraph.__init__(self, anno_graph)
 
     def _get_speaker(self, u):
@@ -74,7 +82,7 @@ class DotGraph(educe.graph.DotGraph):
 
     def _add_edu(self, node):
         anno  = self.core.annotation(node)
-        label = self._edu_label(anno)
+        label = str(self.edu_order[node]) + '. ' + self._edu_label(anno)
         attrs = { 'label' : textwrap.fill(label, 30)
                 , 'shape' : 'plaintext'
                 }
