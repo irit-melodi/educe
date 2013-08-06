@@ -9,6 +9,7 @@ STAC-specific conventions related to graphs.
 
 import copy
 import collections
+import itertools
 import textwrap
 
 from educe import corpus, stac
@@ -26,18 +27,137 @@ class Graph(educe.graph.Graph):
         return educe.graph.Graph.__init__(self)
 
     @classmethod
-    def from_doc(_cls, corpus, doc_key):
+    def from_doc(cls, corpus, doc_key):
+        return super(Graph, cls).from_doc(corpus, doc_key)
+
+    def is_cdu(self, x):
+        return super(Graph, self).is_cdu(x) and\
+                stac.is_cdu(self.annotation(x))
+
+    def is_edu(self, x):
+        return super(Graph, self).is_edu(x) and\
+                stac.is_edu(self.annotation(x))
+
+    def is_relation(self, x):
+        return super(Graph, self).is_relation(x) and\
+                stac.is_relation_instance(self.annotation(x))
+
+    # --------------------------------------------------
+    # right frontier constraint
+    # --------------------------------------------------
+
+    def first_widest_dus(self):
         """
-        Note that this returns an educe.graph.Graph
+        Return discourse units in this graph, ordered by their starting point,
+        and in case of a tie their inverse width (ie. widest first)
         """
-        def valid(x):
-            if isinstance(x, educe.annotation.Relation):
-                return stac.is_relation_instance(x)
-            elif isinstance(x, educe.annotation.Schema):
-                return stac.is_cdu(x)
-            elif isinstance(x, educe.annotation.Unit):
-                return stac.is_edu(x)
-        return super(Graph, cls).from_doc(corpus, doc_key, pred=valid)
+        sp_edus = []
+        sp_cdus = []
+
+        def span(n):
+            return self.annotation(n).text_span(self.doc)
+
+        def from_span(sp):
+            # negate the endpoint so that if we have a tie on the starting
+            # point, the widest span comes first
+            return (sp.char_start, 0 - sp.char_end)
+
+        for n in self.nodes():
+            if self.is_edu(n):
+                sp       = span(n)
+                position = from_span(sp)
+                sp_edus.append((position,sp,n))
+            elif self.is_cdu(n) and self.cdu_members(n):
+                sp       = span(n)
+                position = from_span(sp)
+                sp_cdus.append((position,sp,n))
+
+        return [x[2] for x in sorted(sp_edus + sp_cdus)]
+
+    def _build_right_frontier(self, points, last):
+        """
+        Given a dictionary mapping each node to its closest
+        right frontier node, generate a path up that frontier.
+        """
+        frontier = []
+        current  = last
+        while current in points:
+            next    = points[current]
+            yield current
+            current = next
+
+    def _is_on_right_frontier(self, points, last, node):
+        """
+        Return True if node is on the right frontier as
+        represented by the pair points/last.
+
+        This uses `build_frontier`
+        """
+        return any(fnode == node for fnode in
+                   self._build_right_frontier(points, last))
+
+    def _frontier_points(self, nodes):
+        """
+        Given an ordered sequence of nodes in this graph return a dictionary
+        mapping each node to the nearest node (in the sequence) that either
+
+        * points to it with a subordinating relation
+        * includes it as a CDU member
+        """
+        points = {}
+        def position(n):
+            if n in nodes:
+                return nodes.index(n)
+            else:
+                return -1
+
+        for n1 in nodes:
+            candidates = []
+
+            def is_incoming_subordinate_rel(l):
+                ns = self.links(l)
+                return self.is_relation(l)\
+                        and stac.is_subordinating(self.annotation(l))\
+                        and len(ns) == 2 and ns[1] == n1
+
+            def add_candidate(n2):
+                candidates.append((n2,position(n2)))
+
+            for l in self.links(n1):
+                if is_incoming_subordinate_rel(l):
+                    n2 = self.links(l)[0]
+                    add_candidate(n2)
+                elif self.is_cdu(l):
+                    n2 = self.mirror(l)
+                    add_candidate(n2)
+
+            if candidates:
+                best = max(candidates, key=lambda x:x[1])
+                points[n1] = best[0]
+            else:
+                points[n1] = None
+
+        return points
+
+    def right_frontier_violations(self):
+        nodes      = self.first_widest_dus()
+        violations = collections.defaultdict(list)
+        if len(nodes) < 2:
+            return violations
+
+        points = self._frontier_points(nodes)
+        nexts  = itertools.islice(nodes, 1, None)
+        for last,n1 in itertools.izip(nodes, nexts):
+            def is_incoming(l):
+                ns = self.links(l)
+                return self.is_relation(l) and len(ns) == 2 and ns[1] == n1
+
+            for l in self.links(n1):
+                if not is_incoming(l): continue
+                n2 = self.links(l)[0]
+                if not self._is_on_right_frontier(points, last, n2):
+                    violations[n2].append(l)
+        return violations
 
 class DotGraph(educe.graph.DotGraph):
     """
@@ -46,14 +166,11 @@ class DotGraph(educe.graph.DotGraph):
     """
 
     def __init__(self, anno_graph):
-        def sp(x):
-            return anno_graph.annotation(x).span
-        def is_edu(x):
-            return anno_graph.is_edu(x)
-        nodes = sorted(filter(is_edu, anno_graph.nodes()), key=sp)
-        self.edu_order = {}
+        doc   = anno_graph.doc
+        nodes = anno_graph.first_widest_dus()
+        self.node_order = {}
         for i,n in enumerate(nodes):
-            self.edu_order[n] = i
+            self.node_order[anno_graph.annotation(n)] = i
         educe.graph.DotGraph.__init__(self, anno_graph)
 
     def _get_speaker(self, u):
@@ -78,11 +195,14 @@ class DotGraph(educe.graph.DotGraph):
             speaker_prefix = ''
         else:
             speaker_prefix = '(%s) ' % speaker
-        return speaker_prefix + "%s [%s]" % (self.doc.text_for(anno), speech_acts)
+        position = self.node_order[anno]
+        text     = self.doc.text(anno.span)
+        return "%d. %s%s [%s]" % (position, speaker_prefix,\
+                                  text, speech_acts)
 
     def _add_edu(self, node):
         anno  = self.core.annotation(node)
-        label = str(self.edu_order[node]) + '. ' + self._edu_label(anno)
+        label = self._edu_label(anno)
         attrs = { 'label' : textwrap.fill(label, 30)
                 , 'shape' : 'plaintext'
                 }
@@ -110,4 +230,7 @@ class DotGraph(educe.graph.DotGraph):
     def _simple_cdu_attrs(self, anno):
         attrs = educe.graph.DotGraph._simple_cdu_attrs(self, anno)
         attrs['rank'] = 'same'
+        if anno in self.node_order:
+            attrs['label'] = '%d. CDU' % self.node_order[anno]
         return attrs
+
