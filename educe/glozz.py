@@ -141,11 +141,6 @@ def glozz_schema_to_span_xml(self):
 # xml processing
 # -----------------------------------------------------------
 
-# TODO: learn how exceptions work in Python; can I embed
-# arbitrary strings in them?
-#
-# TODO: probably replace starting/ending integers with
-# exception of some sort
 class GlozzException(Exception):
     def __init__(self, *args, **kw):
         Exception.__init__(self, *args, **kw)
