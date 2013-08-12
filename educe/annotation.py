@@ -157,14 +157,6 @@ class Standoff:
         else:
             return None
 
-    def encloses(self,u):
-        """
-        Return True if this unit's span encloses the span of the argument unit.
-        See `Span` for details
-        """
-        return self.text_span().encloses(u.span)
-
-
 class Annotation(Standoff):
     """
     Any sort of annotation. Annotations tend to have
