@@ -119,7 +119,7 @@ class Standoff:
     def __init__(self, origin=None):
         self.origin=origin
 
-    def _members(self, doc):
+    def _members(self):
         """
         Any annotations contained within this annotation.
 
@@ -128,28 +128,34 @@ class Standoff:
         """
         return None
 
-    def _terminals(self, doc, seen=[]):
+    def _terminals(self, seen=[]):
         """
         For terminal annotations, this is just the annotation itself.
         For non-terminal annotations, this recursively fetches the
         terminals
         """
-        my_members = self._members(doc)
+        my_members = self._members()
         if my_members is None:
             return [self]
         else:
-            return chain.from_iterable([m._terminals(doc, seen + my_members)
+            return chain.from_iterable([m._terminals(seen + my_members)
                                         for m in my_members if m not in seen])
 
-    def text_span(self, doc):
+    def text_span(self, doc=None):
         """
         Return the span from the earliest terminal annotation contained here
         to the latest.
 
         Corner case: if this is an empty non-terminal (which would be a very
         weird thing indeed), return None
+
+        NOTES:
+
+        * the `doc` argument is deprecated
         """
-        terminals = list(self._terminals(doc))
+        if doc is not None:
+            warnings.warn("deprecated, the doc argument is deprecated", DeprecationWarning)
+        terminals = list(self._terminals())
         if len(terminals) > 0:
             start = min( [t.span.char_start for t in terminals] )
             end   = max( [t.span.char_end   for t in terminals] )
@@ -257,28 +263,66 @@ class Relation(Annotation):
     """
     An annotation between two annotations.
     Relations are directed; see `RelSpan` for details
+
+    Use the `source` and `target` field to grab these respective
+    annotations, but note that they are only instantiated after
+    `fleshout` is called (when initialising a `Document`, any
+    relations and schemas within are also fleshed out)
     """
     def __init__(self, rel_id, span, type, features, metadata=None):
         Annotation.__init__(self, rel_id, span, type, features, metadata)
 
-    def _members(self, doc):
-        member_ids = [ self.span.t1, self.span.t2 ]
-        return [ u for u in doc.annotations() if u.local_id() in member_ids ]
+    def _members(self):
+        return [ self.source, self.target ]
+
+    def fleshout(self, objects):
+        """
+        Given a dictionary mapping ids to annotation objects, set this
+        relation's source and target fields.
+
+        FIXME: Not sure if there is an idiom for two-stage object creation
+        in Python. The idea here is that we first want to create a pool of
+        annotation objects, and having done so, we want to add pointers
+        from some of these objects to the others; so we have to "flesh"
+        these objects out after creating them, but before using them.
+        """
+        source_span = self.span.t1
+        target_span = self.span.t2
+        if source_span not in objects:
+            raise Exception('There is no annotation with id %s [relation source]' % source_span)
+        elif target_span not in objects:
+            raise Exception('There is no annotation with id %s [relation target]' % target_span)
+        else:
+            self.source = objects[source_span]
+            self.target = objects[target_span]
 
 class Schema(Annotation):
     """
     An annotation between a set of annotations
+
+    Use the `members` field to grab the annotations themselves.
+    But note that it is only created when `fleshout` is called.
     """
     def __init__(self, rel_id, units, relations, schemas, type, features, metadata=None):
         self.units     = units
         self.relations = relations
         self.schemas   = schemas
-        members        = units | relations | schemas
-        Annotation.__init__(self, rel_id, members, type, features, metadata)
+        member_ids     = units | relations | schemas
+        Annotation.__init__(self, rel_id, member_ids, type, features, metadata)
 
-    def _members(self, doc):
-        member_ids = self.span
-        return [ u for u in doc.annotations() if u.local_id() in member_ids ]
+    def _members(self):
+        return self.members
+
+    def fleshout(self, objects):
+        """
+        Given a dictionary mapping ids to annotation objects, set this
+        schema's `members` field to point to the appropriate objects
+        """
+        self.members = []
+        for i in self.span:
+            if i not in objects:
+                raise Exception('There is no annotation with id %s [schema member]' % i)
+            self.members.append(objects[i])
 
 class Document(Standoff):
     """
@@ -288,10 +332,25 @@ class Document(Standoff):
     """
     def __init__(self, units, relations, schemas, text):
         Standoff.__init__(self, None)
+
         self.units=units
         self.relations=relations
         self.rels=relations # FIXME should find a way to deprecate this
         self.schemas=schemas
+        objects = {}
+
+        for i in self.units:
+            objects[i.local_id()] = i
+        for i in self.relations:
+            objects[i.local_id()] = i
+        for i in self.schemas:
+            objects[i.local_id()] = i
+
+        for x in self.relations:
+            x.fleshout(objects)
+        for x in self.schemas:
+            x.fleshout(objects)
+
         self._text=text
 
     def annotations(self):
@@ -300,9 +359,14 @@ class Document(Standoff):
         """
         return self.units + self.relations + self.schemas
 
-    def _members(self, doc):
-        assert doc is self
+    def _members(self):
         return self.annotations()
+
+    def fleshout(self, origin):
+        """
+        See `set_origin`
+        """
+        self.set_origin(origin)
 
     def set_origin(self, origin):
         """
@@ -342,5 +406,5 @@ class Document(Standoff):
         Return a string representing the text covered by either this document
         or unit.
         """
-        warnings.warn("deprecated, use doc.text(x.text_span(doc)) instead", DeprecationWarning)
+        warnings.warn("deprecated, use doc.text(x.text_span()) instead", DeprecationWarning)
         return self.text(unit.span)

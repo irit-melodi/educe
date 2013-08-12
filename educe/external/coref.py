@@ -21,10 +21,7 @@ class Chain(Standoff):
         Standoff.__init__(self)
         self.mentions = mentions
 
-    def _members(self, doc):
-        """
-        Note: doc is ignored here
-        """
+    def _members(self):
         return self.mentions
 
 class Mention(Standoff):
@@ -34,8 +31,5 @@ class Mention(Standoff):
         self.head   = head
         self.most_representative = most_representative
 
-    def _members(self, doc):
-        """
-        Note: doc is ignored here
-        """
+    def _members(self):
         return self.tokens

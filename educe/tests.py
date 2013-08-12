@@ -61,17 +61,17 @@ def test_members():
     r1  = TestRelation('r1', 's1','u2')
 
     doc = TestDocument([u1,u2,u3,u4,u5,u6],[r1],[s1], "why hello there!")
-    assert u1._members(doc) is None
-    assert sorted(s1._members(doc)) == sorted([u4,u5,u6])
-    assert sorted(r1._members(doc)) == sorted([u2,s1])
+    assert u1._members() is None
+    assert sorted(s1._members()) == sorted([u4,u5,u6])
+    assert sorted(r1._members()) == sorted([u2,s1])
 
-    assert u1._terminals(doc) == [u1]
-    assert sorted(s1._terminals(doc)) == sorted([u4,u5,u6])
-    assert sorted(r1._terminals(doc)) == sorted([u2,u4,u5,u6])
+    assert u1._terminals() == [u1]
+    assert sorted(s1._terminals()) == sorted([u4,u5,u6])
+    assert sorted(r1._terminals()) == sorted([u2,u4,u5,u6])
 
-    doc_sp = doc.text_span(doc)
+    doc_sp = doc.text_span()
     for x in doc.annotations():
-        sp = x.text_span(doc)
+        sp = x.text_span()
         assert sp.char_start <= sp.char_end
         assert sp.char_start >= doc_sp.char_start
         assert sp.char_end   <= doc_sp.char_end

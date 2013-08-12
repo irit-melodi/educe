@@ -68,7 +68,7 @@ class ConstituencyTree(SearchableTree, Standoff):
         end   = max(x.span.char_end   for x in children)
         self.span = Span(start, end)
 
-    def _members(self, doc):
+    def _members(self):
         return self.children
 
     def text_span(self, doc):

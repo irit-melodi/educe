@@ -41,11 +41,7 @@ class CoreNlpDocument(Standoff):
         self.deptrees = deptrees
         self.chains   = chains
 
-    def _members(self, doc):
-        """
-        Note that the doc field is ignored here and for any members
-        of this document
-        """
+    def _members(self):
         return self.tokens + self.trees
 
 class CoreNlpToken(postag.Token):
