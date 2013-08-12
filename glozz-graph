@@ -84,7 +84,7 @@ else:
 for doc_key in keys:
     doc_file = anno_files[doc_key][0]
     try:
-        g = graph.Graph.from_doc(corpus, doc_key)
+        g = stacgraph.Graph.from_doc(corpus, doc_key)
         write_dot_graph(doc_file, stacgraph.DotGraph(g))
         if args.split:
             ccs = g.connected_components()
