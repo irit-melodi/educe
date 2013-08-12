@@ -206,8 +206,8 @@ def read_node(node, context=None):
         return dict([(t.tag,t.text.strip()) for t in node ])
 
     elif node.tag == 'positioning' and context == 'unit':
-        start = get_one('start', -2)
-        end   = get_one('end',   -2)
+        start = get_one('start', None)
+        end   = get_one('end',   None)
         return Span(start,end)
 
     elif node.tag == 'positioning' and context == 'relation':
@@ -241,7 +241,7 @@ def read_node(node, context=None):
         return int(node.attrib['index'])
 
     elif node.tag == 'start' or node.tag == 'end':
-        return get_one('singlePosition', -3)
+        return get_one('singlePosition', None)
 
     elif node.tag in [ 'term', 'embedded-unit', 'embedded-relation', 'embedded-schema' ]:
         return node.attrib['id']
