@@ -3,6 +3,7 @@
 
 import collections
 from   itertools import chain
+import warnings
 
 """
 Low-level representation of corpus annotations, following somewhat faithfully
@@ -349,4 +350,5 @@ class Document(Standoff):
         Return a string representing the text covered by either this document
         or unit.
         """
+        warnings.warn("deprecated, use doc.text(x.text_span(doc)) instead", DeprecationWarning)
         return self.text(unit.span)
