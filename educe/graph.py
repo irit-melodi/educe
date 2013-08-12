@@ -691,7 +691,7 @@ class DotGraph(pydot.Dot):
         """
         anno  = self.core.annotation(hyperedge)
         attrs = self._simple_cdu_attrs(anno)
-        if len(self.complex_cdus) > 0:
+        if len(self.complex_cdus) > 0 and 'label' not in attrs:
             # complex CDUs have a CDU node, so I thought it might be
             # less confusing in those cases to also label the simple
             # CDUs so the user knows it's the same thing
