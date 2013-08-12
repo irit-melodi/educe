@@ -415,18 +415,15 @@ def create_units(k, doc, author, partial_units):
         return str(0 - (id_base + i))
 
     def mk_unit(x,i):
-        # Glozz seems to use creation date internally to identify
-        # units, something ms based here doesn't seem so good
-        # because not unique (too fast); using a counter instead
-        # although by rights we also need to filter out
-        # existing creation dates
+        # Note that Glozz seems to identify items by the pair of author and creation
+        # date, ignoring the unit ID altogether (assumed to be author_date)
         creation_date = mk_creation_date(i)
         metadata = { 'author'        : author
                    , 'creation-date' : creation_date
                    , 'lastModifier'  : 'n/a'
                    , 'lastModificationDate' : '0'
                    }
-        unit_id = '_'.join([author,k.doc,k.subdoc,str(i)])
+        unit_id = '_'.join([author,str(i)])
         return glozz.GlozzUnit(unit_id, x.span, x.type, x.features, metadata)
 
     return [ mk_unit(x,i) for x,i in itertools.izip(partial_units, itertools.count(0)) ]
