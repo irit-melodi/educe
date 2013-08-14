@@ -69,6 +69,7 @@ There is a typology of unit types worth noting:
 from educe.corpus import *
 from glob import glob
 import copy
+from   educe.annotation import Unit, Relation, Schema
 import educe.corpus
 import educe.glozz as glozz
 import itertools
@@ -172,51 +173,59 @@ def is_resource(annotation):
     """
     See Unit typology above
     """
-    return (annotation.type in resource_types)
+    return isinstance(annotation, Unit) and\
+            annotation.type in resource_types
 
 def is_preference(annotation):
     """
     See Unit typology above
     """
-    return (annotation.type in preference_types)
+    return isinstance(annotation, Unit) and\
+            annotation.type in preference_types
 
 def is_turn(annotation):
     """
     See Unit typology above
     """
-    return annotation.type == 'Turn'
+    return isinstance(annotation, Unit) and\
+            annotation.type == 'Turn'
 
 def is_edu(annotation):
     """
     See Unit typology above
     """
     blacklist = structure_types + resource_types + preference_types
-    return (annotation.type not in blacklist)
+    return isinstance(annotation, Unit) and\
+            annotation.type not in blacklist
 
 def is_relation_instance(annotation):
     """
     See Relation typology above
     """
-    return annotation.type in subordinating_relations or\
-           annotation.type in coordinating_relations
+    return isinstance(annotation, Relation) and\
+            annotation.type in subordinating_relations or\
+            annotation.type in coordinating_relations
 
 def is_subordinating(annotation):
     """
     See Relation typology above
     """
-    return annotation.type in subordinating_relations
+    return isinstance(annotation, Schema) and\
+            annotation.type in subordinating_relations
 
 def is_coordinating(annotation):
     """
     See Relation typology above
     """
-    return annotation.type in coordinating_relations
+    return isinstance(annotation, Schema) and\
+            annotation.type in coordinating_relations
 
 def is_cdu(annotation):
     """
     See CDUs typology above
     """
-    return annotation.type == 'Complex_discourse_unit'
+    return isinstance(annotation, Schema) and\
+            annotation.type == 'Complex_discourse_unit'
 
 def is_dialogue_act(annotation):
     """
@@ -228,7 +237,8 @@ def is_dialogue_act(annotation):
 def is_structure(annotation):
     """
     """
-    return (annotation.type not in structure_types)
+    return isinstance(annotation, Unit) and\
+            annotation.type in structure_types
 
 def cleanup_comments(x):
     placeholder = "Please write in remarks..."
