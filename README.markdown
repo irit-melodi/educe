@@ -14,10 +14,28 @@ research project][stac].  In particular, it assumes
 But we are keeping sight of the longer term objectives of generalising
 it to at least a wider range of domains
 
+## Installation
+
+First, try
+
+    pip --help
+
+If this does work, download this [setup script][setup-distribute] and
+run
+
+    python distribute_setup.py
+    easy_install pip
+
+If you have pip installed, then install educe and its dependencies:
+
+    pip install -r requirements.txt     --use-mirrors .
+
+
 ## See also
 
 * [Documentation][docs]
 
+[setup-distribute]: http://python-distribute.org/distribute_setup.py
 [stac]:  http://www.irit.fr/STAC/
 [glozz]: http://www.glozz.org/
 [docs]:  https://educe.readthedocs.org/en/latest/api-doc/educe.html
