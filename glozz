@@ -63,7 +63,7 @@ def cut_glozz_file(file, span):
     ac_file = seek_ac_file(file)
     doc = glozz.read_annotation_file(file,ac_file)
     def slice(xs):
-        return [ x for x in xs if span.encloses(x.text_span(doc)) ]
+        return [ x for x in xs if span.encloses(x.text_span()) ]
     doc2 = copy.copy(doc)
     doc2.units     = slice(doc.units)
     doc2.schemas   = slice(doc.schemas)

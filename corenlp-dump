@@ -40,7 +40,7 @@ corpus     = reader.slurp(anno_files, verbose=True)
 parses     = corenlp.read_results(corpus, args.data_dir)
 
 def show_mention(doc, mention):
-    span = mention.text_span(doc)
+    span = mention.text_span()
     return doc.text(span) + ' ' + str(span)
 
 for k in parses:
