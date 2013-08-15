@@ -81,6 +81,8 @@ def main_cut(args):
     span = Span(args.start, args.end)
     doc  = cut_glozz_file(args.input, span, args.shift)
     glozz.write_annotation_file(args.output, doc)
+    if args.shift is None:  # NB: not the same as 0!
+        args.shift = 1 - args.start
 
 
 # ---------------------------------------------------------------------
@@ -120,8 +122,6 @@ ap_hashcode.add_argument('input', metavar='FILE', help='Glozz ac file')
 ap_hashcode.set_defaults(func=main_hashcode)
 
 args = arg_parser.parse_args()
-if args.shift is None:  # NB: not the same as 0!
-    args.shift = 1 - args.start
 args.func(args)
 
 # vim: syntax=python:
