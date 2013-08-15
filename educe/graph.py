@@ -779,7 +779,8 @@ class DotGraph(pydot.Dot):
                 self.complex_cdus.add(e)
 
         # Add all of the nodes first
-        for node in self.core.edus():
+        for node in sorted(self.core.edus(),
+                           key=lambda x:self.core.annotation(x).span):
             self._add_edu(node)
 
         for edge in self.core.relations():
