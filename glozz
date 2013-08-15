@@ -22,7 +22,7 @@ import collections
 import codecs
 
 import educe.glozz      as glozz
-from educe.annotation import Span
+from educe.annotation import Span, Unit
 
 # ---------------------------------------------------------------------
 # utility functions
@@ -59,11 +59,18 @@ def main_dump(args):
 # cut
 # ---------------------------------------------------------------------
 
-def cut_glozz_file(file, span):
+def cut_glozz_file(file, span, offset=0):
     ac_file = seek_ac_file(file)
     doc = glozz.read_annotation_file(file,ac_file)
+    def shift(x):
+        if offset != 0 and isinstance(x, Unit):
+            x2      = copy.copy(x)
+            x2.span = x.span.shift(offset)
+            return x2
+        else:
+            return x
     def slice(xs):
-        return [ x for x in xs if span.encloses(x.text_span()) ]
+        return [ shift(x) for x in xs if span.encloses(x.text_span()) ]
     doc2 = copy.copy(doc)
     doc2.units     = slice(doc.units)
     doc2.schemas   = slice(doc.schemas)
@@ -71,8 +78,8 @@ def cut_glozz_file(file, span):
     return doc2
 
 def main_cut(args):
-    span = Span(int(args.start), int(args.end))
-    doc  = cut_glozz_file(args.input, span)
+    span = Span(args.start, args.end)
+    doc  = cut_glozz_file(args.input, span, args.shift)
     glozz.write_annotation_file(args.output, doc)
 
 
@@ -97,9 +104,12 @@ ap_dump.add_argument('files', nargs='*')
 
 ap_cut = subparsers.add_parser('cut', help='Select a slice of glozz anotations from text span')
 ap_cut.add_argument('input', metavar='FILE', help='Glozz aa file')
-ap_cut.add_argument('start', metavar='INT',
+ap_cut.add_argument('--shift', type=int, nargs='?',
+                    default=0,
+                    help='shift spans by this offset (default 0; unspecified:1-start)')
+ap_cut.add_argument('start', type=int,
                     help='Character offset of left of included window')
-ap_cut.add_argument( 'end', metavar='INT',
+ap_cut.add_argument( 'end', type=int,
                     help='Character offset of right of included window')
 ap_cut.add_argument('output', metavar='FILE',
                     help='Output file')
@@ -110,6 +120,8 @@ ap_hashcode.add_argument('input', metavar='FILE', help='Glozz ac file')
 ap_hashcode.set_defaults(func=main_hashcode)
 
 args = arg_parser.parse_args()
+if args.shift is None:  # NB: not the same as 0!
+    args.shift = 1 - args.start
 args.func(args)
 
 # vim: syntax=python:
