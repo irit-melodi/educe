@@ -81,7 +81,7 @@ if args.live:
 else:
     keys = filter(lambda k:k.stage == 'discourse', corpus)
 
-for doc_key in keys:
+for doc_key in sorted(keys):
     doc_file = anno_files[doc_key][0]
     try:
         g = stacgraph.Graph.from_doc(corpus, doc_key)
