@@ -43,6 +43,45 @@ def ordered_keys(preferred, d):
     return [ k for k in preferred if k in d ] +\
            [ k for k in d if k not in preferred ]
 
+STAC_GLOZZ_FS_ORDER =\
+    [ 'Status'
+    , 'Quantity'
+    , 'Correctness'
+    , 'Kind'
+    , 'Comments'
+    , 'Developments'
+    , 'Emitter'
+    , 'Identifier'
+    , 'Timestamp'
+    , 'Resources'
+    , 'Trades'
+    , 'Dice_rolling'
+    , 'Gets'
+    , 'Has_resources'
+    , 'Amount_of_resources'
+    , 'Addressee'
+    , 'Surface_act'
+    ]
+STAC_UNANNOTATED_FS_ORDER =\
+    [ 'Status'
+    , 'Quantity'
+    , 'Correctness'
+    , 'Kind'
+    , 'Identifier'
+    , 'Timestamp'
+    , 'Emitter'
+    , 'Resources'
+    , 'Developments'
+    , 'Comments'
+    , 'Dice_rolling'
+    , 'Gets'
+    , 'Trades'
+    , 'Has_resources'
+    , 'Amount_of_resources'
+    , 'Addressee'
+    , 'Surface_act'
+    ]
+
 def glozz_annotation_to_xml(self, tag='annotation'):
     meta_elm = ET.Element('metadata')
 
@@ -63,24 +102,7 @@ def glozz_annotation_to_xml(self, tag='annotation'):
                          , 'lastModifier'
                          , 'lastModificationDate'
                          ]
-    preferred_fs_order = [ 'Status'
-                         , 'Quantity'
-                         , 'Correctness'
-                         , 'Kind'
-                         , 'Comments'
-                         , 'Developments'
-                         , 'Emitter'
-                         , 'Identifier'
-                         , 'Timestamp'
-                         , 'Resources'
-                         , 'Trades'
-                         , 'Dice_rolling'
-                         , 'Gets'
-                         , 'Has_resources'
-                         , 'Amount_of_resources'
-                         , 'Addressee'
-                         , 'Surface_act'
-                         ]
+    preferred_fs_order = STAC_GLOZZ_FS_ORDER
     for k in ordered_keys(preferred_md_order, self.metadata):
         e = ET.Element(k)
         e.text = self.metadata[k]
@@ -129,11 +151,11 @@ def glozz_relation_to_span_xml(self):
 
 def glozz_schema_to_span_xml(self):
     elm = ET.Element('positioning')
-    for x in self.units:
+    for x in sorted(self.units):
         elm.append(ET.Element('embedded-unit', id=str(x)))
-    for x in self.relations:
+    for x in sorted(self.relations):
         elm.append(ET.Element('embedded-relation', id=str(x)))
-    for x in self.schemas:
+    for x in sorted(self.schemas):
         elm.append(ET.Element('embedded-schema', id=str(x)))
     return elm
 
