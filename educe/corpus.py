@@ -49,6 +49,8 @@ class FileId:
     def __eq__(self, other):
         return self._tuple() == other._tuple()
 
+    def __lt__(self, other):
+        return self._tuple() < other._tuple()
 
     def mk_global_id(self, local_id):
         """
