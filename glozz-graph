@@ -35,8 +35,8 @@ arg_parser.add_argument('idir', metavar='DIR',
                         help='Input directory')
 arg_parser.add_argument('odir', metavar='DIR',
                         help='Output directory')
-arg_parser.add_argument('--png', action='store_true',
-                        help='Create png files (can be slow)')
+arg_parser.add_argument('--no-png', action='store_true',
+                        help='Skip png file creation')
 arg_parser.add_argument('--live', action='store_true',
                         help='Input is a flat collection of aa/ac files)')
 arg_parser.add_argument('--split', action='store_true',
@@ -72,7 +72,7 @@ def write_dot_graph(doc_file, dot_graph, part=None):
         os.makedirs(ofile_dirname)
     with codecs.open(dot_file, 'w', encoding='utf-8') as f:
         print >> f, dot_graph.to_string()
-    if args.png:
+    if not args.no_png:
         print >> sys.stderr, "Creating %s" % png_file
         os.system('dot -T png -o %s %s' % (png_file, dot_file))
 
