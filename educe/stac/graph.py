@@ -195,10 +195,12 @@ class DotGraph(educe.graph.DotGraph):
             speaker_prefix = ''
         else:
             speaker_prefix = '(%s) ' % speaker
-        position = self.node_order[anno]
+        if anno in self.node_order:
+            position = str(self.node_order[anno]) + '. '
+        else:
+            position = ''
         text     = self.doc.text(anno.span)
-        return "%d. %s%s [%s]" % (position, speaker_prefix,\
-                                  text, speech_acts)
+        return "%s%s%s [%s]" % (position, speaker_prefix, text, speech_acts)
 
     def _add_edu(self, node):
         anno  = self.core.annotation(node)
