@@ -163,7 +163,7 @@ class Standoff:
         else:
             return None
 
-    def sort_span(self, x):
+    def sort_span(self):
         """
         A key you can use to help sort `Standoff` objects in a convenient
         way.
@@ -172,7 +172,7 @@ class Standoff:
         inverted; so that objects that start earliest come first, and in
         case of a tie, those that are widest
         """
-        sp = x.text_span()
+        sp = self.text_span()
         return (sp.char_start, 0 - sp.char_end)
 
 class Annotation(Standoff):
