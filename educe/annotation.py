@@ -163,18 +163,6 @@ class Standoff:
         else:
             return None
 
-    def sort_span(self):
-        """
-        A key you can use to help sort `Standoff` objects in a convenient
-        way.
-
-        Implementation-wise, this is just the text span with the endpoint
-        inverted; so that objects that start earliest come first, and in
-        case of a tie, those that are widest
-        """
-        sp = self.text_span()
-        return (sp.char_start, 0 - sp.char_end)
-
 class Annotation(Standoff):
     """
     Any sort of annotation. Annotations tend to have
