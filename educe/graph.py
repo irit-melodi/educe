@@ -783,6 +783,14 @@ class DotGraph(pydot.Dot):
                            key=lambda x:self.core.annotation(x).span):
             self._add_edu(node)
 
+        # Add nodes that have some sort of error condition or another
+        for edge in (self.core.relations() | self.core.cdus()):
+            for node in self.core.links(edge):
+                if not (self.core.is_edu(node) or\
+                        self.core.is_relation(node) or\
+                        self.core.is_cdu(node)):
+                    self._add_edu(node)
+
         for edge in self.core.relations():
             if edge in self.complex_rels:
                 self._add_complex_rel(edge)
