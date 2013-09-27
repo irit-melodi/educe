@@ -173,12 +173,16 @@ class DotGraph(educe.graph.DotGraph):
             self.node_order[anno_graph.annotation(n)] = i
         educe.graph.DotGraph.__init__(self, anno_graph)
 
-    def _get_speaker(self, u):
+    def _get_turn_info(self, u):
         enclosing_turns = [ t for t in self.turns if t.span.encloses(u.span) ]
         if len(enclosing_turns) > 0:
-            return enclosing_turns[0].features['Emitter']
+            turn      = enclosing_turns[0]
+            speaker   = turn.features['Emitter']
+            turn_text = stac.split_turn_text(self.doc.text(turn.span))[0]
+            turn_id   = turn_text.split(':')[0].strip()
+            return speaker, turn_id
         else:
-            return None
+            return None, None
 
     def _get_speech_acts(self, anno):
         # In discourse annotated part of the corpus, all segments have
@@ -188,19 +192,37 @@ class DotGraph(educe.graph.DotGraph):
         edu  = twin if twin is not None else anno
         return stac.dialogue_act(edu)
 
+    def _get_addressee(self, anno):
+        # In discourse annotated part of the corpus, all segments have
+        # type 'Other', which isn't too helpful. Try to recover the
+        # speech act from the unit equivalent to this document
+        twin = stac.twin(self.corpus, anno)
+        edu  = twin if twin is not None else anno
+        return edu.features.get('Addressee', None)
+
     def _edu_label(self, anno):
-        speech_acts = ", ".join(self._get_speech_acts(anno))
-        speaker     = self._get_speaker(anno)
+        speech_acts  = ", ".join(self._get_speech_acts(anno))
+        speaker, tid = self._get_turn_info(anno)
+        addressee    = self._get_addressee(anno)
+
         if speaker is None:
-            speaker_prefix = ''
+            speaker_prefix = '(%s)'  % tid
+        elif addressee is None:
+            speaker_prefix = '(%s: %s) ' % (tid, speaker)
         else:
-            speaker_prefix = '(%s) ' % speaker
+            speaker_prefix = '(%s: %s to %s) ' % (tid, speaker, addressee)
+
         if anno in self.node_order:
             position = str(self.node_order[anno]) + '. '
         else:
-            position = ''
+            position = ' '
+
+        if callable(getattr(anno, "text_span", None)):
+            span = ' ' + str(anno.text_span())
+        else:
+            span = ''
         text     = self.doc.text(anno.span)
-        return "%s%s%s [%s]" % (position, speaker_prefix, text, speech_acts)
+        return "%s%s%s [%s]%s" % (position, speaker_prefix, text, speech_acts, span)
 
     def _add_edu(self, node):
         anno  = self.core.annotation(node)
