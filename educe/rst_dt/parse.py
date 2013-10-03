@@ -59,13 +59,13 @@ import re, sys
 from nltk import Tree
 
 
-text_re = re.compile("\(text (?P<text>.+(</EDU>|</s>))\)")
+text_re = re.compile("\(text (?P<text>.+(</EDU>|</s>|_!))\)")
 #re.findall(text_re,test)
 leaf_pattern = "\[[^\]]+\]"
 # re.findall(leaf_pattern,s)
 type_re = "\((?P<type>(Nucleus|Satellite))"
 span_re = "\((?P<span>(leaf [0-9]+|span [0-9]+ [0-9]+))\)"
-rel_re = "\((?P<rel>rel2par [A-Za-z0-9:]+)\)"
+rel_re = "\((?P<rel>rel2par [\-A-Za-z0-9:]+)\)"
 head_pattern = re.compile("%s %s %s"%(type_re,span_re,rel_re))
 #re.findall("%s %s %s"%(type_re,span_re,rel_re),s)
 
