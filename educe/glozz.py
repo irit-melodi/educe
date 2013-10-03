@@ -208,7 +208,7 @@ def read_node(node, context=None):
         return (hashcode, units, rels, schemas)
 
     elif node.tag == 'characterisation':
-        fs        = get_one('featureSet', [])
+        fs        = get_one('featureSet', {})
         unit_type = get_one('type'      , None)
         return (unit_type, fs)
 
