@@ -74,6 +74,9 @@ class EDU(Standoff):
         self.span   = Span(start, end) # text-span (not the same as EDU span)
         Standoff.__init__(self, origin)
 
+    def set_origin(self, origin):
+        self.origin = origin
+
     def __repr__(self):
         return self.text
 
@@ -99,6 +102,11 @@ class RSTTree(SearchableTree, Standoff):
         """
         SearchableTree.__init__(self, node, children)
         Standoff.__init__(self, origin)
+
+    def set_origin(self, origin):
+        self.origin = origin
+        for child in self:
+            child.set_origin(origin)
 
     def text_span(self):
         return self.node.span
