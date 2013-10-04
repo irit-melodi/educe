@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# Author Philippe Muller
+#
 """
 RST basic API, 
 reading the format from Di Eugenio's corpus of instructional texts
@@ -16,9 +18,6 @@ TODO:
 
 
 """
-
-
-
 
 test="""
 ( Root (span 1 9)
@@ -48,26 +47,41 @@ test="""
 )
 """
 
-test0= """( Nucleus (span 5 6) (rel2par preparation:act)
-            ( Satellite (leaf 5) (rel2par act:goal) (text <s><EDU> You'll need to measure the wall or room to be paneled,</EDU>) )
-            ( Nucleus (leaf 6) (rel2par act:goal) (text <EDU>estimate the amount of paneling you'll need,</EDU>) )
-          )
+test_text=\
+        [" ORGANIZING YOUR MATERIALS ",
+         " Once you've decided on the kind of paneling you want to install --- and the pattern ---",
+         "some preliminary steps remain",
+         "before you climb into your working clothes. ",
+         " You'll need to measure the wall or room to be paneled,",
+         "estimate the amount of paneling you'll need,",
+         "buy the paneling,",
+         "gather the necessary tools and equipment (see illustration on page 87),",
+         "and even condition certain types of paneling before installation. "
+         ]
+
+test0="""
+( Root (span 5 6)
+  ( Satellite (leaf 5) (rel2par act:goal) (text <EDU>x</EDU>) )
+  ( Nucleus   (leaf 6) (rel2par act:goal) (text <EDU>y</EDU>) )
+)
 """
 
 
 import re, sys
+import codecs
 from nltk import Tree
 
+# pre-processing leaves
+text_re = re.compile(r"\(text (?P<text>.+(</EDU>|</s>|_!))\)")
 
-text_re = re.compile("\(text (?P<text>.+(</EDU>|</s>|_!))\)")
-#re.findall(text_re,test)
-leaf_pattern = "\[[^\]]+\]"
-# re.findall(leaf_pattern,s)
-type_re = "\((?P<type>(Nucleus|Satellite))"
-span_re = "\((?P<span>(leaf [0-9]+|span [0-9]+ [0-9]+))\)"
-rel_re = "\((?P<rel>rel2par [\-A-Za-z0-9:]+)\)"
+# pre-processing heads
+type_re = r"\((?P<type>(Nucleus|Satellite))"
+span_re = r"\((?P<span>(leaf [0-9]+|span [0-9]+ [0-9]+))\)"
+rel_re  = r"\((?P<rel>rel2par [\-A-Za-z0-9:]+)\)"
 head_pattern = re.compile("%s %s %s"%(type_re,span_re,rel_re))
-#re.findall("%s %s %s"%(type_re,span_re,rel_re),s)
+
+# parsing
+leaf_pattern = r"\[[^\]]+\]" # non-']' chars in square brackets
 
 def process_text(matchobj):
     text = matchobj.group("text")
@@ -86,17 +100,32 @@ def mark_heads(str):
    return head_pattern.sub(process_head,str)
 
 def preprocess(str):
+    """
+    Given a raw RST treebank string, return a massaged representation for easier
+    parsing, along with its first/last EDU number.
+
+    The string is assumed to take the form "(Root (span X Y) Nodes.. )", where X
+    and Y are integers and Nodes are RST tree string nodes
+    """
+    s_     = preprocess_helper(str)
+    root, span, minedu_, maxedu_, s = s_.split(" ",4)
+    tstr   = "%s %s" % (root, s)
+    minedu = int(minedu_)
+    maxedu = int(maxedu_[:-1]) # trailing right bracket
+    return tstr, minedu, maxedu
+
+def preprocess_helper(str):
+    """
+    Convert a raw RST treebank tree string to something which is a bit easier
+    for us to parse
+    """
     res = str.strip()
     res = mark_leaves(res)
-    res = re.sub("\(\s+","(",res)#.replace("\n",""))
-    res = re.sub("\s+\)",")",res)
-    res = re.sub("\s\s+"," ",res)
+    res = re.sub(r"\(\s+","(",res)#.replace("\n",""))
+    res = re.sub(r"\s+\)",")",res)
+    res = re.sub(r"\s\s+"," ",res)
     res = mark_heads(res)
     return res
-
-#s= preprocess(test)
-#t = Tree.parse(s,leaf_pattern=leaf_pattern)
-  
 
 def postprocess(tree):
     if isinstance(tree,Tree):
@@ -106,8 +135,7 @@ def postprocess(tree):
         if tree.startswith("["):
             return EDU(tree[1:-1])
         else:
-            print >> sys.stderr, "ERROR in rst tree format for leaf : ", child
-            sys.exit(0)
+            raise Exception( "ERROR in rst tree format for leaf : ", child)
 
 class EDU:
     def __init__(self,descr):
@@ -124,19 +152,17 @@ class EDU:
             self._sentend = False
         # remove <EDU></EDU> mark
         self._text = s[5:-6]
-        
-        
+
     def __repr__(self):
         return self._text
 
-class Node: 
+class Node:
     def __init__(self,descr):
         if descr =="span" or descr=="Root":
             self.type = "root"
             self.span = "---"
             self.rel = None
         else:
-            #print descr
             self.type, self.span, self.rel = descr.split("|")
             self.span = self.span.split("-")
             if len(self.span)==2:
@@ -148,19 +174,15 @@ class Node:
     def __repr__(self):
         return "%s %s %s"%(self.type,"%s-%s"%tuple(self.span[1:3]),self.rel)
 
-        
-
 class RSTTree:
-    
+
     def __init__(self,str):
-        s = preprocess(str)
-        # starts with (Root (span 1 9) 
-        root, span, minedu,maxedu, s = s.split(" ",4)
-        t = Tree.parse("%s %s"%(root,s),leaf_pattern=leaf_pattern)
+        tstr, minedu, maxedu = preprocess(str)
+        t       = Tree.parse(tstr, leaf_pattern=leaf_pattern)
         self._t = postprocess(t)
-        self._minedu = int(minedu)
-        self._maxedu = int(maxedu[:-1])
-        
+        self._minedu = minedu
+        self._maxedu = maxedu
+
     def __repr__(self):
         return self._t.pprint()
 
@@ -173,5 +195,11 @@ class RSTTree:
     def latex(self):
         return self._t.pprint_latex_qtree()
 
-
-a = RSTTree(test)
+def read_annotation_file(anno_filename):
+    """
+    Read a single RST tree
+    """
+    t = None
+    with codecs.open(anno_filename, 'r', 'utf-8') as tf:
+        t = RSTTree(tf.read())
+    return t
