@@ -43,7 +43,7 @@ tstr1="""
 )
 """
 
-text1="".join(\
+text1="\n".join(\
         [" ORGANIZING YOUR MATERIALS ",
          " Once you've decided on the kind of paneling you want to install --- and the pattern ---",
          "some preliminary steps remain",
@@ -54,6 +54,17 @@ text1="".join(\
          "gather the necessary tools and equipment (see illustration on page 87),",
          "and even condition certain types of paneling before installation. "
          ])
+
+tstr2="""
+( Root (span 1 6)
+  ( Nucleus (span 1 6) (rel2par span)
+    ( Satellite (leaf 1) (rel2par evaluation-s) (text _!The back of the Moth.<P>_!) )
+    ( Nucleus (span 2 6) (rel2par span)
+      ( Nucleus (span 2 4) (rel2par Same-Unit)
+        ( Nucleus (leaf 2) (rel2par span) (text _!Baron Bromley III,_!) )))))
+"""
+
+text2="The back of the Moth.<P>\nBaron Bromley III,"
 
 # ---------------------------------------------------------------------
 #
@@ -68,6 +79,14 @@ def test_tstr1():
     sp     = t.node.span
     assert t.edu_span()    == (1,9)
     assert t_text          == text1
+    assert sp.char_end     == len(t_text)
+
+def test_tstr2():
+    t      = parse.RSTTree.build(tstr2)
+    t_text = t.text()
+    sp     = t.node.span
+    assert t.edu_span()    == (1,6)
+    assert t_text          == text2
     assert sp.char_end     == len(t_text)
 
 def test_from_files():

@@ -69,7 +69,12 @@ class EDU(Standoff):
         else:
             self._sentend = False
 
-        self.text   = s[5:-6] # remove <EDU></EDU> mark
+        if s.startswith("<EDU>") and s.endswith("</EDU>"):
+            self.text = s[5:-6] # remove <EDU></EDU> mark
+        elif s.startswith("_!") and s.endswith("_!"):
+            self.text = s[2:-2]
+        else:
+            self.text = s
         end         = start + len(self.text)
         self.span   = Span(start, end) # text-span (not the same as EDU span)
         Standoff.__init__(self, origin)
@@ -130,8 +135,12 @@ class RSTTree(SearchableTree, Standoff):
         """
         Return the text corresponding to this RST tree
         (traverses and concatenates leaf node text)
+
+        Note that this (along with the standoff offsets)
+        behave as though there were a single newline character
+        between each EDU
         """
-        return "".join(l.text for l in self.leaves())
+        return "\n".join(l.text for l in self.leaves())
 
     @classmethod
     def build(cls, str):
@@ -161,9 +170,10 @@ class RSTTree(SearchableTree, Standoff):
         """
         if isinstance(tree,Tree):
             children = []
-            position = start
+            position = start - 1 # compensate for virtual whitespace added below
             for c in tree:
-                child    = cls._postprocess(c, position)
+                child    = cls._postprocess(c, position + 1) # +1 to add virtual whitespace
+                                                             # between each EDU
                 children.append(child)
                 child_sp = child.node.span if isinstance(child,Tree) else child.span
                 position = child_sp.char_end
