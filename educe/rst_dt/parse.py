@@ -1,19 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Author Philippe Muller
+# Authors: Philippe Muller, Eric Kow
 #
 """
-RST basic API, 
-reading the format from Di Eugenio's corpus of instructional texts
+From RST discourse treebank trees to Educe-style objects
+(reading the format from Di Eugenio's corpus of instructional texts).
 
-encodes RST trees as nltk Tree structure
+The main classes of interest are `RSTTree` and `EDU`.  `RSTTree` can be treated
+as an NLTK Tree structure.  It is also an educe `Standoff` object, which means
+that it points to other RST trees (their children) or to `EDU`s.
 
 TODO: 
 
 - translation to predicate argument -> EDU api
 - translation to EDU only via nuclearity principle
 - import external processing: postag, parsing, etc
+
+
+
 """
 
 
