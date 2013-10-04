@@ -174,26 +174,21 @@ class Node:
     def __repr__(self):
         return "%s %s %s"%(self.type,"%s-%s"%tuple(self.span[1:3]),self.rel)
 
-class RSTTree:
+class RSTTree(Tree):
 
     def __init__(self,str):
         tstr, minedu, maxedu = preprocess(str)
-        t       = Tree.parse(tstr, leaf_pattern=leaf_pattern)
-        self._t = postprocess(t)
+        t_  = Tree.parse(tstr, leaf_pattern=leaf_pattern)
+        t   = postprocess(t_)
         self._minedu = minedu
         self._maxedu = maxedu
+        Tree.__init__(self, t.node, t)
 
     def __repr__(self):
-        return self._t.pprint()
-
-    def tree(self):
-        return self._t
+        return self.pprint()
 
     def span(self):
         return self._minedu,self._maxedu
-
-    def latex(self):
-        return self._t.pprint_latex_qtree()
 
 def read_annotation_file(anno_filename):
     """

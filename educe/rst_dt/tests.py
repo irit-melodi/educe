@@ -12,7 +12,7 @@ def test_preprocess():
 def test_builtin():
     parse.RSTTree(parse.test0)
     t = parse.RSTTree(parse.test)
-    leaf_text = [ l._text for l in t.tree().leaves() ]
+    leaf_text = [ l._text for l in t.leaves() ]
     assert parse.test_text == leaf_text
 
 def test_from_files():
