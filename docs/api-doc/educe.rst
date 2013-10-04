@@ -63,5 +63,6 @@ Subpackages
 .. toctree::
 
     educe.external
+    educe.rst_dt
     educe.stac
 
