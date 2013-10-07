@@ -778,6 +778,13 @@ class DotGraph(pydot.Dot):
             if any([is_complex(n) for n in members]):
                 self.complex_cdus.add(e)
 
+        # CDUs which are contained in another
+        self.contained_cdus = set()
+        for e in self.core.cdus():
+            self.contained_cdus.update(self.core.mirror(n)
+                                       for n in self.core.cdu_members(e)
+                                       if self.core.is_cdu(n))
+
         # Add all of the nodes first
         for node in sorted(self.core.edus(),
                            key=lambda x:self.core.annotation(x).span):
@@ -798,7 +805,9 @@ class DotGraph(pydot.Dot):
                 self._add_simple_rel(edge)
 
         for edge in self.core.cdus():
-            if edge in self.complex_cdus:
+            if edge in self.contained_cdus:
+                continue
+            elif edge in self.complex_cdus:
                 self._add_complex_cdu(edge)
             else:
                 self._add_simple_cdu(edge)
