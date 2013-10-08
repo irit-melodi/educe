@@ -45,6 +45,9 @@ class Reader(educe.corpus.Reader):
         return anno_files
 
     def slurp_subcorpus(self, cfiles, verbose=False):
+        """
+        See `educe.rst_dt.parse` for a description of `RSTTree`
+        """
         corpus={}
         counter=0
         for k in cfiles.keys():

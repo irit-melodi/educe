@@ -9,18 +9,8 @@ From RST discourse treebank trees to Educe-style objects
 
 The main classes of interest are `RSTTree` and `EDU`.  `RSTTree` can be treated
 as an NLTK Tree structure.  It is also an educe `Standoff` object, which means
-that it points to other RST trees (their children) or to `EDU`s.
-
-TODO: 
-
-- translation to predicate argument -> EDU api
-- translation to EDU only via nuclearity principle
-- import external processing: postag, parsing, etc
-
-
-
+that it points to other RST trees (their children) or to `EDU`.
 """
-
 
 import re, sys
 import codecs
@@ -43,22 +33,31 @@ root_pattern = re.compile("%s %s"    % (root_type_re, span_re))
 # parsing
 leaf_pattern = r"\[[^\]]+\]" # non-']' chars in square brackets
 
-def process_text(matchobj):
+def _process_text(matchobj):
     text = matchobj.group("text")
     return "[%s]"%text#.replace(" ","¤")
 
-def process_head(matchobj):
+def _process_head(matchobj):
+    """
+    Helper function, ignore
+    """
     ntype = matchobj.group("type")
     span  = matchobj.group("span").replace(" ","-")
     rel   = "---" if ntype == "Root" else matchobj.group("rel").split()[1]
     return "(%s|%s|%s"%(ntype,span,rel)
 
-def mark_leaves(str):
-    return text_re.sub(process_text,str)
+def _mark_leaves(str):
+    """
+    Helper function, ignore
+    """
+    return text_re.sub(_process_text,str)
 
-def mark_heads(str):
-    s = root_pattern.sub(process_head,str)
-    return head_pattern.sub(process_head,s)
+def _mark_heads(str):
+    """
+    Helper function, ignore
+    """
+    s = root_pattern.sub(_process_head,str)
+    return head_pattern.sub(_process_head,s)
 
 class EDU(Standoff):
     def __init__(self, descr, start=0, origin=None):
@@ -160,11 +159,11 @@ class RSTTree(SearchableTree, Standoff):
         representation for easier parsing, along with its first/last EDU number.
         """
         res = str.strip()
-        res = mark_leaves(res)
+        res = _mark_leaves(res)
         res = re.sub(r"\(\s+","(",res)#.replace("\n",""))
         res = re.sub(r"\s+\)",")",res)
         res = re.sub(r"\s\s+"," ",res)
-        res = mark_heads(res)
+        res = _mark_heads(res)
         return res
 
     @classmethod
@@ -184,7 +183,7 @@ class RSTTree(SearchableTree, Standoff):
                 position = child_sp.char_end
 
             span = Span(start, position)
-            return RSTTree(Node(tree.node, span),children)
+            return cls(Node(tree.node, span),children)
         else:
             if tree.startswith("["):
                 return EDU(tree[1:-1], start)

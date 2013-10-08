@@ -4,7 +4,7 @@
 # License: BSD3
 
 """
-Converter from RST DT trees to educe-style hypergraphs
+Converter from RST Discourse Treebank trees to educe-style hypergraphs
 """
 
 import copy

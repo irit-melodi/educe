@@ -4,21 +4,25 @@
 """
 Convert RST trees to SDRT style EDU/CDU annotations.
 
-At the moment, this uses a pointer-based representation which sits in between
-the Glozz-based representation used for STAC and the hypergraph representation.
-We try to resemble educe.annotation via duck-typing
+The core of the conversion is `rst_to_sdrt` which produces an intermediary
+pointer based representation (a single `CDU` pointing to other
+CDUs and EDUs).
+
+A fancier variant, `rst_to_glozz_sdrt` wraps around this core and further
+converts the `CDU` into a Glozz-friendly form
 """
 
 import educe.rst_dt.parse as rst
 import educe.annotation   as anno
+from educe import glozz
 
 import itertools
 from nltk import Tree
 
 class CDU:
     """
-    A CDU contains one or more discourse units.  Both CDU and EDU are
-    discourse units
+    A CDU contains one or more discourse units, and tracks relation
+    instances between its members. Both CDU and EDU are discourse units.
     """
 
     def __init__(self, members, rel_insts):
@@ -40,18 +44,18 @@ class RelInst:
         self.target = target
         self.type   = type
 
-def is_node(type):
-    def f(x):
-        return isinstance(x, rst.RSTTree) and x.node.type == type
-    return f
-
-def du_to_tree(m):
+def debug_du_to_tree(m):
+    """
+    Tree representation of CDU, treating the set of relation
+    instances as the parent of each node.  Loses information;
+    should only be used for debugging purposes.
+    """
     if isinstance(m, rst.EDU):
         return m
     elif isinstance(m, CDU):
         rtypes = set([r.type for r in m.rel_insts])
         rtype_str = list(rtypes)[0] if len(rtypes) == 1 else str(rtypes)
-        return Tree(rtype_str, [du_to_tree(m) for m in m.members])
+        return Tree(rtype_str, [debug_du_to_tree(m) for m in m.members])
     else:
         raise Exception("Don't know how to deal with non CDU/EDU")
 
@@ -132,19 +136,36 @@ def rst_to_glozz_sdrt(rst_tree, annotator='ldc'):
     for x in glozz_rels + glozz_schemas: # set internal pointers
         x.fleshout(objects)
 
-    glozz_doc = anno.Document(glozz_units, glozz_rels, glozz_schemas, rst_tree.text())
+    glozz_doc = glozz.GlozzDocument(None, glozz_units, glozz_rels, glozz_schemas, rst_tree.text())
     return glozz_doc
 
-
 def rst_to_sdrt(tree):
+    """
+    From `RSTTree` to `CDU` or `EDU` (recursive, top-down transformation). We
+    recognise three patterns walking down the tree (anything else is considered
+    to be an error):
+
+    * Pre-terminal nodes: Return the leaf EDU
+
+    * Mono-nuclear, N satellites: Return a CDU with a relation instance
+      from the nucleus to each satellite.  As an informal example, given
+      `X(attribution:S1, N, explanation-argumentative:S2)`, we return a
+      CDU with `sdrt(N) -- attribution --> sdrt(S1)` and
+      `sdrt(N) -- explanation-argumentative --> sdrt(S2)`
+
+    * Multi-nuclear, 0 satellites: Return a CDU with a relation instance
+      across each successive nucleus (assume the same relation).  As an
+      informal example, given `X(List:N1, List:N2, List:N3)`, we return a CDU
+      containing `sdrt(N1) --List--> sdrt(N2) -- List --> sdrt(N3)`.
+    """
     if len(tree) == 1: # pre-terminal
         edu = tree[0]
         if not isinstance(edu, rst.EDU):
             raise Exception("Pre-terminal with non-EDU leaf: %s" % edu)
         return edu
     else:
-        nuclei     = filter(is_node('Nucleus'),   tree)
-        satellites = filter(is_node('Satellite'), tree)
+        nuclei     = filter(lambda x:x.node.type == 'Nucleus',   tree)
+        satellites = filter(lambda x:x.node.type == 'Satellite', tree)
         if len(nuclei) + len(satellites) != len(tree):
             raise Exception("Nodes that are neither Nuclei nor Satellites\n%s" % tree)
 
