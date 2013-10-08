@@ -1,0 +1,5 @@
+( Root (span 73 75)
+  ( Satellite (leaf 73) (rel2par attribution) (text _!One temple official said_!) )
+  ( Nucleus (leaf 74) (rel2par span) (text _!about three times as much genmai was being eaten as in previous years_!) )
+  ( Satellite (leaf 75) (rel2par explanation-argumentative) (text _!-- not surprisingly, as the temple had recently welcomed many new practitioners.<P>_!) )
+)
