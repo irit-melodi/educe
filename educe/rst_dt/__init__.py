@@ -58,3 +58,14 @@ class Reader(educe.corpus.Reader):
         if verbose:
             sys.stderr.write("\rSlurping corpus dir [%d/%d done]\n" % (counter, len(cfiles)))
         return corpus
+
+def id_to_path(k):
+    """
+    Given a fleshed out FileId (none of the fields are None),
+    return a filepath for it following RST Discourse Treebank
+    conventions.
+
+    You will likely want to add your own filename extensions to
+    this path
+    """
+    return k.doc
