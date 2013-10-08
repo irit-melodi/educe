@@ -9,10 +9,26 @@ rst_dt Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`graph` Module
+-------------------
+
+.. automodule:: educe.rst_dt.graph
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`parse` Module
 -------------------
 
 .. automodule:: educe.rst_dt.parse
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`sdrt` Module
+------------------
+
+.. automodule:: educe.rst_dt.sdrt
     :members:
     :undoc-members:
     :show-inheritance:
