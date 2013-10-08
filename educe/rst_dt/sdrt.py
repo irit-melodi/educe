@@ -146,27 +146,21 @@ def rst_to_sdrt(tree):
         nuclei     = filter(is_node('Nucleus'),   tree)
         satellites = filter(is_node('Satellite'), tree)
         if len(nuclei) + len(satellites) != len(tree):
-            raise Exception("We have nodes that are neither Nuclei nor Satellites")
+            raise Exception("Nodes that are neither Nuclei nor Satellites\n%s" % tree)
 
         if len(nuclei) == 0:
-            raise Exception("No Nucleus nodes in %s" % tree)
+            raise Exception("No nucleus:\n%s" % tree)
         elif len(nuclei) > 1: # multi-nuclear chain
-            c_nucs = map(rst_to_sdrt, nuclei)
-            rtype  = nuclei[0].node.rel
-            rel_insts = [ RelInst(n1, n2, rtype) for n1,n2 in zip(c_nucs, c_nucs[1:]) ]
-            return CDU(c_nucs, set(rel_insts))
-        elif len(tree) == 2: # mono-nuclear, should be exactly two nodes
-            if len(nuclei) == 1 and len(satellites) == 1:
-                nuc   = nuclei[0]
-                sat   = satellites[0]
-
-                c_nuc = rst_to_sdrt(nuc)
-                c_sat = rst_to_sdrt(sat)
-                rel_inst = RelInst(c_nuc, c_sat, sat.node.rel)
-                return CDU([c_nuc, c_sat], set([rel_inst]))
-            else:
-                len_nuc = len(nuclei)
-                len_sat = len(satellites)
-                raise Exception("Don't yet know what to do with %d N, %d S" % (len_nuc, len_sat))
+            if satellites:
+                raise Exception("Multinuclear with satellites:\n%s" % tree)
+            c_nucs    = map(rst_to_sdrt, nuclei)
+            rtype     = nuclei[0].node.rel
+            rel_insts = set(RelInst(n1, n2, rtype) for n1,n2 in zip(c_nucs, c_nucs[1:]))
+            return CDU(c_nucs, rel_insts)
         else:
-            raise Exception("Mononuclear what to do with %d children" % len(tree))
+            nuc       = nuclei[0]
+            c_nuc     = rst_to_sdrt(nuc)
+            c_sats    = map(rst_to_sdrt,satellites)
+            rel_insts = set(RelInst(c_nuc, cs, s.node.rel) for s,cs in zip(satellites, c_sats))
+            members   = [c_nuc] + c_sats
+            return CDU(members, rel_insts)
