@@ -142,10 +142,10 @@ class RSTTree(SearchableTree, Standoff):
         (traverses and concatenates leaf node text)
 
         Note that this (along with the standoff offsets)
-        behave as though there were a single newline character
+        behave as though there were a single space
         between each EDU
         """
-        return "\n".join(l.text for l in self.leaves())
+        return " ".join(l.text for l in self.leaves())
 
     @classmethod
     def build(cls, str):

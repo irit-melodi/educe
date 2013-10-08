@@ -43,7 +43,7 @@ tstr1="""
 )
 """
 
-text1="\n".join(\
+text1=" ".join(\
         [" ORGANIZING YOUR MATERIALS ",
          " Once you've decided on the kind of paneling you want to install --- and the pattern ---",
          "some preliminary steps remain",
@@ -64,7 +64,7 @@ tstr2="""
         ( Nucleus (leaf 2) (rel2par span) (text _!Baron Bromley III,_!) )))))
 """
 
-text2="The back of the Moth.<P>\nBaron Bromley III,"
+text2="The back of the Moth.<P> Baron Bromley III,"
 
 # ---------------------------------------------------------------------
 #
