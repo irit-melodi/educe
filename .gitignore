@@ -1,5 +1,5 @@
 # Copyright
-tests/rst-test*.dis
+tests/wsj*.dis
 
 # Syphinx
 _build
