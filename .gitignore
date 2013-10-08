@@ -1,6 +1,10 @@
 # Copyright
 tests/wsj*.dis
 
+# STAC data
+pilot
+socl-season[1,2]
+
 # Syphinx
 _build
 _sources
