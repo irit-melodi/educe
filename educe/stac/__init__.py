@@ -382,6 +382,54 @@ def id_to_path(k):
 # Adding annotations
 # ---------------------------------------------------------------------
 
+STAC_GLOZZ_FS_ORDER =\
+    [ 'Status'
+    , 'Quantity'
+    , 'Correctness'
+    , 'Kind'
+    , 'Comments'
+    , 'Developments'
+    , 'Emitter'
+    , 'Identifier'
+    , 'Timestamp'
+    , 'Resources'
+    , 'Trades'
+    , 'Dice_rolling'
+    , 'Gets'
+    , 'Has_resources'
+    , 'Amount_of_resources'
+    , 'Addressee'
+    , 'Surface_act'
+    ]
+STAC_UNANNOTATED_FS_ORDER =\
+    [ 'Status'
+    , 'Quantity'
+    , 'Correctness'
+    , 'Kind'
+    , 'Identifier'
+    , 'Timestamp'
+    , 'Emitter'
+    , 'Resources'
+    , 'Developments'
+    , 'Comments'
+    , 'Dice_rolling'
+    , 'Gets'
+    , 'Trades'
+    , 'Has_resources'
+    , 'Amount_of_resources'
+    , 'Addressee'
+    , 'Surface_act'
+    ]
+
+STAC_MD_ORDER =\
+    [ 'author'
+    , 'creation-date'
+    , 'lastModifier'
+    , 'lastModificationDate'
+    ]
+
+stac_output_settings = glozz.GlozzOutputSettings(STAC_GLOZZ_FS_ORDER, STAC_MD_ORDER)
+
 class PartialUnit:
     """
     Partially instantiated unit, for use when you want to programmatically
@@ -442,4 +490,4 @@ def write_annotation_file(anno_filename, doc):
     """
     Write a GlozzDocument to XML in the given path
     """
-    glozz.write_annotation_file(anno_filename, doc)
+    glozz.write_annotation_file(anno_filename, doc, settings=stac_output_settings)

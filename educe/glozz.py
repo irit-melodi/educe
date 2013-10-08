@@ -16,18 +16,32 @@ import sys
 
 from educe.annotation import *
 
+class GlozzOutputSettings:
+    """
+    Non-essential aspects of Glozz XML output, such as the order that
+    feature structures or metadata are written out.  Controlling these
+    settings could be useful when you want to automatically modify
+    an existing Glozz document, but produce only minimal textual diffs
+    along the way for revision control, comparability, etc.
+    """
+    def __init__(self, feature_order, metadata_order):
+        self.fs_order = feature_order
+        self.md_order = metadata_order
+
+default_output_settings = GlozzOutputSettings([],[])
+
 class GlozzDocument(Document):
     def __init__(self, hashcode, unit, rels, schemas, text):
         Document.__init__(self, unit, rels, schemas, text)
         self.hashcode = hashcode
 
-    def to_xml(self):
+    def to_xml(self, settings=default_output_settings):
         elm = ET.Element('annotations')
         if self.hashcode is not None:
             elm.append(ET.Element('metadata', corpusHashcode=self.hashcode))
-        elm.extend([glozz_annotation_to_xml(x, 'unit')     for x in self.units])
-        elm.extend([glozz_annotation_to_xml(x, 'relation') for x in self.relations])
-        elm.extend([glozz_annotation_to_xml(x, 'schema')   for x in self.schemas])
+        elm.extend([glozz_annotation_to_xml(x, 'unit',     settings) for x in self.units])
+        elm.extend([glozz_annotation_to_xml(x, 'relation', settings) for x in self.relations])
+        elm.extend([glozz_annotation_to_xml(x, 'schema',   settings) for x in self.schemas])
         return elm
 
     def set_origin(self, origin):
@@ -43,67 +57,11 @@ def ordered_keys(preferred, d):
     return [ k for k in preferred if k in d ] +\
            [ k for k in d if k not in preferred ]
 
-STAC_GLOZZ_FS_ORDER =\
-    [ 'Status'
-    , 'Quantity'
-    , 'Correctness'
-    , 'Kind'
-    , 'Comments'
-    , 'Developments'
-    , 'Emitter'
-    , 'Identifier'
-    , 'Timestamp'
-    , 'Resources'
-    , 'Trades'
-    , 'Dice_rolling'
-    , 'Gets'
-    , 'Has_resources'
-    , 'Amount_of_resources'
-    , 'Addressee'
-    , 'Surface_act'
-    ]
-STAC_UNANNOTATED_FS_ORDER =\
-    [ 'Status'
-    , 'Quantity'
-    , 'Correctness'
-    , 'Kind'
-    , 'Identifier'
-    , 'Timestamp'
-    , 'Emitter'
-    , 'Resources'
-    , 'Developments'
-    , 'Comments'
-    , 'Dice_rolling'
-    , 'Gets'
-    , 'Trades'
-    , 'Has_resources'
-    , 'Amount_of_resources'
-    , 'Addressee'
-    , 'Surface_act'
-    ]
 
-def glozz_annotation_to_xml(self, tag='annotation'):
+def glozz_annotation_to_xml(self, tag='annotation', settings=default_output_settings):
     meta_elm = ET.Element('metadata')
 
-    # FIXME: while these preferences are harmless
-    # (the elements listed here are completely optional and
-    # we except the document to mean the same regardless of
-    # the order of these elements), they're a bit silly!
-    #
-    # We have them here to help
-    # debugging (via visual diff), but we should either remove
-    # them later or think of a way to model task-specific
-    # things (here, STAC)
-    #
-    # Right now, there's not a very clear distinction between
-    # STAC specific stuff and glozz generalities
-    preferred_md_order = [ 'author'
-                         , 'creation-date'
-                         , 'lastModifier'
-                         , 'lastModificationDate'
-                         ]
-    preferred_fs_order = STAC_GLOZZ_FS_ORDER
-    for k in ordered_keys(preferred_md_order, self.metadata):
+    for k in ordered_keys(settings.md_order, self.metadata):
         e = ET.Element(k)
         e.text = self.metadata[k]
         meta_elm.append(e)
@@ -112,7 +70,7 @@ def glozz_annotation_to_xml(self, tag='annotation'):
     char_tag_elm = ET.Element('type')
     char_tag_elm.text = self.type
     char_tag_fs  = ET.Element('featureSet')
-    for k in ordered_keys(preferred_fs_order, self.features):
+    for k in ordered_keys(settings.fs_order, self.features):
         e = ET.Element('feature',name=k)
         e.text = self.features[k]
         char_tag_fs.append(e)
