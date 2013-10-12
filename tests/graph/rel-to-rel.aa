@@ -1,0 +1,176 @@
+<?xml version='1.0' encoding='utf-8'?>
+<annotations>
+    <metadata corpusHashcode="1852-92700729" />
+
+    <unit id="edu_1">
+        <metadata>
+            <creation-date>1</creation-date>
+            <author>edu</author>
+        </metadata>
+        <characterisation>
+            <type>Segment</type>
+            <featureSet />
+        </characterisation>
+        <positioning>
+            <start>
+                <singlePosition index="450" />
+            </start>
+            <end>
+                <singlePosition index="495" />
+            </end>
+        </positioning>
+    </unit>
+    <unit id="edu_2">
+        <metadata>
+            <creation-date>2</creation-date>
+            <author>edu</author>
+        </metadata>
+        <characterisation>
+            <type>Segment</type>
+            <featureSet />
+        </characterisation>
+        <positioning>
+            <start>
+                <singlePosition index="509" />
+            </start>
+            <end>
+                <singlePosition index="531" />
+            </end>
+        </positioning>
+    </unit>
+    <unit id="edu_3">
+        <metadata>
+            <creation-date>3</creation-date>
+            <author>edu</author>
+        </metadata>
+        <characterisation>
+            <type>Segment</type>
+            <featureSet />
+        </characterisation>
+        <positioning>
+            <start>
+                <singlePosition index="608" />
+            </start>
+            <end>
+                <singlePosition index="638" />
+            </end>
+        </positioning>
+    </unit>
+
+
+
+    <unit id="turn_10">
+        <metadata>
+            <author>turn</author>
+            <creation-date>10</creation-date>
+        </metadata>
+        <characterisation>
+            <type>Turn</type>
+            <featureSet>
+                <feature name="Comments">Please write in remarks...</feature>
+                <feature name="Developments">roads=7;  settlements=4</feature>
+                <feature name="Emitter">Tomm</feature>
+                <feature name="Identifier">511</feature>
+                <feature name="Timestamp">18:01:58:516</feature>
+                <feature name="Resources">clay=2; ore=4; sheep=0; wheat=0; wood=1</feature>
+            </featureSet>
+        </characterisation>
+        <positioning>
+            <start>
+                <singlePosition index="437"/>
+            </start>
+            <end>
+                <singlePosition index="495"/>
+            </end>
+        </positioning>
+    </unit>
+
+    <unit id="turn_20">
+        <metadata>
+            <creation-date>20</creation-date>
+            <author>turn</author>
+        </metadata>
+        <characterisation>
+            <type>Turn</type>
+            <featureSet>
+                <feature name="Timestamp">18:02:05:718</feature>
+                <feature name="Comments">Please write in remarks...</feature>
+                <feature name="Developments">roads=5;  settlements=2</feature>
+                <feature name="Identifier">512</feature>
+                <feature name="Emitter">Dave</feature>
+                <feature name="Resources">clay=3; ore=1; sheep=0; wheat=4; wood=0</feature>
+            </featureSet>
+        </characterisation>
+        <positioning>
+            <start>
+                <singlePosition index="496" />
+            </start>
+            <end>
+                <singlePosition index="531" />
+            </end>
+        </positioning>
+    </unit>
+    <unit id="turn_30">
+        <metadata>
+            <creation-date>30</creation-date>
+            <author>turn</author>
+        </metadata>
+        <characterisation>
+            <type>Turn</type>
+            <featureSet>
+                <feature name="Timestamp">18:02:25:942</feature>
+                <feature name="Comments">Please write in remarks...</feature>
+                <feature name="Developments">roads=5;  settlements=2</feature>
+                <feature name="Identifier">514</feature>
+                <feature name="Emitter">Dave</feature>
+                <feature name="Resources">clay=3; ore=1; sheep=0; wheat=4; wood=0</feature>
+            </featureSet>
+        </characterisation>
+        <positioning>
+            <start>
+                <singlePosition index="595" />
+            </start>
+            <end>
+                <singlePosition index="638" />
+            </end>
+        </positioning>
+    </unit>
+
+    <relation id="rel_100">
+        <metadata>
+            <creation-date>100</creation-date>
+            <author>rel</author>
+        </metadata>
+        <characterisation>
+            <type>Question-answer_pair</type>
+            <featureSet>
+                <feature name="Argument_scope">Specified</feature>
+                <feature name="Comments">Please write in remarks...</feature>
+            </featureSet>
+        </characterisation>
+        <positioning>
+            <term id="edu_1" />
+            <term id="edu_2" />
+        </positioning>
+    </relation>
+
+    <relation id="rel_300">
+        <metadata>
+            <creation-date>300</creation-date>
+            <author>rel</author>
+        </metadata>
+        <characterisation>
+            <type>Continuation</type>
+            <featureSet>
+                <feature name="Argument_scope">Specified</feature>
+                <feature name="Comments">Please write in remarks...</feature>
+            </featureSet>
+        </characterisation>
+        <positioning>
+            <term id="rel_100" />
+            <term id="edu_3" />
+        </positioning>
+    </relation>
+
+
+</annotations>

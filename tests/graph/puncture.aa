@@ -1,0 +1,128 @@
+<?xml version='1.0' encoding='utf-8'?>
+<annotations>
+    <metadata corpusHashcode="1852-92700729" />
+
+    <unit id="edu_4">
+        <metadata>
+            <creation-date>4</creation-date>
+            <author>edu</author>
+        </metadata>
+        <characterisation>
+            <type>Segment</type>
+            <featureSet />
+        </characterisation>
+        <positioning>
+            <start>
+                <singlePosition index="545" />
+            </start>
+            <end>
+                <singlePosition index="594" />
+            </end>
+        </positioning>
+    </unit>
+
+    <unit id="edu_3">
+        <metadata>
+            <creation-date>3</creation-date>
+            <author>edu</author>
+        </metadata>
+        <characterisation>
+            <type>Segment</type>
+            <featureSet />
+        </characterisation>
+        <positioning>
+            <start>
+                <singlePosition index="608" />
+            </start>
+            <end>
+                <singlePosition index="638" />
+            </end>
+        </positioning>
+    </unit>
+
+    <unit id="turn_30">
+        <metadata>
+            <creation-date>30</creation-date>
+            <author>turn</author>
+        </metadata>
+        <characterisation>
+            <type>Turn</type>
+            <featureSet>
+                <feature name="Timestamp">18:02:25:942</feature>
+                <feature name="Comments">Please write in remarks...</feature>
+                <feature name="Developments">roads=5;  settlements=2</feature>
+                <feature name="Identifier">514</feature>
+                <feature name="Emitter">Dave</feature>
+                <feature name="Resources">clay=3; ore=1; sheep=0; wheat=4; wood=0</feature>
+            </featureSet>
+        </characterisation>
+        <positioning>
+            <start>
+                <singlePosition index="595" />
+            </start>
+            <end>
+                <singlePosition index="638" />
+            </end>
+        </positioning>
+    </unit>
+
+    <unit id="turn_40">
+        <metadata>
+            <lastModifier>n/a</lastModifier>
+            <lastModificationDate>0</lastModificationDate>
+            <creation-date>40</creation-date>
+            <author>turn</author>
+        </metadata>
+        <characterisation>
+            <type>Turn</type>
+            <featureSet>
+                <feature name="Timestamp">18:02:18:106</feature>
+                <feature name="Comments">Please write in remarks...</feature>
+                <feature name="Developments">roads=7;  settlements=4</feature>
+                <feature name="Identifier">513</feature>
+                <feature name="Emitter">Tomm</feature>
+                <feature name="Resources">clay=2; ore=4; sheep=0; wheat=0; wood=1</feature>
+            </featureSet>
+        </characterisation>
+        <positioning>
+            <start>
+                <singlePosition index="532" />
+            </start>
+            <end>
+                <singlePosition index="594" />
+            </end>
+        </positioning>
+    </unit>
+
+    <relation id="rel_200">
+        <metadata>
+            <creation-date>200</creation-date>
+            <author>rel</author>
+        </metadata>
+        <characterisation>
+            <type>Question-answer_pair</type>
+            <featureSet>
+                <feature name="Argument_scope">Specified</feature>
+                <feature name="Comments">Please write in remarks...</feature>
+            </featureSet>
+        </characterisation>
+        <positioning>
+            <term id="edu_4" />
+            <term id="edu_3" />
+        </positioning>
+    </relation>
+
+    <schema id="cdu_1000">
+        <metadata>
+            <creation-date>1000</creation-date>
+            <author>cdu</author>
+        </metadata>
+        <characterisation>
+            <type>Complex_discourse_unit</type>
+            <featureSet />
+        </characterisation>
+        <positioning>
+            <embedded-unit id="edu_3" />
+        </positioning>
+    </schema>
+</annotations>
