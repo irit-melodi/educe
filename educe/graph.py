@@ -697,21 +697,27 @@ class DotGraph(pydot.Dot):
             # CDUs so the user knows it's the same thing
             attrs['label'] = 'CDU'
         subg = pydot.Subgraph(self._dot_id(hyperedge), **attrs)
-        local_nodes = self.core.links(hyperedge)
+        local_nodes  = self.core.links(hyperedge)
+        local_nodes2 = []
+
+        # take into account links to relations (sigh)
+        def is_enclosed(l):
+            return l != hyperedge and\
+                    l in self.complex_rels and\
+                    all( [x in local_nodes for x in self.core.links(l)] )
         for node in local_nodes:
+            if self.core.is_relation(node):
+                local_nodes2.append(node)
+            else:
+                local_nodes2.append(node)
+                rlinks = filter(is_enclosed, self.core.links(node))
+                local_nodes2.extend(self.core.mirror(l) for l in rlinks)
+
+        for node in local_nodes2:
             if self.core.is_cdu(node):
                 self._add_simple_cdu(self.core.mirror(node), parent=subg)
             else:
                 subg.add_node(pydot.Node(node))
-
-            def is_enclosed(l):
-                return l != hyperedge and\
-                       l in self.complex_rels and\
-                       all( [x in local_nodes for x in self.core.links(l)] )
-
-            rlinks = [ l for l in self.core.links(node) if is_enclosed(l) ]
-            for rlink in rlinks: # relations
-                subg.add_node(pydot.Node(rlink))
 
         if parent:
             parent.add_subgraph(subg)
