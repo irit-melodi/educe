@@ -41,3 +41,11 @@ stac Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`tests` Module
+-------------------
+
+.. automodule:: educe.stac.tests
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
