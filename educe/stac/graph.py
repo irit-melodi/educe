@@ -111,12 +111,16 @@ class Graph(educe.graph.Graph):
                 return cache[c]
             else:
                 hd = self.cdu_head(c, sloppy)
+                if hd is None: return None
                 if self.is_cdu(hd):
                     deep_hd = get_head(hd)
                 else:
                     deep_hd = hd
-                cache[c] = deep_hd
-                return deep_hd
+                if deep_hd is None:
+                    return None
+                else:
+                    cache[c] = deep_hd
+                    return deep_hd
         for c in self.cdus():
             get_head(c)
         return cache
