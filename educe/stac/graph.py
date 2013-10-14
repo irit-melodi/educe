@@ -22,6 +22,11 @@ import pygraph.classes.digraph    as dgr
 from pygraph.algorithms import traversal
 from pygraph.algorithms import accessibility
 
+class MultiheadedCduException(Exception):
+    def __init__(self, cdu, *args, **kw):
+        self.cdu = cdu
+        Exception.__init__(self, *args, **kw)
+
 class Graph(educe.graph.Graph):
     def __init__(self):
         return educe.graph.Graph.__init__(self)
@@ -43,36 +48,113 @@ class Graph(educe.graph.Graph):
                 stac.is_relation_instance(self.annotation(x))
 
     # --------------------------------------------------
+    # recursive head for CDU
+    # --------------------------------------------------
+
+    def cdu_head(self, cdu, sloppy=False):
+        """
+        Given a CDU, return its head, defined here as the only DU
+        that is not pointed to by any other member of this CDU.
+
+        This is meant to approximate the description in Muller 2012
+        (/Constrained decoding for text-level discourse parsing/):
+
+        1. in the highest DU in its subgraph in terms of suboordinate
+           relations
+        2. in case of a tie in #1, the leftmost in terms of coordinate
+           relations
+
+        Corner cases:
+
+        * Return None if the CDU has no members (annotation error)
+        * If the CDU contains more than one head (annotation error)
+          and if sloppy is True, return the textually leftmost one;
+          otherwise, raise a MultiheadedCduException
+        """
+        if self.has_node(cdu):
+            hyperedge = self.mirror(cdu)
+        else:
+            hyperedge = cdu
+
+        members    = self.cdu_members(cdu)
+        candidates = []
+        for m in members:
+            def points_to_me(l): # some other member of this CDU
+                                 # points to me via this link
+                return l != hyperedge\
+                        and self.is_relation(l)\
+                        and self.links(l)[1] == m\
+                        and self.links(l)[0] in members
+            pointed_to = filter(points_to_me, self.links(m))
+            if not (self.is_relation(m) or pointed_to):
+                candidates.append(m)
+
+        if len(candidates) == 0:
+            return None
+        elif len(candidates) == 1 or sloppy:
+            c = self.sorted_first_widest(candidates)[0]
+            if self.is_cdu(c):
+                return self.mirror(c)
+            else:
+                return c
+        else:
+            raise MultiheadedCduException(cdu)
+
+    def recursive_cdu_heads(self, sloppy=False):
+        """
+        A dictionary mapping each CDU to its recursive CDU
+        head (see `cdu_head`)
+        """
+        cache = {}
+        def get_head(c):
+            if c in cache:
+                return cache[c]
+            else:
+                hd = self.cdu_head(c, sloppy)
+                if self.is_cdu(hd):
+                    deep_hd = get_head(hd)
+                else:
+                    deep_hd = hd
+                cache[c] = deep_hd
+                return deep_hd
+        for c in self.cdus():
+            get_head(c)
+        return cache
+
+        """
+
+    # --------------------------------------------------
     # right frontier constraint
     # --------------------------------------------------
 
-    def first_widest_dus(self):
+    def sorted_first_widest(self, xs):
         """
-        Return discourse units in this graph, ordered by their starting point,
-        and in case of a tie their inverse width (ie. widest first)
+        Given a list of nodes, return the nodes ordered by their starting point,
+        and in case of a tie their inverse width (ie. widest first).
         """
-        sp_edus = []
-        sp_cdus = []
-
         def span(n):
-            return self.annotation(n).text_span(self.doc)
+            return self.annotation(n).text_span()
 
         def from_span(sp):
             # negate the endpoint so that if we have a tie on the starting
             # point, the widest span comes first
             return (sp.char_start, 0 - sp.char_end)
 
-        for n in self.nodes():
-            if self.is_edu(n):
-                sp       = span(n)
-                position = from_span(sp)
-                sp_edus.append((position,sp,n))
-            elif self.is_cdu(n) and self.cdu_members(n):
-                sp       = span(n)
-                position = from_span(sp)
-                sp_cdus.append((position,sp,n))
+        tagged = ((from_span(span(x)),x) for x in xs)
+        return [x for _,x in tagged]
 
-        return [x[2] for x in sorted(sp_edus + sp_cdus)]
+    def first_widest_dus(self):
+        """
+        Return discourse units in this graph, ordered by their starting point,
+        and in case of a tie their inverse width (ie. widest first)
+        """
+        def is_interesting_du(n):
+            return self.is_edu(n) or\
+                (self.is_cdu(n) and self.cdu_members(n))
+
+        dus = filter(is_interesting_du,self.nodes())
+        return self.sorted_first_widest(dus)
+
 
     def _build_right_frontier(self, points, last):
         """
