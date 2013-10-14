@@ -41,6 +41,8 @@ arg_parser.add_argument('--live', action='store_true',
                         help='Input is a flat collection of aa/ac files)')
 arg_parser.add_argument('--split', action='store_true',
                         help='Separate file for each connected component')
+arg_parser.add_argument('--strip-cdus', action='store_true',
+                        help='Strip away CDUs (substitute w heads)')
 educe_group = arg_parser.add_argument_group('corpus filtering arguments')
 util.add_corpus_filters(educe_group, fields=[ 'doc', 'subdoc', 'annotator' ])
 args=arg_parser.parse_args()
@@ -84,7 +86,11 @@ else:
 for doc_key in sorted(keys):
     doc_file = anno_files[doc_key][0]
     try:
-        g = stacgraph.Graph.from_doc(corpus, doc_key)
+        g_ = stacgraph.Graph.from_doc(corpus, doc_key)
+        if args.strip_cdus:
+            g = g_.without_cdus()
+        else:
+            g = g_
         dot_g = stacgraph.DotGraph(g)
         if dot_g.get_nodes():
             write_dot_graph(doc_file, dot_g)

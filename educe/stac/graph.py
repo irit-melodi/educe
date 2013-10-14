@@ -12,7 +12,7 @@ import collections
 import itertools
 import textwrap
 
-from educe import corpus, stac
+from educe import corpus, stac, annotation
 from educe.graph import *
 import educe.graph
 from pygraph.readwrite import dot
@@ -121,7 +121,47 @@ class Graph(educe.graph.Graph):
             get_head(c)
         return cache
 
+    def without_cdus(self, sloppy=False):
         """
+        Return a deep copy of this graph with all CDUs removed.
+        Links involving these CDUs will point instead from/to
+        their deep heads
+        """
+        g2    = copy.deepcopy(self)
+        heads = g2.recursive_cdu_heads(sloppy)
+        anno_heads = dict((g2.annotation(k),g2.annotation(v))\
+                          for k,v in heads.items())
+        # replace all links to/from cdus with to/from their heads
+        for e_edge in g2.relations():
+            links  = g2.links(e_edge)
+            attrs  = g2.edge_attributes(e_edge)
+            if any(g2.is_cdu(l) for l in links):
+                # recreate the edge
+                g2.del_edge(e_edge)
+                g2.add_edge(e_edge)
+                g2.add_edge_attributes(e_edge, attrs)
+                for l in links:
+                    l2 = heads[g2.mirror(l)] if g2.is_cdu(l) else l
+                    g2.link(l2, e_edge)
+        # now that we've pointed everything away, nuke the CDUs
+        for e_cdu in g2.cdus():
+            g2.del_node(g2.mirror(e_cdu))
+            g2.del_edge(e_cdu)
+        # to be on the safe side, we should also do similar link-rewriting
+        # but on the underlying educe.annotation objects layer
+        # (symptom of a yucky design) :-(
+        for r in g2.doc.relations:
+            if stac.is_relation_instance(r):
+                src  = r.source
+                tgt  = r.target
+                src2 = anno_heads.get(src, src)
+                tgt2 = anno_heads.get(tgt, tgt)
+                r.source = src2
+                r.target = tgt2
+                r.span   = annotation.RelSpan(src2.local_id(), tgt2.local_id())
+        # remove the actual CDU objects too
+        g2.doc.schemas = [ s for s in g2.doc.schemas if not stac.is_cdu(s) ]
+        return g2
 
     # --------------------------------------------------
     # right frontier constraint
