@@ -184,7 +184,7 @@ class Graph(educe.graph.Graph):
             # point, the widest span comes first
             return (sp.char_start, 0 - sp.char_end)
 
-        tagged = ((from_span(span(x)),x) for x in xs)
+        tagged = sorted((from_span(span(x)),x) for x in xs)
         return [x for _,x in tagged]
 
     def first_widest_dus(self):

@@ -75,6 +75,16 @@ def graph_ids(gr):
         ids[local_id] = x
     return ids
 
+def nodeform_graph_ids(gr):
+    ids = {}
+    for x in gr.nodes():
+        local_id = gr.annotation(x).local_id()
+        ids[local_id] = x
+    for x in gr.hyperedges():
+        local_id = gr.annotation(x).local_id()
+        ids[local_id] = gr.mirror(x)
+    return ids
+
 edu1 = FakeEDU('e1')
 edu2 = FakeEDU('e2')
 edu3 = FakeEDU('e3',span=(1,1))
@@ -135,3 +145,43 @@ def test_embedded_cdu_head():
     deep_heads = gr.recursive_cdu_heads()
     assert deep_heads[ids['c1']] == gr.cdu_head(ids['c1'])
     assert deep_heads[ids['c1']] == deep_heads[ids['c2']]
+
+def test_first_widest_dus_simple():
+    edu1 = FakeEDU('e1',span=(1,2))
+    edu2 = FakeEDU('e2',span=(1,3))
+    edu3 = FakeEDU('e3',span=(2,3))
+    rel1 = FakeRelInst('r-e1-e2', edu1, edu2)
+    rel2 = FakeRelInst('r-e2-e3', edu2, edu3)
+    doc  = FakeDocument([edu1, edu2, edu3],
+                        [rel1,rel2],
+                        [])
+    k   = corpus.FileId('moo',None,None,None)
+    gr  = stac_gr.Graph.from_doc({k:doc}, k)
+    ids = nodeform_graph_ids(gr)
+    assert gr.first_widest_dus() == [ ids[x] for x in ['e2','e1','e3'] ]
+
+def test_first_widest_dus():
+    edu1 = FakeEDU('e1',span=(1,2))
+    edu2 = FakeEDU('e2',span=(1,3))
+    edu3 = FakeEDU('e3',span=(2,3))
+
+    edu4 = FakeEDU('e4',span=(4,5))
+    edu5 = FakeEDU('e5',span=(6,8))
+
+    rel1 = FakeRelInst('r-e1-e2', edu1, edu2)
+    rel2 = FakeRelInst('r-e2-e3', edu2, edu3)
+    rel3 = FakeRelInst('r-e4-e5', edu4, edu5)
+
+    cdu1 = FakeCDU('c1', [edu1, edu2, edu3])
+    cdu2 = FakeCDU('c2', [edu4, edu5])
+    cdu3 = FakeCDU('c3', [cdu1, cdu2])
+
+    doc  = FakeDocument([edu1, edu2, edu3, edu4, edu5],
+                        [rel1,rel2,rel3],
+                        [cdu1, cdu2, cdu3])
+    k   = corpus.FileId('moo',None,None,None)
+    gr  = stac_gr.Graph.from_doc({k:doc}, k)
+    ids = nodeform_graph_ids(gr)
+    got      = gr.first_widest_dus()
+    expected = ['c3', 'c1','e2','e1','e3', 'c2', 'e4', 'e5' ]
+    assert got == [ ids[x] for x in expected ]
