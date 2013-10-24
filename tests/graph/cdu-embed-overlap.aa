@@ -1,0 +1,172 @@
+<?xml version='1.0' encoding='utf-8'?>
+<annotations>
+    <metadata corpusHashcode="2443-40145985" />
+    <unit id="edu_1">
+        <metadata>
+            <author>edu</author>
+            <creation-date>1</creation-date>
+        </metadata>
+        <characterisation>
+            <type>Segment</type>
+            <featureSet />
+        </characterisation>
+        <positioning>
+            <start>
+                <singlePosition index="334" />
+            </start>
+            <end>
+                <singlePosition index="340" />
+            </end>
+        </positioning>
+    </unit>
+    <unit id="edu_2">
+        <metadata>
+            <author>edu</author>
+            <creation-date>2</creation-date>
+        </metadata>
+        <characterisation>
+            <type>Segment</type>
+            <featureSet />
+        </characterisation>
+        <positioning>
+            <start>
+                <singlePosition index="341" />
+            </start>
+            <end>
+                <singlePosition index="347" />
+            </end>
+        </positioning>
+    </unit>
+    <unit id="edu_3">
+        <metadata>
+            <author>edu</author>
+            <creation-date>3</creation-date>
+        </metadata>
+        <characterisation>
+            <type>Segment</type>
+            <featureSet />
+        </characterisation>
+        <positioning>
+            <start>
+                <singlePosition index="361" />
+            </start>
+            <end>
+                <singlePosition index="374" />
+            </end>
+        </positioning>
+    </unit>
+    <unit id="turn_30">
+        <metadata>
+            <author>turn</author>
+            <creation-date>30</creation-date>
+        </metadata>
+        <characterisation>
+            <type>Turn</type>
+            <featureSet>
+                <feature name="Timestamp">16:50:58:120</feature>
+                <feature name="Comments">Please write in remarks...</feature>
+                <feature name="Developments">roads=3;  settlements=2</feature>
+                <feature name="Identifier">147</feature>
+                <feature name="Emitter">Tomm</feature>
+                <feature name="Resources">clay=0; ore=0; sheep=3; wheat=3; wood=0</feature>
+            </featureSet>
+        </characterisation>
+        <positioning>
+            <start>
+                <singlePosition index="348" />
+            </start>
+            <end>
+                <singlePosition index="374" />
+            </end>
+        </positioning>
+    </unit>
+    <unit id="turn_40">
+        <metadata>
+            <author>turn</author>
+            <creation-date>40</creation-date>
+        </metadata>
+        <characterisation>
+            <type>Turn</type>
+            <featureSet>
+                <feature name="Timestamp">16:50:41:906</feature>
+                <feature name="Comments">Please write in remarks...</feature>
+                <feature name="Developments">roads=3;  settlements=2</feature>
+                <feature name="Identifier">146</feature>
+                <feature name="Emitter">Tomm</feature>
+                <feature name="Resources">clay=0; ore=0; sheep=3; wheat=3; wood=0</feature>
+            </featureSet>
+        </characterisation>
+        <positioning>
+            <start>
+                <singlePosition index="321"/>
+            </start>
+            <end>
+                <singlePosition index="347"/>
+            </end>
+        </positioning>
+    </unit>
+    <relation id="rel_100">
+        <metadata>
+            <author>rel</author>
+            <creation-date>100</creation-date>
+        </metadata>
+        <characterisation>
+            <type>Continuation</type>
+            <featureSet>
+                <feature name="Argument_scope">Please choose...</feature>
+                <feature name="Comments">Please write in remarks...</feature>
+            </featureSet>
+        </characterisation>
+        <positioning>
+            <term id="edu_1" />
+            <term id="edu_2" />
+        </positioning>
+    </relation>
+    <relation id="rel_200">
+        <metadata>
+            <author>rel</author>
+            <creation-date>200</creation-date>
+        </metadata>
+        <characterisation>
+            <type>Elaboration</type>
+            <featureSet>
+                <feature name="Argument_scope">Please choose...</feature>
+                <feature name="Comments">Please write in remarks...</feature>
+            </featureSet>
+        </characterisation>
+        <positioning>
+            <term id="cdu_2000" />
+            <term id="edu_3" />
+        </positioning>
+    </relation>
+    <schema id="cdu_1000">
+        <metadata>
+            <author>cdu</author>
+            <creation-date>1000</creation-date>
+        </metadata>
+        <characterisation>
+            <type>Complex_discourse_unit</type>
+            <featureSet />
+        </characterisation>
+        <positioning>
+            <embedded-unit id="edu_1" />
+            <embedded-unit id="edu_2" />
+            <embedded-unit id="edu_3" />
+        </positioning>
+    </schema>
+    <schema id="cdu_2000">
+        <metadata>
+            <author>cdu</author>
+            <creation-date>2000</creation-date>
+        </metadata>
+        <characterisation>
+            <type>Complex_discourse_unit</type>
+            <featureSet />
+        </characterisation>
+        <positioning>
+            <embedded-unit id="edu_1" />
+            <embedded-unit id="edu_2" />
+            <embedded-schema id="cdu_1000" />
+        </positioning>
+    </schema>
+</annotations>

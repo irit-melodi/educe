@@ -732,8 +732,9 @@ class DotGraph(pydot.Dot):
         pointing to its members.  It's actually simpler in implementation
         terms but more complex visually
 
-        This is an artefact of graphviz 2.28's inability to
-        work with nested subgraphs.
+        This is to deal with weird CDUs that do not have a sensible
+        CDU-box representation (for example if we have non-embedded
+        CDUs that share items)
         """
         attrs    = { 'color' : 'grey'
                    , 'label' : 'CDU'
@@ -787,9 +788,10 @@ class DotGraph(pydot.Dot):
         # CDUs which are contained in another
         self.contained_cdus = set()
         for e in self.core.cdus():
-            self.contained_cdus.update(self.core.mirror(n)
-                                       for n in self.core.cdu_members(e)
-                                       if self.core.is_cdu(n))
+            for n2 in self.core.cdu_members(e):
+                e2 = self.core.mirror(n2)
+                if self.core.is_cdu(n2) and e2 not in self.complex_cdus:
+                    self.contained_cdus.add(e2)
 
         # Add all of the nodes first
         for node in sorted(self.core.edus(),
