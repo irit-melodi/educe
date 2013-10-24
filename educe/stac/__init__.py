@@ -300,6 +300,8 @@ class Reader(educe.corpus.Reader):
                         file_id    = FileId(doc, subdoc, stage, annotator)
                         ac_file_id = FileId(doc, subdoc, 'unannotated', None)
                         tf = os.path.join(self.rootdir, id_to_path(ac_file_id)) + ".ac"
+                    else:
+                        raise Exception('STAC corpus filenames should be in the form doc_subdocument: %s', subdoc)
                     corpus[file_id] = (f,tf)
 
                 stage_dir=os.path.join(doc_dir,stage)
