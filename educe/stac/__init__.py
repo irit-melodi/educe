@@ -449,8 +449,11 @@ def create_units(k, doc, author, partial_units):
     """
     Return a collection of instantiated new unit objects.
 
-    * `k` is of type `FileId`; it's used to create identifiers
-    * `partial_units` should be of type `PartialUnit`
+    :param k: document key; used to create identifiers
+    :type  k: FileId
+
+    :param partial_units:
+    :type  partial_units: iterable of `PartialUnit`
     """
     # It seems like Glozz uses the creation-date metadata field to
     # identify units (symptom: units that have different ids, but

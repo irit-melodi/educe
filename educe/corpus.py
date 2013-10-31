@@ -26,6 +26,27 @@ class FileId:
     Note that this includes the annotator, so if you want to do
     comparisons on the "same" file between annotators you'll want
     to ignore this field.
+
+    :param doc: document name
+    :type doc:  string
+
+    :param subdoc: subdocument (often None); sometimes you may
+        have a need to divide a document into smaller pieces
+        (for exmaple working with tools that require too much
+        memory to process large documents). The subdocument
+        identifies which piece of the document you are working
+        with. If you don't have a notion of subdocuments, just
+        use None
+    :type subdoc: string
+
+    :param stage: annotation stage; for use if you have distinct
+        files that correspond to different stages of your
+        annotation process (or different processing tools)
+    :type stage: string
+
+    :param annotator: the annotator (or annotation tool) that
+        generated this annoation file
+    :type annotator: string
     """
     def __init__(self, doc, subdoc, stage, annotator):
        self.doc=doc
@@ -79,6 +100,9 @@ class Reader:
     `Reader` provides little more than dictionaries from `FileId`
     to data.
 
+    :param rootdir: the top directory of the corpus
+    :type  rootdir: string
+
     A potentially useful pattern to apply here is to take a slice of
     these dictionaries for processing. For example, you might not want
     to read the whole corpus, but only the files which are modified by
@@ -101,10 +125,6 @@ class Reader:
 
     This is an abstract class; you should use the version from a
     data-set, eg. `educe.stac.Reader` instead
-
-    Fields:
-
-        * rootdir - the top directory of the corpus
     """
     def __init__(self, dir):
         self.rootdir=dir
@@ -126,11 +146,11 @@ class Reader:
 
         Return a dictionary from FileId to `educe.Annotation.Document`
 
-        Kwargs:
+        :param cfiles: a dictionary like what `Corpus.files` would return
+        :type  cfiles: dict
 
-            cfiles (dict): a dictionary like what `Corpus.files` would return.
-
-            verbose (bool)
+        :param verbose: print what we're reading to stderr
+        :type  verbose: bool
         """
         if cfiles is None:
             subcorpus=self.files()

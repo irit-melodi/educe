@@ -215,14 +215,15 @@ class Graph(gr.hypergraph, AttrsMixin):
         Note: check the project layer for a version of this function
         which may be more appropriate to your project
 
-        Args:
+        :param corpus: educe corpus dictionary
+        :type  corpus: dict from `FileId` to documents
 
-            corpus  : educe corpus dictionary
+        :param doc_key: key pointing to the document
+        :type  doc_key: `FileId`
 
-            doc_key (FileId):  key pointing to the document
-
-            pred : predicate on annotations saying if they should
+        :param  pred: predicate on annotations saying if they should
             be included
+        :type   pred: annotation -> boolean
         """
         self         = cls()
         doc          = corpus[doc_key]
@@ -286,10 +287,8 @@ class Graph(gr.hypergraph, AttrsMixin):
         This is a shallow copy in the sense that the underlying
         layer of annotations and documents remains the same.
 
-        Kwargs:
-
-            nodeset (iterable of strings): only copy nodes with these
-            names
+        :param nodeset: only copy nodes with these names
+        :type  nodeset: iterable of strings
         """
         g=Graph()
         g.corpus  = self.corpus

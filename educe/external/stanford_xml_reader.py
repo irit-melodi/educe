@@ -3,6 +3,8 @@ Reader for Stanford CoreNLP pipeline outputs
 
 Example of output:
 
+.. code-block:: xml
+
   <document>
     <sentences>
       <sentence id="1">

@@ -27,12 +27,12 @@ class CoreNlpDocument(Standoff):
     All of the CoreNLP annotations for a particular document as instances of
     `educe.annotation.Standoff` or as structures that contain such instances.
 
-    Fields:
+    :param tokens:
+    :type  tokens: list of `CoreNlpToken`
 
-        * tokens   - `CoreNlpToken` annotations
-        * trees    - constituency trees
-        * deptrees - dependency   trees
-        * chains   - coreference chains
+    :param trees:    constituency trees
+    :param deptrees: dependency  trees
+    :param chains:   coreference chains
     """
     def __init__(self, tokens, trees, deptrees, chains):
         Standoff.__init__(self, None)
