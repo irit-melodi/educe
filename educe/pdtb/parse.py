@@ -1,9 +1,23 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
-
-# parses pdtb annotations
 # @author Eric Kow
+# LICENSE: BSD3 (2013, Université Paul Sabatier)
+
+"""
+Standalone parser for PDTB files.
+
+The function `parse` takes a single .pdtb file and returns a list
+of `Relation`, with the following subtypes:
+
+    * `ExplicitRelation`
+    * `ImplicitRelation`
+    * `AltLexRelation`
+    * `EntityRelation`
+    * `AltLexRelation`
+
+Note that aside from having two arguments, these do not have very
+much to do with each other, but there is certainly some overlap.
+"""
 
 import copy
 import pyparsing as pp
@@ -474,7 +488,7 @@ def parse(path):
     Parse a single .pdtb file and return the list of relations found
     within
 
-    :rtype ParseResult([Relation])
+    :rtype: [Relation]
     """
     doc     = open(path).read()
-    return _pdtbFile.parseString(doc)
+    return _pdtbFile.parseString(doc)[0]
