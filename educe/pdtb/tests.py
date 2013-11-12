@@ -32,6 +32,13 @@ CenTrust Savings Bank said
 ##############
 """
 
+ex_sup1="""____Sup1____
+1730..1799
+11,2,3
+#### Text ####
+blop blop split shares
+##############"""
+
 class PdtbParseTest(unittest.TestCase):
 
     def assertOneResult(self, res):
@@ -67,6 +74,16 @@ class PdtbParseTest(unittest.TestCase):
                                text='federal thrift regulators ordered it to suspend dividend payments on its two classes of preferred stock')
         self.assertEqual(expected.text, res0.text)
         self.assertEqual(expected, res0)
+
+    def test_sup(self):
+        res = p._sup('sup1').parseString(ex_sup1)
+        self.assertOneResult(res)
+        expected_sel = p.Selection(span=[(1730,1799)],
+                                   gorn=[p.GornAddress([11,2,3])],
+                                   text='blop blop split shares')
+        expected = p.Sup(expected_sel)
+        self.assertEqual(expected,res[0])
+
 
     def test(self):
         for path in glob.glob('tests/*.pdtb'):

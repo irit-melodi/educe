@@ -435,11 +435,15 @@ _explicitRelationFeatures =\
 _altLexRelationFeatures =\
         _lines([_attributionFeatures, _semanticClass])
 
+
+_afterImplicitRelationFeatures =\
+        _section_begin('Arg1') | _section_begin('Sup1')
+
 _implicitRelationFeatures =\
         _lines([_attributionFeatures,
                 _conn1SemanticClass,
                 _OptionalBlock(_conn2SemanticClass,
-                               avoid=_section_begin('Arg1'))])
+                               avoid=_afterImplicitRelationFeatures)])
 _implicitRelationFeatures.setParseAction(_act(ImplicitRelationFeatures))
 
 _explicitRelation =\
