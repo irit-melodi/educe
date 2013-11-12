@@ -1,6 +1,14 @@
 pdtb Package
 ============
 
+:mod:`pdtb` Package
+-------------------
+
+.. automodule:: educe.pdtb
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`parse` Module
 -------------------
 
