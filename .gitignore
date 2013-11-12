@@ -1,5 +1,6 @@
 # Copyright
 tests/wsj*.dis
+tests/wsj*.pdtb
 
 # STAC data
 pilot
