@@ -38,7 +38,14 @@ class FakeCDU(annotation.Schema):
 
 class FakeDocument(annotation.Document):
     def __init__(self, edus, rels, cdus, text=""):
+        self.copies = {}
         edus2, rels2, cdus2 = copy.deepcopy((edus,rels,cdus))
+        for k,v in zip(edus, edus2):
+            self.copies[k] = v
+        for k,v in zip(rels, rels2):
+            self.copies[k] = v
+        for k,v in zip(cdus, cdus2):
+            self.copies[k] = v
         annotation.Document.__init__(self, edus2, rels2, cdus2, text)
 
 class FakeKey(corpus.FileId):
