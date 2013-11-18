@@ -310,6 +310,13 @@ class Schema(Annotation):
         member_ids     = units | relations | schemas
         Annotation.__init__(self, rel_id, member_ids, type, features, metadata)
 
+    def terminals(self):
+        """
+        All unit-level annotations contained in this schema or
+        (recursively in schema contained herein)
+        """
+        return list(self._terminals())
+
     def _members(self):
         return self.members
 
