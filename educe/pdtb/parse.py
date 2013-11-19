@@ -138,20 +138,14 @@ class Arg(Selection):
 class Relation(PdtbItem):
     def __init__(self, args):
         xs = list(args)
-        if isinstance(xs[-1], Sup):
-            sup2 = xs.pop()
+        if len(xs) == 4:
+            sup1, arg1, arg2, sup2 = xs
+            self.arg1 = Arg(arg1, sup1) if sup1 else arg1
+            self.arg2 = Arg(arg2, sup2) if sup2 else arg2
+        elif len(xs) == 2:
+            self.arg1, self.arg2   = xs
         else:
-            sup2 = None
-
-        arg2 = xs.pop()
-        arg1 = xs.pop()
-        if xs and isinstance(xs[-1], Sup):
-            sup1 = xs.pop()
-        else:
-            sup1 = None
-
-        self.arg1 = Arg(arg1, arg1.attribution, sup1)
-        self.arg2 = Arg(arg2, arg2.attribution, sup2)
+            raise Exception('Was expecting either 2 or 4 arguments, but got: %d', len(xs))
 
     def _prefered_order(cls):
         return ['text',
@@ -180,7 +174,7 @@ class ExplicitRelation(Selection, Relation):
         return Relation._substr(self)
 
 class ImplicitRelationFeatures(PdtbItem):
-    def __init__(self, attribution, connective1, connective2=None):
+    def __init__(self, attribution, connective1, connective2):
         self.attribution = attribution
         self.connective1 = connective1
         self.connective2 = connective2
@@ -261,15 +255,6 @@ def _list(p, delim=';'):
 def _noise(t):
     return pp.Suppress(pp.Literal(t)).setName("「%s」" % t)
 
-def _avoiding(distractor, p):
-    """
-    For use in cases where `p` would try to parse something that
-    would be better understood as `distractor`.
-
-    Stop parsing if we see `distractor`
-    """
-    return pp.FollowedBy(distractor) ^ (~ distractor + p)
-
 _nl           = pp.Suppress(pp.LineEnd()).setName('NL')
 _alphanum_str = pp.Word(pp.alphanums).setName('alphaNum')
 _comma        = _noise(',').setName(',')
@@ -292,9 +277,13 @@ def _lines(ps):
     assert not isinstance(ps[0], _OptionalBlock)
     def _combine(x,y):
         if isinstance(y,_OptionalBlock):
-            nl_y   = pp.Optional(_nl + y.p)
-            p_next = _avoiding(_nl + y.avoid, nl_y) if y.avoid else nl_y
-            return x + p_next
+            if y.avoid:
+                # stop parsing if we see the distractor
+                distractor = pp.FollowedBy(_nl + y.avoid)
+                p_next     = ~distractor + _nl + y.p
+            else:
+                p_next     = _nl + y.p
+            return x + pp.Optional(p_next, default=None)
         else:
             return x + _nl + y
     return reduce(_combine, ps)
