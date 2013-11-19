@@ -468,7 +468,7 @@ _noRelation =\
 
 def _orRels(rs):
     return _lines([_bar,
-                   reduce(lambda x, y: x ^ y, [_lines(r) for r in rs]),
+                   reduce(lambda x, y: x | y, map(_lines,rs)),
                    _bar])
 
 _relation =\
