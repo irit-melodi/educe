@@ -14,7 +14,7 @@ import educe.stac.graph as stac_gr
 from educe import annotation, corpus, stac
 
 import sys
-
+import unittest
 
 class FakeEDU(annotation.Unit):
     def __init__(self, unit_id, span=(0,0), type='Segment'):
@@ -91,6 +91,50 @@ def nodeform_graph_ids(gr):
         local_id = gr.annotation(x).local_id()
         ids[local_id] = gr.mirror(x)
     return ids
+
+class GraphTest(unittest.TestCase):
+    def mk_graph(self, edus, rels, cdus):
+        doc  = FakeDocument(edus,rels,cdus)
+        k    = FakeKey('k')
+        doc.fleshout(k)
+        gr   = stac_gr.Graph.from_doc({k:doc}, k)
+        return gr, graph_ids(gr)
+
+    def setUp(self):
+        self.edu1_1  = FakeEDU('e1.1',span=(1,2))
+        self.edu1_2  = FakeEDU('e1.2',span=(2,5))
+        self.edu1_3  = FakeEDU('e1.3',span=(7,8))
+        self.edu2_1  = FakeEDU('e3',span=(16,18))
+
+        self.edus1 = [self.edu1_1, self.edu1_2, self.edu1_3,
+                      self.edu2_1]
+
+    def test_containing_cdu_trivial(self):
+        c        = FakeCDU('c', [self.edu1_1])
+        gr, ids  = self.mk_graph(self.edus1, [], [c])
+        mark     = ids[self.edu1_1.local_id()]
+        expected = ids[c.local_id()]
+        self.assertEqual(expected, gr.containing_cdu(mark))
+
+    def test_containing_cdu_nested(self):
+        cx = FakeCDU('cx', [self.edu1_1])
+        cy = FakeCDU('cy', [cx, self.edu1_2])
+        cz = FakeCDU('cz', [cy, self.edu1_3])
+        gr, ids  = self.mk_graph(self.edus1, [], [cx,cy,cz])
+
+        mark     = ids[cx.local_id()]
+        expected = ids[cy.local_id()]
+        self.assertEqual(expected, gr.containing_cdu(mark))
+
+        mark     = ids[cy.local_id()]
+        expected = ids[cz.local_id()]
+        self.assertEqual(expected, gr.containing_cdu(mark))
+
+        mark     = ids[cz.local_id()]
+        expected = None
+        self.assertEqual(expected, gr.containing_cdu(mark))
+
+# FIXME: the tests below should be shuffled into the fixture above
 
 edu1 = FakeEDU('e1')
 edu2 = FakeEDU('e2')

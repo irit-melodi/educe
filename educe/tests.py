@@ -13,6 +13,7 @@ import educe.graph as educe
 import sys
 from pygraph.algorithms import accessibility, traversal, searching
 from educe.annotation import *
+import unittest
 
 # ---------------------------------------------------------------------
 # spans

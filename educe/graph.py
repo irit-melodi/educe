@@ -162,6 +162,12 @@ class AttrsMixin():
 
     def node(self, x):
         """
+        DEPRECATED (renamed 2013-11-19): use `self.nodeform(x)` instead
+        """
+        return self.nodeform(x)
+
+    def nodeform(self, x):
+        """
         Return the argument if it is a node id, or its mirror if it's an
         edge id
 
@@ -169,6 +175,19 @@ class AttrsMixin():
         corresponds to it)
         """
         if self.has_node(x):
+            return x
+        else:
+            return self.mirror(x)
+
+    def edgeform(self, x):
+        """
+        Return the argument if it is an edge id, or its mirror if it's an
+        edge id
+
+        (This is possible because every edge in the graph has a node that
+        corresponds to it)
+        """
+        if self.has_edge(x):
             return x
         else:
             return self.mirror(x)
@@ -423,10 +442,9 @@ class Graph(gr.hypergraph, AttrsMixin):
         If there is more than one containing CDU, return one of them
         arbitrarily.
         """
-        for e in self.links(node):
+        for e in self.links(self.nodeform(node)):
             if self.is_cdu(e): return e
         return None
-
 
     def cdu_members(self, cdu, deep=False):
         """
@@ -446,10 +464,7 @@ class Graph(gr.hypergraph, AttrsMixin):
                     members.update(self.cdu_members(m,deep))
             return frozenset(members)
         else:
-            if self.has_node(cdu):
-                hyperedge = self.mirror(cdu)
-            else:
-                hyperedge = cdu
+            hyperedge = self.edgeform(cdu)
             return frozenset(self.links(hyperedge))
 
     def _mk_guid(self, x):
