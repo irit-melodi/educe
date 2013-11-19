@@ -418,8 +418,10 @@ class Graph(gr.hypergraph, AttrsMixin):
 
     def containing_cdu(self, node):
         """
-        Given an EDU (or CDU, or relation instance), return its immediate
-        containing CDU (the hyperedge) if there is one or None otherwise
+        Given an EDU (or CDU, or relation instance), return immediate
+        containing CDU (the hyperedge) if there is one or None otherwise.
+        If there is more than one containing CDU, return one of them
+        arbitrarily.
         """
         for e in self.links(node):
             if self.is_cdu(e): return e
