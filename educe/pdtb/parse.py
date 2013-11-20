@@ -410,12 +410,17 @@ def _specRelation(xs,mini=False):
 # relations
 # ---------------------------------------------------------------------
 
-_Explicit = _section_begin('Explicit')
-_Implict  = _section_begin('Implicit')
-_AltLex   = _section_begin('AltLex')
-_EntRel   = _section_begin('EntRel')
-_NoRel    = _section_begin('NoRel')
+__Explicit = 'Explicit'
+__Implict  = 'Implicit'
+__AltLex   = 'AltLex'
+__EntRel   = 'EntRel'
+__NoRel    = 'NoRel'
 
+_Explicit = _section_begin(__Explicit)
+_Implict  = _section_begin(__Implict)
+_AltLex   = _section_begin(__AltLex)
+_EntRel   = _section_begin(__EntRel)
+_NoRel    = _section_begin(__NoRel)
 
 _explicitRelationFeatures =\
         _lines([_attributionFeatures,
@@ -455,22 +460,32 @@ _noRelation =\
         _specRelation([_inferenceSite], mini=True).\
         setParseAction(_act(NoRelation))
 
+_relationParts=\
+        [(__Explicit, _explicitRelation),
+         (__Implict,  _implicitRelation),
+         (__AltLex,   _altLexRelation),
+         (__EntRel,   _entityRelation),
+         (__NoRel,    _noRelation),
+         ]
+
+def _relationBody(ty, core):
+    return _lines([_section_begin(ty), core])
+
 def _orRels(rs):
+    """
+    R1 or R2 or .. RN
+    """
+    cores = [ _relationBody(*r) for r in rs ]
     return _lines([_bar,
-                   reduce(lambda x, y: x | y, map(_lines,rs)),
+                   reduce(lambda x, y: x | y, cores),
                    _bar])
 
-_relation =\
-        _orRels([(_Explicit, _explicitRelation),
-                 (_Implict,  _implicitRelation),
-                 (_AltLex,   _altLexRelation),
-                 (_EntRel,   _entityRelation),
-                 (_NoRel,    _noRelation),
-                 ])
+_relation     = _orRels(_relationParts)
 
 _relationList = _list(_relation, delim=_nl)
+_eof          = pp.Suppress(pp.Optional(pp.White()) + pp.StringEnd())
 
-_pdtbFile = _relationList + pp.Suppress(pp.White() + pp.StringEnd())
+_pdtbFile     = _relationList + _eof
 
 # ---------------------------------------------------------------------
 # tests and examples
