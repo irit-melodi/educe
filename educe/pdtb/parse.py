@@ -20,6 +20,7 @@ much to do with each other, but there is certainly some overlap.
 """
 
 import copy
+import re
 import pyparsing as pp
 
 # ---------------------------------------------------------------------
@@ -480,16 +481,46 @@ def _orRels(rs):
                    reduce(lambda x, y: x | y, cores),
                    _bar])
 
+def _oneRel(ty, core):
+    return _lines([_bar, _relationBody(ty, core), _bar])
+
 _relation     = _orRels(_relationParts)
 
 _relationList = _list(_relation, delim=_nl)
 _eof          = pp.Suppress(pp.Optional(pp.White()) + pp.StringEnd())
 
+_pdtbRelation = _relation     + _eof
 _pdtbFile     = _relationList + _eof
 
 # ---------------------------------------------------------------------
 # tests and examples
 # ---------------------------------------------------------------------
+
+def split_relations(s):
+    frame = r'________________________________________________________\n' +\
+            r'.*?' +\
+            r'________________________________________________________'
+    return re.findall(frame, s, re.DOTALL)
+
+import sys
+
+def parse_relation(s):
+    """
+    Parse a single relation or throw a ParseException.
+    """
+    type_re = r'^________________________________________________________\n' +\
+              r'____(?P<type>.*)____\n'
+    rtype = re.match(type_re, s).group('type')
+    rules = dict(_relationParts)
+    if rtype not in rules:
+        raise Exception('Unknown PDTB relation type: ' + rtype)
+    parser = _oneRel(rtype, rules[rtype]) + _eof
+    p = parser.parseString(s)
+    if p:
+        return p[0]
+    else:
+        # Should either have a parse or have raised a ParseException
+        assert False;
 
 def parse(path):
     """
@@ -500,3 +531,7 @@ def parse(path):
     """
     doc     = open(path).read()
     return _pdtbFile.parseString(doc)[0]
+    # alternatively: using a regular expression to split into relations
+    # and parsing each relation separately - perhaps more robust?
+    #splits  = split_relations(doc)
+    #return [ parse_relation(s) for s in splits  ]

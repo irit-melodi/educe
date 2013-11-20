@@ -39,6 +39,13 @@ ex_sup1="""____Sup1____
 blop blop split shares
 ##############"""
 
+ex_frame="""________________________________________________________
+blah blah bla
+_____tahueoa______
+bop
+________________________________________________________"""
+
+
 class PdtbParseTest(unittest.TestCase):
 
     def assertOneResult(self, res):
@@ -85,10 +92,16 @@ class PdtbParseTest(unittest.TestCase):
         self.assertEqual(expected,res[0])
 
 
+    def test_frame(self):
+        expected = [ex_frame]
+        split    = p.split_relations(ex_frame)
+        self.assertEqual(expected, split)
+
     def test(self):
         for path in glob.glob('tests/*.pdtb'):
             try:
                 xs = p.parse(path)
+                self.assertNotEquals(0, len(xs))
             except pp.ParseException as e:
                 doc = open(path).read()
                 xs  = p._relationList.parseString(doc)
