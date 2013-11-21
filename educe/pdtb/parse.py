@@ -16,7 +16,7 @@ of `Relation`, with the following subtypes:
 +--------------------+-----------------+------------------+------+
 | `ImplicitRelation` | `InferenceSite` | attr, 2 conn     | Y    |
 +--------------------+-----------------+------------------+------+
-| `AltLexRelation`   | `Selection`     | attr, 1 semclass | Y    |
+| `AltLexRelation`   | `Selection`     | attr, 2 semclass | Y    |
 +--------------------+-----------------+------------------+------+
 | `EntityRelation`   | `InferenceSite` | none             | N    |
 +--------------------+-----------------+------------------+------+
@@ -196,13 +196,14 @@ class ImplicitRelationFeatures(PdtbItem):
                      other.connective1, other.connective2)
 
 class AltLexRelationFeatures(PdtbItem):
-    def __init__(self, attribution, semclass):
+    def __init__(self, attribution, semclass1, semclass2):
         self.attribution = attribution
-        self.semclass    = semclass
+        self.semclass1   = semclass1
+        self.semclass2   = semclass2
 
     @classmethod
     def _init_copy(cls, self, other):
-        cls.__init__(self, other.attribution, other.semclass)
+        cls.__init__(self, other.attribution, other.semclass1, other.semclass2)
 
 class ExplicitRelation(Selection, ExplicitRelationFeatures, Relation):
     def __init__(self, selection, features, args):
@@ -598,7 +599,7 @@ _explicitRelationFeatures =\
 
 _altLexRelationFeatures =\
         _lines([_attributionFeatures, _semanticClass])\
-        >> _unarg(AltLexRelationFeatures)
+        >> (lambda x:AltLexRelationFeatures(x[0], *x[1]))
 
 _afterImplicitRelationFeatures =\
         _section_begin('Arg1') | _section_begin('Sup1')
