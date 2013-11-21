@@ -64,7 +64,7 @@ class PdtbParseTest(unittest.TestCase):
 
     def assertParse(self, parser, expected, txt):
         parser   = parser + p._eof
-        res      = parser.parse(p.annotate(txt))
+        res      = parser.parse(p._annotate(txt))
         self.assertEqual(expected, res)
 
     def test_skipto(self):
@@ -83,12 +83,12 @@ class PdtbParseTest(unittest.TestCase):
         self.assertParse(parser, expected, txt)
 
     def test_tok(self):
-        expected = [p.Char('h',1,1,1),
-                    p.Char('i',2,1,2),
-                    p.Char('\n',3,1,3),
-                    p.Char('y',4,2,1),
-                    p.Char('o',5,2,2),
-                    p.Char('u',6,2,3),
+        expected = [p._Char('h',1,1,1),
+                    p._Char('i',2,1,2),
+                    p._Char('\n',3,1,3),
+                    p._Char('y',4,2,1),
+                    p._Char('o',5,2,2),
+                    p._Char('u',6,2,3),
                     ]
         tokens = list(p._annotate_debug('hi\nyou'))
         self.assertEqual(expected, tokens)

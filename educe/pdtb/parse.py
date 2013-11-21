@@ -9,14 +9,30 @@ Standalone parser for PDTB files.
 The function `parse` takes a single .pdtb file and returns a list
 of `Relation`, with the following subtypes:
 
-    * `ExplicitRelation`
-    * `ImplicitRelation`
-    * `AltLexRelation`
-    * `EntityRelation`
-    * `AltLexRelation`
++--------------------+-----------------+------------------+------+
+| Relation           | selection       | features         | sup? |
++====================+=================+==================+======+
+| `ExplicitRelation` | `Selection`     | attr, 1 conn     | Y    |
++--------------------+-----------------+------------------+------+
+| `ImplicitRelation` | `InferenceSite` | attr, 2 conn     | Y    |
++--------------------+-----------------+------------------+------+
+| `AltLexRelation`   | `Selection`     | attr, 1 semclass | Y    |
++--------------------+-----------------+------------------+------+
+| `EntityRelation`   | `InferenceSite` | none             | N    |
++--------------------+-----------------+------------------+------+
+| `NoRelation`       | `InferenceSite` | none             | N    |
++--------------------+-----------------+------------------+------+
 
-Note that aside from having two arguments, these do not have very
-much to do with each other, but there is certainly some overlap.
+These relation subtypes are stitched together (and inherit members) from
+two or three components
+
+    * arguments: always `arg1` and `arg2`; but in some cases, the
+      arguments can have supplementary information
+    * selection: see either `Selection` or `InferenceSite`
+    * some features (see eg. `ExplictRelationFeatures`)
+
+The simplest way to get to grips with this may be to try the `parse`
+function on some sample relations and print the resulting objects.
 """
 
 import copy
@@ -160,10 +176,6 @@ class Relation(PdtbItem):
         return PdtbItem._substr(self)
 
 class ExplicitRelationFeatures(PdtbItem):
-    """
-    Note that `ExplicitRelation` inherits all the members of its
-    `ExplictRelationFeatures` (and likewise for other types)
-    """
     def __init__(self, attribution, connective):
         self.attribution = attribution
         self.connective  = connective
@@ -247,7 +259,7 @@ class NoRelation(InferenceSite, Relation):
 # readable error messages we need to manually annotate our characters
 # with line number etc info
 
-class Char(object):
+class _Char(object):
     def __init__(self, value, abspos, line, relpos):
         self.value  = value
         self.abspos = abspos
@@ -280,7 +292,7 @@ def _annotate_debug(s):
         col  = 1
         pos  = 1
         for c in StringIO(s).read():
-            yield Char(c, pos, line, col)
+            yield _Char(c, pos, line, col)
             pos += 1
             if c == '\n':
                 line += 1
@@ -294,10 +306,10 @@ def _annotate_debug(s):
 # ---------------------------------------------------------------------
 
 _DEBUG = 0 # turn this on to get line number hints
-const  = lambda x: lambda _: x
-unarg  = lambda f: lambda x: f(*x)
+_const  = lambda x: lambda _: x
+_unarg  = lambda f: lambda x: f(*x)
 
-def cons((x,xs)):
+def _cons((x,xs)):
     return [x] + xs
 
 def _mkstr_debug(x):
@@ -306,9 +318,9 @@ def _mkstr_debug(x):
 def _mkstr_production(x):
     return "".join(x)
 
-_any  = fp.some(const(True))
+_any  = fp.some(_const(True))
 
-def intersperse(d,xs):
+def _intersperse(d,xs):
     """
     a -> [a] -> [a]
     """
@@ -376,17 +388,17 @@ def _oneof(xs):
     return _satisfies(lambda x: x in xs)
 
 def _sepby(delim, p):
-    return p + fp.many(fp.skip(delim) + p) >> cons
+    return p + fp.many(fp.skip(delim) + p) >> _cons
 
 def _sequence(ps):
     return reduce(lambda x, y: x + y, ps)
 
 if _DEBUG:
-    annotate   = _annotate_debug
+    _annotate  = _annotate_debug
     _mkstr     = _mkstr_debug
     _satisfies = _satisfies_debug
 else:
-    annotate   = _annotate_production
+    _annotate  = _annotate_production
     _mkstr     = _mkstr_production
     _satisfies = _satisfies_production
 
@@ -422,7 +434,7 @@ def _words(ps):
     """
     Ignore horizontal whitespace between elements
     """
-    return _sequence(intersperse(_sp, ps))
+    return _sequence(_intersperse(_sp, ps))
 
 def _lines(ps):
     if not ps:
@@ -477,10 +489,10 @@ _RawText = _lines([_subsection_begin('Text'),
                    _skipto_mkstr(_nl + _subsection_end)])
 
 _selection =\
-        _lines([_SpanList, _GornAddressList, _RawText]) >> unarg(Selection)
+        _lines([_SpanList, _GornAddressList, _RawText]) >> _unarg(Selection)
 
 _inferenceSite =\
-        _lines([_StringPosition, _SentenceNumber]) >> unarg(InferenceSite)
+        _lines([_StringPosition, _SentenceNumber]) >> _unarg(InferenceSite)
 
 # ---------------------------------------------------------------------
 # features
@@ -492,13 +504,13 @@ _Polarity    = _alphanum_str
 _Determinacy = _alphanum_str
 
 _attributionCoreFeatures =\
-        _words(intersperse(_comma,
-                           [_Source, _Type, _Polarity, _Determinacy]))
+        _words(_intersperse(_comma,
+                            [_Source, _Type, _Polarity, _Determinacy]))
 
 _attributionFeatures =\
         _lines([_subsection_begin('Features'),
                 _attributionCoreFeatures,
-                _OptionalBlock(_selection)]) >> unarg(Attribution)
+                _OptionalBlock(_selection)]) >> _unarg(Attribution)
 
 # Expansion.Alternative.Chosen alternative =>
 # Expansion / Alternative / "Chosen alternative "
@@ -516,9 +528,9 @@ _Conn2    = _ConnHead
 def _mkConnective(c,semclasses):
     return Connective(c, *semclasses)
 
-_connHeadSemanticClass = _ConnHead + _sp + _semanticClass >> unarg(_mkConnective)
-_conn1SemanticClass    = _Conn1    + _sp + _semanticClass >> unarg(_mkConnective)
-_conn2SemanticClass    = _Conn2    + _sp + _semanticClass >> unarg(_mkConnective)
+_connHeadSemanticClass = _ConnHead + _sp + _semanticClass >> _unarg(_mkConnective)
+_conn1SemanticClass    = _Conn1    + _sp + _semanticClass >> _unarg(_mkConnective)
+_conn2SemanticClass    = _Conn2    + _sp + _semanticClass >> _unarg(_mkConnective)
 
 # ---------------------------------------------------------------------
 # arguments and supplementary information
@@ -531,7 +543,7 @@ def _Sup(name):
     return _section_begin(name.capitalize())
 
 def _arg(name):
-    p = _lines([_Arg(name), _selection, _attributionFeatures]) >> unarg(Arg)
+    p = _lines([_Arg(name), _selection, _attributionFeatures]) >> _unarg(Arg)
     return p
 
 def _arg_no_features(name):
@@ -582,11 +594,11 @@ _NoRel    = _section_begin(__NoRel)
 
 _explicitRelationFeatures =\
         _lines([_attributionFeatures, _connHeadSemanticClass])\
-        >> unarg(ExplicitRelationFeatures)
+        >> _unarg(ExplicitRelationFeatures)
 
 _altLexRelationFeatures =\
         _lines([_attributionFeatures, _semanticClass])\
-        >> unarg(AltLexRelationFeatures)
+        >> _unarg(AltLexRelationFeatures)
 
 _afterImplicitRelationFeatures =\
         _section_begin('Arg1') | _section_begin('Sup1')
@@ -596,27 +608,27 @@ _implicitRelationFeatures =\
                 _conn1SemanticClass,
                 _OptionalBlock(_conn2SemanticClass,
                                avoid=_afterImplicitRelationFeatures)])\
-        >> unarg(ImplicitRelationFeatures)
+        >> _unarg(ImplicitRelationFeatures)
 
 _explicitRelation =\
         _lines([_selection, _explicitRelationFeatures, _args_and_sups])\
-        >> unarg(ExplicitRelation)
+        >> _unarg(ExplicitRelation)
 
 _altLexRelation =\
         _lines([_selection, _altLexRelationFeatures, _args_and_sups])\
-        >> unarg(AltLexRelation)
+        >> _unarg(AltLexRelation)
 
 _implicitRelation =\
         _lines([_inferenceSite, _implicitRelationFeatures, _args_and_sups])\
-        >> unarg(ImplicitRelation)
+        >> _unarg(ImplicitRelation)
 
 _entityRelation =\
         _lines([_inferenceSite, _args_only])\
-        >> unarg(EntityRelation)
+        >> _unarg(EntityRelation)
 
 _noRelation =\
         _lines([_inferenceSite, _args_only])\
-        >> unarg(NoRelation)
+        >> _unarg(NoRelation)
 
 _relationParts=\
         [(__Explicit, _explicitRelation),
@@ -668,7 +680,7 @@ def parse_relation(s):
     if rtype not in rules:
         raise Exception('Unknown PDTB relation type: ' + rtype)
     parser = _oneRel(rtype, rules[rtype]) + _eof
-    return parser.parse(annotate(s))
+    return parser.parse(_annotate(s))
 
 def parse(path):
     """
@@ -678,7 +690,7 @@ def parse(path):
     :rtype: [Relation]
     """
     doc     = open(path).read()
-    return _pdtbFile.parse(annotate(doc))
+    return _pdtbFile.parse(_annotate(doc))
     # alternatively: using a regular expression to split into relations
     # and parsing each relation separately - perhaps more robust?
     #splits  = split_relations(doc)
