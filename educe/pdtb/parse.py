@@ -371,7 +371,7 @@ def _skipto(p):
                 res.append(tokens[s2.pos])
                 pos = s2.pos + 1
                 s2 = fp.State(pos, max(pos, s2.max))
-        raise NoParseError(u'no tokens left in the stream', s)
+        raise fp.NoParseError(u'no tokens left in the stream', s)
 
     _helper.name = u'{ skip_to %s }' % p.name
     return _helper
@@ -393,6 +393,32 @@ def _sepby(delim, p):
 
 def _sequence(ps):
     return reduce(lambda x, y: x + y, ps)
+
+def _noise(xs):
+    """String -> Parser(a, ())
+
+    Skip over this literal string
+    """
+    @fp.Parser
+    def _helper(tokens, s):
+        """Iterative implementation preventing the stack overflow."""
+        res = []
+        start = s.pos
+        end   = start + len(xs)
+        toks = tokens[start : end]
+        if _DEBUG:
+            vals = [ t.value for t in toks ]
+        else:
+            vals = toks
+        if vals == xs:
+            pos = s.pos + len(xs)
+            s2  = fp.State(pos, max(pos, s.max))
+            return fp._Ignored(()), s2
+        else:
+            raise fp.NoParseError(u'Did not match literal ' + xs, s)
+
+    _helper.name = u'{ literal %s }' % xs
+    return _helper
 
 if _DEBUG:
     _annotate  = _annotate_debug
@@ -462,9 +488,6 @@ def _lines(ps):
         return x + _next(y)
 
     return reduce(_combine, ps)
-
-def _noise(cs):
-    return _sequence(fp.skip(_oneof([c])) for c in cs)
 
 def _section_begin(t):
     return _noise('____' + t + '____')
