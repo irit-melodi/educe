@@ -293,7 +293,7 @@ def _annotate_debug(s):
 # funcparserlib utilities
 # ---------------------------------------------------------------------
 
-_DEBUG = 1 # turn this on to get line number hints
+_DEBUG = 0 # turn this on to get line number hints
 const  = lambda x: lambda _: x
 unarg  = lambda f: lambda x: f(*x)
 
