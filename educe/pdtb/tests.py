@@ -72,6 +72,11 @@ class PdtbParseTest(unittest.TestCase):
         txt      = expected + ','
         self.assertParse(p._skipto_mkstr(p._comma), expected, txt)
 
+    def test_many_char(self):
+        expected = 'abc123'
+        txt      = expected
+        self.assertParse(p._many_char(lambda x:x.isalnum()), expected, txt)
+
     def test_lines(self):
         expected = 'abc'
         txt      = 'a\nb\nc'

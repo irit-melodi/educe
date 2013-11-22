@@ -397,6 +397,9 @@ def _sepby(delim, p):
 def _sequence(ps):
     return reduce(lambda x, y: x + y, ps)
 
+def _many_char(fn):
+    return fp.many(_satisfies(fn)) >> _mkstr
+
 def _noise(xs):
     """String -> Parser(a, ())
 
@@ -442,9 +445,9 @@ _comma = fp.skip(_oneof(","))
 _semicolon = fp.skip(_oneof(";"))
 _fullstop  = fp.skip(_oneof("."))
 # horizontal only
-_sp    = fp.skip(fp.many(_satisfies(lambda x:x not in "\r\n" and x.isspace())))
-_allsp = fp.skip(fp.many(_satisfies(lambda x:x.isspace())))
-_alphanum_str = fp.many(_satisfies(lambda x:x.isalnum())) >> _mkstr
+_sp    = fp.skip(_many_char(lambda x:x not in "\r\n" and x.isspace()))
+_allsp = fp.skip(_many_char(lambda x:x.isspace()))
+_alphanum_str = _many_char(lambda x:x.isalnum())
 _eof   = fp.skip(fp.finished)
 
 class _OptionalBlock:
@@ -541,7 +544,7 @@ _attributionFeatures =\
 
 # Expansion.Alternative.Chosen alternative =>
 # Expansion / Alternative / "Chosen alternative "
-_SemanticClassWord = fp.many(_satisfies(lambda x:x in [' ', '-'] or x.isalnum())) >> _mkstr
+_SemanticClassWord = _many_char(lambda x:x in [' ', '-'] or x.isalnum())
 _SemanticClassN = _sepby(_fullstop, _SemanticClassWord) >> SemClass
 _SemanticClass1 = _SemanticClassN
 _SemanticClass2 = _SemanticClassN
