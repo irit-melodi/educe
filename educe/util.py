@@ -52,9 +52,9 @@ def mk_is_interesting(args):
             return check
 
     doc_checkers=map(mk_checker,
-                 [ lambda x:x.stage
-                 , lambda x:x.doc
-                 , lambda x:x.subdoc
-                 , lambda x:x.annotator ])
+                 [ lambda x:x.stage  if 'stage' in x.__dict__ else None
+                 , lambda x:x.doc    if 'doc'   in x.__dict__ else None
+                 , lambda x:x.subdoc if 'subdoc' in x.__dict__ else None
+                 , lambda x:x.annotator if 'annotator' in x.__dict__ else None])
 
     return lambda k : all([check(k) for check in doc_checkers])
