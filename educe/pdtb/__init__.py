@@ -49,9 +49,7 @@ class Reader(educe.corpus.Reader):
             if verbose:
                 sys.stderr.write("\rSlurping corpus dir [%d/%d]" % (counter, len(cfiles)))
             f = cfiles[k]
-            print f
             annotations=parse.parse(f)
-            print annotations
             #annotations.set_origin(k)
             corpus[k]=annotations
             counter=counter+1
