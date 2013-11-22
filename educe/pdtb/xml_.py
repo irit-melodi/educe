@@ -27,13 +27,11 @@ import xml.etree.cElementTree as ET # python 2.5 and later
 
 import educe.pdtb.parse as pdtb
 import educe.pdtb.parse as ty
-from   educe.internalutil import on_single_element, EduceXmlException
+from   educe.internalutil import on_single_element, EduceXmlException, indent_xml
 
 # ---------------------------------------------------------------------
 # XML to internal structure
 # ---------------------------------------------------------------------
-
-#def read_relation(node):
 
 def _read_GornAddressList(attr):
     return [ty.GornAddress(map(int,x.split(','))) for x in attr.split(';')]
@@ -144,7 +142,7 @@ def _read_NoRelation(node):
     return ty.NoRelation(infsite   = _read_InferenceSite(node),
                          args      = _read_Args(node))
 
-def _read_Relation(node):
+def read_Relation(node):
     tag = node.tag
     if tag == 'explicitRelation':
         return _read_ExplicitRelation(node)
@@ -158,6 +156,13 @@ def _read_Relation(node):
         return _read_NoRelation(node)
     else:
         raise EduceXmlException("Don't know how to read relation with name %s" % tag)
+
+def read_Relations(node):
+    return map(read_Relation, list(node))
+
+def read_pdtbx_file(filename):
+    tree = ET.parse(filename)
+    return read_Relations(tree.getroot())
 
 # ---------------------------------------------------------------------
 # internal structure to XML
@@ -268,7 +273,7 @@ def _NoRelation_xml(itm):
     elm.extend(_RelationArgsXml(itm))
     return elm
 
-def _Relation_xml(itm):
+def Relation_xml(itm):
     if isinstance(itm, ty.ExplicitRelation):
         return _ExplicitRelation_xml(itm)
     elif isinstance(itm, ty.ImplicitRelation):
@@ -281,3 +286,13 @@ def _Relation_xml(itm):
         return _NoRelation_xml(itm)
     else:
         raise Exception("Don't know how to translate relation of type %s" % type(itm))
+
+def Relations_xml(itms):
+    elm = ET.Element('relations')
+    elm.extend(map(Relation_xml, itms))
+    return elm
+
+def write_pdtbx_file(filename, relations):
+    xml = Relations_xml(relations)
+    indent_xml(xml)
+    ET.ElementTree(xml).write(filename, encoding='utf-8', xml_declaration=True)

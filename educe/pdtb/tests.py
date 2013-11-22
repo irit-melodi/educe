@@ -255,5 +255,5 @@ class PdtbXmlTest(unittest.TestCase):
     def test_all(self):
         for path in glob.glob('tests/*.pdtb'):
             for rel in p.parse(path):
-                xml = x._Relation_xml(rel)
-                self.assertEqual(rel, x._read_Relation(xml))
+                xml = x.Relation_xml(rel)
+                self.assertEqual(rel, x.read_Relation(xml))
