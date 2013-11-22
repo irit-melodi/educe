@@ -25,3 +25,11 @@ pdtb Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`xml_` Module
+------------------
+
+.. automodule:: educe.pdtb.xml_
+    :members:
+    :undoc-members:
+    :show-inheritance:
+

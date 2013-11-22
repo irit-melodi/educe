@@ -41,6 +41,14 @@ educe Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`internalutil` Module
+--------------------------
+
+.. automodule:: educe.internalutil
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`tests` Module
 -------------------
 
