@@ -23,12 +23,7 @@ naming it `xml` seems to create some kind of import cycle with the package
 `xml.etree.ElementTree` which we use here
 """
 
-try:
-    import xml.etree.cElementTree as ET # python 2.5 and later
-except ImportError:
-    import cElementTree as ET
-except ImportError:
-    raise ImportError("cElementTree missing!")
+import xml.etree.cElementTree as ET # python 2.5 and later
 
 import educe.pdtb.parse as pdtb
 import educe.pdtb.parse as ty

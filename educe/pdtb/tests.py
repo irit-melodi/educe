@@ -1,17 +1,10 @@
 import glob
 import sys
 import unittest
+import xml.etree.cElementTree as ET # python 2.5 and later
 
 import educe.pdtb.parse as p
 import educe.pdtb.xml_  as x
-
-try:
-    import xml.etree.cElementTree as ET # python 2.5 and later
-except ImportError:
-    import cElementTree as ET
-except ImportError:
-    raise ImportError("cElementTree missing!")
-
 from   educe.internalutil import indent_xml
 
 ex_txt="""#### Text ####
