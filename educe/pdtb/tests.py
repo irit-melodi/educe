@@ -12,6 +12,7 @@ except ImportError:
 except ImportError:
     raise ImportError("cElementTree missing!")
 
+from   educe.internalutil import indent_xml
 
 ex_txt="""#### Text ####
 federal thrift
@@ -217,26 +218,6 @@ class PdtbParseTest(unittest.TestCase):
         for path in glob.glob('tests/*.pdtb'):
             xs = p.parse(path)
             self.assertNotEquals(0, len(xs))
-
-def indent_xml(elem, level=0):
-    """
-    From <http://effbot.org/zone/element-lib.htm>
-
-    WARNING: destructive
-    """
-    i = "\n" + level*"  "
-    if len(elem):
-        if not elem.text or not elem.text.strip():
-            elem.text = i + "  "
-        if not elem.tail or not elem.tail.strip():
-            elem.tail = i
-        for elem in elem:
-            indent_xml(elem, level+1)
-        if not elem.tail or not elem.tail.strip():
-            elem.tail = i
-    else:
-        if level and (not elem.tail or not elem.tail.strip()):
-            elem.tail = i
 
 class PdtbXmlTest(unittest.TestCase):
     def dump(self, elem):

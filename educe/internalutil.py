@@ -28,3 +28,23 @@ def on_single_element(root, default, f, name):
         raise EduceXmlException("Found more than one node with name %s" % name)
     else:
         return f(nodes[0])
+
+def indent_xml(elem, level=0):
+    """
+    From <http://effbot.org/zone/element-lib.htm>
+
+    WARNING: destructive
+    """
+    i = "\n" + level*"  "
+    if len(elem):
+        if not elem.text or not elem.text.strip():
+            elem.text = i + "  "
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+        for elem in elem:
+            indent_xml(elem, level+1)
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+    else:
+        if level and (not elem.tail or not elem.tail.strip()):
+            elem.tail = i
