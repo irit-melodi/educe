@@ -66,4 +66,8 @@ def id_to_path(k):
     You will likely want to add your own filename extensions to
     this path
     """
-    return k.doc
+    if k.doc[:4] == 'wsj_':
+        prefix = k.doc[4:6]
+        return os.path.join(prefix,k.doc)
+    else:
+        return k.doc
