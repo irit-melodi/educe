@@ -253,12 +253,15 @@ class NoRelation(InferenceSite, Relation):
 # not-quite-lexing
 # ---------------------------------------------------------------------
 
+# FIXME
 # funcparserlib works on a stream of arbitrary tokens, eg. the output of
-# a lexer. We don't want to use any fancy tokenisation libraries here
-# because there's lots of natural language text interpsersed with the
-# live parts without a sane escaping mechanism; but, if we want to have
-# readable error messages we need to manually annotate our characters
-# with line number etc info
+# a lexer. At the time of this writing, I didn't trust any of the fancy
+# tokenisation libraries because I was suspicious of them messing up the
+# whitespace (we have natural language text in here); but now on second
+# thought maybe I'm being dumb. If we could have a lexer that blocks out
+# the raw text bits eg. `r'#### Text ####\n(.*?)\n##############'`; and
+# provide some abstractions over tokens, we could maybe simplify the
+# parser a lot... which could in turn make it faster?
 
 class _Char(object):
     def __init__(self, value, abspos, line, relpos):
