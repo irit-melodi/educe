@@ -12,7 +12,7 @@ of `Relation`, with the following subtypes:
 +--------------------+-----------------+------------------+------+
 | Relation           | selection       | features         | sup? |
 +====================+=================+==================+======+
-| `ExplicitRelation` | `Selection`     | attr, 1 conn     | Y    |
+| `ExplicitRelation` | `Selection`     | attr, 1 connhead | Y    |
 +--------------------+-----------------+------------------+------+
 | `ImplicitRelation` | `InferenceSite` | attr, 2 conn     | Y    |
 +--------------------+-----------------+------------------+------+
@@ -176,13 +176,13 @@ class Relation(PdtbItem):
         return PdtbItem._substr(self)
 
 class ExplicitRelationFeatures(PdtbItem):
-    def __init__(self, attribution, connective):
+    def __init__(self, attribution, connhead):
         self.attribution = attribution
-        self.connective  = connective
+        self.connhead    = connhead
 
     @classmethod
     def _init_copy(cls, self, other):
-        cls.__init__(self, other.attribution, other.connective)
+        cls.__init__(self, other.attribution, other.connhead)
 
 class ImplicitRelationFeatures(PdtbItem):
     def __init__(self, attribution, connective1, connective2):
