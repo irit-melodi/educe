@@ -35,6 +35,7 @@ The simplest way to get to grips with this may be to try the `parse`
 function on some sample relations and print the resulting objects.
 """
 
+import codecs
 import copy
 import re
 import pyparsing as pp
@@ -731,7 +732,7 @@ def parse(path):
 
     :rtype: [Relation]
     """
-    doc     = open(path).read()
+    doc     = codecs.open(path, 'r', 'iso8859-1').read()
     return _pdtbFile.parse(_annotate(doc))
     # alternatively: using a regular expression to split into relations
     # and parsing each relation separately - perhaps more robust?
