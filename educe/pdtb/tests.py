@@ -3,6 +3,15 @@ import sys
 import unittest
 
 import educe.pdtb.parse as p
+import educe.pdtb.xml_  as x
+
+try:
+    import xml.etree.cElementTree as ET # python 2.5 and later
+except ImportError:
+    import cElementTree as ET
+except ImportError:
+    raise ImportError("cElementTree missing!")
+
 
 ex_txt="""#### Text ####
 federal thrift
@@ -208,3 +217,69 @@ class PdtbParseTest(unittest.TestCase):
         for path in glob.glob('tests/*.pdtb'):
             xs = p.parse(path)
             self.assertNotEquals(0, len(xs))
+
+def indent_xml(elem, level=0):
+    """
+    From <http://effbot.org/zone/element-lib.htm>
+
+    WARNING: destructive
+    """
+    i = "\n" + level*"  "
+    if len(elem):
+        if not elem.text or not elem.text.strip():
+            elem.text = i + "  "
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+        for elem in elem:
+            indent_xml(elem, level+1)
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+    else:
+        if level and (not elem.tail or not elem.tail.strip()):
+            elem.tail = i
+
+class PdtbXmlTest(unittest.TestCase):
+    def dump(self, elem):
+        indent_xml(elem) # ugh, imperative
+        print >> sys.stderr, ''
+        print >> sys.stderr, ET.tostring(elem, encoding='utf-8')
+
+    def test_selection(self):
+        itm = p.Selection(span=[(36,139)],
+                          gorn=[p.GornAddress([0,1,1]),p.GornAddress([2,1])],
+                          text='federal thrift regulators ordered it to suspend dividend payments on its two classes of preferred stock')
+        xml = x._Selection_xml(itm)
+        self.assertEqual(itm, x._read_Selection(xml))
+
+    def test_attribution(self):
+        itm = p.Attribution('Ot', 'Comm', 'Null', 'Null')
+        xml = x._Attribution_xml(itm)
+        self.assertEqual(itm, x._read_Attribution(xml))
+
+        itm_sel = p.Selection(span=[(9,35)],
+                                   gorn=[p.GornAddress([0,0]),
+                                         p.GornAddress([0,1,0]),
+                                         p.GornAddress([0,1,2]),
+                                         p.GornAddress([0,2])],
+                                   text='CenTrust Savings Bank said')
+        itm = p.Attribution('Ot', 'Comm', 'Null', 'Null', itm_sel)
+        xml = x._Attribution_xml(itm)
+        self.assertEqual(itm, x._read_Attribution(xml))
+
+    def test_connective(self):
+        itm = p.Connective('also',
+                           p.SemClass(['Expansion','Conjunction']))
+        xml = x._Connective_xml(itm)
+        self.assertEqual(itm, x._read_Connective(xml))
+
+        itm = p.Connective('also',
+                           p.SemClass(['Expansion','Conjunction']),
+                           p.SemClass(['Contingency', 'Cause', 'Result']))
+        xml = x._Connective_xml(itm)
+        self.assertEqual(itm, x._read_Connective(xml))
+
+    def test_all(self):
+        for path in glob.glob('tests/*.pdtb'):
+            for rel in p.parse(path):
+                xml = x._Relation_xml(rel)
+                self.assertEqual(rel, x._read_Relation(xml))

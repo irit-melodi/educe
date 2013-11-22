@@ -15,6 +15,7 @@ import xml.etree.ElementTree as ET
 import sys
 
 from educe.annotation import *
+from educe.internalutil import on_single_element
 
 class GlozzOutputSettings:
     """
@@ -124,25 +125,6 @@ def glozz_schema_to_span_xml(self):
 class GlozzException(Exception):
     def __init__(self, *args, **kw):
         Exception.__init__(self, *args, **kw)
-
-def on_single_element(root, default, f, name):
-    """
-    Return
-
-       * the default if no elements
-       * f(the node) if one element
-       * an exception if more than one
-    """
-    nodes=root.findall(name)
-    if len(nodes) == 0:
-        if default is None:
-            raise GlozzException("Expected but did not find any nodes with name %s" % name)
-        else:
-            return default
-    elif len(nodes) > 1:
-        raise GlozzException("Found more than one node with name %s" % name)
-    else:
-        return f(nodes[0])
 
 # ---------------------------------------------------------------------
 # glozz files
