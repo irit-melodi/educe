@@ -125,6 +125,9 @@ class Selection(PdtbItem):
 class Connective(PdtbItem):
     def __init__(self, text, semclass1, semclass2=None):
         self.text = text
+        assert(isinstance(semclass1, SemClass))
+        if semclass2:
+            assert(isinstance(semclass2, SemClass))
         self.semclass1 = semclass1
         self.semclass2 = semclass2
 
@@ -148,6 +151,10 @@ class Sup(Selection):
 class Arg(Selection):
     def __init__(self, selection, attribution=None, sup=None):
         Selection._init_copy(self, selection)
+        if attribution:
+            assert(isinstance(attribution, Attribution))
+        if sup:
+            assert(isinstance(sup        , Sup))
         self.attribution = attribution
         self.sup         = sup
 
@@ -165,8 +172,8 @@ class Relation(PdtbItem):
     def __init__(self, args):
         if len(args) == 4:
             sup1, arg1, arg2, sup2 = args
-            self.arg1 = Arg(arg1, sup1) if sup1 else arg1
-            self.arg2 = Arg(arg2, sup2) if sup2 else arg2
+            self.arg1 = Arg(arg1, arg1.attribution, sup1) if sup1 else arg1
+            self.arg2 = Arg(arg2, arg2.attribution, sup2) if sup2 else arg2
         elif len(args) == 2:
             self.arg1, self.arg2   = args
         else:
@@ -177,6 +184,8 @@ class Relation(PdtbItem):
 
 class ExplicitRelationFeatures(PdtbItem):
     def __init__(self, attribution, connhead):
+        assert(isinstance(attribution, Attribution))
+        assert(isinstance(connhead,    Connective))
         self.attribution = attribution
         self.connhead    = connhead
 
@@ -185,7 +194,11 @@ class ExplicitRelationFeatures(PdtbItem):
         cls.__init__(self, other.attribution, other.connhead)
 
 class ImplicitRelationFeatures(PdtbItem):
-    def __init__(self, attribution, connective1, connective2):
+    def __init__(self, attribution, connective1, connective2=None):
+        assert(isinstance(attribution, Attribution))
+        assert(isinstance(connective1, Connective))
+        if connective2:
+            assert(isinstance(connective2, Connective))
         self.attribution = attribution
         self.connective1 = connective1
         self.connective2 = connective2
@@ -197,6 +210,10 @@ class ImplicitRelationFeatures(PdtbItem):
 
 class AltLexRelationFeatures(PdtbItem):
     def __init__(self, attribution, semclass1, semclass2):
+        assert(isinstance(attribution, Attribution))
+        assert(isinstance(semclass1, SemClass))
+        if semclass2:
+            assert(isinstance(semclass2, SemClass))
         self.attribution = attribution
         self.semclass1   = semclass1
         self.semclass2   = semclass2
