@@ -3,7 +3,6 @@ import sys
 import unittest
 
 import educe.pdtb.parse as p
-import pyparsing as pp
 
 ex_txt="""#### Text ####
 federal thrift
@@ -207,14 +206,5 @@ class PdtbParseTest(unittest.TestCase):
 
     def test(self):
         for path in glob.glob('tests/*.pdtb'):
-            try:
-                xs = p.parse(path)
-                self.assertNotEquals(0, len(xs))
-            except pp.ParseException as e:
-                doc = open(path).read()
-                xs  = p._relationList.parseString(doc)
-                for x in xs:
-                    print >> sys.stderr
-                    print >> sys.stderr, x
-                print >> sys.stderr, path
-                raise e
+            xs = p.parse(path)
+            self.assertNotEquals(0, len(xs))
