@@ -584,11 +584,6 @@ def _sup(name):
     p = _lines([_Sup(name), _selection]) >> Sup
     return p
 
-_args_and_sup2 =\
-        _lines([_arg('arg1'),
-                _arg('arg2'),
-                _OptionalBlock(_sup('sup2'))]) >> tuple
-
 # this is a bit yucky because I don't really know how to express
 # optional first blocks and make sure I handle the intervening
 # newlines correctly
