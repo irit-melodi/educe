@@ -29,6 +29,26 @@ def on_single_element(root, default, f, name):
     else:
         return f(nodes[0])
 
+def linebreak_xml(elem):
+    """
+    Insert a break after each element tag
+
+    You probably want `indent_xml` instead
+    """
+    i = "\n"
+    if len(elem):
+        if not elem.text or not elem.text.strip():
+            elem.text = i
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+        for elem in elem:
+            linebreak_xml(elem)
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+    else:
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+
 def indent_xml(elem, level=0):
     """
     From <http://effbot.org/zone/element-lib.htm>

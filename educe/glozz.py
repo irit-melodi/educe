@@ -15,7 +15,7 @@ import xml.etree.ElementTree as ET
 import sys
 
 from educe.annotation import *
-from educe.internalutil import on_single_element
+from educe.internalutil import on_single_element, linebreak_xml
 
 class GlozzOutputSettings:
     """
@@ -253,26 +253,6 @@ def write_annotation_file(anno_filename, doc, settings=default_output_settings):
     Write a GlozzDocument to XML in the given path
     """
 
-    # tweaked from the indent function in
-    # http://effbot.org/zone/element-lib.htm
-    def reformat(elem):
-        """
-        insert a break after each element tag
-        """
-        i = "\n"
-        if len(elem):
-            if not elem.text or not elem.text.strip():
-                elem.text = i
-            if not elem.tail or not elem.tail.strip():
-                elem.tail = i
-            for elem in elem:
-                reformat(elem)
-            if not elem.tail or not elem.tail.strip():
-                elem.tail = i
-        else:
-            if not elem.tail or not elem.tail.strip():
-                elem.tail = i
-
     elem = doc.to_xml(settings=settings)
-    reformat(elem) # ugh, imperative
+    linebreak_xml(elem) # ugh, imperative
     ET.ElementTree(elem).write(anno_filename, encoding='utf-8', xml_declaration=True)
