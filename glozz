@@ -7,22 +7,17 @@
 """
 Swiss-army-knife for working with glozz files
 """
-
-from educe import glozz, corpus, stac, util, graph
-import educe.corpus
-
 import argparse
+import codecs
+import collections
 import copy
-import re
 import os.path
+import re
 import sys
 import textwrap
-import collections
-import codecs
 
-import educe.glozz      as glozz
-import educe.stac       as stac
-from educe.annotation import Span, Unit
+from   educe import glozz, corpus, stac, util, graph
+from   educe.annotation import Span, Unit
 
 # ---------------------------------------------------------------------
 # utility functions
@@ -101,7 +96,6 @@ def main_cut(args):
 
 def main_hashcode(args):
     print glozz.hashcode(args.input)
-
 
 # ---------------------------------------------------------------------
 # args
