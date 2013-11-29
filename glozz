@@ -11,17 +11,29 @@ import argparse
 import codecs
 import collections
 import copy
+import os
 import os.path
 import re
 import sys
 import textwrap
+import xml.etree.ElementTree as ET
 
 from   educe import glozz, corpus, stac, util, graph
 from   educe.annotation import Span, Unit
+from   educe.internalutil import linebreak_xml
 
 # ---------------------------------------------------------------------
 # utility functions
 # ---------------------------------------------------------------------
+
+def nub(xs):
+    """
+    First occurrence of each list member
+    """
+    ys = []
+    for x in xs:
+        if x not in ys: ys.append(x)
+    return ys
 
 def seek_ac_file(aa_file):
     fbase,fext = os.path.splitext(aa_file)
@@ -89,6 +101,74 @@ def main_cut(args):
     if args.shift is None:  # NB: not the same as 0!
         args.shift = 1 - args.start
 
+# ---------------------------------------------------------------------
+# normalise
+#
+# This was imported from a script using its own XML processing code
+# rather than passing through the educe glozz reading mechanisms.
+# I probably wanted something as functionally simple as possible
+# ---------------------------------------------------------------------
+
+class NormSettings(object):
+    def __init__(self, mode, start):
+        self.mode  = mode
+        self.start = start
+
+default_settings = NormSettings('count', 1)
+
+def mk_new_dates(dates, settings=default_settings):
+    start        = settings.start
+    unique_dates = nub(dates)
+
+    if settings.mode == 'zero':
+        return { str(v):'0' for v in unique_dates    }
+    if settings.mode == 'negonly':
+        # only normalise negative dates (in count mode)
+        # this is kind of obscure, and only really makes sense in
+        # the context of the STAC project where some annotations
+        # were given negative ids to distinguish them from others
+        pos_dates = filter(lambda x:x >= 0, unique_dates)
+        neg_dates = filter(lambda x:x <  0, unique_dates)
+        pos_dict = { str(v):str(v)  for v in pos_dates }
+        neg_dict = { str(v):str(-i) for i,v in enumerate(neg_dates, start) }
+        return dict(pos_dict.items() + neg_dict.items())
+    else:
+        return { str(v):str(i) for i,v in enumerate(unique_dates, start) }
+
+def tidy(filename, output, mode=None):
+    tree    = ET.parse(filename)
+
+    date_elems = tree.findall('.//creation-date')
+    unit_elems = tree.findall('.//*[@id]')
+
+    dates     = [ int(x.text.strip()) for x in date_elems ]
+    unit_ids  = [ x.attrib['id'] for x in unit_elems ]
+
+    new_dates = mk_new_dates(dates, mode)
+
+    def adjust_id(x):
+        xparts = x.rsplit('_', 1)
+        date2  = new_dates[xparts[-1]]
+        return '_'.join(xparts[:-1] + [date2])
+
+    new_ids = { x:adjust_id(x) for x in unit_ids }
+
+    for x in date_elems:
+        old    = str(x.text.strip())
+        x.text = new_dates[old]
+    for x in unit_elems:
+        old = x.attrib['id']
+        x.attrib['id'] = new_ids[old]
+
+    linebreak_xml(tree.getroot())
+    tree.write(output, encoding='utf-8', xml_declaration=True)
+
+def main_normalise(args):
+    if not os.path.exists(args.output): os.mkdir(args.output)
+    settings = NormSettings(args.mode, args.start)
+    for f in args.input:
+        f2 = os.path.join(args.output, os.path.basename(f))
+        tidy(f, f2, settings)
 
 # ---------------------------------------------------------------------
 # hashcode
@@ -121,6 +201,20 @@ ap_cut.add_argument( 'end', type=int,
 ap_cut.add_argument('output', metavar='FILE',
                     help='Output file')
 ap_cut.set_defaults(func=main_cut)
+
+ap_norm = subparsers.add_parser('normalise', help='Renumber Glozz ids/dates for comparability (use with care!)')
+ap_norm.add_argument('input', metavar='FILES', nargs = '+')
+ap_norm.add_argument('--output', metavar='DIR',
+                     action='store',
+                     required=True,
+                     help='Output directory')
+ap_norm.add_argument('--mode', choices=[ 'count', 'zero', 'negonly' ],
+                     help='Normalisation mode'
+                     )
+ap_norm.add_argument('--start', type=int, default=1, help='start indices from')
+ap_norm.add_argument('--verbose', '-v', action='store_true')
+ap_norm.set_defaults(func=main_normalise)
+
 
 ap_hashcode = subparsers.add_parser('hashcode', help='Print corpus hashcode for Glozz ac file')
 ap_hashcode.add_argument('input', metavar='FILE', help='Glozz ac file')
