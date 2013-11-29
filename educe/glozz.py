@@ -248,7 +248,7 @@ def hashcode(ac_filename):
             byte = f.read(1)
         return str(length) + '-' + str(code)
 
-def write_annotation_file(anno_filename, doc):
+def write_annotation_file(anno_filename, doc, settings=default_output_settings):
     """
     Write a GlozzDocument to XML in the given path
     """
@@ -273,6 +273,6 @@ def write_annotation_file(anno_filename, doc):
             if not elem.tail or not elem.tail.strip():
                 elem.tail = i
 
-    elem = doc.to_xml()
+    elem = doc.to_xml(settings=settings)
     reformat(elem) # ugh, imperative
     ET.ElementTree(elem).write(anno_filename, encoding='utf-8', xml_declaration=True)
