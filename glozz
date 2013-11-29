@@ -10,7 +10,6 @@ Swiss-army-knife for working with glozz files
 
 from educe import glozz, corpus, stac, util, graph
 import educe.corpus
-import educe.stac.graph as stacgraph
 
 import argparse
 import copy
@@ -22,6 +21,7 @@ import collections
 import codecs
 
 import educe.glozz      as glozz
+import educe.stac       as stac
 from educe.annotation import Span, Unit
 
 # ---------------------------------------------------------------------
@@ -77,10 +77,20 @@ def cut_glozz_file(file, span, offset=0):
     doc2.relations = slice(doc.relations)
     return doc2
 
+def glozz_write_settings(args):
+    if args.format == 'stac-unannotated':
+        return glozz.GlozzOutputSettings(stac.STAC_UNANNOTATED_FS_ORDER,
+                                         stac.STAC_MD_ORDER)
+    elif args.format == 'stac':
+        return stac.stac_output_settings
+    else:
+        return glozz.default_output_settings
+
 def main_cut(args):
+    settings = glozz_write_settings(args)
     span = Span(args.start, args.end)
     doc  = cut_glozz_file(args.input, span, args.shift)
-    glozz.write_annotation_file(args.output, doc)
+    glozz.write_annotation_file(args.output, doc, settings=settings)
     if args.shift is None:  # NB: not the same as 0!
         args.shift = 1 - args.start
 
@@ -106,6 +116,7 @@ ap_dump.add_argument('files', nargs='*')
 
 ap_cut = subparsers.add_parser('cut', help='Select a slice of glozz anotations from text span')
 ap_cut.add_argument('input', metavar='FILE', help='Glozz aa file')
+ap_cut.add_argument('--format', choices=['default', 'stac', 'stac-unannotated'])
 ap_cut.add_argument('--shift', type=int, nargs='?',
                     default=0,
                     help='shift spans by this offset (default 0; unspecified:1-start)')
