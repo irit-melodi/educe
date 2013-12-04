@@ -232,21 +232,23 @@ def read_annotation_file(anno_filename, text_filename=None):
             text = tf.read()
     return GlozzDocument(hashcode, units, rels, schemas, text)
 
-def hashcode(ac_filename):
+def hashcode(f):
     """
-    Hashcode mechanism as documented in the Glozz manual appendix
+    Hashcode mechanism as documented in the Glozz manual appendix.
+    Hint, using cStringIO to get the hashcode for a string
+
+    :type  s: file (object)
     """
     code   = 1L
     length = 0
-    with open(ac_filename, 'rb') as f:
+    byte = f.read(1)
+    while byte:
+        length += 1
+        if byte and byte != 0:
+            code *= ord(byte)
+            code =  code % 99999999L
         byte = f.read(1)
-        while byte:
-            length += 1
-            if byte and byte != 0:
-                code *= ord(byte)
-                code =  code % 99999999L
-            byte = f.read(1)
-        return str(length) + '-' + str(code)
+    return str(length) + '-' + str(code)
 
 def write_annotation_file(anno_filename, doc, settings=default_output_settings):
     """

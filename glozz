@@ -174,7 +174,8 @@ def main_normalise(args):
 # ---------------------------------------------------------------------
 
 def main_hashcode(args):
-    print glozz.hashcode(args.input)
+    with open(args.input, 'rb') as f:
+        print glozz.hashcode(f)
 
 # ---------------------------------------------------------------------
 # args

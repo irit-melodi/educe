@@ -5,6 +5,7 @@ import codecs
 import os
 import sys
 import xml.etree.ElementTree as ET
+import cStringIO as StringIO
 
 from educe import rst_dt, glozz
 from educe.rst_dt import sdrt, graph
@@ -17,10 +18,11 @@ def write_glozz(gdoc, path_stub):
     ac_path   = path_stub + '.ac'
     aa_path   = path_stub + '.aa'
 
-    with codecs.open(ac_path, 'w', 'utf-8') as ac_f:
-        print >> ac_f, gdoc.text()
+    gdoc_bytes = gdoc.text().encode('utf-8')
+    with open(ac_path, 'wb') as ac_f:
+        ac_f.write(gdoc_bytes)
 
-    gdoc.hashcode = glozz.hashcode(ac_path) # why doees hashcode not just accept a byte array?
+    gdoc.hashcode = glozz.hashcode(StringIO.StringIO(gdoc_bytes))
     glozz.write_annotation_file(aa_path, gdoc)
 
 def render(gr, path_stub):
