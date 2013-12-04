@@ -430,7 +430,13 @@ STAC_MD_ORDER =\
     , 'lastModificationDate'
     ]
 
-stac_output_settings = glozz.GlozzOutputSettings(STAC_GLOZZ_FS_ORDER, STAC_MD_ORDER)
+stac_output_settings =\
+        glozz.GlozzOutputSettings(STAC_GLOZZ_FS_ORDER,
+                                  STAC_MD_ORDER)
+
+stac_unannotated_output_settings =\
+        glozz.GlozzOutputSettings(STAC_UNANNOTATED_FS_ORDER,
+                                  STAC_MD_ORDER)
 
 class PartialUnit:
     """

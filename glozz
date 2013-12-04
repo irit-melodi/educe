@@ -86,8 +86,7 @@ def cut_glozz_file(file, span, offset=0):
 
 def glozz_write_settings(args):
     if args.format == 'stac-unannotated':
-        return glozz.GlozzOutputSettings(stac.STAC_UNANNOTATED_FS_ORDER,
-                                         stac.STAC_MD_ORDER)
+        return stac.stac_unannotated_output_settings
     elif args.format == 'stac':
         return stac.stac_output_settings
     else:
