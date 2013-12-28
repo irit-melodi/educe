@@ -227,7 +227,9 @@ class Graph(gr.hypergraph, AttrsMixin):
         gr.hypergraph.__init__(self)
 
     @classmethod
-    def from_doc(cls, corpus, doc_key, pred=lambda x:True):
+    def from_doc(cls, corpus, doc_key,
+                 could_include=lambda x:False,
+                 pred=lambda x:True):
         """
         Return a graph representation of a document
 
@@ -240,8 +242,14 @@ class Graph(gr.hypergraph, AttrsMixin):
         :param doc_key: key pointing to the document
         :type  doc_key: `FileId`
 
-        :param  pred: predicate on annotations saying if they should
-            be included
+        :param  could_include: predicate on unit level annotations that
+            should be included regardless of whether or not we have links
+            to them
+        :type   could_include: annotation -> boolean
+
+        :param  pred: predicate on annotations providing some requirement
+            they must satisfy in order to be taken into account (you might
+            say that `could_include` gives; and `pred` takes away)
         :type   pred: annotation -> boolean
         """
         self         = cls()
@@ -251,16 +259,18 @@ class Graph(gr.hypergraph, AttrsMixin):
         self.doc     = doc
 
         # objects that are pointed to by a relations or schemas
-        pointed_to = []
+        included = []
+        for x in filter(could_include, doc.units):
+            included.append(x.local_id())
         for x in filter(pred, doc.relations):
-            pointed_to.extend([x.span.t1, x.span.t2])
+            included.extend([x.span.t1, x.span.t2])
         for x in filter(pred, doc.schemas):
-            pointed_to.extend(x.span)
+            included.extend(x.span)
 
         nodes = []
         edges = []
 
-        edus  = [ x for x in doc.units   if x.local_id() in pointed_to and pred(x) ]
+        edus  = [ x for x in doc.units   if x.local_id() in included and pred(x) ]
         rels  = filter(pred, doc.relations)
         cdus  = [ s for s in doc.schemas if pred(s) ]
 

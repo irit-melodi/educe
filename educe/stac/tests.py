@@ -134,6 +134,36 @@ class GraphTest(unittest.TestCase):
         expected = None
         self.assertEqual(expected, gr.containing_cdu(mark))
 
+    def test_linked_non_edus_included(self):
+        "non EDU connection"
+        edu1     = self.edu1_1
+        non_edu1 = FakeEDU('ne1', span=(3,3), type='Preference')
+        non_edu2 = FakeEDU('ne2', span=(1,3), type='Preference')
+        rel1     = FakeRelInst('r-ne1-e1', non_edu1, edu1)
+        edus     = [non_edu1, non_edu2, edu1]
+        rels     = [rel1]
+        gr, ids  = self.mk_graph(edus, rels, [])
+
+        # this tests both that non_edu1 is included (by virtue of its
+        # link to edu1; and also that non_edu2 is excluded)
+        expected = frozenset(e.local_id() for e in rels + [non_edu1, edu1])
+        self.assertEqual(expected, frozenset(ids.keys()))
+
+    def test_unlinked_edus_included(self):
+        "non EDU connection"
+        edu1     = self.edu1_1
+        edu2     = self.edu1_2
+        edu3     = self.edu1_3
+        rel1     = FakeRelInst('r-e1-e2', edu1, edu2)
+        edus     = [edu1, edu2, edu3]
+        rels     = [rel1]
+        gr, ids  = self.mk_graph(edus, rels, [])
+
+        # this tests both that non_edu1 is included (by virtue of its
+        # link to edu1; and also that non_edu2 is excluded)
+        expected = frozenset(e.local_id() for e in edus + rels)
+        self.assertEqual(expected, frozenset(ids.keys()))
+
 # FIXME: the tests below should be shuffled into the fixture above
 
 edu1 = FakeEDU('e1')

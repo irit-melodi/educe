@@ -33,7 +33,7 @@ class Graph(educe.graph.Graph):
 
     @classmethod
     def from_doc(cls, corpus, doc_key):
-        return super(Graph, cls).from_doc(corpus, doc_key)
+        return super(Graph, cls).from_doc(corpus, doc_key, could_include=stac.is_edu)
 
     def is_cdu(self, x):
         return super(Graph, self).is_cdu(x) and\
