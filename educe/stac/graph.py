@@ -32,8 +32,10 @@ class Graph(educe.graph.Graph):
         return educe.graph.Graph.__init__(self)
 
     @classmethod
-    def from_doc(cls, corpus, doc_key):
-        return super(Graph, cls).from_doc(corpus, doc_key, could_include=stac.is_edu)
+    def from_doc(cls, corpus, doc_key, pred=lambda x:True):
+        return super(Graph, cls).from_doc(corpus, doc_key,
+                                          could_include=stac.is_edu,
+                                          pred=pred)
 
     def is_cdu(self, x):
         return super(Graph, self).is_cdu(x) and\
