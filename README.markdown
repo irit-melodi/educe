@@ -20,7 +20,7 @@ First, try
 
     pip --help
 
-If this does work, download this [setup script][setup-distribute] and
+If this doesn't work, download this [setup script][setup-distribute] and
 run
 
     python distribute_setup.py
