@@ -19,7 +19,7 @@ some sort of graph representation of them
 .. _Glozz: http://erickow.com/posts/anno-models-glozz.html
 """
 
-class Span:
+class Span(object):
     """
     What portion of text an annotation corresponds to.
     Assumed to be in terms of character offsets
@@ -112,7 +112,7 @@ class Span:
             else:
                 return None
 
-class RelSpan():
+class RelSpan(object):
     """
     Which two units a relation connections.
     """
@@ -123,7 +123,7 @@ class RelSpan():
     def  __str__(self):
         return ('%s -> %s' % (self.t1, self.t2))
 
-class Standoff:
+class Standoff(object):
     """
     A standoff object ultimately points to some piece of text.
     The pointing is not necessarily direct though
