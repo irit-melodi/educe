@@ -192,6 +192,9 @@ class FakeGraph(educe.Graph):
     def add_edu(self, anno_id):
         self._add_fake_node(anno_id, 'EDU')
 
+    def add_non_edu(self, anno_id):
+        self._add_fake_node(anno_id, 'not-an-EDU')
+
     def add_rel(self, anno_id, node1, node2):
         self._add_fake_edge(anno_id, 'rel', [str(node1), str(node2)])
 
@@ -208,7 +211,7 @@ class BasicGraphTest(unittest.TestCase):
 
         members  = gr.cdu_members('X')
         expected = frozenset(['1','2'])
-        self.assertEqual(members, expected)
+        self.assertEqual(expected, members)
 
     # this is probably not a desirable property, but is a consequence
     # of CDUs being represented as hyperedges
@@ -224,15 +227,15 @@ class BasicGraphTest(unittest.TestCase):
 
         ns1       = frozenset(gr.neighbors('a1'))
         expected1 = frozenset(['a2'])
-        assert ns1 == expected1
+        self.assertEqual(expected1, ns1)
 
         ns2       = frozenset(gr.neighbors('a2'))
         expected2 = frozenset(['a1'])
-        assert ns2 == expected2
+        self.assertEqual(expected2,ns2)
 
         ns3       = frozenset(gr.neighbors('b'))
         expected3 = frozenset([])
-        assert ns3 == expected3
+        self.assertEqual(expected3,ns3)
 
     def test_copy(self):
         """
@@ -256,18 +259,18 @@ class BasicGraphTest(unittest.TestCase):
 
         xset2 = set(map(str,[1,2,3]))
         gr2   = gr.copy(nodeset=xset2)
-        assert gr2.edus()      == xset2
-        assert gr2.relations() == set(['1.2','1.3'])
-        assert gr2.cdus()      == set(['X1', 'X2'])
-        assert gr2.links('X2') == gr.links('X2')
+        self.assertEqual(xset2,              gr2.edus())
+        self.assertEqual(set(['1.2','1.3']), gr2.relations())
+        self.assertEqual(set(['X1', 'X2']),  gr2.cdus())
+        self.assertEqual(gr.links('X2'),     gr2.links('X2'))
 
         # some nonsense copies
         xset3 = xset2 | set(['X1'])
         gr3   = gr.copy(nodeset=xset3)
-        assert gr3.edus() == xset2 # not xset3
+        self.assertEqual(xset2, gr3.edus()) #not xset3
 
         # including CDU should also result in members being included
         xset4 = set(['X2'])
         gr4   = gr.copy(nodeset=xset4)
-        assert gr4.edus() == xset2
-        assert gr4.cdus() == set(['X1', 'X2'])
+        self.assertEqual(xset2,             gr4.edus())
+        self.assertEqual(set(['X1', 'X2']), gr4.cdus())
