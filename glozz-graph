@@ -27,40 +27,8 @@ from pygraph.algorithms import accessibility
 import pydot
 
 # ---------------------------------------------------------------------
-# args
-# ---------------------------------------------------------------------
-
-arg_parser = argparse.ArgumentParser(description='Visualise discourse graphs.')
-arg_parser.add_argument('idir', metavar='DIR',
-                        help='Input directory')
-arg_parser.add_argument('odir', metavar='DIR',
-                        help='Output directory')
-arg_parser.add_argument('--no-png', action='store_true',
-                        help='Skip png file creation')
-arg_parser.add_argument('--live', action='store_true',
-                        help='Input is a flat collection of aa/ac files)')
-arg_parser.add_argument('--split', action='store_true',
-                        help='Separate file for each connected component')
-arg_parser.add_argument('--strip-cdus', action='store_true',
-                        help='Strip away CDUs (substitute w heads)')
-educe_group = arg_parser.add_argument_group('corpus filtering arguments')
-util.add_corpus_filters(educe_group, fields=[ 'doc', 'subdoc', 'annotator' ])
-args=arg_parser.parse_args()
-args.stage = 'discourse|units'
-is_interesting=util.mk_is_interesting(args)
-
-# ---------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------
-
-if args.live:
-    reader     = stac.LiveInputReader(args.idir)
-    anno_files = reader.files()
-    corpus     = reader.slurp(anno_files, verbose=True)
-else:
-    reader     = stac.Reader(args.idir)
-    anno_files = reader.filter(reader.files(), is_interesting)
-    corpus     = reader.slurp(anno_files, verbose=True)
 
 def write_dot_graph(doc_file, dot_graph, part=None):
     doc_dir        = os.path.dirname(doc_file)
@@ -78,32 +46,109 @@ def write_dot_graph(doc_file, dot_graph, part=None):
         print >> sys.stderr, "Creating %s" % png_file
         os.system('dot -T png -o %s %s' % (png_file, dot_file))
 
-if args.live:
-    keys = corpus
-else:
-    keys = filter(lambda k:k.stage == 'discourse', corpus)
+def main_rel_graph(args):
+    is_interesting=util.mk_is_interesting(args)
 
-for doc_key in sorted(keys):
-    doc_file = anno_files[doc_key][0]
-    try:
-        g_ = stacgraph.Graph.from_doc(corpus, doc_key)
-        if args.strip_cdus:
-            g = g_.without_cdus()
-        else:
-            g = g_
-        dot_g = stacgraph.DotGraph(g)
+    if args.live:
+        reader     = stac.LiveInputReader(args.idir)
+        anno_files = reader.files()
+        corpus     = reader.slurp(anno_files, verbose=True)
+    else:
+        reader     = stac.Reader(args.idir)
+        anno_files = reader.filter(reader.files(), is_interesting)
+        corpus     = reader.slurp(anno_files, verbose=True)
+
+    if args.live:
+        keys = corpus
+    else:
+        keys = filter(lambda k:k.stage == 'discourse', corpus)
+
+    for k in sorted(keys):
+        doc_file = anno_files[k][0]
+        try:
+            g_ = stacgraph.Graph.from_doc(corpus, k)
+            if args.strip_cdus:
+                g = g_.without_cdus()
+            else:
+                g = g_
+            dot_g = stacgraph.DotGraph(g)
+            if dot_g.get_nodes():
+                write_dot_graph(doc_file, dot_g)
+                if args.split:
+                    ccs = g.connected_components()
+                    for k,nodes in enumerate(ccs,1):
+                        g2 = g.copy(nodes)
+                        write_dot_graph(doc_file, stacgraph.DotGraph(g2), part=k)
+            else:
+                print >> sys.stderr, "Skipping %s (empty graph)" % doc_file
+        except graph.DuplicateIdException:
+            warning  = "WARNING: %s has duplicate annotation ids" % doc_file
+            print >> sys.stderr, warning
+
+def main_enclosure_graph(args):
+    is_interesting=util.mk_is_interesting(args)
+
+    if args.live:
+        reader     = stac.LiveInputReader(args.idir)
+        anno_files = reader.files()
+        corpus     = reader.slurp(anno_files, verbose=True)
+    else:
+        reader     = stac.Reader(args.idir)
+        anno_files = reader.filter(reader.files(), is_interesting)
+        corpus     = reader.slurp(anno_files, verbose=True)
+
+    if args.live:
+        keys = corpus
+    else:
+        keys = filter(lambda k:k.stage == 'units', corpus)
+
+    for k in sorted(keys):
+        doc_file = anno_files[k][0]
+        g_ = graph.EnclosureGraph(corpus[k].units)
+        if args.reduce:
+            g_.reduce()
+        dot_g = graph.EnclosureDotGraph(g_)
         if dot_g.get_nodes():
             write_dot_graph(doc_file, dot_g)
-            if args.split:
-                ccs = g.connected_components()
-                for k,nodes in enumerate(ccs,1):
-                    g2 = g.copy(nodes)
-                    write_dot_graph(doc_file, stacgraph.DotGraph(g2), part=k)
         else:
             print >> sys.stderr, "Skipping %s (empty graph)" % doc_file
-    except graph.DuplicateIdException:
-        warning  = "WARNING: %s has duplicate annotation ids" % doc_file
-        print >> sys.stderr, warning
 
+# ---------------------------------------------------------------------
+# args
+# ---------------------------------------------------------------------
+
+arg_parser = argparse.ArgumentParser(description='Visualise discourse graphs.')
+arg_parser.add_argument('idir', metavar='DIR',
+                        help='Input directory')
+arg_parser.add_argument('odir', metavar='DIR',
+                        help='Output directory')
+arg_parser.add_argument('--no-png', action='store_true',
+                        help='Skip png file creation')
+arg_parser.add_argument('--live', action='store_true',
+                        help='Input is a flat collection of aa/ac files)')
+
+# TODO: would be nice to enforce these groups of args mutually excluding
+# but not sure if the library actually supports it
+arg_parser_rel = arg_parser.add_argument_group("relation graphs")
+arg_parser_rel.add_argument('--split', action='store_true',
+                            help='Separate file for each connected component')
+arg_parser_rel.add_argument('--strip-cdus', action='store_true',
+                            help='Strip away CDUs (substitute w heads)')
+
+arg_parser_enc = arg_parser.add_argument_group("enclosure graphs")
+arg_parser_enc.add_argument('--enclosure', action='store_true',
+                            help='Generate enclosure graphs')
+arg_parser_enc.add_argument('--reduce', action='store_true',
+                            help='Reduce enclosure graphs [requires --enclosure]')
+
+educe_group = arg_parser.add_argument_group('corpus filtering arguments')
+util.add_corpus_filters(educe_group, fields=[ 'doc', 'subdoc', 'annotator' ])
+args=arg_parser.parse_args()
+args.stage = 'discourse|units'
+
+if args.enclosure:
+    main_enclosure_graph(args)
+else:
+    main_rel_graph(args)
 
 # vim: syntax=python:

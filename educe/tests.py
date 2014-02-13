@@ -10,6 +10,8 @@ Tests for educe
 import copy
 import pygraph.classes.hypergraph as gr
 import educe.graph as educe
+from   educe.graph import EnclosureGraph
+
 import sys
 from pygraph.algorithms import accessibility, traversal, searching
 from educe.annotation import *
@@ -30,6 +32,80 @@ def test_span():
     matches((6,9),(5,10),(6,9))
     matches((5,10),(7,12),(7,10))
     matches((7,12),(5,10),(7,10))
+
+class NullAnno(Span, Annotation):
+    def __init__(self, start, end, type="null"):
+        super(NullAnno, self).__init__(start, end)
+        self.span = self
+        self.type = type
+
+    def local_id(self):
+        return str(self)
+
+    def __repr__(self):
+        return "%s [%s]" % (super(NullAnno,self).__str__(),self.type)
+
+    def __str__(self):
+        return repr(self)
+
+class EnclosureTest(unittest.TestCase):
+    def test_trivial(self):
+        g = EnclosureGraph([])
+        self.assertEqual(0, len(g.nodes()))
+
+    def test_singleton(self):
+        s0 = NullAnno(1,5)
+        g = EnclosureGraph([s0])
+        self.assertEqual([s0.local_id()], g.nodes())
+        self.assertEqual([], g.inside(s0))
+        self.assertEqual([], g.outside(s0))
+
+    def test_simple_enclosure(self):
+        s1_5 = NullAnno(1,5)
+        s2_3 = NullAnno(2,3)
+        g = EnclosureGraph([s1_5, s2_3])
+        self.assertEqual([s2_3], g.inside(s1_5))
+        self.assertEqual([s1_5], g.outside(s2_3))
+
+    def test_indirect_enclosure(self):
+        s1_5 = NullAnno(1,5,'a')
+        s2_4 = NullAnno(2,4,'b')
+        s3_4 = NullAnno(3,4,'c')
+        g = EnclosureGraph([s1_5, s2_4, s3_4])
+        self.assertEqual([s2_4, s3_4], g.inside(s1_5))
+        self.assertEqual([s1_5], g.outside(s2_4))
+        self.assertEqual([s1_5, s2_4], g.outside(s3_4))
+        g.reduce()
+        self.assertEqual([s2_4], g.inside(s1_5))
+        self.assertEqual([s1_5], g.outside(s2_4))
+        self.assertEqual([s2_4], g.outside(s3_4))
+
+    def test_same_span(self):
+        s1_5  = NullAnno(1,5,'out')
+        s2_4a = NullAnno(2,4,'a')
+        s2_4b = NullAnno(2,4,'b')
+        s3_4  = NullAnno(3,4,'in')
+        g = EnclosureGraph([s1_5, s2_4a, s2_4b, s3_4])
+        g.reduce()
+        self.assertEqual([s2_4a, s2_4b], g.inside(s1_5))
+        self.assertEqual([s3_4], g.inside(s2_4a))
+        self.assertEqual([s3_4], g.inside(s2_4b))
+        self.assertEqual([s2_4a, s2_4b], g.outside(s3_4))
+
+
+    def test_indirect_enclosure_untyped(self):
+        """
+        reduce only pays attention to nodes of different type
+        """
+        s_1_5 = NullAnno(1,5)
+        s_2_4 = NullAnno(2,4)
+        s_3_4 = NullAnno(3,4)
+        g = EnclosureGraph([s_1_5, s_2_4, s_3_4])
+        g.reduce()
+        self.assertEqual([s_2_4, s_3_4], g.inside(s_1_5))
+        self.assertEqual([s_1_5], g.outside(s_2_4))
+        self.assertEqual([s_1_5, s_2_4], g.outside(s_3_4))
+
 
 # ---------------------------------------------------------------------
 # annotations

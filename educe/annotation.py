@@ -90,6 +90,9 @@ class Span(object):
         Note that `x.encloses(x) == True`
 
         Corner case: `x.encloses(None) == False`
+
+        See also `educe.graph.EnclosureGraph` if you might be repeating
+        these checks
         """
         if sp is None:
             return False

@@ -846,4 +846,133 @@ class DotGraph(pydot.Dot):
             else:
                 self._add_simple_cdu(edge)
 
+# ---------------------------------------------------------------------
+# enclosure graphs
+# ---------------------------------------------------------------------
 
+class EnclosureGraph(dgr.digraph, AttrsMixin):
+    """
+    Caching mechanism for span enclosure. Given an iterable of Annotation,
+    return a directed graph where nodes point to those they enclose.
+
+    See the `reduce` function to do almost a transitive reduction on the
+    graph resulting into something that resembles a multipartite graph,
+    one layer per type of annotation (no promises! see doc)
+
+    NB: nodes are labelled by their annotation id
+
+    :param annotations
+    :type  annotations iterable of Annotation
+    """
+    def __init__(self, annotations):
+        super(EnclosureGraph,self).__init__()
+        AttrsMixin.__init__(self)
+        for x in annotations:
+            node, attrs = self._mk_node(x)
+            self.add_node(node)
+            for x in attrs.items():
+                self.add_node_attribute(node,x)
+
+        for x1 in annotations:
+            for x2 in annotations:
+                if x1 == x2: continue
+                sp1 = x1.text_span()
+                sp2 = x2.text_span()
+                if sp1.encloses(sp2) and sp1 != sp2:
+                    self._add_edge(x1, x2)
+
+    def _mk_node_id(self, anno):
+        return anno.local_id()
+
+    def _mk_node(self, anno):
+        # a node is mirrored if there is a also an edge
+        # corresponding to the same object
+        node_id  = self._mk_node_id(anno)
+        attrs = { 'type'       : anno.type
+                , 'annotation' : anno
+                }
+        return (node_id, attrs)
+
+    def _add_edge(self, anno1, anno2):
+        id1 = self._mk_node_id(anno1)
+        id2 = self._mk_node_id(anno2)
+        self.add_edge((id1,id2))
+
+    def _attrs(self, x):
+        return self.node_attributes_dict(x)
+
+    def reduce(self):
+        """
+        For all nodes `A -> B -> C`, delete any `A -> C` edges if `A` and `B`
+        have different types. The assumption I'm making here is that having
+        annotations of the same type enclosing each other is likely an
+        annotation bug, and so having them on different layers of the graph
+        would be awkward.
+
+        This *should* give you a multipartite graph with each layer
+        representing a different type of annotation, but no promises!  We can't
+        guarantee that the graph will be nicely layered because the annotations
+        may be buggy (either nodes wrongly typed, or nodes of the same type
+        that wrongly enclose each other), so you should not rely on this
+        property aside from treating it as an optimisation.
+        """
+        delete_me = set()
+        for n1,n2 in self.edges():
+            x1 = self.annotation(n1)
+            x2 = self.annotation(n2)
+            if x1.type == x2.type: continue
+            for n3 in self.neighbors(n2):
+                e = (n1,n3)
+                if self.has_edge(e):
+                    delete_me.add(e)
+        for e in delete_me:
+            self.del_edge(e)
+
+    def inside(self, annotation):
+        """
+        Given an annotation, return all annotations enclosed within in.
+        If the graph is reduced, this only returns annotations that are
+        directly enclosed or of the same type.
+
+        Results are returned in the order of their local id
+        """
+        n1 = self._mk_node_id(annotation)
+        return [self.annotation(n2) for n2 in sorted(self.neighbors(n1))]
+
+    def outside(self, annotation):
+        """
+        Given an annotation, return all annotations enclosed within in.
+        If the graph is reduced, this only returns annotations that are
+        directly enclosed or of the same type.
+
+        Results are returned in the order of their local id
+        """
+        n1 = self._mk_node_id(annotation)
+        return [self.annotation(n2) for n2 in sorted(self.incidents(n1))]
+
+
+class EnclosureDotGraph(pydot.Dot):
+
+    def _add_unit(self, node):
+        anno  = self.core.annotation(node)
+        label = self._unit_label(anno)
+        attrs = { 'label' : textwrap.fill(label, 30)
+                , 'shape' : 'plaintext'
+                }
+        self.add_node(pydot.Node(node, **attrs))
+
+    def _add_edge(self, edge):
+        (node1, node2) = edge
+        attrs = {}
+        self.add_edge(pydot.Edge(node1, node2,**attrs))
+
+    def _unit_label(self, anno):
+        return "%s %s" % (anno.type, anno.text_span())
+
+    def __init__(self, enc_graph):
+        super(EnclosureDotGraph,self).__init__()
+        self.core = enc_graph
+        for n in self.core.nodes():
+            self._add_unit(n)
+        for e in self.core.edges():
+            self._add_edge(e)
