@@ -5,7 +5,7 @@ python:
 #  - "3.2"
 # command to install dependencies
 install:
-  - if [[ $TRAVIS_PYTHON_VERSION == 3* ]]; then pip install -r requirements-py3.txt --use-mirrors .; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == 2* ]]; then pip install -r requirements.txt     --use-mirrors .; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 3* ]]; then pip install -r requirements-py3.txt --allow-external .; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 2* ]]; then pip install -r requirements.txt     --allow-external .; fi
 # command to run tests
 script: nosetests
