@@ -190,6 +190,14 @@ def is_turn(annotation):
     return isinstance(annotation, Unit) and\
             annotation.type == 'Turn'
 
+def is_dialogue(annotation):
+    """
+    See Unit typology above
+    """
+    return isinstance(annotation, Unit) and\
+            annotation.type == 'Dialogue'
+
+
 def is_edu(annotation):
     """
     See Unit typology above
