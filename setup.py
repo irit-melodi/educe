@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup, find_packages
 setup(name='educe',
       version='0.1',
       author='Eric Kow',
