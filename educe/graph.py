@@ -859,12 +859,21 @@ class EnclosureGraph(dgr.digraph, AttrsMixin):
     graph resulting into something that resembles a multipartite graph,
     one layer per type of annotation (no promises! see doc)
 
+    Note: there is a corner case for nodes that have the same span.
+    Technically a span encloses itself, so the graph could have a loop.
+    If you supply a sort key that differentiates two nodes, we use it
+    as a tie-breaker (first node encloses second). Otherwise, we
+    simply exclude both links.
+
     NB: nodes are labelled by their annotation id
 
     :param annotations
     :type  annotations iterable of Annotation
+
+    :param key disambiguation key for nodes with same span
+    :type (annotation -> sort key)
     """
-    def __init__(self, annotations):
+    def __init__(self, annotations, key=None):
         super(EnclosureGraph,self).__init__()
         AttrsMixin.__init__(self)
         for x in annotations:
@@ -878,8 +887,12 @@ class EnclosureGraph(dgr.digraph, AttrsMixin):
                 if x1 == x2: continue
                 sp1 = x1.text_span()
                 sp2 = x2.text_span()
-                if sp1.encloses(sp2) and sp1 != sp2:
-                    self._add_edge(x1, x2)
+                if sp1.encloses(sp2):
+                    if sp1 != sp2 or (key and key(x1) < key(x2)):
+                        self._add_edge(x1, x2)
+
+
+
 
     def _mk_node_id(self, anno):
         return anno.local_id()
