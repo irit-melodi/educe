@@ -950,7 +950,9 @@ class EnclosureGraph(dgr.digraph, AttrsMixin):
         Results are returned in the order of their local id
         """
         n1 = self._mk_node_id(annotation)
-        return [self.annotation(n2) for n2 in sorted(self.neighbors(n1))]
+        return sorted([self.annotation(n2) for n2 in self.neighbors(n1)],
+                      key=lambda x: x.text_span())
+
 
     def outside(self, annotation):
         """
@@ -961,7 +963,8 @@ class EnclosureGraph(dgr.digraph, AttrsMixin):
         Results are returned in the order of their local id
         """
         n1 = self._mk_node_id(annotation)
-        return [self.annotation(n2) for n2 in sorted(self.incidents(n1))]
+        return sorted([self.annotation(n2) for n2 in self.incidents(n1)],
+                      key=lambda x: x.text_span())
 
 
 class EnclosureDotGraph(pydot.Dot):
