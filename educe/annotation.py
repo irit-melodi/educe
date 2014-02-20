@@ -115,6 +115,17 @@ class Span(object):
             else:
                 return None
 
+    def merge(self, other):
+        """
+        Return a span that stretches from the beginning to the
+        end of the two spans. Whereas `overlaps` can be thought of
+        as returning the intersection of two spans, this can be
+        thought of as returning the union.
+        """
+        big_start = min(self.char_start, other.char_start)
+        big_end = max(self.char_end, other.char_end)
+        return Span(big_start, big_end)
+
 class RelSpan(object):
     """
     Which two units a relation connections.
