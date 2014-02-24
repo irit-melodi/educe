@@ -153,7 +153,8 @@ def from_corenlp_output_filename(f):
     prefix = os.path.splitext(prefix)[0]
 
     parts   = prefix.split('_')
-    file_id = corpus.FileId(doc=parts[0], subdoc=parts[1],
+    file_id = corpus.FileId(doc=parts[0],
+                            subdoc=parts[1] if len(parts) > 1 else None,
                             stage='unannotated',
                             annotator=None)
 
