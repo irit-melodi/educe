@@ -98,12 +98,15 @@ class ConstituencyTree(SearchableTree, Standoff):
         return step(tree)
 
 
-class DependencyTree(SearchableTree):
+class DependencyTree(SearchableTree, Standoff):
     """
     A variant of the NLTK Tree data structure for the representation
-    of dependency trees. The dependency tree is not itself a Standoff,
-    but the links in the trees can be seen as pointers between nodes
-    which are themselves Standoff objects.
+    of dependency trees. The dependency tree is also considered a
+    Standoff annotation but not quite in the same way that a
+    constituency tree might be. The spans roughly indicate the range
+    covered by the tokens in the subtree (this glosses over any gaps).
+    They are mostly useful for determining if the tree (at its root
+    node) pertains to any given sentence based on its offsets.
 
     Fields:
 
@@ -113,7 +116,20 @@ class DependencyTree(SearchableTree):
     """
     def __init__(self, node, children, link, origin=None):
         SearchableTree.__init__(self, node, children)
-        self.origin = None
+        Standoff.__init__(self, origin)
+        nodes = children
+        if not self.is_root():
+            nodes.append(self.node)
+        start = min(x.span.char_start for x in nodes)
+        end = max(x.span.char_end for x in nodes)
+        self.span = Span(start, end)
+        self.origin = origin
+
+    def is_root(self):
+        """
+        This is a dependency tree root (has a special node)
+        """
+        return self.node == 'ROOT'
 
     @classmethod
     def build(cls, deps, nodes, k, link=None):
