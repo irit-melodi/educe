@@ -91,6 +91,12 @@ class Graph(educe.graph.Graph):
             if not (self.is_relation(m) or pointed_to):
                 candidates.append(m)
 
+        if sloppy and not candidates:
+            # this can arise if the only members of the CDU form a loop
+            for m in members:
+                if not self.is_relation(m):
+                    candidates.append(m)
+
         if len(candidates) == 0:
             return None
         elif len(candidates) == 1 or sloppy:
