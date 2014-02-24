@@ -17,14 +17,6 @@ stac Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`csv` Module
------------------
-
-.. automodule:: educe.stac.csv
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 :mod:`graph` Module
 -------------------
 
