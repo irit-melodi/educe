@@ -97,6 +97,7 @@ Classes
 import copy
 import collections
 import textwrap
+import warnings
 
 from educe import corpus
 from pygraph.readwrite import dot
@@ -853,11 +854,17 @@ class DotGraph(pydot.Dot):
 class EnclosureGraph(dgr.digraph, AttrsMixin):
     """
     Caching mechanism for span enclosure. Given an iterable of Annotation,
-    return a directed graph where nodes point to those they enclose.
+    return a directed graph where nodes point to the largest nodes
+    they enclose (i.e. not to nodes that are enclosed by intermediary
+    nodes they point to).  As a slight twist, we also allow nodes to
+    redundantly point to enclosed nodes of the same typ.
 
-    See the `reduce` function to do almost a transitive reduction on the
-    graph resulting into something that resembles a multipartite graph,
-    one layer per type of annotation (no promises! see doc)
+    This *should* give you a multipartite graph with each layer
+    representing a different type of annotation, but no promises!  We can't
+    guarantee that the graph will be nicely layered because the annotations
+    may be buggy (either nodes wrongly typed, or nodes of the same type
+    that wrongly enclose each other), so you should not rely on this
+    property aside from treating it as an optimisation.
 
     Note: there is a corner case for nodes that have the same span.
     Technically a span encloses itself, so the graph could have a loop.
@@ -876,23 +883,60 @@ class EnclosureGraph(dgr.digraph, AttrsMixin):
     def __init__(self, annotations, key=None):
         super(EnclosureGraph,self).__init__()
         AttrsMixin.__init__(self)
-        for x in annotations:
-            node, attrs = self._mk_node(x)
+
+        def can_enclose(anno1, anno2):
+            span1 = anno1.text_span()
+            span2 = anno2.text_span()
+            if anno1 == anno2:
+                return False
+            elif span1.encloses(span2):
+                return span1 != span2 or\
+                    (key and key(anno1) < key(anno2))
+            else:
+                return False
+
+        def connect_to_enclosed(mega, mini):
+            """
+            Given a enclosing and a subgraph represented by a (candidate)
+            enclosed node, walk down the subgraph trying to connect the
+            enclosing node to the largest node we can find
+            """
+            if not mega.text_span().overlaps(mini.text_span()):
+                return
+            elif can_enclose(mega, mini):
+                self._add_edge(mega, mini)
+                id_mini = self._mk_node_id(mini)
+                # yucky extra step to also enclose subnodes
+                # of the same type (let these be on the same layer)
+                for id_kid in self.neighbors(id_mini):
+                    kid = self.annotation(id_kid)
+                    if kid.type == mini.type:
+                        connect_to_enclosed(mega, kid)
+            else:
+                id_mini = self._mk_node_id(mini)
+                for id_kid in self.neighbors(id_mini):
+                    kid = self.annotation(id_kid)
+                    connect_to_enclosed(mega, kid)
+
+        of_width = collections.defaultdict(list)
+        for anno in annotations:
+            node, attrs = self._mk_node(anno)
             self.add_node(node)
             for x in attrs.items():
                 self.add_node_attribute(node,x)
+            of_width[anno.text_span().len()].append(anno)
 
-        for x1 in annotations:
-            for x2 in annotations:
-                if x1 == x2: continue
-                sp1 = x1.text_span()
-                sp2 = x2.text_span()
-                if sp1.encloses(sp2):
-                    if sp1 != sp2 or (key and key(x1) < key(x2)):
-                        self._add_edge(x1, x2)
-
-
-
+        narrow = []
+        for width in sorted(of_width):
+            mk_hidden = []
+            layer = of_width[width]
+            narrow.extend(layer)
+            for mega in layer:
+                for mini in narrow:
+                    connect_to_enclosed(mega, mini)
+                    if can_enclose(mega, mini):
+                        mk_hidden.append(mini)
+            narrow = filter(lambda x:x not in mk_hidden, narrow)
 
     def _mk_node_id(self, anno):
         return anno.local_id()
@@ -909,37 +953,17 @@ class EnclosureGraph(dgr.digraph, AttrsMixin):
     def _add_edge(self, anno1, anno2):
         id1 = self._mk_node_id(anno1)
         id2 = self._mk_node_id(anno2)
-        self.add_edge((id1,id2))
+        if not self.has_edge((id1, id2)):
+            self.add_edge((id1, id2))
 
     def _attrs(self, x):
         return self.node_attributes_dict(x)
 
     def reduce(self):
         """
-        For all nodes `A -> B -> C`, delete any `A -> C` edges if `A` and `B`
-        have different types. The assumption I'm making here is that having
-        annotations of the same type enclosing each other is likely an
-        annotation bug, and so having them on different layers of the graph
-        would be awkward.
-
-        This *should* give you a multipartite graph with each layer
-        representing a different type of annotation, but no promises!  We can't
-        guarantee that the graph will be nicely layered because the annotations
-        may be buggy (either nodes wrongly typed, or nodes of the same type
-        that wrongly enclose each other), so you should not rely on this
-        property aside from treating it as an optimisation.
+        DEPRECATED
         """
-        delete_me = set()
-        for n1,n2 in self.edges():
-            x1 = self.annotation(n1)
-            x2 = self.annotation(n2)
-            if x1.type == x2.type: continue
-            for n3 in self.neighbors(n2):
-                e = (n1,n3)
-                if self.has_edge(e):
-                    delete_me.add(e)
-        for e in delete_me:
-            self.del_edge(e)
+        warnings.warn("deprecated", DeprecationWarning)
 
     def inside(self, annotation):
         """

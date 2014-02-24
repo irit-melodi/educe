@@ -72,10 +72,6 @@ class EnclosureTest(unittest.TestCase):
         s2_4 = NullAnno(2,4,'b')
         s3_4 = NullAnno(3,4,'c')
         g = EnclosureGraph([s1_5, s2_4, s3_4])
-        self.assertEqual([s2_4, s3_4], g.inside(s1_5))
-        self.assertEqual([s1_5], g.outside(s2_4))
-        self.assertEqual([s1_5, s2_4], g.outside(s3_4))
-        g.reduce()
         self.assertEqual([s2_4], g.inside(s1_5))
         self.assertEqual([s1_5], g.outside(s2_4))
         self.assertEqual([s2_4], g.outside(s3_4))
@@ -92,6 +88,15 @@ class EnclosureTest(unittest.TestCase):
         self.assertEqual([s3_4], g.inside(s2_4b))
         self.assertEqual([s2_4a, s2_4b], g.outside(s3_4))
 
+    def test_layers(self):
+        s3_4 = NullAnno(3, 4)
+        s2_4 = NullAnno(2, 4)
+        s3_5 = NullAnno(3, 5)
+        g = EnclosureGraph([s3_4, s2_4, s3_5])
+        g.reduce()
+        self.assertEqual([s3_4], g.inside(s3_5))
+        self.assertEqual([s3_4], g.inside(s2_4))
+        self.assertEqual([s2_4, s3_5], g.outside(s3_4))
 
     def test_indirect_enclosure_untyped(self):
         """
