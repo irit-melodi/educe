@@ -122,6 +122,7 @@ class DependencyTree(SearchableTree, Standoff):
             nodes.append(self.node)
         start = min(x.span.char_start for x in nodes)
         end = max(x.span.char_end for x in nodes)
+        self.link = link
         self.span = Span(start, end)
         self.origin = origin
 
