@@ -988,7 +988,11 @@ class EnclosureDotGraph(pydot.Dot):
     def __init__(self, enc_graph):
         super(EnclosureDotGraph,self).__init__()
         self.core = enc_graph
-        for n in self.core.nodes():
+
+        def node_sort_key(node):
+            return self.core.annotation(node).text_span()
+
+        for n in sorted(self.core.nodes(), key=node_sort_key):
             self._add_unit(n)
         for e in self.core.edges():
             self._add_edge(e)
