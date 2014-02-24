@@ -41,7 +41,7 @@ class SearchableTree(nltk.Tree):
         elif prunable and prunable(self):
             return []
         else:
-            return chain.from_iterable(x.topdown(pred) for x in self.children
+            return chain.from_iterable(x.topdown(pred) for x in self
                                        if isinstance(x,SearchableTree))
 
 class ConstituencyTree(SearchableTree, Standoff):
