@@ -90,18 +90,36 @@ class EDU(Standoff):
         return self.text
 
 class Node:
-    def __init__(self,descr,span, origin=None):
-        self.type, self.edu_span, self.rel = descr.split("|")
-        self.edu_span = self.edu_span.split("-")
-        if len(self.edu_span)==2:
-            self.edu_span.append(self.edu_span[1])
-        self.edu_span[1] = int(self.edu_span[1] )
-        self.edu_span[2] = int(self.edu_span[2] )
-        # Standoff
+    """
+    Fields of interest:
+
+        * type
+        * edu_span: pair of integers denoting edu span by count
+        * span
+        * rel
+    """
+
+    def __init__(self, type, edu_span, span, rel):
+        self.type = type
+        self.edu_span = edu_span
         self.span = span
+        self.rel = rel
+
+    @classmethod
+    def from_treebank(cls, descr, span):
+        """
+        Build a node from a piece of an RST DT tree
+        """
+        type, edu_span, rel = descr.split("|")
+        _edu_span = edu_span.split("-")[1:]
+        if len(_edu_span) == 1:
+            _edu_span.append(_edu_span[0])
+        edu_span = (int(_edu_span[0]),
+                    int(_edu_span[1]))
+        return cls(type, edu_span, span, rel)
 
     def __repr__(self):
-        return "%s %s %s"%(self.type,"%s-%s"%tuple(self.edu_span[1:3]),self.rel)
+        return "%s %s %s" % (self.type, "%s-%s" % self.edu_span, self.rel)
 
 class RSTTree(SearchableTree, Standoff):
     def __init__(self,node,children,origin=None):
@@ -131,9 +149,7 @@ class RSTTree(SearchableTree, Standoff):
         Return the span of the tree in terms of EDU count
         See `self.span` refers more to the character offsets
         """
-        minedu = self.node.edu_span[1]
-        maxedu = self.node.edu_span[2]
-        return minedu,maxedu
+        return self.node.edu_span
 
     def text(self):
         """
@@ -183,7 +199,7 @@ class RSTTree(SearchableTree, Standoff):
                 position = child_sp.char_end
 
             span = Span(start, position)
-            return cls(Node(tree.node, span),children)
+            return cls(Node.from_treebank(tree.node, span), children)
         else:
             if tree.startswith("["):
                 return EDU(tree[1:-1], start)
