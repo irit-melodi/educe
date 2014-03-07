@@ -9,6 +9,22 @@ rst_dt Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`corpus` Module
+--------------------
+
+.. automodule:: educe.rst_dt.corpus
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`deptree` Module
+---------------------
+
+.. automodule:: educe.rst_dt.deptree
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`graph` Module
 -------------------
 
@@ -37,6 +53,14 @@ rst_dt Package
 -------------------
 
 .. automodule:: educe.rst_dt.tests
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`transform` Module
+-----------------------
+
+.. automodule:: educe.rst_dt.transform
     :members:
     :undoc-members:
     :show-inheritance:
