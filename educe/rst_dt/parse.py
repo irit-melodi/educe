@@ -121,6 +121,22 @@ class Node:
     def __repr__(self):
         return "%s %s %s" % (self.type, "%s-%s" % self.edu_span, self.rel)
 
+    def is_nucleus(self):
+        """
+        A node can either be a nucleus, a satellite, or a root node.
+        It may be easier to work with SimpleRSTTree, in which nodes
+        can only either be nucleus/satellite or much more rarely,
+        root.
+        """
+        return self.type == 'Nucleus'
+
+    def is_satellite(self):
+        """
+        A node can either be a nucleus, a satellite, or a root node.
+        """
+        return self.type == 'Satellite'
+
+
 class RSTTree(SearchableTree, Standoff):
     def __init__(self,node,children,origin=None):
         """

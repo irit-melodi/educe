@@ -57,8 +57,8 @@ def binarize(tree):
         # eg. NS, SN, NNNNN, SNS
         nscode = "".join(kid.node.type[0] for kid in tree)
 
-        nuclei = filter(lambda x: x.node.type == 'Nucleus', tree)
-        satellites = filter(lambda x: x.node.type == 'Satellite', tree)
+        nuclei = [kid for kid in tree if kid.node.is_nucleus()]
+        satellites = [kid for kid in tree if kid.node.is_satellite()]
         if len(nuclei) + len(satellites) != len(tree):
             raise Exception("Nodes that are neither Nuclei nor Satellites\n%s"
                             % tree)
