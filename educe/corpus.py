@@ -129,7 +129,7 @@ class Reader:
     def __init__(self, dir):
         self.rootdir=dir
 
-    def files():
+    def files(self):
         """
         Return a dictionary from FileId to (tuples of) filepaths.
         The tuples correspond to files that are considered to 'belong'

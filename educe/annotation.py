@@ -167,7 +167,7 @@ class Standoff(object):
             return chain.from_iterable([m._terminals(seen + my_members)
                                         for m in my_members if m not in seen])
 
-    def text_span(self, doc=None):
+    def text_span(self):
         """
         Return the span from the earliest terminal annotation contained here
         to the latest.
@@ -179,8 +179,6 @@ class Standoff(object):
 
         * the `doc` argument is deprecated
         """
-        if doc is not None:
-            warnings.warn("deprecated, the doc argument is deprecated", DeprecationWarning)
         terminals = list(self._terminals())
         if len(terminals) > 0:
             start = min( [t.span.char_start for t in terminals] )
