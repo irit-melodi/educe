@@ -368,7 +368,7 @@ class DotGraph(educe.graph.DotGraph):
 
     def _simple_rel_attrs(self, anno):
         attrs = educe.graph.DotGraph._simple_rel_attrs(self, anno)
-        if anno.type not in stac.subordinating_relations:
+        if not stac.is_subordinating(anno):
             attrs['fontcolor'] = 'dodgerblue4'
             attrs['color'    ] = 'gray13'
         return attrs
@@ -376,7 +376,7 @@ class DotGraph(educe.graph.DotGraph):
     def _complex_rel_attrs(self, anno):
         midpoint_attrs, attrs1, attrs2 =\
                 educe.graph.DotGraph._complex_rel_attrs(self, anno)
-        if anno.type not in stac.subordinating_relations:
+        if not stac.is_subordinating(anno):
             midpoint_attrs['fontcolor'] = 'dodgerblue4'
         return (midpoint_attrs, attrs1, attrs2)
 
