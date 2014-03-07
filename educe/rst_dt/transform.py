@@ -8,7 +8,76 @@
 Convert RST trees to other structures, for example, binary RST trees
 """
 
+import copy
+
+from educe.annotation import Standoff
+from educe.external.parser import SearchableTree
 from educe.rst_dt.parse import RSTTree, Node
+
+
+class SimpleRSTTree(SearchableTree, Standoff):
+    """
+    Possibly easier representation of RST trees to work with:
+
+    * binary
+    * relation labels on parent nodes instead of children
+
+    Note that `RSTTree` and `SimpleRSTTree` share the same
+    `Node` type but because of the subtle difference in
+    interpretation you should be extremely careful not to
+    mix and match.
+    """
+
+    def __init__(self, node, children, origin=None):
+        """
+        Note, you should use `SimpleRSTTree.from_RSTTree(tree)`
+        to create this tree instead
+        """
+        SearchableTree.__init__(self, node, children)
+        Standoff.__init__(self, origin)
+
+    def set_origin(self, origin):
+        """
+        Recursively update the origin for this annotation, ie.
+        a little link to the document metadata for this annotation
+        """
+        self.origin = origin
+        for child in self:
+            child.set_origin(origin)
+
+    def text_span(self):
+        return self.node.span
+
+    def _members(self):
+        return list(self)  # children
+
+    @classmethod
+    def from_rst_tree(cls, tree):
+        """
+        Build and return a `SimpleRSTTree` from an `RSTTree`
+        """
+        return cls._from_binary_rst_tree(binarize(tree))
+
+    @classmethod
+    def _from_binary_rst_tree(cls, tree):
+        """
+        Helper to from_rst_tree; hoist the relation from the
+        satellite node to the parent. If there is no satellite
+        (ie. we have a multinuclear relation), take it from the
+        left node.
+        """
+        if len(tree) == 1:
+            node = copy.copy(tree.node)
+            node.rel = "leaf"
+            return SimpleRSTTree(node, tree, tree.origin)
+        else:
+            left = tree[0]
+            right = tree[1]
+            node = copy.copy(tree.node)
+            node.rel = right.node.rel if right.node.is_satellite()\
+                else left.node.rel
+            kids = [cls._from_binary_rst_tree(kid) for kid in tree]
+            return SimpleRSTTree(node, kids, tree.origin)
 
 
 def _chain_to_binary(rel, kids):
