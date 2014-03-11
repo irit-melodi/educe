@@ -89,18 +89,19 @@ class EDU(Standoff):
     def __repr__(self):
         return self.text
 
-class Node:
+
+class Node(object):
     """
     Fields of interest:
 
-        * type
+        * nuclearity: Nucleus, Satellite, Root
         * edu_span: pair of integers denoting edu span by count
         * span
         * rel
     """
 
-    def __init__(self, type, edu_span, span, rel):
-        self.type = type
+    def __init__(self, nuclearity, edu_span, span, rel):
+        self.nuclearity = nuclearity
         self.edu_span = edu_span
         self.span = span
         self.rel = rel
@@ -110,16 +111,16 @@ class Node:
         """
         Build a node from a piece of an RST DT tree
         """
-        type, edu_span, rel = descr.split("|")
+        nuclearity, edu_span, rel = descr.split("|")
         _edu_span = edu_span.split("-")[1:]
         if len(_edu_span) == 1:
             _edu_span.append(_edu_span[0])
         edu_span = (int(_edu_span[0]),
                     int(_edu_span[1]))
-        return cls(type, edu_span, span, rel)
+        return cls(nuclearity, edu_span, span, rel)
 
     def __repr__(self):
-        return "%s %s %s" % (self.type, "%s-%s" % self.edu_span, self.rel)
+        return "%s %s %s" % (self.nuclearity, "%s-%s" % self.edu_span, self.rel)
 
     def is_nucleus(self):
         """
@@ -128,13 +129,13 @@ class Node:
         can only either be nucleus/satellite or much more rarely,
         root.
         """
-        return self.type == 'Nucleus'
+        return self.nuclearity == 'Nucleus'
 
     def is_satellite(self):
         """
         A node can either be a nucleus, a satellite, or a root node.
         """
-        return self.type == 'Satellite'
+        return self.nuclearity == 'Satellite'
 
 
 class RSTTree(SearchableTree, Standoff):

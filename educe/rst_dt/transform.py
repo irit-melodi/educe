@@ -12,9 +12,19 @@ import copy
 
 from educe.annotation import Standoff
 from educe.external.parser import SearchableTree
-from educe.rst_dt.parse import RSTTree, Node
+from educe.rst_dt.parse import RSTTree, Node, EDU
 
 
+class RSTTreeException(Exception):
+    """
+    Exceptions related to RST trees not looking like we would
+    expect them to
+    """
+    def __init__(self, msg):
+        super(RSTTreeException, self).__init__(msg)
+
+
+# pylint: disable=R0904
 class SimpleRSTTree(SearchableTree, Standoff):
     """
     Possibly easier representation of RST trees to work with:
@@ -97,6 +107,19 @@ def _chain_to_binary(rel, kids):
     return reduce(builder, kids[::-1])
 
 
+def is_binary(tree):
+    """
+    True if the given RST tree or SimpleRSTTree is indeed binary
+    """
+    if isinstance(tree, EDU):
+        return True
+    elif len(tree) > 2:
+        print tree
+        return False
+    else:
+        return all(map(is_binary, tree))
+
+
 def binarize(tree):
     """
     Slightly rearrange an RST tree as a binary tree.  The non-trivial
@@ -117,14 +140,14 @@ def binarize(tree):
       For example, given `X(List:N1, List:N2, List:N3)`, we would
       return `X(List:N1, List:N(List:N2, List:N3))`
     """
-    if len(tree) == 1:  # pre-terminal
+    if isinstance(tree, EDU):
         return tree
-    elif len(tree) == 2:
+    elif len(tree) <= 2:
         return RSTTree(tree.node, map(binarize, tree))
     else:
         # convenient string representation of what the children look like
         # eg. NS, SN, NNNNN, SNS
-        nscode = "".join(kid.node.type[0] for kid in tree)
+        nscode = "".join(kid.node.nuclearity[0] for kid in tree)
 
         nuclei = [kid for kid in tree if kid.node.is_nucleus()]
         satellites = [kid for kid in tree if kid.node.is_satellite()]
@@ -137,12 +160,13 @@ def binarize(tree):
         elif len(nuclei) > 1:  # multi-nuclear chain
             if satellites:
                 raise Exception("Multinuclear with satellites:\n%s" % tree)
-            left = tree[0]
-            right = _chain_to_binary(left.node.rel, tree[1:])
+            kids = map(binarize, tree)
+            left = kids[0]
+            right = _chain_to_binary(left.node.rel, kids[1:])
             return RSTTree(tree.node, [left, right])
         elif nscode == 'SNS':
             left = _chain_to_binary('span', tree[:2])
             right = tree[2]
             return RSTTree(tree.node, [left, right])
         else:
-            raise Exception("Don't know how to handle %s trees", nscode)
+            raise RSTTreeException("Don't know how to handle %s trees", nscode)
