@@ -9,10 +9,26 @@ stac Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`annotation` Module
+------------------------
+
+.. automodule:: educe.stac.annotation
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`corenlp` Module
 ---------------------
 
 .. automodule:: educe.stac.corenlp
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`corpus` Module
+--------------------
+
+.. automodule:: educe.stac.corpus
     :members:
     :undoc-members:
     :show-inheritance:
