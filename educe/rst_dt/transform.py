@@ -166,7 +166,7 @@ def binarize(tree):
             return RSTTree(tree.node, [left, right])
         elif nscode == 'SNS':
             left = _chain_to_binary('span', tree[:2])
-            right = tree[2]
+            right = binarize(tree[2])
             return RSTTree(tree.node, [left, right])
         else:
             raise RSTTreeException("Don't know how to handle %s trees", nscode)
