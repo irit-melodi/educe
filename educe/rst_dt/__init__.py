@@ -6,5 +6,4 @@ Conventions specific to the RST discourse treebank project
 """
 
 from .corpus import Reader, id_to_path
-from .parse import RSTTree, Node
-from .transform import SimpleRSTTree
+from .annotation import RSTTree, Node, SimpleRSTTree

@@ -1,18 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Authors: Eric Kow
-# License: CeCILL-B (BSD3-like)
+# Authors: Philippe Muller, Eric Kow
+# License: CeCILL-B (BSD-3 like)
+
+# disable "pointless string" warning because we want attribute docstrings
+# pylint: disable=W0105
 
 """
-Convert RST trees to other structures, for example, binary RST trees
+Educe-style representation for RST discourse treebank trees
 """
 
 import copy
 
 from educe.annotation import Standoff
 from educe.external.parser import SearchableTree
-from educe.rst_dt.parse import RSTTree, Node, EDU
 
 
 class RSTTreeException(Exception):
@@ -24,7 +26,132 @@ class RSTTreeException(Exception):
         super(RSTTreeException, self).__init__(msg)
 
 
+# pylint: disable=R0913
+class EDU(Standoff):
+    """
+    An RST leaf node
+    """
+    def __init__(self, span, text,
+                 sentstart=False,
+                 sentend=False,
+                 origin=None):
+        super(EDU, self).__init__(origin)
+
+        self.span = span
+        "text span"
+
+        self.text = text
+        "the text covered by this EDU"
+
+        self.sentstart = sentstart
+        "is at the beginning of a sentence"
+
+        self.sentend = sentend
+        "is at the end of a sentence"
+
+    def set_origin(self, origin):
+        """
+        Update the origin of this annotation and any contained within
+        """
+        self.origin = origin
+
+    def __repr__(self):
+        return self.text
+# pylint: enable=R0913
+
+
+class Node(object):
+    """
+    A node in an `RSTTree` or `SimpleRSTTree`.
+    """
+
+    def __init__(self, nuclearity, edu_span, span, rel):
+        self.nuclearity = nuclearity
+        "one of Nucleus, Satellite, Root"
+
+        self.edu_span = edu_span
+        "pair of integers denoting edu span by count"
+
+        self.span = span
+        "span"
+
+        self.rel = rel
+        """
+        relation label (see `SimpleRSTTree` for a note on the different
+        interpretation of `rel` with this and `RSTTree`)
+        """
+
+    def __repr__(self):
+        return "%s %s %s" % (self.nuclearity,
+                             "%s-%s" % self.edu_span,
+                             self.rel)
+
+    def is_nucleus(self):
+        """
+        A node can either be a nucleus, a satellite, or a root node.
+        It may be easier to work with SimpleRSTTree, in which nodes
+        can only either be nucleus/satellite or much more rarely,
+        root.
+        """
+        return self.nuclearity == 'Nucleus'
+
+    def is_satellite(self):
+        """
+        A node can either be a nucleus, a satellite, or a root node.
+        """
+        return self.nuclearity == 'Satellite'
+
+
 # pylint: disable=R0904
+class RSTTree(SearchableTree, Standoff):
+    """
+    Representation of RST trees which sticks fairly closely to the
+    raw RST discourse treebank one.
+    """
+
+    def __init__(self, node, children, origin=None):
+        """
+        See `educe.rst_dt.parse` to build trees from strings
+        """
+        SearchableTree.__init__(self, node, children)
+        Standoff.__init__(self, origin)
+
+    def set_origin(self, origin):
+        """
+        Update the origin of this annotation and any contained within
+        """
+        self.origin = origin
+        for child in self:
+            child.set_origin(origin)
+
+    def text_span(self):
+        return self.node.span
+
+    def _members(self):
+        return list(self)  # children
+
+    def __repr__(self):
+        return self.pprint()
+
+    def edu_span(self):
+        """
+        Return the span of the tree in terms of EDU count
+        See `self.span` refers more to the character offsets
+        """
+        return self.node.edu_span
+
+    def text(self):
+        """
+        Return the text corresponding to this RST tree
+        (traverses and concatenates leaf node text)
+
+        Note that this (along with the standoff offsets)
+        behave as though there were a single space
+        between each EDU
+        """
+        return " ".join(l.text for l in self.leaves())
+
+
 class SimpleRSTTree(SearchableTree, Standoff):
     """
     Possibly easier representation of RST trees to work with:

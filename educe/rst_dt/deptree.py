@@ -12,7 +12,7 @@ from collections import defaultdict, namedtuple
 
 from nltk import Tree
 
-from educe.rst_dt.transform import SimpleRSTTree, Node
+from educe.rst_dt.annotation import SimpleRSTTree, Node
 
 
 _N = "Nucleus"
