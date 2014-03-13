@@ -9,6 +9,14 @@ rst_dt Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`annotation` Module
+------------------------
+
+.. automodule:: educe.rst_dt.annotation
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`corpus` Module
 --------------------
 
@@ -53,14 +61,6 @@ rst_dt Package
 -------------------
 
 .. automodule:: educe.rst_dt.tests
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`transform` Module
------------------------
-
-.. automodule:: educe.rst_dt.transform
     :members:
     :undoc-members:
     :show-inheritance:
