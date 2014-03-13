@@ -188,7 +188,8 @@ def parse_lightweight_tree(tstr):
     examples
     """
     _lw_type_re = re.compile(r'(?P<nuc>[RSN])(:(?P<rel>.*)|$)')
-    _lw_nuc_map = {nuc[0]: nuc for nuc in ["Root", "Nucleus", "Satellite"]}
+    _lw_nuc_map = dict((nuc[0], nuc)
+                       for nuc in ["Root", "Nucleus", "Satellite"])
     # pylint: disable=C0103
     PosInfo = collections.namedtuple("PosInfo", "text edu")
     # pylint: enable=C0103
