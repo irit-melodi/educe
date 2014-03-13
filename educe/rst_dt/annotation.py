@@ -86,6 +86,16 @@ class Node(object):
                              "%s-%s" % self.edu_span,
                              self.rel)
 
+    def __eq__(self, other):
+        return\
+            self.nuclearity == other.nuclearity and\
+            self.edu_span == other.edu_span and\
+            self.span == other.span and\
+            self.rel == other.rel
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def is_nucleus(self):
         """
         A node can either be a nucleus, a satellite, or a root node.

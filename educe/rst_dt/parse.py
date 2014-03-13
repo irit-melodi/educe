@@ -12,12 +12,14 @@ as an NLTK Tree structure.  It is also an educe `Standoff` object, which means
 that it points to other RST trees (their children) or to `EDU`.
 """
 
+import collections
+import copy
 import re
 import codecs
 from nltk import Tree
 
 from educe.annotation import Span
-from .annotation import RSTTreeException, EDU, Node, RSTTree
+from .annotation import RSTTreeException, EDU, Node, RSTTree, SimpleRSTTree
 
 
 # pre-processing leaves
@@ -172,3 +174,52 @@ def read_annotation_file(anno_filename):
     with codecs.open(anno_filename, 'r', 'utf-8') as stream:
         tree = parse_rst_dt_tree(stream.read())
     return tree
+
+
+def parse_lightweight_tree(tstr):
+    """
+    Parse lightweight RST debug syntax into SimpleRSTTree, eg. ::
+
+        (R:attribution
+           (N:elaboration (N foo) (S bar)
+           (S quux)))
+
+    This is motly useful for debugging or for knocking out quick
+    examples
+    """
+    _lw_type_re = re.compile(r'(?P<nuc>[RSN])(:(?P<rel>.*)|$)')
+    _lw_nuc_map = {nuc[0]: nuc for nuc in ["Root", "Nucleus", "Satellite"]}
+    # pylint: disable=C0103
+    PosInfo = collections.namedtuple("PosInfo", "text edu")
+    # pylint: enable=C0103
+
+    def walk(subtree, posinfo=PosInfo(text=0, edu=0)):
+        """
+        walk down first-cut tree, counting span info and returning a
+        fancier tree along the way
+        """
+        if isinstance(subtree, Tree):
+            start = copy.copy(posinfo)
+            children = []
+            for kid in subtree:
+                tree, posinfo = walk(kid, posinfo)
+                children.append(tree)
+
+            match = _lw_type_re.match(subtree.node)
+            if not match:
+                raise RSTTreeException("Missing nuclearity annotation in ",
+                                       subtree)
+            nuclearity = _lw_nuc_map[match.group("nuc")]
+            rel = match.group("rel") or "leaf"
+            edu_span = (start.edu, posinfo.edu - 1)
+            span = Span(start.text, posinfo.text)
+            node = Node(nuclearity, edu_span, span, rel)
+            return SimpleRSTTree(node, children), posinfo
+        else:
+            text = subtree
+            start = posinfo.text
+            end = start + len(text)
+            posinfo2 = PosInfo(text=end, edu=posinfo.edu+1)
+            return EDU(Span(start, end), text), posinfo2
+
+    return walk(Tree.parse(tstr))[0]
