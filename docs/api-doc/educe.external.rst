@@ -1,51 +1,54 @@
-external Package
-================
+educe.external package
+======================
 
-:mod:`external` Package
------------------------
+Submodules
+----------
 
-.. automodule:: educe.external
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`coref` Module
--------------------
+educe.external.coref module
+---------------------------
 
 .. automodule:: educe.external.coref
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`corenlp` Module
----------------------
+educe.external.corenlp module
+-----------------------------
 
 .. automodule:: educe.external.corenlp
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`parser` Module
---------------------
+educe.external.parser module
+----------------------------
 
 .. automodule:: educe.external.parser
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`postag` Module
---------------------
+educe.external.postag module
+----------------------------
 
 .. automodule:: educe.external.postag
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`stanford_xml_reader` Module
----------------------------------
+educe.external.stanford_xml_reader module
+-----------------------------------------
 
 .. automodule:: educe.external.stanford_xml_reader
     :members:
     :undoc-members:
     :show-inheritance:
 
+
+Module contents
+---------------
+
+.. automodule:: educe.external
+    :members:
+    :undoc-members:
+    :show-inheritance:

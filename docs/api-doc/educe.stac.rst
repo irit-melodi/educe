@@ -1,59 +1,62 @@
-stac Package
-============
+educe.stac package
+==================
 
-:mod:`stac` Package
--------------------
+Submodules
+----------
 
-.. automodule:: educe.stac
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`annotation` Module
-------------------------
+educe.stac.annotation module
+----------------------------
 
 .. automodule:: educe.stac.annotation
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`corenlp` Module
----------------------
+educe.stac.corenlp module
+-------------------------
 
 .. automodule:: educe.stac.corenlp
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`corpus` Module
---------------------
+educe.stac.corpus module
+------------------------
 
 .. automodule:: educe.stac.corpus
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`graph` Module
--------------------
+educe.stac.graph module
+-----------------------
 
 .. automodule:: educe.stac.graph
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`postag` Module
---------------------
+educe.stac.postag module
+------------------------
 
 .. automodule:: educe.stac.postag
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`tests` Module
--------------------
+educe.stac.tests module
+-----------------------
 
 .. automodule:: educe.stac.tests
     :members:
     :undoc-members:
     :show-inheritance:
 
+
+Module contents
+---------------
+
+.. automodule:: educe.stac
+    :members:
+    :undoc-members:
+    :show-inheritance:

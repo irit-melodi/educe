@@ -1,35 +1,38 @@
-pdtb Package
-============
+educe.pdtb package
+==================
 
-:mod:`pdtb` Package
--------------------
+Submodules
+----------
 
-.. automodule:: educe.pdtb
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`parse` Module
--------------------
+educe.pdtb.parse module
+-----------------------
 
 .. automodule:: educe.pdtb.parse
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`tests` Module
--------------------
+educe.pdtb.tests module
+-----------------------
 
 .. automodule:: educe.pdtb.tests
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`xml_` Module
-------------------
+educe.pdtb.xml_ module
+----------------------
 
 .. automodule:: educe.pdtb.xml_
     :members:
     :undoc-members:
     :show-inheritance:
 
+
+Module contents
+---------------
+
+.. automodule:: educe.pdtb
+    :members:
+    :undoc-members:
+    :show-inheritance:

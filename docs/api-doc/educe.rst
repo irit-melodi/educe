@@ -1,69 +1,5 @@
-educe Package
+educe package
 =============
-
-:mod:`educe` Package
---------------------
-
-.. automodule:: educe.__init__
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`annotation` Module
-------------------------
-
-.. automodule:: educe.annotation
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`corpus` Module
---------------------
-
-.. automodule:: educe.corpus
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`glozz` Module
--------------------
-
-.. automodule:: educe.glozz
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`graph` Module
--------------------
-
-.. automodule:: educe.graph
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`internalutil` Module
---------------------------
-
-.. automodule:: educe.internalutil
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`tests` Module
--------------------
-
-.. automodule:: educe.tests
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`util` Module
-------------------
-
-.. automodule:: educe.util
-    :members:
-    :undoc-members:
-    :show-inheritance:
 
 Subpackages
 -----------
@@ -75,3 +11,70 @@ Subpackages
     educe.rst_dt
     educe.stac
 
+Submodules
+----------
+
+educe.annotation module
+-----------------------
+
+.. automodule:: educe.annotation
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+educe.corpus module
+-------------------
+
+.. automodule:: educe.corpus
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+educe.glozz module
+------------------
+
+.. automodule:: educe.glozz
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+educe.graph module
+------------------
+
+.. automodule:: educe.graph
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+educe.internalutil module
+-------------------------
+
+.. automodule:: educe.internalutil
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+educe.tests module
+------------------
+
+.. automodule:: educe.tests
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+educe.util module
+-----------------
+
+.. automodule:: educe.util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: educe
+    :members:
+    :undoc-members:
+    :show-inheritance:
