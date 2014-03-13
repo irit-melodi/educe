@@ -4,8 +4,14 @@ import os
 import sys
 import unittest
 
-from educe.rst_dt import annotation, parse, deptree, SimpleRSTTree
-from educe.rst_dt.parse import parse_rst_dt_tree, read_annotation_file
+from educe.rst_dt import annotation, parse, deptree, SimpleRSTTree, EDU
+from educe.rst_dt.deptree import\
+    relaxed_nuclearity_from_deptree,\
+    relaxed_nuclearity_to_deptree
+from educe.rst_dt.parse import\
+    parse_lightweight_tree,\
+    parse_rst_dt_tree,\
+    read_annotation_file
 from educe import rst_dt
 
 # ---------------------------------------------------------------------
@@ -75,6 +81,7 @@ TEXT1 = " ".join(
 # ---------------------------------------------------------------------
 
 
+
 class RSTTest(unittest.TestCase):
     _trees = {}  # will be lazily populated
     longMessage = True
@@ -111,13 +118,75 @@ class RSTTest(unittest.TestCase):
             self.assertTrue(annotation.is_binary(bin_tree))
 
     def test_rst_to_dt(self):
+        lw_trees = ["(R:rel (S x) (N y))",
+
+                    """
+                    (R:rel
+                        (S x)
+                        (N:rel (N h) (S t)))
+                    """,
+
+                    """
+                    (R:r
+                        (S x)
+                        (N:r (N:r (S t1) (N h))
+                             (S t2)))
+                    """
+                    ]
+
+        for lstr in lw_trees:
+            rst1 = parse_lightweight_tree(lstr)
+            dep = relaxed_nuclearity_to_deptree(rst1)
+            rst2 = relaxed_nuclearity_from_deptree(dep, [])
+            self.assertEqual(rst1, rst2, "round-trip on " + lstr)
+
         for name, tree in self._test_trees().items():
             rst1 = SimpleRSTTree.from_rst_tree(tree)
-            dep = deptree.relaxed_nuclearity_to_deptree(rst1)
-            rst2 = deptree.relaxed_nuclearity_from_deptree(dep, [])
+            dep = relaxed_nuclearity_to_deptree(rst1)
+            rst2 = relaxed_nuclearity_from_deptree(dep, [])
             self.assertEqual(rst1.node.span,
                              rst2.node.span,
                              "span equality on " + name)
             self.assertEqual(rst1.node.edu_span,
                              rst2.node.edu_span,
                              "edu span equality on " + name)
+
+    def test_rst_to_dt_nuclearity_loss(self):
+        """
+        Test that we still get sane tree structure with
+        nuclearity loss
+        """
+        tricky = """
+                 (R:r (S t) (N h))
+                 """
+
+        nuked = """
+                (R:r (N t) (N h))
+                """
+
+#        tricky = """
+#                 (R:r
+#                     (S x)
+#                     (N:r (N:r (S t1) (N h))
+#                          (S t2)))
+#                 """
+#
+#        nuked = """
+#                 (R:r
+#                     (N x)
+#                     (N:r (N:r (N t1) (N h))
+#                          (N t2)))
+#                 """
+
+        rst0 = parse_lightweight_tree(nuked)
+        rst1 = parse_lightweight_tree(tricky)
+
+        # a little sanity check first
+        dep0 = relaxed_nuclearity_to_deptree(rst0)
+        rev0 = relaxed_nuclearity_from_deptree(dep0, ['r'])
+        self.assertEqual(rst0, rev0, "same structure " + nuked)  # sanity
+
+        # now the real test
+        dep1 = relaxed_nuclearity_to_deptree(rst1)
+        rev1 = relaxed_nuclearity_from_deptree(dep1, ['r'])
+        #self.assertEqual(rst0, rev1, "same structure " + tricky)
