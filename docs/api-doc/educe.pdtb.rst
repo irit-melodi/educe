@@ -4,6 +4,14 @@ educe.pdtb package
 Submodules
 ----------
 
+educe.pdtb.corpus module
+------------------------
+
+.. automodule:: educe.pdtb.corpus
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 educe.pdtb.parse module
 -----------------------
 
