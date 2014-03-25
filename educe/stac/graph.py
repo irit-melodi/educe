@@ -73,13 +73,18 @@ class Graph(educe.graph.Graph):
           and if sloppy is True, return the textually leftmost one;
           otherwise, raise a MultiheadedCduException
         """
+        # pylint: disable=E1101
+        # pylint seems confused by our use of inheritence
         if self.has_node(cdu):
             hyperedge = self.mirror(cdu)
         else:
             hyperedge = cdu
+        # pylint: enable=E1101
 
         members    = self.cdu_members(cdu)
         candidates = []
+        # pylint: disable=E1101
+        # pylint seems confused by our use of inheritence
         for m in members:
             def points_to_me(l): # some other member of this CDU
                                  # points to me via this link
@@ -90,6 +95,7 @@ class Graph(educe.graph.Graph):
             pointed_to = any(points_to_me(l) for l in self.links(m))
             if not (self.is_relation(m) or pointed_to):
                 candidates.append(m)
+        # pylint: enable=E1101
 
         if sloppy and not candidates:
             # this can arise if the only members of the CDU form a loop
