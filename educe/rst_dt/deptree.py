@@ -13,7 +13,7 @@ from collections import defaultdict, namedtuple
 from nltk import Tree
 
 from educe.rst_dt.annotation import SimpleRSTTree, Node
-
+from ..internalutil import treenode
 
 _N = "Nucleus"
 _S = "Satellite"
@@ -79,13 +79,13 @@ def relaxed_nuclearity_to_deptree(rst_tree):
         """
         if len(tree) == 1:  # pre-terminal
             edu = tree[0]
-            edu_num = tree.node.edu_span[0]
+            edu_num = treenode(tree).edu_span[0]
             return DepNode(edu, edu_num)
         else:
-            rel = tree.node.rel
+            rel = treenode(tree).rel
             left = tree[0]
             right = tree[1]
-            nscode = "".join(kid.node.nuclearity[0] for kid in tree)
+            nscode = "".join(treenode(kid).nuclearity[0] for kid in tree)
             lhead = walk(left)
             rhead = walk(right)
 
@@ -259,8 +259,8 @@ def relaxed_nuclearity_from_deptree(dtree, multinuclear):
             left = parts_to_tree(tgt_nuc, tgt)
             right = parts_to_tree(_N, src)
 
-        l_edu_span = left.node.edu_span
-        r_edu_span = right.node.edu_span
+        l_edu_span = treenode(left).edu_span
+        r_edu_span = treenode(right).edu_span
 
         edu_span = (min(l_edu_span[0], r_edu_span[0]),
                     max(l_edu_span[1], r_edu_span[1]))
@@ -297,8 +297,8 @@ def relaxed_nuclearity_from_deptree(dtree, multinuclear):
         described in the docstring for the main function)
         before connecting it to its ancestor.
         """
-        rel = subtree.node.rel
-        src = mk_leaf(subtree.node)
+        rel = treenode(subtree).rel
+        src = mk_leaf(treenode(subtree))
         # descend into each child, but note that we are folding
         # rather than mapping, ie. we threading along a nested
         # RST tree as go from sibling to sibling

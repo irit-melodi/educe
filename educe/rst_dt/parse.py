@@ -20,7 +20,7 @@ from nltk import Tree
 
 from educe.annotation import Span
 from .annotation import RSTTreeException, EDU, Node, RSTTree, SimpleRSTTree
-
+from ..internalutil import treenode
 
 # pre-processing leaves
 _TEXT_RE = re.compile(r"\(text (?P<text>.+(</EDU>|</s>|_!))\)")
@@ -140,14 +140,14 @@ def _postprocess(tree, start=0):
             # (NB: +1 to add virtual whitespace between EDUs)
             child = _postprocess(child_, position + 1)
             children.append(child)
-            # pylint: disable=E1103
-            child_sp = child.node.span if isinstance(child, Tree)\
+            # pylint: disable=E1101
+            child_sp = treenode(child).span if isinstance(child, Tree)\
                 else child.span
-            # pylint: enable=E1103
+            # pylint: enable=E1101
             position = child_sp.char_end
 
         span = Span(start, position)
-        return RSTTree(_parse_node(tree.node, span),
+        return RSTTree(_parse_node(treenode(tree), span),
                        children)
     else:
         if tree.startswith("["):
@@ -206,7 +206,7 @@ def parse_lightweight_tree(tstr):
                 tree, posinfo = walk(kid, posinfo)
                 children.append(tree)
 
-            match = _lw_type_re.match(subtree.node)
+            match = _lw_type_re.match(treenode(subtree))
             if not match:
                 raise RSTTreeException("Missing nuclearity annotation in ",
                                        subtree)

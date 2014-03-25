@@ -34,7 +34,8 @@ from   educe.internalutil import on_single_element, EduceXmlException, indent_xm
 # ---------------------------------------------------------------------
 
 def _read_GornAddressList(attr):
-    return [ty.GornAddress(map(int,x.split(','))) for x in attr.split(';')]
+    return [ty.GornAddress([int(y) for y in x.split(',')])
+            for x in attr.split(';')]
 
 def _read_SpanList(attr):
     return [tuple(map(int,x.split('..'))) for x in attr.split(';')]
@@ -158,7 +159,7 @@ def read_Relation(node):
         raise EduceXmlException("Don't know how to read relation with name %s" % tag)
 
 def read_Relations(node):
-    return map(read_Relation, list(node))
+    return [read_Relation(x) for x in node]
 
 def read_pdtbx_file(filename):
     tree = ET.parse(filename)
@@ -199,15 +200,11 @@ def _Span_xml(itm):
 
 def _Attribution_xml(itm):
     elm = ET.Element('attribution')
-    try:
-        elm.attrib =\
-                {'polarity':itm.polarity,
-                 'determinacy':itm.determinacy,
-                 'source':itm.source,
-                 'type':itm.type}
-    except Exception as e:
-        print itm
-        raise e
+    elm.attrib = \
+            {'polarity':itm.polarity,
+             'determinacy':itm.determinacy,
+             'source':itm.source,
+             'type':itm.type}
     if itm.selection:
         elm.append(_Selection_xml(itm.selection))
     return elm

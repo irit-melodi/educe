@@ -218,6 +218,16 @@ class PdtbXmlTest(unittest.TestCase):
         print >> sys.stderr, ''
         print >> sys.stderr, ET.tostring(elem, encoding='utf-8')
 
+    def test_gorn(self):
+        itm = p.GornAddress([4, 3, 2])
+        xml = x._GornAddress_xml(itm)
+        self.assertEqual([itm], x._read_GornAddressList(xml))
+
+    def test_span_list(self):
+        itm = [(4,3), (6,7), (9,9)]
+        xml = x._SpanList_xml(itm)
+        self.assertEqual(itm, x._read_SpanList(xml))
+
     def test_selection(self):
         itm = p.Selection(span=[(36,139)],
                           gorn=[p.GornAddress([0,1,1]),p.GornAddress([2,1])],

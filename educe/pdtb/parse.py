@@ -36,11 +36,15 @@ function on some sample relations and print the resulting objects.
 """
 
 import codecs
-import copy
 import re
-import pyparsing as pp
 import funcparserlib.parser   as fp
-from   StringIO  import StringIO
+import sys
+
+if sys.version > '3':
+    from functools import reduce
+    from io import StringIO
+else:
+    from StringIO import StringIO
 
 # ---------------------------------------------------------------------
 # parse results
@@ -74,6 +78,9 @@ class PdtbItem(object):
         # thanks, http://stackoverflow.com/a/390511/446326
         return (isinstance(other, self.__class__)
                 and self.__dict__ == other.__dict__)
+
+    def __ne__(self, other):
+        return not self == other
 
 class GornAddress(PdtbItem):
     def __init__(self, parts):
@@ -331,8 +338,9 @@ _DEBUG = 0 # turn this on to get line number hints
 _const  = lambda x: lambda _: x
 _unarg  = lambda f: lambda x: f(*x)
 
-def _cons((x,xs)):
-    return [x] + xs
+def _cons(pair):
+    head, tail = pair
+    return [head] + tail
 
 def _mkstr_debug(x):
     return "".join(c.value for c in x)
@@ -365,7 +373,7 @@ def _not_followed_by(p):
         res = []
         try:
             p.run(tokens, s)
-        except fp.NoParseError, e:
+        except fp.NoParseError as e:
             return fp._Ignored(()), s
         raise fp.NoParseError(u'followed by something we did not want', s)
 
@@ -388,7 +396,7 @@ def _skipto(p):
             try:
                 (v, s3) = p.run(tokens, s2)
                 return res, s3
-            except fp.NoParseError, e:
+            except fp.NoParseError as e:
                 res.append(tokens[s2.pos])
                 pos = s2.pos + 1
                 s2 = fp.State(pos, max(pos, s2.max))

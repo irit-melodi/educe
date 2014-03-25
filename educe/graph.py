@@ -272,7 +272,7 @@ class Graph(gr.hypergraph, AttrsMixin):
         edges = []
 
         edus  = [ x for x in doc.units   if x.local_id() in included and pred(x) ]
-        rels  = filter(pred, doc.relations)
+        rels  = [ x for x in doc.relations if pred(x) ]
         cdus  = [ s for s in doc.schemas if pred(s) ]
 
         for x in edus: nodes.append(self._unit_node(x))
@@ -936,7 +936,7 @@ class EnclosureGraph(dgr.digraph, AttrsMixin):
                     connect_to_enclosed(mega, mini)
                     if can_enclose(mega, mini):
                         mk_hidden.append(mini)
-            narrow = filter(lambda x:x not in mk_hidden, narrow)
+            narrow = [x for x in narrow if x not in mk_hidden]
 
     def _mk_node_id(self, anno):
         return anno.local_id()

@@ -203,29 +203,37 @@ def test_cdu_head_multiheaded():
     # but sloppy is ok
     assert gr.cdu_head(ids['c1'], sloppy=True) == ids['e1']
 
-def test_cdu_head():
-    doc  = FakeDocument([edu1, edu2, edu3],
-                        [rel1, rel2],
-                        [cdu1])
-    k    = FakeKey('cdu_head_test')
-    doc.fleshout(k)
-    gr   = stac_gr.Graph.from_doc({k:doc}, k)
-    ids  = graph_ids(gr)
-    assert gr.cdu_head(ids['c1']) == ids['e1']
+class CduHeadTest(unittest.TestCase):
 
-def test_embedded_cdu_head():
-    doc  = FakeDocument([edu1, edu2, edu3, edu4],
-                        [rel1, rel2, rel3],
-                        [cdu1, cdu2])
-    k    = FakeKey('cdu_head_test')
-    doc.fleshout(k)
-    gr   = stac_gr.Graph.from_doc({k:doc}, k)
-    ids  = graph_ids(gr)
-    assert gr.cdu_head(ids['c2']) == ids['c1']
+    def test_cdu_head(self):
+        "cdu[e1 -> e2 -> e2]"
+        doc = FakeDocument([edu1, edu2, edu3],
+                           [rel1, rel2],
+                           [cdu1])
+        k = FakeKey('cdu_head_test')
+        doc.fleshout(k)
+        gra = stac_gr.Graph.from_doc({k:doc}, k)
+        ids = graph_ids(gra)
+        self.assertEqual(gra.cdu_head(ids['c1']),
+                         ids['e1'])
 
-    deep_heads = gr.recursive_cdu_heads()
-    assert deep_heads[ids['c1']] == gr.cdu_head(ids['c1'])
-    assert deep_heads[ids['c1']] == deep_heads[ids['c2']]
+    def test_embedded_cdu_head(self):
+        "cdu[cdu[e1 -> e2 -> e3] -> e4]"
+        doc  = FakeDocument([edu1, edu2, edu3, edu4],
+                            [rel1, rel2, rel3],
+                            [cdu1, cdu2])
+        k = FakeKey('cdu_head_test')
+        doc.fleshout(k)
+        gra = stac_gr.Graph.from_doc({k: doc}, k)
+        ids = graph_ids(gra)
+        self.assertEqual(gra.cdu_head(ids['c2']),
+                         ids['c1'])
+
+        deep_heads = gra.recursive_cdu_heads()
+        self.assertEqual(deep_heads[ids['c1']],
+                         gra.cdu_head(ids['c1']))
+        self.assertEqual(deep_heads[ids['c1']],
+                         deep_heads[ids['c2']])
 
 def test_first_widest_dus_simple():
     edu1 = FakeEDU('e1',span=(1,2))

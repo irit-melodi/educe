@@ -6,6 +6,18 @@ Utility functions which are meant to be used by educe but aren't expected
 to be too useful outside of it
 """
 
+import sys
+
+if sys.version > '3':
+    def treenode(tree):
+        "API-change padding for NLTK 2 vs NLTK 3 trees"
+        return tree.label()
+else:
+    def treenode(tree):
+        "API-change padding for NLTK 2 vs NLTK 3 trees"
+        return tree.node
+
+
 class EduceXmlException(Exception):
     def __init__(self, *args, **kw):
         Exception.__init__(self, *args, **kw)

@@ -24,7 +24,10 @@ import unittest
 def test_span():
     assert not Span(5,10).overlaps(Span(11,12))
     assert not Span(11,12).overlaps(Span(5,10))
-    def matches((x1,y1),(x2,y2),(rx,ry)):
+    def matches(pair1, pair2, rpair):
+        (x1, y1) = pair1
+        (x2, y2) = pair2
+        (rx, ry) = rpair
         o = Span(x1,y1).overlaps(Span(x2,y2))
         assert o
         assert o == Span(rx,ry)

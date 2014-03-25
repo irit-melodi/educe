@@ -87,7 +87,7 @@ class Graph(educe.graph.Graph):
                         and self.is_relation(l)\
                         and self.links(l)[1] == m\
                         and self.links(l)[0] in members
-            pointed_to = filter(points_to_me, self.links(m))
+            pointed_to = any(points_to_me(l) for l in self.links(m))
             if not (self.is_relation(m) or pointed_to):
                 candidates.append(m)
 

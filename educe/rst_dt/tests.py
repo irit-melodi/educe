@@ -13,6 +13,7 @@ from educe.rst_dt.parse import\
     parse_rst_dt_tree,\
     read_annotation_file
 from educe import rst_dt
+from ..internalutil import treenode
 
 # ---------------------------------------------------------------------
 # example tree snippets
@@ -92,7 +93,7 @@ class RSTTest(unittest.TestCase):
     def test_tstr1(self):
         t = parse_rst_dt_tree(TSTR1)
         t_text = t.text()
-        sp = t.node.span
+        sp = treenode(t).span
         self.assertEqual((1, 9), t.edu_span())
         self.assertEqual(TEXT1, t_text)
         self.assertEqual(len(t_text), sp.char_end)
@@ -100,7 +101,7 @@ class RSTTest(unittest.TestCase):
     def test_from_files(self):
         for i in glob.glob('tests/*.dis'):
             t = read_annotation_file(i)
-            self.assertEqual(len(t.text()), t.node.span.char_end)
+            self.assertEqual(len(t.text()), treenode(t).span.char_end)
 
     def _test_trees(self):
         if not self._trees:
@@ -144,11 +145,11 @@ class RSTTest(unittest.TestCase):
             rst1 = SimpleRSTTree.from_rst_tree(tree)
             dep = relaxed_nuclearity_to_deptree(rst1)
             rst2 = relaxed_nuclearity_from_deptree(dep, [])
-            self.assertEqual(rst1.node.span,
-                             rst2.node.span,
+            self.assertEqual(treenode(rst1).span,
+                             treenode(rst2).span,
                              "span equality on " + name)
-            self.assertEqual(rst1.node.edu_span,
-                             rst2.node.edu_span,
+            self.assertEqual(treenode(rst1).edu_span,
+                             treenode(rst2).edu_span,
                              "edu span equality on " + name)
 
     def test_rst_to_dt_nuclearity_loss(self):

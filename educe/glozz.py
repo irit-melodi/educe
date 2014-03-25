@@ -17,6 +17,9 @@ import sys
 from educe.annotation import *
 from educe.internalutil import on_single_element, linebreak_xml
 
+if sys.version > '3':
+    long = int
+
 class GlozzOutputSettings:
     """
     Non-essential aspects of Glozz XML output, such as the order that
@@ -239,14 +242,14 @@ def hashcode(f):
 
     :type  s: file (object)
     """
-    code   = 1L
+    code = long(1)
     length = 0
     byte = f.read(1)
     while byte:
         length += 1
         if byte and byte != 0:
             code *= ord(byte)
-            code =  code % 99999999L
+            code =  code % long(99999999)
         byte = f.read(1)
     return str(length) + '-' + str(code)
 
