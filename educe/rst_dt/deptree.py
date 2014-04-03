@@ -319,7 +319,7 @@ def relaxed_nuclearity_from_deptree(dtree, multinuclear):
 #            else:
 #                return treenode(thing).edu.text
 
-        sorted_nodes = sorted([head] + map(treenode, targets),
+        sorted_nodes = sorted([head] + list(map(treenode, targets)),
                               key=start)
         centre = sorted_nodes.index(head)
         order = dict(zip(sorted_nodes,
