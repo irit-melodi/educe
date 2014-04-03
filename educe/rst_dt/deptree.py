@@ -9,6 +9,7 @@ Convert RST trees to dependency trees and back.
 """
 
 from collections import defaultdict, namedtuple
+import itertools
 
 from nltk import Tree
 
@@ -271,6 +272,82 @@ def relaxed_nuclearity_from_deptree(dtree, multinuclear):
                         kids=[left, right])
         return res
 
+    def sort_inside_out(head, targets):
+        """
+        TRICKY SORTING! This was obtained through a bit of trial and
+        error, so you may want to modify with caution.
+
+        Given a dependency tree node and its children, return the list
+        of children but *stably* sorted to fulfill an inside-out
+        traversal on either side.
+
+        Let's back up a little bit for some background on this criterion.
+        We assume that dependency tree nodes can be characterised and ordered
+        by their position in the text. If we did such a thing, the head node
+        would sit somewhere between its children ::
+
+            lX, .., l2, l1, h, r1, r2, .., rY
+
+        An inside-out traversal is one in which moves strictly outward
+        from the centre node. Note that this does not imply any other
+        requirement on the order our traversal (particularly on left vs
+        right), so `h l1 l2 .. lX r1 r2, etc` is as much a valid
+        inside-outside traversal as `h l1 r1 l2 etc`; however,
+        `h l2 l1 etc` is right out.
+
+        Most of the trickiness in this function is in making this a
+        *stable* sort, ie. we want to preserve the original order of
+        the targets as much as possible because this allows us to have
+        round trip conversions from RST to DT and back. This essentially
+        means preserving the interleaving of left/right nodes. The basic
+        logic in the implementation is to traverse our target list as
+        a series of LEFT or RIGHT slots, filling the slots in an
+        inside-out order. So for example, if we saw a target list
+        `l1 r1 r3 l2 l3 r2`, we would treat it as the slots `L R R L L R`
+        and fill them out as `l3 r1 r2 l2 l1 r3`
+        """
+        def start(node):
+            "start position"
+            return node.edu.span.char_start
+
+#        def debug(thing):
+#            "debug text"
+#            if isinstance(thing, RelDepNode):
+#                return thing.edu.text
+#            elif isinstance(thing, tuple):
+#                return (thing[0].edu.text, thing[1])
+#            else:
+#                return treenode(thing).edu.text
+
+        sorted_nodes = sorted([head] + map(treenode, targets),
+                              key=start)
+        centre = sorted_nodes.index(head)
+        order = dict(zip(sorted_nodes,
+                         itertools.count(start=0-centre)))
+
+        def rel_order(tree):
+            "the textual relative order of a node"
+            return abs(order[treenode(tree)])
+
+        def is_left(tree):
+            "if a node is textually to the left of the head"
+            return order[treenode(tree)] < 0
+
+        # elements to the left and right of the node respectively
+        # these are stacks
+        left = sorted([t for t in targets if is_left(t)],
+                      key=rel_order, reverse=True)
+        right = sorted([t for t in targets if not is_left(t)],
+                       key=rel_order, reverse=True)
+
+        result = []
+        for tree in targets:
+            if is_left(tree):
+                result.append(left.pop())
+            else:
+                result.append(right.pop())
+        return result
+
     def walk(ancestor, subtree):
         """
         The basic descent/ascent driver of our conversion algorithm.
@@ -302,7 +379,7 @@ def relaxed_nuclearity_from_deptree(dtree, multinuclear):
         # descend into each child, but note that we are folding
         # rather than mapping, ie. we threading along a nested
         # RST tree as go from sibling to sibling
-        for tgt in subtree:
+        for tgt in sort_inside_out(treenode(subtree), list(subtree)):
             src = walk(src, tgt)
         # ancestor is None in the case of the root node
         return connect_trees(ancestor, src, rel) if ancestor else src

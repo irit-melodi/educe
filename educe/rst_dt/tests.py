@@ -1,8 +1,12 @@
+from __future__ import print_function
 import codecs
 import glob
 import os
+import random
 import sys
 import unittest
+
+from nltk import Tree
 
 from educe.rst_dt import annotation, parse, deptree, SimpleRSTTree, EDU
 from educe.rst_dt.deptree import\
@@ -151,6 +155,45 @@ class RSTTest(unittest.TestCase):
             self.assertEqual(treenode(rst1).edu_span,
                              treenode(rst2).edu_span,
                              "edu span equality on " + name)
+
+    def test_dt_to_rst_order(self):
+        lw_trees = ["(R:r (N:r (N h) (S r1)) (S r2))",
+                    "(R:r (S:r (S l2) (N l1)) (N h))",
+                    "(R:r (N:r (S l1) (N h)) (S r1))",
+                    """
+                    (R:r
+                      (N:r
+                        (N:r (S l2)
+                             (N:r (S l1)
+                                  (N h)))
+                        (S r1))
+                      (S r2))
+                    """,  # ((l2 <- l1 <- h) -> r1 -> r2)
+                    """
+                    (R:r
+                      (N:r
+                        (S l2)
+                        (N:r (N:r (S l1)
+                                  (N h))
+                             (S r1)))
+                      (S r2))
+                    """,  # (l2 <- ((l1 <- h) -> r1)) -> r2
+                    ]
+
+        for lstr in lw_trees:
+            rst1 = parse_lightweight_tree(lstr)
+            dep = relaxed_nuclearity_to_deptree(rst1)
+            dep_a = dep
+            rst2a = relaxed_nuclearity_from_deptree(dep_a, [])
+            self.assertEqual(rst1, rst2a, "round-trip on " + lstr)
+
+            dep_b = Tree(treenode(dep), dep[::-1])
+            rst2b = relaxed_nuclearity_from_deptree(dep_b, [])
+
+            dep_c_kids = list(dep)
+            random.shuffle(dep_c_kids)
+            dep_c = Tree(treenode(dep), dep_c_kids)
+            rst2c = relaxed_nuclearity_from_deptree(dep_c, [])
 
     def test_rst_to_dt_nuclearity_loss(self):
         """
