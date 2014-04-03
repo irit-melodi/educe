@@ -303,8 +303,8 @@ def relaxed_nuclearity_from_deptree(dtree, multinuclear):
         logic in the implementation is to traverse our target list as
         a series of LEFT or RIGHT slots, filling the slots in an
         inside-out order. So for example, if we saw a target list
-        `l1 r1 r3 l2 l3 r2`, we would treat it as the slots `L R R L L R`
-        and fill them out as `l3 r1 r2 l2 l1 r3`
+        `l3 r1 r3 l2 l1 r2`, we would treat it as the slots `L R R L L R`
+        and fill them out as `l1 r1 r2 l2 l3 r3`
         """
         def start(node):
             "start position"
