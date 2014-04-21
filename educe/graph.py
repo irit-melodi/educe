@@ -884,9 +884,16 @@ class EnclosureGraph(dgr.digraph, AttrsMixin):
         super(EnclosureGraph,self).__init__()
         AttrsMixin.__init__(self)
 
+        # text spans can be expensive to compute if there
+        # are nested elements; cache them to avoid
+        # recomputation
+        spans = {}
+        for anno in annotations:
+            spans[anno] = anno.text_span()
+
         def can_enclose(anno1, anno2):
-            span1 = anno1.text_span()
-            span2 = anno2.text_span()
+            span1 = spans[anno1]
+            span2 = spans[anno2]
             if anno1 == anno2:
                 return False
             elif span1.encloses(span2):
@@ -901,7 +908,7 @@ class EnclosureGraph(dgr.digraph, AttrsMixin):
             enclosed node, walk down the subgraph trying to connect the
             enclosing node to the largest node we can find
             """
-            if not mega.text_span().overlaps(mini.text_span()):
+            if not spans[mega].overlaps(spans[mini]):
                 return
             elif can_enclose(mega, mini):
                 self._add_edge(mega, mini)
@@ -924,7 +931,7 @@ class EnclosureGraph(dgr.digraph, AttrsMixin):
             self.add_node(node)
             for x in attrs.items():
                 self.add_node_attribute(node,x)
-            of_width[anno.text_span().len()].append(anno)
+            of_width[spans[anno].len()].append(anno)
 
         narrow = []
         for width in sorted(of_width):
