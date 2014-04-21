@@ -45,6 +45,17 @@ class NullAnno(Span, Annotation):
     def local_id(self):
         return str(self)
 
+    def __eq__(self, other):
+        return self.char_start == other.char_start\
+            and self.char_end == other.char_end\
+            and self.type == other.type
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __hash__(self):
+        return hash((self.char_start, self.char_end, self.type))
+
     def __repr__(self):
         return "%s [%s]" % (super(NullAnno,self).__str__(),self.type)
 
