@@ -3,6 +3,9 @@ tests/wsj*.txt
 tests/wsj*.dis
 tests/wsj*.pdtb
 
+# pip installing externally hosted pkg?
+src
+
 # STAC data
 pilot
 socl-season[1,2]
