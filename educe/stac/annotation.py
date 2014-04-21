@@ -115,6 +115,15 @@ def split_turn_text(text):
         raise Exception("Turn does not start with number/speaker prefix: "
                         + text)
 
+
+def turn_id(anno):
+    """
+    Return as an integer the turn number associated with a turn
+    annotation (or None if this information is missing).
+    """
+    tid_str = anno.features.get('Identifier')
+    return int(tid_str) if tid_str else None
+
 # ---------------------------------------------------------------------
 # Document
 # ---------------------------------------------------------------------
