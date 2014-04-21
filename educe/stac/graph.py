@@ -144,42 +144,55 @@ class Graph(educe.graph.Graph):
         Return a deep copy of this graph with all CDUs removed.
         Links involving these CDUs will point instead from/to
         their deep heads
+
+        We'll probably deprecate this function, since you could
+        just as easily call deepcopy yourself
         """
-        g2    = copy.deepcopy(self)
-        heads = g2.recursive_cdu_heads(sloppy)
-        anno_heads = dict((g2.annotation(k),g2.annotation(v))\
-                          for k,v in heads.items())
+        g2 = copy.deepcopy(self)
+        g2.strip_cdus(sloppy)
+        return g2
+
+    def strip_cdus(self, sloppy=False):
+        """
+        Delete all CDUs in this graph.
+        Links involving these CDUs will point instead from/to
+        their deep heads
+        """
+        heads = self.recursive_cdu_heads(sloppy)
+        anno_heads = {self.annotation(k): self.annotation(v)
+                      for k, v in heads.items()}
         # replace all links to/from cdus with to/from their heads
-        for e_edge in g2.relations():
-            links  = g2.links(e_edge)
-            attrs  = g2.edge_attributes(e_edge)
-            if any(g2.is_cdu(l) for l in links):
+        for e_edge in self.relations():
+            links = self.links(e_edge)
+            targets = [heads[self.mirror(l)] if self.is_cdu(l) else l
+                       for l in links]
+            attrs = self.edge_attributes(e_edge)
+            if any(self.is_cdu(l) for l in links):
                 # recreate the edge
-                g2.del_edge(e_edge)
-                g2.add_edge(e_edge)
-                g2.add_edge_attributes(e_edge, attrs)
+                self.del_edge(e_edge)
+                self.add_edge(e_edge)
+                self.add_edge_attributes(e_edge, attrs)
                 for l in links:
-                    l2 = heads[g2.mirror(l)] if g2.is_cdu(l) else l
-                    g2.link(l2, e_edge)
+                    l2 = heads[self.mirror(l)] if self.is_cdu(l) else l
+                    self.link(l2, e_edge)
         # now that we've pointed everything away, nuke the CDUs
-        for e_cdu in g2.cdus():
-            g2.del_node(g2.mirror(e_cdu))
-            g2.del_edge(e_cdu)
+        for e_cdu in self.cdus():
+            self.del_node(self.mirror(e_cdu))
+            self.del_edge(e_cdu)
         # to be on the safe side, we should also do similar link-rewriting
         # but on the underlying educe.annotation objects layer
         # (symptom of a yucky design) :-(
-        for r in g2.doc.relations:
+        for r in self.doc.relations:
             if stac.is_relation_instance(r):
-                src  = r.source
-                tgt  = r.target
+                src = r.source
+                tgt = r.target
                 src2 = anno_heads.get(src, src)
                 tgt2 = anno_heads.get(tgt, tgt)
                 r.source = src2
                 r.target = tgt2
-                r.span   = annotation.RelSpan(src2.local_id(), tgt2.local_id())
+                r.span = annotation.RelSpan(src2.local_id(), tgt2.local_id())
         # remove the actual CDU objects too
-        g2.doc.schemas = [ s for s in g2.doc.schemas if not stac.is_cdu(s) ]
-        return g2
+        self.doc.schemas = [s for s in self.doc.schemas if not stac.is_cdu(s)]
 
     # --------------------------------------------------
     # right frontier constraint
