@@ -874,16 +874,18 @@ class EnclosureGraph(dgr.digraph, AttrsMixin):
 
     NB: nodes are labelled by their annotation id
 
-    :param annotations
-    :type  annotations iterable of Annotation
+    Initialisation parameters
 
-    :param key disambiguation key for nodes with same span
-    :type (annotation -> sort key)
+    * annotations - iterable of Annotation
+    * key - disambiguation key for nodes with same span
+            (annotation -> sort key)
     """
     def __init__(self, annotations, key=None):
         super(EnclosureGraph,self).__init__()
         AttrsMixin.__init__(self)
+        self._build_enclosure_graph(annotations, key)
 
+    def _build_enclosure_graph(self, annotations, key=None):
         # text spans can be expensive to compute if there
         # are nested elements; cache them to avoid
         # recomputation
@@ -974,24 +976,19 @@ class EnclosureGraph(dgr.digraph, AttrsMixin):
 
     def inside(self, annotation):
         """
-        Given an annotation, return all annotations enclosed within in.
-        If the graph is reduced, this only returns annotations that are
-        directly enclosed or of the same type.
-
+        Given an annotation, return all annotations that are
+        directly within it.
         Results are returned in the order of their local id
         """
         n1 = self._mk_node_id(annotation)
         return sorted([self.annotation(n2) for n2 in self.neighbors(n1)],
                       key=lambda x: x.text_span())
 
-
     def outside(self, annotation):
         """
-        Given an annotation, return all annotations enclosed within in.
-        If the graph is reduced, this only returns annotations that are
-        directly enclosed or of the same type.
-
-        Results are returned in the order of their local id
+        Given an annotation, return all annotations it is
+        directly enclosed in.  Results are returned in the
+        order of their local id
         """
         n1 = self._mk_node_id(annotation)
         return sorted([self.annotation(n2) for n2 in self.incidents(n1)],
