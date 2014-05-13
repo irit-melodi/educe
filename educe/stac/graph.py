@@ -378,7 +378,9 @@ class DotGraph(educe.graph.DotGraph):
         attrs = { 'label' : textwrap.fill(label, 30)
                 , 'shape' : 'plaintext'
                 }
-        if not self._edu_label(anno) or not stac.is_edu(anno):
+        if 'highlight' in anno.features:
+            attrs['fontcolor'] = anno.features['highlight']
+        elif not self._edu_label(anno) or not stac.is_edu(anno):
             attrs['fontcolor'] = 'red'
         self.add_node(pydot.Node(node, **attrs))
 
@@ -387,7 +389,11 @@ class DotGraph(educe.graph.DotGraph):
 
     def _simple_rel_attrs(self, anno):
         attrs = educe.graph.DotGraph._simple_rel_attrs(self, anno)
-        if not stac.is_subordinating(anno):
+
+        if 'highlight' in anno.features:
+            attrs['fontcolor'] = anno.features['highlight']
+            attrs['color'] = anno.features['highlight']
+        elif not stac.is_subordinating(anno):
             attrs['fontcolor'] = 'dodgerblue4'
             attrs['color'    ] = 'gray13'
         return attrs
@@ -404,5 +410,7 @@ class DotGraph(educe.graph.DotGraph):
         attrs['rank'] = 'same'
         if anno in self.node_order:
             attrs['label'] = '%d. CDU' % self.node_order[anno]
+        if 'highlight' in anno.features:
+            attrs['color'] = anno.features['highlight']
         return attrs
 
