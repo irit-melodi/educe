@@ -19,6 +19,7 @@ relations (interpreted as disjunction; if `\wedge` appears (LaTeX
 for ⋀), it is ignored)
 """
 
+from __future__ import print_function
 import codecs
 from collections import defaultdict
 import sys
@@ -132,8 +133,8 @@ if __name__=="__main__":
     lex    = read_lexicon(infile)
     rdict  = rel_to_markers(lex)
     for marker, rels  in lex:
-        print marker, ' => ', ', '.join(rels)
+        print(marker, ' => ', ', '.join(rels))
     for k in rdict:
-        print k
+        print(k)
         for m in rdict[k]:
-            print ' ', '[%s]' % m, m.appears_in(words)
+            print(' ', '[%s]' % m, m.appears_in(words))

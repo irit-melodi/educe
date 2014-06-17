@@ -6,6 +6,7 @@ STAC conventions for running a pos tagger, saving the results,
 and reading them.
 """
 
+from __future__ import print_function
 import codecs
 import copy
 import os.path
@@ -70,7 +71,7 @@ def run_tagger(corpus, outdir, tagger_jar):
         if not os.path.exists(txt_dir):
             os.makedirs(txt_dir)
         with codecs.open(txt_file, 'w', 'utf-8') as f:
-            print >> f, extract_turns(doc)
+            print(extract_turns(doc), file=f)
 
         tagged_file = tagger_file_name(k, outdir)
         tagged_dir  = os.path.split(tagged_file)[0]

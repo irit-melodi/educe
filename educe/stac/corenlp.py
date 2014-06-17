@@ -12,6 +12,7 @@ The most useful functions here are
 
 """
 
+from __future__ import print_function
 import codecs
 import collections
 import copy
@@ -84,7 +85,7 @@ def run_pipeline(corpus, outdir, corenlp_dir, split=False):
                     os.makedirs(txt_dir)
 
                 with codecs.open(txt_file, 'w', 'utf-8') as f:
-                    print >> f, ttext
+                    print(ttext, file=f)
 
                 txt_files.append(txt_file)
         else:
@@ -96,20 +97,20 @@ def run_pipeline(corpus, outdir, corenlp_dir, split=False):
             with codecs.open(txt_file, 'w', 'utf-8') as f:
                 for turn in turns:
                     ttext = stac.split_turn_text(doc.text_for(turn))[1]
-                    print >> f, ttext
+                    print(ttext, file=f)
             txt_files.append(txt_file)
 
     # manifest tells corenlp what to files to read as input
     manifest_dir  = os.path.join(outdir, 'tmp')
     manifest_file = os.path.join(manifest_dir, 'manifest')
     with codecs.open(manifest_file, 'w', 'utf-8') as f:
-        print >> f, '\n'.join(txt_files)
+        print('\n'.join(txt_files), file=f)
 
     # java properties to control behaviour of corenlp
     properties = [] if split else ['ssplit.eolonly=true']
     props_file = os.path.join(manifest_dir, 'corenlp.properties')
     with codecs.open(props_file, 'w', 'utf-8') as f:
-        print >> f, '\n'.join(properties)
+        print('\n'.join(properties), file=f)
 
     # run corenlp (will take a while for it to load its various models)
     jars   = [ x for x in os.listdir(corenlp_dir) if os.path.splitext(x)[1] == '.jar' ]

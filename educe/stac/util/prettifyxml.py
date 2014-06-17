@@ -4,6 +4,7 @@
 '''Function to "prettify" XML: courtesy of http://www.doughellmann.com/PyMOTW/xml/etree/ElementTree/create.html
 '''
 
+from __future__ import print_function
 from xml.etree import ElementTree
 from xml.dom import minidom
 import sys
@@ -18,4 +19,4 @@ def prettify(elem):
 if __name__ == '__main__':
     tree = ElementTree.parse(sys.argv[1])
     root = tree.getroot()
-    print prettify(root)
+    print(prettify(root))

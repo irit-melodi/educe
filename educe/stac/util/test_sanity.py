@@ -141,7 +141,7 @@ class CduPunctureTest(SanityCheckerTest):
             return g.mirror(ids[x.local_id()])
 
         mark = self.edu1_2.local_id()
-        self.assertEqual(map(get_id, [c1, c2]),
+        self.assertEqual(list(map(get_id, [c1, c2])),
                          containing_cdu_chain(g, ids[mark]))
 
     def test_enclosed(self):

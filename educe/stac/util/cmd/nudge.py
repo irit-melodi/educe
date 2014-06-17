@@ -5,6 +5,7 @@
 Slightly adjust unit annotation boundaries
 """
 
+from __future__ import print_function
 import copy
 import sys
 
@@ -133,9 +134,9 @@ def main(args):
                 found = True
         if found:
             diffs = _mini_diff(k, (old_doc, old_span), (new_doc, new_span))
-            print >> sys.stderr, "\n".join(diffs).encode('utf-8')
+            print("\n".join(diffs).encode('utf-8'), file=sys.stderr)
         else:
-            print >> sys.stderr,\
-                "WARNING: No annotations found for %s in %s" % (old_span, k)
+            print("WARNING: No annotations found for %s in %s" % (old_span, k),
+                  file=sys.stderr)
         save_document(output_dir, k, new_doc)
     announce_output_dir(output_dir)

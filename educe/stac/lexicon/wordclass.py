@@ -22,6 +22,7 @@ and one without the notion of subclass
     except:negation:??:
 """
 
+from __future__ import print_function
 import codecs
 from collections import defaultdict
 import sys
@@ -79,5 +80,5 @@ if __name__=="__main__":
     infile = sys.argv[1]
     d = class_dict(WordClass.read_lexicon(infile))
     for k in d:
-        print "===== ", k, "====="
-        print d[k]
+        print("===== ", k, "=====")
+        print(d[k])

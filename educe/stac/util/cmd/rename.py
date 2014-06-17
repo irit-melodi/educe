@@ -5,6 +5,7 @@
 Rename an annotation
 """
 
+from __future__ import print_function
 import sys
 
 from ..args import\
@@ -134,12 +135,12 @@ def main(args):
     target = _get_target(args, source, corpus)
 
     for k in corpus:
-        print k
+        print(k)
         doc = corpus[k]
         _rename_in_doc(source, target, doc)
         save_document(output_dir, k, doc)
     pretty_source = anno_id_from_tuple(source)
     pretty_target = anno_id_from_tuple(target)
-    print >> sys.stderr,\
-        "Renamed from %s to %s" % (pretty_source, pretty_target)
+    print("Renamed from %s to %s" % (pretty_source, pretty_target),
+          file=sys.stderr)
     announce_output_dir(output_dir)

@@ -2,6 +2,7 @@
 Reporting component of sanity checker
 """
 
+from __future__ import print_function
 import codecs
 import copy
 import os
@@ -127,12 +128,12 @@ class StdoutTextReport(TextReport):
         `k`, also print a section header
         """
         if k not in self.seen:
-            print ""
-            print self._mk_text_header(k)
-            print ""
+            print("")
+            print(self._mk_text_header(k))
+            print("")
             self.seen.add(k)
 
-        print msg
+        print(msg)
 
     def report(self, k, err_type, severity, header, xs, noisy=False):
         # text output
@@ -161,11 +162,11 @@ class FileTextReport(TextReport):
         mode = 'a' if self.started else 'w'
         with codecs.open(self.fname, mode, 'utf-8') as f:
             if k not in self.seen:
-                print >> f, ""
-                print >> f, self._mk_text_header(k)
-                print >> f, ""
+                print("", file=f)
+                print(self._mk_text_header(k), file=f)
+                print("", file=f)
                 self.seen.add(k)
-            print >> f, msg
+            print(msg, file=f)
             self.started = True
 
 class GlobalTextReport(FileTextReport):
@@ -237,7 +238,7 @@ function toggle_hidden(name) {
         if k in self.subreports:
             htree = self.subreports[k]
             with open(path, 'w') as f:
-                print >> f, ET.tostring(htree, encoding='utf-8')
+                print(ET.tostring(htree, encoding='utf-8'), file=f)
 
     def delete(self, k):
         """

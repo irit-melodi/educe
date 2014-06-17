@@ -26,9 +26,9 @@ def is_cross_dialogue(contexts):
                 return contexts[anno].dialogue
         elif stac.is_cdu(anno):
             units = anno.terminals()
-            ds    = map(dialogue, units)
-            if ds and all(d == ds[0] for d in ds[1:]):
-                return ds[0]
+            dialogues = list(map(dialogue, units))
+            if dialogues and all(d == dialogues[0] for d in dialogues[1:]):
+                return dialogues[0]
             else:
                 return None
         else:
@@ -45,7 +45,7 @@ def is_cross_dialogue(contexts):
         # don't worry about members which are relations
         members = filter(expect_dialogue, members)
 
-        dialogues = map(dialogue, members)
+        dialogues = list(map(dialogue, members))
         if members:
             d0 = dialogues[0]
             return any(not d or d != d0 for d in dialogues)

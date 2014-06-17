@@ -29,8 +29,10 @@ import educe.stac.lexicon.pdtb_markers as pdtb_markers
 import educe.stac.graph as stac_gr
 import educe.stac.util.csv as stac_csv
 import educe.util
-import fuzzy
 from nltk.corpus import verbnet as vnet
+
+if not sys.version > '3':
+    import fuzzy  # fuzzy 1.0 does not build w/ Python 3
 
 from ..lexicon.wordclass import WordClass
 from .context import Context, enclosed, edus_in_span
@@ -793,14 +795,17 @@ class SingleEduSubgroup_Token(SingleEduSubgroup):
              Key.discrete("word_first", "the first word in this EDU"),
              Key.discrete("word_last", "the last word in this EDU"),
              Key.discrete("has_player_name_exact",
-                          "if the EDU text has a player name in it"),
+                          "if the EDU text has a player name in it")]
+        if not sys.version > '3':
+            keys.append(\
              Key.discrete("has_player_name_fuzzy",
                           "if the EDU has a word that sounds like "
-                          "a player name"),
-             Key.discrete("has_emoticons",
+                          "a player name"),)
+        keys.extend(\
+            [Key.discrete("has_emoticons",
                           "if the EDU has emoticon-tagged tokens"),
              Key.discrete("is_emoticon_only",
-                          "if the EDU consists solely of an emoticon")]
+                          "if the EDU consists solely of an emoticon")])
         super(SingleEduSubgroup_Token, self).__init__(desc, keys)
 
     def fill(self, current, edu, target=None):
@@ -824,9 +829,10 @@ class SingleEduSubgroup_Token(SingleEduSubgroup):
         # other tokens
         vec["has_player_name_exact"] =\
             has_one_of_words(current.players, tokens)
-        vec["has_player_name_fuzzy"] =\
-            has_one_of_words(current.players, tokens,
-                             norm=fuzzy.nysiis)
+        if not sys.version > '3':
+            vec["has_player_name_fuzzy"] =\
+                    has_one_of_words(current.players, tokens,
+                                     norm=fuzzy.nysiis)
         # first and last word
         vec["word_first"] = tune_for_csv(word_first)
         vec["word_last"] = tune_for_csv(word_last)

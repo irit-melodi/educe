@@ -5,6 +5,7 @@
 Command line options
 """
 
+from __future__ import print_function
 import argparse
 import copy
 import os
@@ -79,7 +80,7 @@ def announce_output_dir(output_dir):
     """
     Tell the user where we saved the output
     """
-    print >> sys.stderr, "Output files written to", output_dir
+    print("Output files written to", output_dir, file=sys.stderr)
 
 
 def add_commit_args(parser):

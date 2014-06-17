@@ -5,6 +5,7 @@
 Put subcommand help text here
 """
 
+from __future__ import print_function
 import copy
 import sys
 
@@ -113,7 +114,7 @@ def main(args):
                      "^------ FROM %s" % src_k,
                      show_diff(src_doc, new_src_doc),
                      ""]
-            print >> sys.stderr, "\n".join(diffs)
+            print("\n".join(diffs), file=sys.stderr)
             save_document(output_dir, src_k, new_src_doc)
             save_document(output_dir, tgt_k, new_tgt_doc)
 

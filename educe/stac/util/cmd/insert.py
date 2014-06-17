@@ -5,6 +5,7 @@
 Insert new text into a portion
 """
 
+from __future__ import print_function
 import sys
 
 import educe.stac
@@ -79,7 +80,7 @@ def main(args):
                                       prepend=True)
         diffs = ["======= INSERT IN %s   ========" % tgt_k,
                  show_diff(tgt_doc, new_tgt_doc)]
-        print >> sys.stderr, "\n".join(diffs).encode('utf-8')
+        print("\n".join(diffs).encode('utf-8'), file=sys.stderr)
         save_document(output_dir, tgt_k, new_tgt_doc)
 
     announce_output_dir(output_dir)

@@ -7,7 +7,7 @@ Help writing out corpus files
 
 import copy
 import os
-from cStringIO import StringIO
+from io import BytesIO
 
 from educe import glozz
 from educe.stac import stac_output_settings, stac_unannotated_output_settings
@@ -57,7 +57,7 @@ def save_document(output_dir, k, doc):
     settings = stac_unannotated_output_settings\
         if is_unannotated else stac_output_settings
     out_doc = copy.copy(doc)
-    out_doc.hashcode = glozz.hashcode(StringIO(doc_bytes))
+    out_doc.hashcode = glozz.hashcode(BytesIO(doc_bytes))
     glozz.write_annotation_file(stub + ".aa", out_doc, settings=settings)
 
     # .ac file

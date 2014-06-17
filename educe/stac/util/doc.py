@@ -7,6 +7,7 @@ for example, moving a chunk of text from one document
 to another
 """
 
+from __future__ import print_function
 from collections import defaultdict
 import copy
 
@@ -179,8 +180,8 @@ def move_portion(renames, src_doc, tgt_doc, src_span, prepend=False):
 
     if prepend:
         if src_span != snipped.text_span():
-            print src_span
-            print snipped.text_span()
+            print(src_span)
+            print(snipped.text_span())
             raise Exception("Not yet implemented: prepending from other " +
                             "than whole doc: %s" % src_span)
         # tgt_doc is on the right

@@ -5,6 +5,7 @@
 Visualise discourse and enclosure graphs
 """
 
+from __future__ import print_function
 import os.path
 import sys
 import codecs
@@ -49,9 +50,9 @@ def _write_dot_graph(k, odir, dot_graph, part=None, run_graphviz=True):
     svg_file = ofile_basename + '.svg'
     mk_parent_dirs(dot_file)
     with codecs.open(dot_file, 'w', encoding='utf-8') as dotf:
-        print >> dotf, dot_graph.to_string()
+        print(dot_graph.to_string(), file=dotf)
     if run_graphviz:
-        print >> sys.stderr, "Creating %s" % svg_file
+        print("Creating %s" % svg_file, file=sys.stderr)
         os.system('dot -T svg -o %s %s' % (svg_file, dot_file))
 
 
@@ -93,10 +94,10 @@ def _main_rel_graph(args):
                                          part=part,
                                          run_graphviz=args.draw)
             else:
-                print >> sys.stderr, "Skipping %s (empty graph)" % k
+                print("Skipping %s (empty graph)" % k, file=sys.stderr)
         except graph.DuplicateIdException:
             warning = "WARNING: %s has duplicate annotation ids" % k
-            print >> sys.stderr, warning
+            print(warning, file=sys.stderr)
 
 
 def _main_enclosure_graph(args):
@@ -124,7 +125,7 @@ def _main_enclosure_graph(args):
             _write_dot_graph(k, output_dir, dot_gra,
                              run_graphviz=args.draw)
         else:
-            print >> sys.stderr, "Skipping %s (empty graph)" % k
+            print("Skipping %s (empty graph)" % k, file=sys.stderr)
 
 # ---------------------------------------------------------------------
 # args

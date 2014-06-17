@@ -180,6 +180,10 @@ class Graph(educe.graph.Graph):
                 self.add_edge_attributes(e_edge, attrs)
                 for l in links:
                     l2 = heads[self.mirror(l)] if self.is_cdu(l) else l
+                    if e_edge in self.links(l2):
+                        # rare case where we have something that is pointing
+                        # to itself
+                        continue
                     self.link(l2, e_edge)
         # now that we've pointed everything away, nuke the CDUs
         for e_cdu in self.cdus():

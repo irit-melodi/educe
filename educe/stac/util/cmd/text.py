@@ -5,7 +5,7 @@
 Dump the text in documents with segment annotations
 """
 
-import copy
+from __future__ import print_function
 
 import educe.stac
 
@@ -39,18 +39,18 @@ def main(args):
     corpus = read_corpus(args, verbose=True)
     for k in sorted(corpus, key=educe.stac.id_to_path):
         doc = corpus[k]
-        print "========== %s ============" % k
-        print
+        print("========== %s ============" % k)
+        print()
         if args.edges:
             dialogues = sorted_first_widest(filter(is_dialogue, doc.units))
             if dialogues:
                 d_first = dialogues[0]
-                print annotate_doc(doc, span=d_first.text_span())
+                print(annotate_doc(doc, span=d_first.text_span()))
                 if len(dialogues) > 1:
                     d_last = dialogues[-1]
                     txt = annotate_doc(doc, span=d_last.text_span())
-                    print "...\n"
-                    print txt.encode('utf-8')
+                    print("...\n")
+                    print(txt.encode('utf-8'))
         else:
-            print annotate_doc(doc).encode('utf-8')
-        print
+            print(annotate_doc(doc).encode('utf-8'))
+        print()

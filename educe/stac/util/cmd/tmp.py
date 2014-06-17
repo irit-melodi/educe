@@ -5,6 +5,7 @@
 Experimental sandbox (ignore)
 """
 
+from __future__ import print_function
 import educe.stac
 
 from ..args import\
@@ -36,12 +37,12 @@ def main(args):
     corpus = read_corpus(args)
     postags = educe.stac.postag.read_tags(corpus, args.corpus)
     for k in corpus:
-        print k
+        print(k)
         doc = corpus[k]
         contexts = Context.for_edus(corpus[k], postags[k])
         for edu in filter(educe.stac.is_edu, doc.units):
-            print "EDU: ", edu
+            print("EDU: ", edu)
             ctx = contexts[edu]
-            print "Turn: ", ctx.turn
-            print "Dialogue: ", ctx.dialogue
-            print "Tokens? ", map(str, ctx.tokens)
+            print("Turn: ", ctx.turn)
+            print("Dialogue: ", ctx.dialogue)
+            print("Tokens? ", map(str, ctx.tokens))
