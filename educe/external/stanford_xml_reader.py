@@ -56,7 +56,7 @@ IMPORTANT: Note that Stanford pipeline uses RHS inclusive offsets.
 
 """
 
-
+from __future__ import print_function
 import sys, os
 import operator
 
@@ -243,7 +243,7 @@ def test_file( base_filename, suffix=".raw.stanford" ):
     sentences.sort(key=lambda x:x['extent'])
     tokens = reader.get_token_annotations().values()
     for s in sentences:
-        print s['id'], s['extent'], s
+        print(s['id'], s['extent'], s)
     #tokens.sort(key=lambda x:x['extent'])
     #print "\n>> TOKENS:", tokens
     return
