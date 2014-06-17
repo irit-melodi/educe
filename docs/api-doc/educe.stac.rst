@@ -1,6 +1,14 @@
 educe.stac package
 ==================
 
+Subpackages
+-----------
+
+.. toctree::
+
+    educe.stac.lexicon
+    educe.stac.util
+
 Submodules
 ----------
 

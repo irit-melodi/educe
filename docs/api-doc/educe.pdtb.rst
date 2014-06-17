@@ -1,6 +1,13 @@
 educe.pdtb package
 ==================
 
+Subpackages
+-----------
+
+.. toctree::
+
+    educe.pdtb.util
+
 Submodules
 ----------
 
