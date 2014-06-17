@@ -245,7 +245,7 @@ def test_file( base_filename, suffix=".raw.stanford" ):
     for s in sentences:
         print(s['id'], s['extent'], s)
     #tokens.sort(key=lambda x:x['extent'])
-    #print "\n>> TOKENS:", tokens
+    #print("\n>> TOKENS:", tokens)
     return
 
 

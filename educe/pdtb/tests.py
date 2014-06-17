@@ -1,3 +1,4 @@
+from __future__ import print_function
 import glob
 import sys
 import unittest
@@ -215,8 +216,8 @@ class PdtbParseTest(unittest.TestCase):
 class PdtbXmlTest(unittest.TestCase):
     def dump(self, elem):
         indent_xml(elem) # ugh, imperative
-        print >> sys.stderr, ''
-        print >> sys.stderr, ET.tostring(elem, encoding='utf-8')
+        print("", file=sys.stderr)
+        print(ET.tostring(elem, encoding='utf-8'), file=sys.stderr)
 
     def test_gorn(self):
         itm = p.GornAddress([4, 3, 2])
