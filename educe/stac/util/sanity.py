@@ -8,7 +8,7 @@ import educe.stac.graph   as egr
 import educe.stac.corenlp as stac_corenlp
 from   educe.stac.tests import FakeEDU, FakeCDU, FakeRelInst, FakeDocument
 
-from   stac.edu import Context
+from .context import Context
 
 def is_cross_dialogue(contexts):
     """

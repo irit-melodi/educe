@@ -12,15 +12,21 @@ import collections
 import itertools
 import textwrap
 
-from educe import corpus, stac, annotation
-from educe.graph import *
-import educe.graph
 from pygraph.readwrite import dot
 import pydot
 import pygraph.classes.hypergraph as gr
-import pygraph.classes.digraph    as dgr
+import pygraph.classes.digraph as dgr
 from pygraph.algorithms import traversal
 from pygraph.algorithms import accessibility
+
+from educe.annotation import Annotation
+from .. import corpus, stac, annotation
+from ..graph import *
+import educe.graph
+
+# ---------------------------------------------------------------------
+#
+# ---------------------------------------------------------------------
 
 class MultiheadedCduException(Exception):
     def __init__(self, cdu, *args, **kw):
@@ -414,3 +420,93 @@ class DotGraph(educe.graph.DotGraph):
             attrs['color'] = anno.features['highlight']
         return attrs
 
+# ---------------------------------------------------------------------
+# enclosure graph
+# ---------------------------------------------------------------------
+
+
+class WrappedToken(Annotation):
+    """
+    Thin wrapper around POS tagged token which adds a local_id
+    field for use by the EnclosureGraph mechanism
+    """
+
+    def __init__(self, token):
+        self.token = token
+        anno_id = WrappedToken._mk_id(token)
+        super(WrappedToken, self).__init__(anno_id,
+                                           token.span,
+                                           "token",
+                                           {"tag": token.tag,
+                                            "word": token.word})
+
+    @classmethod
+    def _mk_id(cls, token):
+        """
+        Generate a string that could work as a node identifier
+        in the enclosure graph
+        """
+        span = token.text_span()
+        return "%s_%s_%d_%d"\
+            % (token.word,
+               token.tag,
+               span.char_start,
+               span.char_end)
+
+
+def _stac_enclosure_ranking(anno):
+    """
+    Given an annotation, return an integer representing its position in
+    a hierarchy of nodes that are expected to enclose each other.
+
+    Smaller negative numbers are higher (say the top of the hiearchy
+    might be something like -1000 whereas the very bottom would be 0)
+    """
+    ranking = {"token": -1,
+               "edu": -2,
+               "turn": -3,
+               "dialogue": -4}
+
+    key = None
+    if anno.type == "token":
+        key = "token"
+    elif educe.stac.is_edu(anno):
+        key = "edu"
+    elif educe.stac.is_turn(anno):
+        key = "turn"
+    elif educe.stac.is_dialogue(anno):
+        key = "dialogue"
+
+    return ranking[key] if key else 0
+
+
+class EnclosureGraph(educe.graph.EnclosureGraph):
+    """
+    An enclosure graph based on STAC conventions
+    """
+    _BLACKLIST = ["Preference", "Resource", "paragraph"]
+
+    def __init__(self, doc, postags=None):
+        annos = [anno for anno in doc.units
+                 if anno.type not in EnclosureGraph._BLACKLIST]
+        if postags:
+            annos += [WrappedToken(tok) for tok in postags]
+        super(EnclosureGraph, self).__init__(annos,
+                                             key=_stac_enclosure_ranking)
+
+
+class EnclosureDotGraph(educe.graph.EnclosureDotGraph):
+    """
+    Conventions for visualising STAC enclosure graphs
+    """
+    def __init__(self, core):
+        super(EnclosureDotGraph, self).__init__(core)
+
+    def _unit_label(self, anno):
+        span = anno.text_span()
+        if anno.type == "token":
+            word = anno.features["word"]
+            tag = anno.features["tag"]
+            return "%s [%s] %s" % (word, tag, span)
+        else:
+            return "%s %s" % (anno.type, span)

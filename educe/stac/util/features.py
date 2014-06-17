@@ -18,21 +18,22 @@ from educe.annotation import Span
 from educe.external.parser import\
     SearchableTree,\
     ConstituencyTree
+from educe.learning.keys import\
+    Key, KeyGroup, MergedKeyGroup, ClassKeyGroup
 from educe.stac import postag, corenlp
 from educe.stac.annotation import turn_id
 import educe.corpus
 import educe.glozz
 import educe.stac
+import educe.stac.lexicon.pdtb_markers as pdtb_markers
 import educe.stac.graph as stac_gr
+import educe.stac.util.csv as stac_csv
 import educe.util
 import fuzzy
 from nltk.corpus import verbnet as vnet
 
-import stac.csv
-import stac.lexicon.pdtb_markers as pdtb_markers
-from stac.keys import Key, KeyGroup, MergedKeyGroup, ClassKeyGroup
-from stac.lexicon.wordclass import WordClass
-from stac.edu import Context, enclosed, edus_in_span
+from ..lexicon.wordclass import WordClass
+from .context import Context, enclosed, edus_in_span
 
 if sys.version > '3':
     def treenode(tree):
@@ -1370,7 +1371,7 @@ def _read_inquirer_lexicon(args):
     """
     inq_txt_file = os.path.join(args.resources, INQUIRER_BASENAME)
     with open(inq_txt_file) as cin:
-        creader = stac.csv.SparseDictReader(cin, delimiter='\t')
+        creader = stac_csv.SparseDictReader(cin, delimiter='\t')
         words = defaultdict(list)
         for row in creader:
             for k in row:

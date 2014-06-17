@@ -12,7 +12,7 @@ import copy
 
 from educe.annotation import Unit, Span
 
-from stac.util.glozz import\
+from .glozz import\
     anno_id_from_tuple,\
     anno_author, anno_date, set_anno_date
 

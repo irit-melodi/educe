@@ -16,8 +16,7 @@ import itertools
 import textwrap
 
 import educe.stac
-
-import stac.edu
+from .context import sorted_first_widest
 
 DEFAULT_INSERTS = {'Turn': ('\n', ''),
                    'Dialogue': ('\n', ''),
@@ -72,7 +71,7 @@ def annotate(txt, annotations, inserts=None):
                 endpoints2.append((pos2, rparen))
         return endpoints2, buf2
 
-    s_annos = stac.edu.sorted_first_widest(filter(is_visible, annotations))
+    s_annos = sorted_first_widest(filter(is_visible, annotations))
     endpoints = []
     buf = ""
     for i in range(0, len(txt)):

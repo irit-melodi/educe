@@ -9,8 +9,7 @@ import os
 import re
 
 from educe.rst_dt import SimpleRSTTree, deptree, id_to_path
-
-from stac.features import tune_for_csv, treenode
+from educe.stac.util.features import tune_for_csv, treenode
 
 # ---------------------------------------------------------------------
 # csv files

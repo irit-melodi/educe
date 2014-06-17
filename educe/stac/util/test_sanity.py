@@ -14,7 +14,7 @@ from educe.stac.tests import\
     graph_ids
 
 from .sanity import is_cross_dialogue, is_puncture, containing_cdu_chain
-from .edu import Context
+from .context import Context
 
 
 class SanityCheckerTest(unittest.TestCase):

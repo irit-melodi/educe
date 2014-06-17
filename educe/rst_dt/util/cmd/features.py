@@ -9,7 +9,8 @@ import codecs
 import csv
 import os
 
-import stac.csv
+import educe.stac.util.csv as stac_csv
+
 from ..args import\
     add_usual_input_args, add_usual_output_args,\
     read_corpus, get_output_dir, announce_output_dir
@@ -27,7 +28,7 @@ def mk_csv_writer(header, fstream):
     """
     csv_quoting = csv.QUOTE_MINIMAL
 
-    writer = stac.csv.Utf8DictWriter(fstream,
+    writer = stac_csv.Utf8DictWriter(fstream,
                                      header,
                                      quoting=csv_quoting)
     writer.writeheader()
