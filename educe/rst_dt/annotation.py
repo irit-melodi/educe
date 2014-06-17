@@ -13,11 +13,11 @@ Educe-style representation for RST discourse treebank trees
 
 import copy
 import functools
-import sys
 
 from educe.annotation import Standoff
 from educe.external.parser import SearchableTree
 from ..internalutil import treenode
+
 
 class RSTTreeException(Exception):
     """
@@ -33,11 +33,14 @@ class EDU(Standoff):
     """
     An RST leaf node
     """
-    def __init__(self, span, text,
+    def __init__(self, num, span, text,
                  sentstart=False,
                  sentend=False,
                  origin=None):
         super(EDU, self).__init__(origin)
+
+        self.num = num
+        "EDU number (as used in tree node `edu_span`)"
 
         self.span = span
         "text span"
@@ -56,6 +59,16 @@ class EDU(Standoff):
         Update the origin of this annotation and any contained within
         """
         self.origin = origin
+
+    def identifier(self):
+        """
+        A global identifier (assuming the origin can be used to
+        uniquely identify an RST tree)
+        """
+        if self.origin:
+            return self.origin.mk_global_id(str(self.num))
+        else:
+            return str(self.num)
 
     def __repr__(self):
         return self.text

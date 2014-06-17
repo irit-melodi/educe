@@ -71,7 +71,7 @@ def _mark_heads(tstr):
     return _HEAD_PATTERN.sub(_process_head, hstr)
 
 
-def _parse_edu(descr, start=0):
+def _parse_edu(descr, edu_start, start=0):
     """
     Parse an RST DT leaf string
     """
@@ -96,7 +96,7 @@ def _parse_edu(descr, start=0):
 
     end = start + len(text)
     span = Span(start, end)  # text-span (not the same as EDU span)
-    return EDU(span, text,
+    return EDU(edu_start, span, text,
                sentstart=sentstart,
                sentend=sentend)
 
@@ -128,7 +128,7 @@ def _preprocess(tstr):
     return res
 
 
-def _postprocess(tree, start=0):
+def _postprocess(tree, start=0, edu_start=0):
     """
     Helper function: Convert the NLTK-parsed representation of an RST tree
     to one using educe-style Standoff objects
@@ -136,9 +136,12 @@ def _postprocess(tree, start=0):
     if isinstance(tree, Tree):
         children = []
         position = start - 1  # compensate for virtual whitespace added below
+        node = _parse_node(treenode(tree), Span(-1, -1))
+        edu_start2 = node.edu_span[0]
+
         for child_ in tree:
             # (NB: +1 to add virtual whitespace between EDUs)
-            child = _postprocess(child_, position + 1)
+            child = _postprocess(child_, position + 1, edu_start2)
             children.append(child)
             # pylint: disable=E1101
             child_sp = treenode(child).span if isinstance(child, Tree)\
@@ -146,12 +149,11 @@ def _postprocess(tree, start=0):
             # pylint: enable=E1101
             position = child_sp.char_end
 
-        span = Span(start, position)
-        return RSTTree(_parse_node(treenode(tree), span),
-                       children)
+        node.span = Span(start, position)
+        return RSTTree(node, children)
     else:
         if tree.startswith("["):
-            return _parse_edu(tree[1:-1], start)
+            return _parse_edu(tree[1:-1], edu_start, start)
         else:
             raise RSTTreeException("ERROR in rst tree format for leaf : ",
                                    child)
@@ -221,6 +223,6 @@ def parse_lightweight_tree(tstr):
             start = posinfo.text
             end = start + len(text)
             posinfo2 = PosInfo(text=end, edu=posinfo.edu+1)
-            return EDU(Span(start, end), text), posinfo2
+            return EDU(posinfo.edu, Span(start, end), text), posinfo2
 
     return walk(Tree.parse(tstr))[0]
