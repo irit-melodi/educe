@@ -32,7 +32,7 @@ class RstDtException(Exception):
         super(RstDtException, self).__init__(msg)
 
 
-# pylint: disable=R0903, W0232
+# pylint: disable=R0903, W0232, W0105
 class DepNode(namedtuple("DepNode_", "edu num")):
     """
     Dependency graph node
@@ -44,18 +44,17 @@ class RelDepNode(object):
     """
     Dependency graph node annotated with relation label for
     incoming link (None for Root node)
-
-    Fields of interest
-
-    * edu - core content of this node
-    * num - which EDU this was (for EDU span)
-    * rel - relation label
     """
 
     def __init__(self, edu, num, rel):
         self.edu = edu
+        "core content of this node"
+
         self.num = num
+        "which EDU this was (for EDU span)"
+
         self.rel = rel
+        "relation label"
 
     def __str__(self):
         relstr = (self.rel + ": ") if self.rel else ""
@@ -63,7 +62,7 @@ class RelDepNode(object):
 
     def __repr__(self):
         return str(self)  # only for debugging
-# pylint: enable=R0903, W0232
+# pylint: enable=R0903, W0232, W0105
 
 
 def relaxed_nuclearity_to_deptree(rst_tree):
