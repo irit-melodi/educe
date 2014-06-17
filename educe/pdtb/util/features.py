@@ -8,10 +8,9 @@ import itertools
 import os
 import re
 
+from educe.learning.keys import Key, KeyGroup, MergedKeyGroup, ClassKeyGroup
 import educe.pdtb
-
-from stac.features import tune_for_csv, treenode, CorpusConsistencyException
-from stac.keys import Key, KeyGroup, MergedKeyGroup, ClassKeyGroup
+from educe.stac.util.features import tune_for_csv, treenode, CorpusConsistencyException
 
 # pylint: disable=too-many-public-methods
 
