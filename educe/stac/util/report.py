@@ -9,8 +9,8 @@ import re
 import sys
 import xml.etree.cElementTree as ET
 
-from   stac.edu import Context
-from   stac.sanity import *
+from .context import Context
+from .sanity import *
 
 # ----------------------------------------------------------------------
 # printing/formatting helpers
