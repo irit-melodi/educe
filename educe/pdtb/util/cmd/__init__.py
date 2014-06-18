@@ -1,5 +1,5 @@
 """
-Subcommands for the rst_dt utility
+Subcommands for the pdtb-util utility
 """
 
 from . import dump, tmp, xml_
