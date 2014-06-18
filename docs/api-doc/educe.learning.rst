@@ -4,6 +4,14 @@ educe.learning package
 Submodules
 ----------
 
+educe.learning.csv module
+-------------------------
+
+.. automodule:: educe.learning.csv
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 educe.learning.keys module
 --------------------------
 

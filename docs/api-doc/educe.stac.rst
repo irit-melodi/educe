@@ -6,6 +6,7 @@ Subpackages
 
 .. toctree::
 
+    educe.stac.learning
     educe.stac.lexicon
     educe.stac.util
 

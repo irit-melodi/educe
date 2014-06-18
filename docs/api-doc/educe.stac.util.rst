@@ -51,14 +51,6 @@ educe.stac.util.doc module
     :undoc-members:
     :show-inheritance:
 
-educe.stac.util.features module
--------------------------------
-
-.. automodule:: educe.stac.util.features
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 educe.stac.util.glozz module
 ----------------------------
 
