@@ -38,23 +38,26 @@ def mk_is_interesting(args):
 
     Meant to be used in conjunction with `add_corpus_filters`
     """
-    def mk_checker(fn):
-        if fn(args) is None:
-            return lambda _ : True
-        else:
-            r = re.compile(fn(args))
-            def check(k):
-                val = fn(k)
+    def mk_checker(attr):
+        """
+        Given an attr name, return a function that checks a FileId
+        to see if its attribution value matches the requested pattern.
+        If the attribute was not requested, we skip the check.
+        """
+
+        if attr in args.__dict__:
+            argval = args.__dict__[attr]
+            regex = re.compile(argval)
+            def check(fileid):
+                "regex matching on k value"
+                val = fileid.__dict__[attr]
                 if val is None:
                     return False
                 else:
-                    return r.match(val)
+                    return regex.match(val)
             return check
+        else:
+            return lambda _ : True
 
-    doc_checkers=map(mk_checker,
-                 [ lambda x:x.stage  if 'stage' in x.__dict__ else None
-                 , lambda x:x.doc    if 'doc'   in x.__dict__ else None
-                 , lambda x:x.subdoc if 'subdoc' in x.__dict__ else None
-                 , lambda x:x.annotator if 'annotator' in x.__dict__ else None])
-
-    return lambda k : all([check(k) for check in doc_checkers])
+    doc_checkers = map(mk_checker, ['stage', 'doc', 'subdoc', 'annotator'])
+    return lambda k : all(check(k) for check in doc_checkers)
