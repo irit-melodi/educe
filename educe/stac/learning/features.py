@@ -14,6 +14,10 @@ import os
 import re
 import sys
 
+if not sys.version > '3':
+    import fuzzy  # fuzzy 1.0 does not build w/ Python 3
+from nltk.corpus import verbnet as vnet
+
 from educe.annotation import Span
 from educe.external.parser import\
     SearchableTree,\
@@ -21,21 +25,18 @@ from educe.external.parser import\
 from educe.learning.keys import\
     Key, KeyGroup, MergedKeyGroup, ClassKeyGroup
 from educe.stac import postag, corenlp
-from educe.stac.annotation import turn_id
+from educe.learning.csv import tune_for_csv
 import educe.corpus
 import educe.glozz
+import educe.learning.csv as educe_csv
 import educe.stac
 import educe.stac.lexicon.pdtb_markers as pdtb_markers
 import educe.stac.graph as stac_gr
-import educe.stac.util.csv as stac_csv
 import educe.util
-from nltk.corpus import verbnet as vnet
 
-if not sys.version > '3':
-    import fuzzy  # fuzzy 1.0 does not build w/ Python 3
-
+from ..util.context import Context, enclosed, edus_in_span
+from ..annotation import turn_id
 from ..lexicon.wordclass import WordClass
-from .context import Context, enclosed, edus_in_span
 
 if sys.version > '3':
     def treenode(tree):
@@ -371,24 +372,6 @@ def _kg(*args):
     Shorthand for KeyGroup, just to save on some indentation
     """
     return KeyGroup(*args)
-
-
-def tune_for_csv(string):
-    """
-    Given a string or None, return a variant of that string that
-    skirts around possibly buggy CSV implementations
-
-    SIGH: some CSV parsers apparently get really confused by
-    empty fields
-    """
-    if string:
-        string2 = string
-        string2 = re.sub(r'"', r"''", string2)  # imitating PTB slightly
-        string2 = re.sub(r',', r'-COMMA-', string2)
-        return string2
-    else:
-        return '__nil__'
-
 
 # ---------------------------------------------------------------------
 # feature extraction
@@ -797,15 +780,15 @@ class SingleEduSubgroup_Token(SingleEduSubgroup):
              Key.discrete("has_player_name_exact",
                           "if the EDU text has a player name in it")]
         if not sys.version > '3':
-            keys.append(\
-             Key.discrete("has_player_name_fuzzy",
-                          "if the EDU has a word that sounds like "
-                          "a player name"),)
-        keys.extend(\
+            keys.append(Key.discrete("has_player_name_fuzzy",
+                                     "if the EDU has a word that sounds like "
+                                     "a player name"),)
+        keys2 =\
             [Key.discrete("has_emoticons",
                           "if the EDU has emoticon-tagged tokens"),
              Key.discrete("is_emoticon_only",
-                          "if the EDU consists solely of an emoticon")])
+                          "if the EDU consists solely of an emoticon")]
+        keys.extend(keys2)
         super(SingleEduSubgroup_Token, self).__init__(desc, keys)
 
     def fill(self, current, edu, target=None):
@@ -831,8 +814,7 @@ class SingleEduSubgroup_Token(SingleEduSubgroup):
             has_one_of_words(current.players, tokens)
         if not sys.version > '3':
             vec["has_player_name_fuzzy"] =\
-                    has_one_of_words(current.players, tokens,
-                                     norm=fuzzy.nysiis)
+                has_one_of_words(current.players, tokens, norm=fuzzy.nysiis)
         # first and last word
         vec["word_first"] = tune_for_csv(word_first)
         vec["word_last"] = tune_for_csv(word_last)
@@ -1377,7 +1359,7 @@ def _read_inquirer_lexicon(args):
     """
     inq_txt_file = os.path.join(args.resources, INQUIRER_BASENAME)
     with open(inq_txt_file) as cin:
-        creader = stac_csv.SparseDictReader(cin, delimiter='\t')
+        creader = educe_csv.SparseDictReader(cin, delimiter='\t')
         words = defaultdict(list)
         for row in creader:
             for k in row:
