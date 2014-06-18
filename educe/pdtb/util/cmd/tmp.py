@@ -41,6 +41,8 @@ def main(args):
     """
     corpus = read_corpus(args)
     counts = collections.defaultdict(int)
+    num_args = collections.defaultdict(int)
+    total_args = 0
     total = 0
     for k in sorted(corpus):
         print("--------------------" * 3)
@@ -57,9 +59,10 @@ def main(args):
                 counts[k] += 1
             if is_multisentential(rel.arg1) or is_multisentential(rel.arg2):
                 print(rel)
+            num_args[k] += 2
 
         total += counts[k]
+        total_args += num_args[k]
     for k in sorted(corpus):
-        print(k.doc, counts[k], "multisentential")
-    print("total", total, "multisentential")
-
+        print("%s: %d/%d multisentential args" % (k.doc, counts[k], num_args[k]))
+    print("altogether: %d/%d multisentential args" % (total, total_args))
