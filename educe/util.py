@@ -59,5 +59,6 @@ def mk_is_interesting(args):
         else:
             return lambda _ : True
 
-    doc_checkers = map(mk_checker, ['stage', 'doc', 'subdoc', 'annotator'])
+    doc_checkers = [mk_checker(attr) for attr in
+                    ['stage', 'doc', 'subdoc', 'annotator']]
     return lambda k : all(check(k) for check in doc_checkers)
