@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# Author: Eric Kow
+# License: CeCILL (French BSD3-like)
+
+"""
+STAC project corpus sanity checker
+"""
+
+from educe.stac.sanity.main import main
+
+main()

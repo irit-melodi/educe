@@ -10,8 +10,8 @@ import re
 import sys
 import xml.etree.cElementTree as ET
 
-from .context import Context
-from .sanity import *
+from ..util.context import Context
+from .checks import *
 
 # ----------------------------------------------------------------------
 # printing/formatting helpers
