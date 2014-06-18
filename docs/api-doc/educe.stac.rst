@@ -8,6 +8,7 @@ Subpackages
 
     educe.stac.learning
     educe.stac.lexicon
+    educe.stac.sanity
     educe.stac.util
 
 Submodules

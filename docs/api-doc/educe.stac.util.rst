@@ -75,34 +75,10 @@ educe.stac.util.prettifyxml module
     :undoc-members:
     :show-inheritance:
 
-educe.stac.util.report module
------------------------------
-
-.. automodule:: educe.stac.util.report
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-educe.stac.util.sanity module
------------------------------
-
-.. automodule:: educe.stac.util.sanity
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 educe.stac.util.showscores module
 ---------------------------------
 
 .. automodule:: educe.stac.util.showscores
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-educe.stac.util.test_sanity module
-----------------------------------
-
-.. automodule:: educe.stac.util.test_sanity
     :members:
     :undoc-members:
     :show-inheritance:
