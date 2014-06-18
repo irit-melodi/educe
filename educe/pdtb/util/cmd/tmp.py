@@ -7,6 +7,7 @@ One-off experiments
 
 from __future__ import print_function
 import collections
+import sys
 
 from ..args import\
     add_usual_input_args,\
@@ -25,9 +26,11 @@ def config_argparser(parser):
     add_usual_input_args(parser)
     parser.set_defaults(func=main)
 
-def gorn_depths(arg):
-    return [len(x) for x in arg.gorn]
+def sentence_nums(arg):
+    return [x.parts[0] for x in arg.gorn]
 
+def is_multisentential(args):
+    return len(frozenset(sentence_nums(args))) > 1
 
 def main(args):
     """
@@ -37,7 +40,8 @@ def main(args):
     `config_argparser`
     """
     corpus = read_corpus(args)
-    d = collections.defaultdict(int)
+    counts = collections.defaultdict(int)
+    total = 0
     for k in sorted(corpus):
         print("--------------------" * 3)
         print("doc:", k.doc)
@@ -47,5 +51,15 @@ def main(args):
             #if (len(rel.arg1.span) > 2 or len(rel.arg2.span) > 2):
             #    print(unicode(rel).encode('utf-8'))
             #    print()
-            print(gorn_depths(rel.arg1))
-            print(gorn_depths(rel.arg2))
+            if is_multisentential(rel.arg1):
+                counts[k] += 1
+            if is_multisentential(rel.arg2):
+                counts[k] += 1
+            if is_multisentential(rel.arg1) or is_multisentential(rel.arg2):
+                print(rel)
+
+        total += counts[k]
+    for k in sorted(corpus):
+        print(k.doc, counts[k], "multisentential")
+    print("total", total, "multisentential")
+
