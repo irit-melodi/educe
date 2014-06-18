@@ -64,7 +64,7 @@ def _rename_in_doc(source, target, doc):
 
     NB: modifies doc
     """
-    matches = filter(_is_match(source), doc.annotations())
+    matches = list(filter(_is_match(source), doc.annotations()))
     pretty_source = anno_id_from_tuple(source)
     pretty_target = anno_id_from_tuple(target)
     target_author, target_date = target

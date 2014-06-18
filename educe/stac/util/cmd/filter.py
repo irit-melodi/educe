@@ -66,8 +66,8 @@ def main(args):
 
     for k in corpus:
         doc = corpus[k]
-        doc.units = filter(pred, doc.units)
-        doc.relations = filter(pred, doc.relations)
-        doc.schemas = filter(pred, doc.schemas)
+        doc.units = list(filter(pred, doc.units))
+        doc.relations = list(filter(pred, doc.relations))
+        doc.schemas = list(filter(pred, doc.schemas))
         save_document(output_dir, k, doc)
     announce_output_dir(output_dir)

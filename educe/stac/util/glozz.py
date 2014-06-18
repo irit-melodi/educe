@@ -127,7 +127,7 @@ def get_turn(tid, doc):
         "Is a turn with the right turn number"
         return educe.stac.is_turn(anno) and educe.stac.turn_id(anno) == tid
 
-    turns = filter(is_match, doc.annotations())
+    turns = list(filter(is_match, doc.annotations()))
     if not turns:
         raise GlozzException("Turn %d not found" % tid)
     elif len(turns) > 1:
