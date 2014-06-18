@@ -685,10 +685,18 @@ class DotGraph(pydot.Dot):
     def _add_simple_rel(self, hyperedge):
         anno  = self.core.annotation(hyperedge)
         links = self.core.links(hyperedge)
-        link1_, link2_ = links
         attrs = self._simple_rel_attrs(anno)
-        link1, attrs1 = self._point_from(link1_)
-        link2, attrs2 = self._point_to(link2_)
+
+        if len(links) == 2:
+            link1_, link2_ = links
+            link1, attrs1 = self._point_from(link1_)
+            link2, attrs2 = self._point_to(link2_)
+        elif len(links) == 1:
+            link_ = links[0]
+            link1, attrs1 = self._point_from(link_)
+            link2, attrs2 = self._point_from(link_)
+        else:
+            raise Exception("confused by relation edge with 3+ links")
 
         attrs.update(attrs1)
         attrs.update(attrs2)
