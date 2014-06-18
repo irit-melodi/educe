@@ -50,9 +50,9 @@ def seek_ac_file(aa_file):
 def dump(filename, doc):
     show_unit = lambda u:"%s | %s" % (u, doc.text_for(u))
     lines = ['############### %s units' % filename]\
-          + map(show_unit, doc.units)\
+          + list(map(show_unit, doc.units))\
           + ['############### %s relations' % filename]\
-          + map(str, doc.relations)
+          + list(map(str, doc.relations))
     return "\n".join(lines)
 
 def main_dump(args):

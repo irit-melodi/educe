@@ -43,12 +43,11 @@ def is_cross_dialogue(contexts):
             members = []
 
         # don't worry about members which are relations
-        members = filter(expect_dialogue, members)
+        members = list(filter(expect_dialogue, members))
 
-        dialogues = list(map(dialogue, members))
+        dialogues = frozenset(map(dialogue, members))
         if members:
-            d0 = dialogues[0]
-            return any(not d or d != d0 for d in dialogues)
+            return len(dialogues) > 1
         else:
             return False
     return is_bad

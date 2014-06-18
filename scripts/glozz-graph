@@ -61,7 +61,7 @@ def main_rel_graph(args):
     if args.live:
         keys = corpus
     else:
-        keys = filter(lambda k:k.stage == 'discourse', corpus)
+        keys = [k for k in corpus if k.stage == 'discourse']
 
     for k in sorted(keys):
         doc_file = anno_files[k][0]
@@ -100,7 +100,7 @@ def main_enclosure_graph(args):
     if args.live:
         keys = corpus
     else:
-        keys = filter(lambda k:k.stage == 'units', corpus)
+        keys = [k for k in corpus if k.stage == 'units']
 
     for k in sorted(keys):
         doc_file = anno_files[k][0]

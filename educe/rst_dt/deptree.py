@@ -110,7 +110,7 @@ def relaxed_nuclearity_to_deptree(rst_tree):
         """
         rel, dnode = relnode
         rnode = RelDepNode(dnode.edu, dnode.num, rel)
-        kids = map(mk_tree, dlinks.get(dnode, []))
+        kids = list(map(mk_tree, dlinks.get(dnode, [])))
         return Tree(rnode, kids)
 
     head = walk(rst_tree)  # build dlinks

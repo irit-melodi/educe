@@ -300,7 +300,7 @@ def _binarize(tree):
         raise RSTTreeException("Ill-formed RST tree? Unary non-terminal: " +
                                str(tree))
     elif len(tree) <= 2:
-        return RSTTree(treenode(tree), map(_binarize, tree))
+        return RSTTree(treenode(tree), list(map(_binarize, tree)))
     else:
         # convenient string representation of what the children look like
         # eg. NS, SN, NNNNN, SNS

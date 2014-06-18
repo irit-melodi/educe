@@ -245,7 +245,7 @@ def read_corenlp_result(doc, corenlp_doc, tid=None):
 
             start       = local_id(m['start'])
             end         = local_id(m['end'])
-            token_range = map(global_id, range(start, end))
+            token_range = list(map(global_id, range(start, end)))
             tokens      = [ educe_tokens[sid][t] for t in token_range ]
             head        = educe_tokens[sid][m['head']]
             mentions.append(Mention(tokens, head, m['most_representative']))

@@ -94,7 +94,7 @@ class ConstituencyTree(SearchableTree, Standoff):
                     return toks.popleft()
                 else:
                     raise Exception('Must have same number of input tokens as leaves in the tree')
-            return cls(t.node, map(step, t))
+            return cls(t.node, list(map(step, t)))
         return step(tree)
 
 

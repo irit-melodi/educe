@@ -71,7 +71,7 @@ def _main_rel_graph(args):
 
     for k in sorted(keys):
         if args.highlight:
-            highlights = map(anno_id_from_tuple, args.highlight)
+            highlights = list(map(anno_id_from_tuple, args.highlight))
             for anno in corpus[k].annotations():
                 if anno.local_id() in highlights:
                     anno.features['highlight'] = 'orange'

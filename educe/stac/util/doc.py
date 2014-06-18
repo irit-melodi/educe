@@ -61,9 +61,9 @@ def shift_annotations(doc, offset):
         txt2 = doc.text()[start:]
     doc2 = copy.copy(doc)
     evil_set_text(doc2, txt2)
-    doc2.units = map(shift, doc.units)
-    doc2.schemas = map(shift, doc.schemas)
-    doc2.relations = map(shift, doc.relations)
+    doc2.units = list(map(shift, doc.units))
+    doc2.schemas = list(map(shift, doc.schemas))
+    doc2.relations = list(map(shift, doc.relations))
     return doc2
 
 

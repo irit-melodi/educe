@@ -174,14 +174,14 @@ def rst_to_sdrt(tree):
         elif len(nuclei) > 1: # multi-nuclear chain
             if satellites:
                 raise Exception("Multinuclear with satellites:\n%s" % tree)
-            c_nucs    = map(rst_to_sdrt, nuclei)
+            c_nucs    = list(map(rst_to_sdrt, nuclei))
             rtype     = nuclei[0].node.rel
             rel_insts = set(RelInst(n1, n2, rtype) for n1,n2 in zip(c_nucs, c_nucs[1:]))
             return CDU(c_nucs, rel_insts)
         else:
             nuc       = nuclei[0]
             c_nuc     = rst_to_sdrt(nuc)
-            c_sats    = map(rst_to_sdrt,satellites)
+            c_sats    = list(map(rst_to_sdrt,satellites))
             rel_insts = set(RelInst(c_nuc, cs, s.node.rel) for s,cs in zip(satellites, c_sats))
             members   = [c_nuc] + c_sats
             return CDU(members, rel_insts)

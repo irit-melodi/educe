@@ -218,7 +218,7 @@ class FakeGraph(educe.Graph):
         self._add_fake_edge(anno_id, 'rel', [str(node1), str(node2)])
 
     def add_cdu(self, anno_id, members):
-        self._add_fake_edge(anno_id, 'CDU', map(str,members))
+        self._add_fake_edge(anno_id, 'CDU', list(map(str,members)))
 
 class BasicGraphTest(unittest.TestCase):
     def test_cdu_members_trivial(self):

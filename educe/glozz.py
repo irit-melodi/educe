@@ -139,7 +139,7 @@ def read_node(node, context=None):
         return on_single_element(node, default, f, name)
 
     def get_all(name):
-        return map(read_node, node.findall(name))
+        return list(map(read_node, node.findall(name)))
 
     if node.tag == 'annotations':
         hashcode = get_one('metadata', '', 'annotations')
