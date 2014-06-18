@@ -91,10 +91,10 @@ class Context(object):
         enclosure graph to avoid repeatedly combing over objects
         """
         turn = cls._the(edu, enclosure.outside(edu), 'Turn')
-        t_edus = filter(is_edu, enclosure.inside(turn))
+        t_edus = list(filter(is_edu, enclosure.inside(turn)))
         assert t_edus
         dialogue = cls._the(edu, enclosure.outside(turn), 'Dialogue')
-        d_turns = filter(is_turn, enclosure.inside(dialogue))
+        d_turns = list(filter(is_turn, enclosure.inside(dialogue)))
         assert d_turns
         tokens = [wrapped.token for wrapped in enclosure.inside(edu)
                   if isinstance(wrapped, WrappedToken)]

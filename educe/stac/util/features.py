@@ -334,7 +334,7 @@ def attachments(relations, du1, du2):
         id2 = du2.local_id()
         return connects(rel, id1, id2) or connects(rel, id2, id1)
 
-    return filter(is_match, relations)
+    return list(filter(is_match, relations))
 
 
 def map_topdown(good, prunable, trees):

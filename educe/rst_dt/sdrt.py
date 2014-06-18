@@ -164,8 +164,8 @@ def rst_to_sdrt(tree):
             raise Exception("Pre-terminal with non-EDU leaf: %s" % edu)
         return edu
     else:
-        nuclei = filter(lambda x:x.node.is_nucleus(), tree)
-        satellites = filter(lambda x:x.node.is_satellite(), tree)
+        nuclei = [x for x in tree if x.node.is_nucleus()]
+        satellites = [x for x in tree if x.node.is_satellite()]
         if len(nuclei) + len(satellites) != len(tree):
             raise Exception("Nodes that are neither Nuclei nor Satellites\n%s" % tree)
 

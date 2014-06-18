@@ -57,7 +57,7 @@ def run_pipeline(corpus, outdir, corenlp_dir, split=False):
         turns = []
         for k in corpus:
             if k.doc == d:
-                turns.extend(filter(stac.is_turn, corpus[k].units))
+                turns.extend(list(filter(stac.is_turn, corpus[k].units)))
         turn_ids  = [ int(t.features['Identifier']) for t in turns ]
         digits[d] = max(2,int(math.ceil(math.log10(max(turn_ids)))))
 

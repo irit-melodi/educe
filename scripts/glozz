@@ -126,8 +126,8 @@ def mk_new_dates(dates, settings=default_settings):
         # this is kind of obscure, and only really makes sense in
         # the context of the STAC project where some annotations
         # were given negative ids to distinguish them from others
-        pos_dates = filter(lambda x:x >= 0, unique_dates)
-        neg_dates = filter(lambda x:x <  0, unique_dates)
+        pos_dates = [x for x in unique_dates if x >= 0]
+        neg_dates = [x for x in unique_dates if x < 0]
         pos_dict = { str(v):str(v)  for v in pos_dates }
         neg_dict = { str(v):str(-i) for i,v in enumerate(neg_dates, start) }
         return dict(pos_dict.items() + neg_dict.items())

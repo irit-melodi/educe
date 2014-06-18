@@ -79,8 +79,8 @@ def _dialogues_in_turns(corpus, turn1, turn2):
         """
         return is_dialogue(anno) and span.encloses(anno.span)
 
-    matching_dialogues = filter(is_in_range, doc.annotations())
-    return [anno_id_to_tuple(x.local_id()) for x in matching_dialogues]
+    return [anno_id_to_tuple(x.local_id()) for x in doc.annotations()
+            if is_in_range(x)]
 
 
 def _merge_spans(annos):

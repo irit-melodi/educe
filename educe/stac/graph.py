@@ -233,7 +233,7 @@ class Graph(educe.graph.Graph):
             return self.is_edu(n) or\
                 (self.is_cdu(n) and self.cdu_members(n))
 
-        dus = filter(is_interesting_du,self.nodes())
+        dus = list(filter(is_interesting_du,self.nodes()))
         return self.sorted_first_widest(dus)
 
 

@@ -261,11 +261,11 @@ class Graph(gr.hypergraph, AttrsMixin):
 
         # objects that are pointed to by a relations or schemas
         included = []
-        for x in filter(could_include, doc.units):
+        for x in list(filter(could_include, doc.units)):
             included.append(x.local_id())
-        for x in filter(pred, doc.relations):
+        for x in list(filter(pred, doc.relations)):
             included.extend([x.span.t1, x.span.t2])
-        for x in filter(pred, doc.schemas):
+        for x in list(filter(pred, doc.schemas)):
             included.extend(x.span)
 
         nodes = []
@@ -737,7 +737,7 @@ class DotGraph(pydot.Dot):
                 local_nodes2.append(node)
             else:
                 local_nodes2.append(node)
-                rlinks = filter(is_enclosed, self.core.links(node))
+                rlinks = list(filter(is_enclosed, self.core.links(node)))
                 local_nodes2.extend(self.core.mirror(l) for l in rlinks)
 
         for node in local_nodes2:
