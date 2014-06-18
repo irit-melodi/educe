@@ -45,7 +45,9 @@ def mk_is_interesting(args):
         If the attribute was not requested, we skip the check.
         """
 
-        if attr in args.__dict__:
+        if args.__dict__.get(attr) is None:
+            return lambda _ : True
+        else:
             argval = args.__dict__[attr]
             regex = re.compile(argval)
             def check(fileid):
@@ -56,8 +58,6 @@ def mk_is_interesting(args):
                 else:
                     return regex.match(val)
             return check
-        else:
-            return lambda _ : True
 
     doc_checkers = [mk_checker(attr) for attr in
                     ['stage', 'doc', 'subdoc', 'annotator']]
