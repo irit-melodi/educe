@@ -9,14 +9,15 @@ import codecs
 import csv
 import os
 
-import educe.stac.util.csv as stac_csv
+import educe.learning.csv as educe_csv
+from educe.rst_dt.learning.features import\
+    extract_pair_features, read_common_inputs,\
+    mk_csv_header, K_CLASS
+
 
 from ..args import\
     add_usual_input_args, add_usual_output_args,\
     read_corpus, get_output_dir, announce_output_dir
-from ..features import\
-    extract_pair_features, read_common_inputs,\
-    mk_csv_header, K_CLASS
 
 
 NAME = 'features'
@@ -28,9 +29,9 @@ def mk_csv_writer(header, fstream):
     """
     csv_quoting = csv.QUOTE_MINIMAL
 
-    writer = stac_csv.Utf8DictWriter(fstream,
-                                     header,
-                                     quoting=csv_quoting)
+    writer = educe_csv.Utf8DictWriter(fstream,
+                                      header,
+                                      quoting=csv_quoting)
     writer.writeheader()
     return writer
 

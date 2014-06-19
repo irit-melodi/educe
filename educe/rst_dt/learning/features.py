@@ -7,9 +7,19 @@ import copy
 import itertools
 import os
 import re
+import sys
 
 from educe.rst_dt import SimpleRSTTree, deptree, id_to_path
-from educe.stac.util.features import tune_for_csv, treenode
+from educe.learning.csv import tune_for_csv
+
+if sys.version > '3':
+    def treenode(tree):
+        "API-change padding for NLTK 2 vs NLTK 3 trees"
+        return tree.label()
+else:
+    def treenode(tree):
+        "API-change padding for NLTK 2 vs NLTK 3 trees"
+        return tree.node
 
 # ---------------------------------------------------------------------
 # csv files
