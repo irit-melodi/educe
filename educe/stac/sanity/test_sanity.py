@@ -13,8 +13,8 @@ from educe.stac.tests import\
     FakeEDU, FakeCDU, FakeRelInst, FakeDocument, FakeKey,\
     graph_ids
 
-from .sanity import is_cross_dialogue, is_puncture, containing_cdu_chain
-from .context import Context
+from .checks import is_cross_dialogue, is_puncture, containing_cdu_chain
+from ..util.context import Context
 
 
 class SanityCheckerTest(unittest.TestCase):
