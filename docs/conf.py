@@ -36,14 +36,13 @@ class Mock(object):
         else:
             return Mock()
 
-MOCK_MODULES = ['nltk',
-                'nltk.corpus',
-                'ntlk.metrics',
+MOCK_MODULES = ['nltk.metrics',
+                'nltk.metrics.spearman',
+                'nltk.tree',
                 'pydot',
-                'pygraph',
-                'pygraph.classes.hypergraph',
+                'pygraph.class.hypergraph',
                 'pygraph.readwrite',
-                'funcparserlib',
+                'funcparserlib.parser',
                 'fuzzy']
 
 for mod_name in MOCK_MODULES:
