@@ -37,8 +37,11 @@ class Mock(object):
             return Mock()
 
 MOCK_MODULES = ['nltk',
+                'nltk.corpus',
                 'ntlk.metrics',
+                'pydot',
                 'pygraph',
+                'pygraph.classes.hypergraph',
                 'pygraph.readwrite',
                 'funcparserlib',
                 'fuzzy']
