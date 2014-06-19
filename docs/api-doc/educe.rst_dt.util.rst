@@ -19,14 +19,6 @@ educe.rst_dt.util.args module
     :undoc-members:
     :show-inheritance:
 
-educe.rst_dt.util.features module
----------------------------------
-
-.. automodule:: educe.rst_dt.util.features
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 
 Module contents
 ---------------

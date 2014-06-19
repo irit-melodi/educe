@@ -27,14 +27,6 @@ educe.pdtb.util.features module
     :undoc-members:
     :show-inheritance:
 
-educe.pdtb.util.ptb-experiments module
---------------------------------------
-
-.. automodule:: educe.pdtb.util.ptb-experiments
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 
 Module contents
 ---------------

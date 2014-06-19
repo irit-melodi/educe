@@ -6,6 +6,7 @@ Subpackages
 
 .. toctree::
 
+    educe.rst_dt.learning
     educe.rst_dt.util
 
 Submodules
