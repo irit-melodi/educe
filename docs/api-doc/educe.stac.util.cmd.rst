@@ -20,6 +20,14 @@ educe.stac.util.cmd.clean_emoticons module
     :undoc-members:
     :show-inheritance:
 
+educe.stac.util.cmd.count module
+--------------------------------
+
+.. automodule:: educe.stac.util.cmd.count
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 educe.stac.util.cmd.filter module
 ---------------------------------
 
