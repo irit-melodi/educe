@@ -1,6 +1,6 @@
 # Author: Eric Kow
 # License: BSD3
-# pylint: disable=W0232, R0903, C0103
+# pylint: disable=W0232, R0903, C0103, pointless-string-statement
 
 """
 STAC annotation conventions (re-exported in educe.stac)
@@ -129,15 +129,20 @@ def turn_id(anno):
 # ---------------------------------------------------------------------
 
 
+RENAMES = {'Strategic_comment': 'Other',
+           'Segment': 'Other'}
+"Dialogue acts that should be treated as a different one"
+
+
 def dialogue_act(anno):
     """
     Set of dialogue act (aka speech act) annotations for a Unit, taking into
     consideration STAC conventions like collapsing Strategic_comment into Other
-    """
-    renames = {'Strategic_comment': 'Other',
-               'Segment': 'Other'}
 
-    return frozenset(renames.get(k, k) for k in split_type(anno))
+    By rights should be singleton set, but there used to be more than one,
+    something we want to phase out?
+    """
+    return frozenset(RENAMES.get(k, k) for k in split_type(anno))
 
 
 def relation_labels(anno):
@@ -152,7 +157,8 @@ def relation_labels(anno):
 
 def split_type(anno):
     """
-    An object's type as a (frozen)set of items
+    An object's type as a (frozen)set of items.
+    You're probably looking for `educe.stac.dialogue_act` instead.
     """
     return frozenset(anno.type.split("/"))
 
