@@ -196,3 +196,21 @@ def move_portion(renames, src_doc, tgt_doc, src_span, prepend=False):
         leftover_src_span = Span(src_span.char_end, len(src_doc.text()))
         new_src_doc = narrow_to_span(src_doc, leftover_src_span)
         return new_src_doc, new_tgt_doc
+
+
+def strip_fixme(act):
+    """
+    Remove the fixme string from a dialogue act annotation.
+    These were automatically inserted when there is an annotation
+    to review. We shouldn't see them for any use cases like feature
+    extraction though.
+
+    See `educe.stac.dialogue_act` which returns the set of dialogue
+    acts for each annotation (by rights should be singleton set,
+    but there used to be more than one, something we want to phase
+    out?)
+    """
+    # pylint: disable=fixme
+    pref = "FIXME:"
+    # pylint: enable=fixme
+    return act[len(pref):] if act.startswith(pref) else act

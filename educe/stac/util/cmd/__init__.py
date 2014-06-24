@@ -7,6 +7,7 @@ stac-util subcommands
 
 from . import\
     clean_emoticons,\
+    count,\
     filter,\
     graph,\
     insert,\
@@ -21,6 +22,7 @@ from . import\
 
 SUBCOMMANDS = [clean_emoticons,
                text,
+               count,
                graph,
                filter,
                rename,
