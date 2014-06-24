@@ -401,7 +401,9 @@ def clean_dialogue_act(act):
     """
     Knock out temporary markers used during corpus annotation
     """
-    pref = "F"+"IXME:"  # fooling pylint a bit
+    # pylint: disable=fixme
+    pref = "FIXME:"
+    # pylint: enable=fixme
     act2 = act[len(pref):] if act.startswith(pref) else act
     return "Other" if act2 == "Strategic_comment" else act2
 
