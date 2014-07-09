@@ -12,6 +12,7 @@ from . import\
     graph,\
     insert,\
     merge_dialogue,\
+    merge_edus,\
     move,\
     nudge,\
     rename,\
@@ -28,6 +29,7 @@ SUBCOMMANDS = [clean_emoticons,
                rename,
                rewrite,
                merge_dialogue,
+               merge_edus,
                split_edu,
                nudge,
                insert,

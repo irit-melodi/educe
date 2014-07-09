@@ -14,6 +14,7 @@ from educe.stac.graph import EnclosureGraph
 
 from ..annotate import show_diff
 from ..context import sorted_first_widest
+from ..doc import retarget
 from ..glozz import\
     TimestampCache, set_anno_author, set_anno_date,\
     anno_id_from_tuple
@@ -84,23 +85,10 @@ def absorb_emoticon(doc, stamp, penult, last):
     telling them to point to the annotation with the new id
     """
     old_id = penult.local_id()
-    new_id = anno_id_from_tuple(("stacutil", stamp))
     penult.span = penult.text_span().merge(last.text_span())
     set_anno_date(penult, stamp)
     set_anno_author(penult, "stacutil")
-
-    for rel in doc.relations:
-        if rel.span.t1 == old_id:
-            rel.span.t1 = new_id
-            rel.source = penult
-        if rel.span.t2 == old_id:
-            rel.span.t2 = new_id
-            rel.target = penult
-    for schema in doc.schemas:
-        if old_id in schema.units:
-            schema.units = set(schema.units)
-            schema.units.remove(old_id)
-            schema.units.add(new_id)
+    retarget(doc, old_id, penult)
 
 
 def turns_with_final_emoticons(doc, tags):

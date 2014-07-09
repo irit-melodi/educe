@@ -12,6 +12,7 @@ from collections import defaultdict
 import copy
 
 from educe.annotation import Unit, Span
+import educe.stac
 
 from .glozz import\
     anno_id_from_tuple,\
@@ -34,6 +35,42 @@ def evil_set_text(doc, text):
     from the educe.annotation.Document object
     """
     doc._text = text
+
+
+def retarget(doc, old_id, new_anno):
+    """
+    Replace all links to the old (unit-level) annotation
+    with links to the new one.
+
+    We refer to the old annotation by id, but the new
+    annotation must be passed in as an object. It must
+    also be either an EDU or a CDU.
+
+    Return True if we replaced anything
+    """
+    new_id = new_anno.local_id()
+    new_is_cdu = educe.stac.is_cdu(new_anno)
+
+    replaced = False
+    for rel in doc.relations:
+        if rel.span.t1 == old_id:
+            rel.span.t1 = new_id
+            rel.source = new_anno
+            replaced = True
+        if rel.span.t2 == old_id:
+            rel.span.t2 = new_id
+            rel.target = new_anno
+            replaced = True
+    for schema in doc.schemas:
+        if old_id in schema.units:
+            schema.units = set(schema.units)
+            schema.units.remove(old_id)
+            replaced = True
+            if new_is_cdu:
+                schema.schemas = schema.schemas | set(new_id)
+            else:
+                schema.units.add(new_id)
+    return replaced
 
 
 def shift_annotations(doc, offset):

@@ -24,7 +24,7 @@ from ..args import\
     get_output_dir, announce_output_dir,\
     comma_span
 from ..doc import\
-    narrow_to_span, enclosing_span
+    narrow_to_span, enclosing_span, retarget
 from ..output import save_document
 
 
@@ -124,23 +124,7 @@ def _actually_split(tcache, doc, spans, edu):
                                   metadata={})
     cdu.fleshout(new_edus)
 
-    want_cdu = False
-    for rel in doc.relations:
-        if rel.span.t1 == edu.local_id():
-            want_cdu = True
-            rel.span.t1 = cdu.local_id()
-            rel.source = cdu
-        if rel.span.t2 == edu.local_id():
-            rel.span.t2 = cdu.local_id()
-            rel.target = cdu
-            want_cdu = True
-    for schema in doc.schemas:
-        if edu.local_id() in schema.units:
-            schema.units = set(schema.units)
-            schema.units.remove(edu.local_id())
-            schema.units.add(cdu.local_id())
-            want_cdu = True
-
+    want_cdu = retarget(doc, edu.local_id(), cdu)
     doc.units.remove(edu)
     if want_cdu:
         doc.schemas.append(cdu)
