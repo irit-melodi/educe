@@ -52,6 +52,9 @@ class Span(object):
     def __ge__(self, other):
         return other <= self
 
+    def __hash__(self):
+        return (self.char_start, self.char_end).__hash__()
+
     def len(self):
         """
         Return the length of this span
