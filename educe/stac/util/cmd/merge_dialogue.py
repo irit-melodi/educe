@@ -107,9 +107,15 @@ def _merge_dialogues_in_document(sought, doc):
     combined.span = _merge_spans(dialogues)
     for feat in ['Trades', 'Gets', 'Dice_rolling']:
         combined.features[feat] = _concatenate_features(dialogues, feat)
+
+    # in-place replacement
+    for i, _ in enumerate(doc.units):
+        if doc.units[i] in dialogues:
+            dialogues.remove(doc.units[i])
+            doc.units[i] = combined
+            break
     for dialogue in dialogues:
         doc.units.remove(dialogue)
-    doc.units.append(combined)
 
 
 # ---------------------------------------------------------------------
