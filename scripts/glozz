@@ -63,6 +63,50 @@ def main_dump(args):
         print ""
 
 # ---------------------------------------------------------------------
+# shift
+# ---------------------------------------------------------------------
+
+
+def shift_glozz_file(file, start, offset):
+    ac_file = seek_ac_file(file)
+    doc = glozz.read_annotation_file(file, ac_file)
+
+    def shift(x):
+        if isinstance(x, Unit):
+            x2 = copy.copy(x)
+            if x.span.char_start >= start:
+                x.span.char_start += offset
+            if x.span.char_end >= start:
+                x.span.char_end += offset
+            return x2
+        else:
+            return x
+
+    def slice(xs):
+        return list(map(shift, xs))
+
+    doc2 = copy.copy(doc)
+    doc2.units = slice(doc.units)
+    doc2.schemas = slice(doc.schemas)
+    doc2.relations = slice(doc.relations)
+    return doc2
+
+
+def glozz_write_settings(args):
+    if args.format == 'stac-unannotated':
+        return stac.stac_unannotated_output_settings
+    elif args.format == 'stac':
+        return stac.stac_output_settings
+    else:
+        return glozz.default_output_settings
+
+
+def main_shift(args):
+    settings = glozz_write_settings(args)
+    doc = shift_glozz_file(args.input, args.start, args.shift)
+    glozz.write_annotation_file(args.output, doc, settings=settings)
+
+# ---------------------------------------------------------------------
 # cut
 # ---------------------------------------------------------------------
 
@@ -201,6 +245,17 @@ ap_cut.add_argument( 'end', type=int,
 ap_cut.add_argument('output', metavar='FILE',
                     help='Output file')
 ap_cut.set_defaults(func=main_cut)
+
+ap_shift = subparsers.add_parser('shift', help='Bump offsets in a glozz file')
+ap_shift.add_argument('input', metavar='FILE', help='Glozz aa file')
+ap_shift.add_argument('--format', choices=['default', 'stac', 'stac-unannotated'])
+ap_shift.add_argument('--shift', type=int, required=True,
+                      help='shift spans by this offset')
+ap_shift.add_argument('start', type=int,
+                      help='Character offset to start shifting')
+ap_shift.add_argument('output', metavar='FILE',
+                      help='Output file')
+ap_shift.set_defaults(func=main_shift)
 
 ap_norm = subparsers.add_parser('normalise', help='Renumber Glozz ids/dates for comparability (use with care!)')
 ap_norm.add_argument('input', metavar='FILES', nargs = '+')
