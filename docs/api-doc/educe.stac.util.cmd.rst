@@ -60,6 +60,14 @@ educe.stac.util.cmd.merge_dialogue module
     :undoc-members:
     :show-inheritance:
 
+educe.stac.util.cmd.merge_edus module
+-------------------------------------
+
+.. automodule:: educe.stac.util.cmd.merge_edus
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 educe.stac.util.cmd.move module
 -------------------------------
 
