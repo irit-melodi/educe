@@ -1,6 +1,18 @@
 from setuptools import setup
 import glob
 import os
+import sys
+
+PY3 = sys.version > '3'
+
+REQS = \
+    ['funcparserlib' if PY3 else 'funcparserlib == 0.3.6',
+     'pydot' if PY3 else 'pydot == 1.0.28',
+     'python-graph-core',
+     'python-graph-dot',
+     'nltk' if PY3 else 'nltk == 2.0.4'] +\
+    (['fuzzy == 1.0'] if not PY3 else [])
+
 
 setup(name='educe',
       version='0.2',
@@ -13,5 +25,4 @@ setup(name='educe',
                 'educe.pdtb',
                 'educe.external'],
       scripts=[f for f in glob.glob('scripts/*') if not os.path.isdir(f)],
-      requires=['python_graph (>= 1.8.2)', 'pydot', 'python_graph_dot']
-      )
+      install_requires=REQS)

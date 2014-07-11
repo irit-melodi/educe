@@ -1,7 +1,1 @@
-funcparserlib     == 0.3.6
-fuzzy             == 1.0
-pyparsing         == 1.5.7
-pydot             == 1.0.28
-python-graph-core == 1.8.2
-python-graph-dot  == 1.8.2
-nltk              == 2.0.4
+-e .

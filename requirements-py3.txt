@@ -1,5 +1,3 @@
-funcparserlib
--e hg+https://bitbucket.org/prologic/pydot#egg=pydot
-python-graph-core == 1.8.2
-python-graph-dot  == 1.8.2
 http://www.nltk.org/nltk3-alpha/nltk-3.0a3.tar.gz
+-e hg+https://bitbucket.org/prologic/pydot#egg=pydot
+-e .
