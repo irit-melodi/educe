@@ -1,1 +1,4 @@
+--allow-unverified pydot
+--allow-unverified python-graph-core
+--allow-unverified python-graph-dot
 -e .
