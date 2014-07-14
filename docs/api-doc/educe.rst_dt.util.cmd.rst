@@ -12,6 +12,14 @@ educe.rst_dt.util.cmd.deptree module
     :undoc-members:
     :show-inheritance:
 
+educe.rst_dt.util.cmd.extract module
+------------------------------------
+
+.. automodule:: educe.rst_dt.util.cmd.extract
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 educe.rst_dt.util.cmd.features module
 -------------------------------------
 
