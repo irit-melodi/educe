@@ -76,20 +76,7 @@ def _parse_edu(descr, edu_start, start=0):
     Parse an RST DT leaf string
     """
     sdesc = descr.strip()
-    if sdesc.startswith("<s>"):
-        sentstart = True
-        sdesc = sdesc[3:]
-    else:
-        sentstart = False
-    if sdesc.endswith("</s>"):
-        sentend = True
-        sdesc = sdesc[:-4]
-    else:
-        sentend = False
-
-    if sdesc.startswith("<EDU>") and sdesc.endswith("</EDU>"):
-        text = sdesc[5:-6]  # remove <EDU></EDU> mark
-    elif sdesc.startswith("_!") and sdesc.endswith("_!"):
+    if sdesc.startswith("_!") and sdesc.endswith("_!"):
         text = sdesc[2:-2]
     else:
         text = sdesc
@@ -97,8 +84,8 @@ def _parse_edu(descr, edu_start, start=0):
     end = start + len(text)
     span = Span(start, end)  # text-span (not the same as EDU span)
     return EDU(edu_start, span, text,
-               sentstart=sentstart,
-               sentend=sentend)
+               sentstart=False,
+               sentend=False)
 
 
 def _parse_node(descr, span):
