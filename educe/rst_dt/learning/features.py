@@ -3,14 +3,19 @@ Feature extraction library functions for RST_DT corpus
 """
 
 from collections import namedtuple
+from functools import wraps
 import copy
 import itertools
 import os
 import re
 import sys
 
+import educe.util
 from educe.rst_dt import SimpleRSTTree, deptree, id_to_path
 from educe.learning.csv import tune_for_csv
+from educe.learning.keys import\
+    ClassKeyGroup, KeyGroup, MergedKeyGroup,\
+    MagicKey
 
 if sys.version > '3':
     def treenode(tree):
@@ -20,56 +25,6 @@ else:
     def treenode(tree):
         "API-change padding for NLTK 2 vs NLTK 3 trees"
         return tree.node
-
-# ---------------------------------------------------------------------
-# csv files
-# ---------------------------------------------------------------------
-
-K_CLASS = "c#CLASS"  # the thing we want to learn
-K_GROUPING = "m#file"
-K_TEXT = "m#text"
-K_NUM_EDUS_BETWEEN = "C#num_edus_between"
-
-# fields for a given EDU (will need to be suffixed, eg. KDU_ID + 'DU1')
-KDU_ID = "m#id"
-KDU_NUM_TOKENS = "C#num_tokens"
-KDU_SP1 = "C#start"
-KDU_SP2 = "C#end"
-KDU_TEXT = "m#text"
-KDU_WORD_FIRST = "D#word_first"
-KDU_WORD_LAST = "D#word_last"
-
-
-def mk_csv_header_lex(_):
-    "header entry for lexical features"
-    return []
-
-
-def mk_csv_header(inputs, before):
-    "header entry for all features"
-    fields = []
-    fields.extend(before)
-    fields.extend(
-        [K_GROUPING,
-         K_NUM_EDUS_BETWEEN])
-    # du-specific fields
-    du_fields =\
-        [KDU_ID,
-         KDU_SP1,
-         KDU_SP2,
-         KDU_NUM_TOKENS,
-         KDU_WORD_FIRST,
-         KDU_WORD_LAST]
-    du_fields.extend(mk_csv_header_lex(inputs))
-    if inputs.debug:
-        du_fields.append(KDU_TEXT)
-    for edu in ['EDU1', 'EDU2']:
-        fields.extend(f + '_' + edu for f in du_fields)
-    # --
-    if inputs.debug:
-        fields.append(K_TEXT)
-    return fields
-
 
 # ---------------------------------------------------------------------
 # feature extraction
@@ -86,10 +41,43 @@ FeatureInput = namedtuple('FeatureInput',
 DocumentPlus = namedtuple('DocumentPlus',
                           ['key', 'rsttree', 'deptree'])
 
-
 # ---------------------------------------------------------------------
 # single EDUs
 # ---------------------------------------------------------------------
+
+
+def edu_feature(wrapped):
+    """
+    Lift a function from `edu -> feature` to
+    `single_function_input -> feature`
+    """
+    @wraps(wrapped)
+    def inner(_, edu):
+        "drops the context"
+        return wrapped(edu)
+    return inner
+
+
+def edu_pair_feature(wrapped):
+    """
+    Lifts a function from `(edu, edu) -> f` to
+    `pair_function_input -> f`
+    """
+    @wraps(wrapped)
+    def inner(_, edu1, edu2):
+        "drops the context"
+        return wrapped(edu1, edu2)
+    return inner
+
+
+def clean_edu_text(text):
+    """
+    Strip metadata from EDU text
+    """
+    clean_text = text
+    clean_text = re.sub(r'(\.|<P>|,)*$', r'', clean_text)
+    clean_text = re.sub(r'^"', r'', clean_text)
+    return clean_text
 
 
 def clean_corpus_word(word):
@@ -100,46 +88,160 @@ def clean_corpus_word(word):
     return word.lower()
 
 
-def _fill_single_edu_txt_features(inputs, current, edu, vec):
+def tokens_feature(wrapped):
     """
-    Textual features specific to one EDU.
-    See related `_fill_single_edu_lex_features`.
-    Note that this fills the input `vec` dictionary and
-    returns void
+    Lift a function from `tokens -> feature` to
+    `single_function_input -> feature`
     """
-    clean_text = edu.text
-    clean_text = re.sub(r'(\.|<P>|,)*$', r'', clean_text)
-    clean_text = re.sub(r'^"', r'', clean_text)
+    @edu_feature
+    @wraps(wrapped)
+    def inner(edu):
+        "(edu -> f) -> ((context, edu) -> f)"
+        tokens = list(map(clean_corpus_word,
+                          clean_edu_text(edu.text).split()))
+        return wrapped(tokens)
+    return inner
 
-    # basic string features
-    vec[KDU_NUM_TOKENS] = len(edu.text)
-    vec[KDU_SP1] = edu.span.char_start
-    vec[KDU_SP2] = edu.span.char_end
-
-    words = clean_text.split()
-    if words:
-        word_first = clean_corpus_word(words[0])
-        word_last = clean_corpus_word(words[-1])
-    else:
-        word_first = None
-        word_last = None
-
-    # first and last word
-    vec[KDU_WORD_FIRST] = tune_for_csv(word_first)
-    vec[KDU_WORD_LAST] = tune_for_csv(word_last)
-
-    if inputs.debug:
-        vec[KDU_TEXT] = tune_for_csv(edu.text)
+# ---------------------------------------------------------------------
+# single EDU features
+# ---------------------------------------------------------------------
 
 
-def single_edu_features(inputs, current, edu):
+@edu_feature
+def feat_start(edu):
+    "text span start"
+    return edu.text_span().char_start
+
+
+@edu_feature
+def feat_end(edu):
+    "text span end"
+    return edu.text_span().char_end
+
+
+@edu_feature
+def feat_id(edu):
+    "some sort of unique identifier for the EDU"
+    return edu.identifier()
+
+
+@tokens_feature
+def word_first(tokens):
+    "first word in the EDU (normalised)"
+    return tokens[0] if tokens else None
+
+
+@tokens_feature
+def word_last(tokens):
+    "last word in the EDU (normalised)"
+    return tokens[-1] if tokens else None
+
+
+@tokens_feature
+def num_tokens(tokens):
+    "number of distinct tokens in EDU text"
+    return len(tokens)
+
+# ---------------------------------------------------------------------
+# pair EDU features
+# ---------------------------------------------------------------------
+
+
+@edu_pair_feature
+def num_edus_between(edu1, edu2):
+    "number of EDUs between the two EDUs"
+    return abs(edu2.num - edu1.num) - 1
+
+def feat_grouping(current, edu1, edu2):
+    "which file in the corpus this pair appears in"
+    return os.path.basename(id_to_path(current.key))
+
+
+# ---------------------------------------------------------------------
+# single EDU key groups
+# ---------------------------------------------------------------------
+
+
+class SingleEduSubgroup(KeyGroup):
     """
-    Fields specific to one EDU
+    Abstract keygroup for subgroups of the merged SingleEduKeys.
+    We use these subgroup classes to help provide modularity, to
+    capture the idea that the bits of code that define a set of
+    related feature vector keys should go with the bits of code
+    that also fill them out
     """
-    vec = {}
-    vec[KDU_ID] = edu.identifier()
-    _fill_single_edu_txt_features(inputs, current, edu, vec)
-    return vec
+    def __init__(self, description, keys):
+        super(SingleEduSubgroup, self).__init__(description, keys)
+
+    def fill(self, current, edu, target=None):
+        """
+        Fill out a vector's features (if the vector is None, then we
+        just fill out this group; but in the case of a merged key
+        group, you may find it desirable to fill out the merged
+        group instead)
+
+        This defaults to _magic_fill if you don't implement it.
+        """
+        self._magic_fill(current, edu, target)
+
+    def _magic_fill(self, current, edu, target=None):
+        """
+        Possible fill implementation that works on the basis of
+        features defined wholly as magic keys
+        """
+        vec = self if target is None else target
+        for key in self.keys:
+            vec[key.name] = key.function(current, edu)
+
+
+class SingleEduSubgroup_Meta(SingleEduSubgroup):
+    """
+    Basic EDU-identification features
+    """
+
+    _features =\
+        [MagicKey.meta_fn(feat_id),
+         MagicKey.meta_fn(feat_start),
+         MagicKey.meta_fn(feat_end)]
+
+    def __init__(self):
+        desc = self.__doc__.strip()
+        super(SingleEduSubgroup_Meta, self).__init__(desc, self._features)
+
+
+class SingleEduSubgroup_Text(SingleEduSubgroup):
+    """
+    Properties of the EDU text itself
+    """
+    _features =\
+        [MagicKey.discrete_fn(word_first),
+         MagicKey.discrete_fn(word_last),
+         MagicKey.continuous_fn(num_tokens)]
+
+    def __init__(self):
+        desc = self.__doc__.strip()
+        super(SingleEduSubgroup_Text, self).__init__(desc, self._features)
+
+
+class SingleEduKeys(MergedKeyGroup):
+    """
+    single EDU features
+    """
+    def __init__(self, inputs):
+        groups = [SingleEduSubgroup_Meta(),
+                  SingleEduSubgroup_Text()]
+        #if inputs.debug:
+        #    groups.append(SingleEduSubgroup_Debug())
+        desc = self.__doc__.strip()
+        super(SingleEduKeys, self).__init__(desc, groups)
+
+    def fill(self, current, edu, target=None):
+        """
+        See `SingleEduSubgroup.fill`
+        """
+        vec = self if target is None else target
+        for group in self.groups:
+            group.fill(current, edu, vec)
 
 
 # ---------------------------------------------------------------------
@@ -147,44 +249,137 @@ def single_edu_features(inputs, current, edu):
 # ---------------------------------------------------------------------
 
 
-def _fill_edu_pair_gap_features(inputs,
-                                current,
-                                edu1,
-                                edu2,
-                                vec):
+class PairSubgroup(KeyGroup):
     """
-    Pairwise features that are related to the gap between two EDUs
+    Abstract keygroup for subgroups of the merged PairKeys.
+    We use these subgroup classes to help provide modularity, to
+    capture the idea that the bits of code that define a set of
+    related feature vector keys should go with the bits of code
+    that also fill them out
     """
-    vec[K_NUM_EDUS_BETWEEN] = abs(edu2.num - edu1.num) - 1
+    def __init__(self, description, keys):
+        super(PairSubgroup, self).__init__(description, keys)
+
+    def fill(self, current, edu1, edu2, target=None):
+        """
+        Fill out a vector's features (if the vector is None, then we
+        just fill out this group; but in the case of a merged key
+        group, you may find it desirable to fill out the merged
+        group instead)
+
+        Defaults to _magic_fill if not defined
+        """
+        self._magic_fill(current, edu1, edu2, target)
+
+    def _magic_fill(self, current, edu1, edu2, target=None):
+        """
+        Possible fill implementation that works on the basis of
+        features defined wholly as magic keys
+        """
+        vec = self if target is None else target
+        for key in self.keys:
+            vec[key.name] = key.function(current, edu1, edu2)
 
 
-def edu_pair_features(inputs, current, edu1, edu2):
-    """
-    Subvector for pairwise features between two given discourse units
-    """
-    vec = {}
+class PairSubGroup_Core(PairSubgroup):
+    "core features"
 
-    vec[K_GROUPING] = os.path.basename(id_to_path(current.key))
+    def __init__(self):
+        desc = self.__doc__.strip()
+        keys =\
+            [MagicKey.meta_fn(feat_grouping)]
+        super(PairSubGroup_Core, self).__init__(desc, keys)
 
-    _fill_edu_pair_gap_features(inputs, current, edu1, edu2, vec)
-    return vec
+
+class PairSubgroup_Gap(PairSubgroup):
+    """
+    Features related to the combined surrounding context of the
+    two EDUs
+    """
+
+    def __init__(self):
+        desc = "the gap between EDUs"
+        keys =\
+            [MagicKey.continuous_fn(num_edus_between)]
+        super(PairSubgroup_Gap, self).__init__(desc, keys)
+
+
+class PairKeys(MergedKeyGroup):
+    """
+    pair features
+
+    sf_cache should only be None if you're just using this
+    to generate help text
+    """
+    def __init__(self, inputs, sf_cache=None):
+        """
+        """
+        self.sf_cache = sf_cache
+        groups = [PairSubGroup_Core(),
+                  PairSubgroup_Gap()]
+        #          PairSubgroup_Tuple(inputs, sf_cache)]
+        #if inputs.debug:
+        #    groups.append(PairSubgroup_Debug())
+
+        if sf_cache is None:
+            self.edu1 = SingleEduKeys(inputs)
+            self.edu2 = SingleEduKeys(inputs)
+        else:
+            self.edu1 = None  # will be filled out later
+            self.edu2 = None  # from the feature cache
+
+        desc = "pair features"
+        super(PairKeys, self).__init__(desc, groups)
+
+    def csv_headers(self):
+        return super(PairKeys, self).csv_headers() +\
+            [h + "_EDU1" for h in self.edu1.csv_headers()] +\
+            [h + "_EDU2" for h in self.edu2.csv_headers()]
+
+    def csv_values(self):
+        return super(PairKeys, self).csv_values() +\
+            self.edu1.csv_values() +\
+            self.edu2.csv_values()
+
+    def help_text(self):
+        lines = [super(PairKeys, self).help_text(),
+                 "",
+                 self.edu1.help_text()]
+        return "\n".join(lines)
+
+    def fill(self, current, edu1, edu2, target=None):
+        "See `PairSubgroup`"
+        vec = self if target is None else target
+        vec.edu1 = self.sf_cache[edu1]
+        vec.edu2 = self.sf_cache[edu2]
+        for group in self.groups:
+            group.fill(current, edu1, edu2, vec)
+
+# ---------------------------------------------------------------------
+# extraction generators
+# ---------------------------------------------------------------------
 
 
 def simplify_deptree(dtree):
     """
-    Boil a dependency tree down into a dictionary from edu to [edu]
-    and a dictionary from (edu, edu) to rel
+    Boil a dependency tree down into a dictionary from (edu, edu) to rel
     """
-    links = {}
     relations = {}
     for subtree in dtree:
         src = treenode(subtree).edu
-        tgts = [treenode(child).edu for child in subtree]
-        links[src] = tgts
         for child in subtree:
             cnode = treenode(child)
             relations[(src, cnode.edu)] = cnode.rel
-    return links, relations
+    return relations
+
+
+def preprocess(inputs, k):
+    """
+    Pre-process and bundle up a representation of the current document
+    """
+    rtree = SimpleRSTTree.from_rst_tree(inputs.corpus[k])
+    dtree = deptree.relaxed_nuclearity_to_deptree(rtree)
+    return DocumentPlus(k, rtree, dtree)
 
 
 def extract_pair_features(inputs, live=False):
@@ -196,46 +391,32 @@ def extract_pair_features(inputs, live=False):
         current = preprocess(inputs, k)
         edus = current.rsttree.leaves()
         # reduced dependency graph as dictionary (edu to [edu])
-        links, relations =\
-            simplify_deptree(current.deptree) if not live else {}
+        relations = simplify_deptree(current.deptree) if not live else {}
 
         # single edu features
-        edu_feats = {}
+        sf_cache = {}
         for edu in edus:
-            edu_feats[edu] = single_edu_features(inputs, current, edu)
+            sf_cache[edu] = SingleEduKeys(inputs)
+            sf_cache[edu].fill(current, edu)
 
-        for edu1, edu2 in itertools.product(edus, edus):
+        for epair in itertools.product(edus, edus):
+            edu1, edu2 = epair
             if edu1 == edu2:
                 continue
-            vec = edu_pair_features(inputs, current, edu1, edu2)
+            vec = PairKeys(inputs, sf_cache=sf_cache)
+            vec.fill(current, edu1, edu2)
 
-            # edu-specific features
-            edu1_info = edu_feats[edu1]
-            edu2_info = edu_feats[edu2]
-            for k in edu1_info:
-                vec[k + '_EDU1'] = edu1_info[k]
-                vec[k + '_EDU2'] = edu2_info[k]
-
-            pairs_vec = vec
-            rels_vec = copy.copy(vec)
-
-            if not live:
-                pairs_vec[K_CLASS] = edu1 in links and edu2 in links[edu1]
-                if pairs_vec[K_CLASS]:
-                    rels_vec[K_CLASS] = relations[edu1, edu2]
-                else:
-                    rels_vec[K_CLASS] = 'UNRELATED'
+            if live:
+                yield vec, vec
+            else:
+                pairs_vec = ClassKeyGroup(vec)
+                rels_vec = ClassKeyGroup(vec)
+                rels_vec.set_class(relations[epair] if epair in relations
+                                   else 'UNRELATED')
+                pairs_vec.set_class(epair in relations)
 
             yield pairs_vec, rels_vec
 
-
-def preprocess(inputs, k):
-    """
-    Pre-process and bundle up a representation of the current document
-    """
-    rtree = SimpleRSTTree.from_rst_tree(inputs.corpus[k])
-    dtree = deptree.relaxed_nuclearity_to_deptree(rtree)
-    return DocumentPlus(k, rtree, dtree)
 
 # ---------------------------------------------------------------------
 # input readers
@@ -247,3 +428,23 @@ def read_common_inputs(args, corpus):
     Read the data that is common to live/corpus mode.
     """
     return FeatureInput(corpus, args.debug)
+
+
+def read_help_inputs(_):
+    """
+    Read the data (if any) that is needed just to produce
+    the help text
+    """
+    return FeatureInput(None, True)
+
+
+def read_corpus_inputs(args):
+    """
+    Read the data (if any) that is needed just to produce
+    training data
+    """
+    is_interesting = educe.util.mk_is_interesting(args)
+    reader = educe.rst_dt.Reader(args.corpus)
+    anno_files = reader.filter(reader.files(), is_interesting)
+    corpus = reader.slurp(anno_files, verbose=True)
+    return read_common_inputs(args, corpus)

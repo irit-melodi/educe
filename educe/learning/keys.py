@@ -9,12 +9,18 @@ keys into sections
 
 from __future__ import absolute_import
 import csv
+import re
 
 
 class Key(object):
     """
     Feature name plus a bit of metadata
     """
+
+    CONT = "C"
+    META = "m"
+    DISC = "D"
+
     def __init__(self, code, name, description):
         self.code = code
         self.name = name
@@ -27,17 +33,45 @@ class Key(object):
     @classmethod
     def continuous(cls, name, description):
         "A key for fields that have range value (eg. numbers)"
-        return cls("C", name, description)
+        return cls(cls.CONT, name, description)
 
     @classmethod
     def meta(cls, name, description):
         "A key for fields that are used for indexing only"
-        return cls("m", name, description)
+        return cls(cls.META, name, description)
 
     @classmethod
     def discrete(cls, name, description):
         "A key for fields that have a finite set of possible values"
-        return cls("D", name, description)
+        return cls(cls.DISC, name, description)
+
+
+class MagicKey(Key):
+    """
+    Somewhat fancier variant of Key that is built from a function
+    The goal of the magic key is to reduce the amount of boilerplate
+    needed to define keys
+    """
+    def __init__(self, code, function):
+        name = re.sub("^feat_", "", function.__name__)
+        description = function.__doc__
+        super(MagicKey, self).__init__(code, name, description)
+        self.function = function
+
+    @classmethod
+    def continuous_fn(cls, function):
+        "A key for fields that have range value (eg. numbers)"
+        return cls(cls.CONT, function)
+
+    @classmethod
+    def meta_fn(cls, function):
+        "A key for fields that are used for indexing only"
+        return cls(cls.META, function)
+
+    @classmethod
+    def discrete_fn(cls, function):
+        "A key for fields that have a finite set of possible values"
+        return cls(cls.DISC, function)
 
 
 class KeyGroup(dict):
