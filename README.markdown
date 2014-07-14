@@ -2,17 +2,16 @@
 
 ## About
 
-Abstract representation of a discourse-annotated corpus.
+Educe is a library for working with discourse-annotated corpora.
+It also includes some utility scripts for building, maintaining,
+and for querying these corpora. Currently supported corpora are
 
-Currently, this library is geared towards the needs of the [STAC
-research project][stac].  In particular, it assumes
+* (SDRT) [STAC][stac] corpus
+* (RST) RST Discourse Treebank (experimental, 2014-07-14)
+* (PDTB) Penn Discourse Treebank (experimental, 2014-07-14)
 
-- Settlers of Catan non-cooperative conversation domain
-- Segmented Discourse Representation Theory (SDRT)
-- [Glozz annotation platform][glozz]
-
-But we are keeping sight of the longer term objectives of generalising
-it to at least a wider range of domains
+If you have a discourse-annotated corpus, or are trying to build one,
+you may find it useful to add support for it to educe.
 
 ## Installation
 
@@ -34,7 +33,9 @@ If you have pip installed, then install educe and its dependencies:
 ## See also
 
 * [Documentation][docs]
+* [Attelo][attelo]: a discourse parser
 
+[attelo]: http://github.com/kowey/attelo
 [setup-distribute]: http://python-distribute.org/distribute_setup.py
 [stac]:  http://www.irit.fr/STAC/
 [glozz]: http://www.glozz.org/
