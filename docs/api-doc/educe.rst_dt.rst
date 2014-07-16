@@ -68,6 +68,14 @@ educe.rst_dt.tests module
     :undoc-members:
     :show-inheritance:
 
+educe.rst_dt.text module
+------------------------
+
+.. automodule:: educe.rst_dt.text
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Module contents
 ---------------
