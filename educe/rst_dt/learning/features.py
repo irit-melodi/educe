@@ -75,7 +75,7 @@ def clean_edu_text(text):
     Strip metadata from EDU text
     """
     clean_text = text
-    clean_text = re.sub(r'(\.|<P>|,)*$', r'', clean_text)
+    clean_text = re.sub(r'(\.|,)*$', r'', clean_text)
     clean_text = re.sub(r'^"', r'', clean_text)
     return clean_text
 
