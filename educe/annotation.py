@@ -129,6 +129,17 @@ class Span(object):
         big_end = max(self.char_end, other.char_end)
         return Span(big_start, big_end)
 
+    @classmethod
+    def merge_all(cls, spans):
+        """
+        Return a span that stretches from the beginning to the end
+        of all the spans in the list
+        """
+        big_start = min(x.char_start for x in spans)
+        big_end = max(x.char_end for x in spans)
+        return Span(big_start, big_end)
+
+
 class RelSpan(object):
     """
     Which two units a relation connections.
