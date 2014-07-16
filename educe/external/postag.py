@@ -116,18 +116,18 @@ def generic_token_spans(text, tokens, offset=0):
     shifted by passing an offset (the start of the original string's
     span).
 
+    Note: this function is lazy so you can use it incrementally
+    provided you can generate the tokens lazily too
+
     You probably want `token_spans` instead; this function is meant
     to be used for similar tasks outside of pos tagging
     """
-    def is_sp(x):
-        "string is a space character"
-        return x.isspace()
-
     res = []
     txt_iter = ifilterfalse(lambda x: x[1].isspace(),
                             enumerate(text))
     for token in tokens:
-        tok_chars = list(ifilterfalse(is_sp, token))
+        tok_chars = list(ifilterfalse(lambda x: x.isspace(),
+                                      token))
         if not tok_chars:
             msg = "token [%s] " % token\
                 + "is either empty or contains whitespace chars only"
@@ -135,7 +135,6 @@ def generic_token_spans(text, tokens, offset=0):
         prefix = list(islice(txt_iter, len(tok_chars)))
         span = Span(prefix[0][0], prefix[-1][0] + 1)
         pretty_prefix = text[span.char_start:span.char_end]
-        res.append(span)
         # check the text prefix to make sure we have the same
         # non-whitespace characters
         for txt_pair, tok_char in zip(prefix, tok_chars):
@@ -146,8 +145,7 @@ def generic_token_spans(text, tokens, offset=0):
                     + " token: [%s]\n" % token\
                     + " text:  [%s]" % pretty_prefix
                 raise EducePosTagException(msg)
-
-    return res
+        yield span
 
 
 def token_spans(text, tokens, offset=0):
