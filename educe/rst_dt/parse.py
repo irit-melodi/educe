@@ -20,6 +20,7 @@ from nltk import Tree
 
 from educe.annotation import Span
 from .annotation import RSTTreeException, EDU, Node, RSTTree, SimpleRSTTree
+from .text import parse_text
 from ..internalutil import treenode
 
 # pre-processing leaves
@@ -27,6 +28,7 @@ _TEXT_RE = re.compile(r"\(text (?P<text>.+(</EDU>|</s>|_!))\)")
 
 # pre-processing heads
 _TYPE_RE = r"\((?P<type>(Nucleus|Satellite))"
+_PARA_RE = r"<P>"
 _ROOT_TYPE_RE = r"\((?P<type>(Root))"
 _SPAN_RE = r"\((?P<span>(leaf [0-9]+|span [0-9]+ [0-9]+))\)"
 _REL_RE = r"\((?P<rel>rel2par [\-A-Za-z0-9:]+)\)"
@@ -80,6 +82,7 @@ def _parse_edu(descr, edu_start, start=0):
         text = sdesc[2:-2]
     else:
         text = sdesc
+    text = re.sub(_PARA_RE, "\n\n", text)
 
     end = start + len(text)
     span = Span(start, end)  # text-span (not the same as EDU span)
