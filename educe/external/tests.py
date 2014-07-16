@@ -23,7 +23,7 @@ class PosTag(unittest.TestCase):
 
         tokens = ["a", "bb", "ccc"]
         text = "a bb    ccc"
-        spans = generic_token_spans(text, tokens)
+        spans = list(generic_token_spans(text, tokens))
         expected = [Span(0, 1),
                     Span(2, 4),
                     Span(8, 11)]
@@ -34,7 +34,7 @@ class PosTag(unittest.TestCase):
 
         tokens = ["a", "b b", "c c c"]
         text = "a bb    ccc"
-        spans = generic_token_spans(text, tokens)
+        spans = list(generic_token_spans(text, tokens))
         expected = [Span(0, 1),
                     Span(2, 4),
                     Span(8, 11)]
