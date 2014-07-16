@@ -98,7 +98,7 @@ def tokens_feature(wrapped):
     def inner(edu):
         "(edu -> f) -> ((context, edu) -> f)"
         tokens = [tune_for_csv(clean_corpus_word(x))
-                  for x in clean_edu_text(edu.text).split()]
+                  for x in clean_edu_text(edu.text()).split()]
         return wrapped(tokens)
     return inner
 
