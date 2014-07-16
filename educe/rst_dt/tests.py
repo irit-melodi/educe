@@ -104,7 +104,7 @@ class RSTTest(unittest.TestCase):
 
     def test_from_files(self):
         for i in glob.glob('tests/*.dis'):
-            t = read_annotation_file(i)
+            t = read_annotation_file(i, os.path.splitext(i)[0])
             self.assertEqual(len(t.text()), treenode(t).span.char_end)
 
     def _test_trees(self):
@@ -114,7 +114,8 @@ class RSTTest(unittest.TestCase):
                 self._trees["tstr%d" % i] = parse.parse_rst_dt_tree(tstr)
             for i in glob.glob('tests/*.dis'):
                 bname = os.path.basename(i)
-                self._trees[bname] = parse.read_annotation_file(i)
+                tfile = os.path.splitext(i)[0]
+                self._trees[bname] = parse.read_annotation_file(i, tfile)
         return self._trees
 
     def test_binarize(self):

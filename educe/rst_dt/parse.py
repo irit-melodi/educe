@@ -19,19 +19,24 @@ import codecs
 from nltk import Tree
 
 from educe.annotation import Span
-from .annotation import RSTTreeException, EDU, Node, RSTTree, SimpleRSTTree
+from .annotation import\
+    RSTTreeException,\
+    EDU, Node,\
+    RSTContext, RSTTree, SimpleRSTTree
 from .text import parse_text
+from ..external.postag import generic_token_spans
 from ..internalutil import treenode
+
 
 # pre-processing leaves
 _TEXT_RE = re.compile(r"\(text (?P<text>.+(</EDU>|</s>|_!))\)")
 
 # pre-processing heads
 _TYPE_RE = r"\((?P<type>(Nucleus|Satellite))"
-_PARA_RE = r"<P>"
 _ROOT_TYPE_RE = r"\((?P<type>(Root))"
 _SPAN_RE = r"\((?P<span>(leaf [0-9]+|span [0-9]+ [0-9]+))\)"
 _REL_RE = r"\((?P<rel>rel2par [\-A-Za-z0-9:]+)\)"
+_PARA_PATTERN = re.compile(r"<P>")
 _HEAD_PATTERN = re.compile("%s %s %s" % (_TYPE_RE, _SPAN_RE, _REL_RE))
 _ROOT_PATTERN = re.compile("%s %s" % (_ROOT_TYPE_RE, _SPAN_RE))
 
@@ -89,13 +94,10 @@ def _parse_edu(descr, edu_start, start=0):
         text = sdesc[2:-2]
     else:
         text = sdesc
-    text = re.sub(_PARA_RE, "\n\n", text)
 
     end = start + len(text)
     span = Span(start, end)  # text-span (not the same as EDU span)
-    return EDU(edu_start, span, text,
-               sentstart=False,
-               sentend=False)
+    return EDU(edu_start, span, text)
 
 
 def _parse_node(descr, span):
@@ -125,6 +127,14 @@ def _preprocess(tstr):
     return res
 
 
+def _tree_span(tree):
+    """
+    Span for the current node or leaf in the tree
+    """
+    return treenode(tree).span if isinstance(tree, Tree)\
+        else tree.span
+
+
 def _postprocess(tree, start=0, edu_start=0):
     """
     Helper function: Convert the NLTK-parsed representation of an RST tree
@@ -141,8 +151,7 @@ def _postprocess(tree, start=0, edu_start=0):
             child = _postprocess(child_, position + 1, edu_start2)
             children.append(child)
             # pylint: disable=E1101
-            child_sp = treenode(child).span if isinstance(child, Tree)\
-                else child.span
+            child_sp = _tree_span(child)
             # pylint: enable=E1101
             position = child_sp.char_end
 
@@ -156,22 +165,59 @@ def _postprocess(tree, start=0, edu_start=0):
                                    child)
 
 
-def parse_rst_dt_tree(tstr):
+def _recompute_spans(tree, context):
+    """
+    Recalculate tree node spans from the bottom up
+    (helper for _align_with_context)
+    """
+    if isinstance(tree, Tree):
+        spans = []
+        for child in tree:
+            _recompute_spans(child, context)
+            spans.append(_tree_span(child))
+        treenode(tree).span = Span.merge_all(spans)
+        treenode(tree).context = context
+
+
+def _align_with_context(tree, context):
+    """
+    Update a freshly parsed RST DT tree with proper standoff
+    annotations pointing to its base text
+    """
+    leaves = tree.leaves()
+
+    leaf_tokens = [_PARA_PATTERN.sub("\n\n", l.raw_text.strip())
+                   for l in leaves]
+    spans = generic_token_spans(context.text(),
+                                leaf_tokens)
+    for edu, span in zip(leaves, spans):
+        edu.span = span
+        edu.set_context(context)
+    _recompute_spans(tree, context)
+    return tree
+
+
+def parse_rst_dt_tree(tstr, context):
     """
     Read a single RST tree from its RST DT string representation
+    and align it with the underlying text
     """
     pstr = _preprocess(tstr)
     tree_ = Tree.parse(pstr, leaf_pattern=_LEAF_PATTERN)
-    return _postprocess(tree_)
+    return _align_with_context(_postprocess(tree_), context)
 
 
-def read_annotation_file(anno_filename):
+def read_annotation_file(anno_filename, text_filename):
     """
     Read a single RST tree
     """
     tree = None
+    with codecs.open(text_filename, 'r', 'utf-8') as stream:
+        text = stream.read()
+        text_annos = parse_text(text)
+        context = RSTContext(text, text_annos)
     with codecs.open(anno_filename, 'r', 'utf-8') as stream:
-        tree = parse_rst_dt_tree(stream.read())
+        tree = parse_rst_dt_tree(stream.read(), context)
     return tree
 
 

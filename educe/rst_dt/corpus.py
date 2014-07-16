@@ -30,13 +30,14 @@ class Reader(educe.corpus.Reader):
         full_glob = os.path.join(self.rootdir, '*.dis')
 
         for fname in glob(full_glob):
+            text_file = os.path.splitext(fname)[0]
             bname = os.path.basename(fname)
             doc = os.path.splitext(bname)[0]
             k = FileId(doc=doc,
                        subdoc=None,
                        stage='discourse',
                        annotator='None')
-            anno_files[k] = fname
+            anno_files[k] = (fname, text_file)
         return anno_files
 
     def slurp_subcorpus(self, cfiles, verbose=False):
@@ -49,8 +50,7 @@ class Reader(educe.corpus.Reader):
             if verbose:
                 sys.stderr.write("\rSlurping corpus dir [%d/%d]" %
                                  (counter, len(cfiles)))
-            anno_file = cfiles[k]
-            annotations = parse.read_annotation_file(anno_file)
+            annotations = parse.read_annotation_file(*cfiles[k])
             annotations.set_origin(k)
             corpus[k] = annotations
             counter = counter+1

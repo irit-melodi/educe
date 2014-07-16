@@ -28,14 +28,43 @@ class RSTTreeException(Exception):
         super(RSTTreeException, self).__init__(msg)
 
 
+# pylint: disable=R0903
+# I would just used a namedtuple here except that I also want
+# to associate the fields with docstrings
+class RSTContext(object):
+    """
+    Additional annotations or contextual information that could
+    accompany a RST tree proper. The idea is to have each subtree
+    pointing back to the same context object for easy retrieval.
+    """
+    def __init__(self, text, paragraphs):
+        self._text = text
+        "original text on which standoff annotations are based"
+
+        self.paragraphs = paragraphs
+        "Paragraph annotations pointing back to the text"
+
+    def text(self, span=None):
+        """
+        Return the text associated with these annotations (or None),
+        optionally limited to a span
+        """
+        if self._text is None:
+            return None
+        elif span is None:
+            return self._text
+        else:
+            return self._text[span.char_start:span.char_end]
+# pylint: enable=R0903
+
+
 # pylint: disable=R0913
 class EDU(Standoff):
     """
     An RST leaf node
     """
     def __init__(self, num, span, text,
-                 sentstart=False,
-                 sentend=False,
+                 context=None,
                  origin=None):
         super(EDU, self).__init__(origin)
 
@@ -45,20 +74,31 @@ class EDU(Standoff):
         self.span = span
         "text span"
 
-        self.text = text
-        "the text covered by this EDU"
+        self.raw_text = text
+        """
+        text that was in the EDU annotation itself
 
-        self.sentstart = sentstart
-        "is at the beginning of a sentence"
+        This is not the same as the text that was in the annotated
+        document, on which all standoff annotations and spans
+        are based.
+        """
 
-        self.sentend = sentend
-        "is at the end of a sentence"
+        self.context = context
+        """
+        See the `RSTContext` object
+        """
 
     def set_origin(self, origin):
         """
         Update the origin of this annotation and any contained within
         """
         self.origin = origin
+
+    def set_context(self, context):
+        """
+        Update the context of this annotation.
+        """
+        self.context = context
 
     def identifier(self):
         """
@@ -72,6 +112,17 @@ class EDU(Standoff):
 
     def __repr__(self):
         return self.text
+
+    def text(self):
+        """
+        Return the text associated with this EDU. We try to return
+        the underlying annotated text if we have the necessary
+        context; if we not, we just fall back to the raw EDU text
+        """
+        if self.context:
+            return self.context.text(self.span)
+        else:
+            return self.raw_text
 # pylint: enable=R0913
 
 
@@ -80,7 +131,8 @@ class Node(object):
     A node in an `RSTTree` or `SimpleRSTTree`.
     """
 
-    def __init__(self, nuclearity, edu_span, span, rel):
+    def __init__(self, nuclearity, edu_span, span, rel,
+                 context=None):
         self.nuclearity = nuclearity
         "one of Nucleus, Satellite, Root"
 
@@ -95,6 +147,9 @@ class Node(object):
         relation label (see `SimpleRSTTree` for a note on the different
         interpretation of `rel` with this and `RSTTree`)
         """
+
+        self.context = context
+        "See the `RSTContext` object"
 
     def __repr__(self):
         return "%s %s %s" % (self.nuclearity,
@@ -134,7 +189,9 @@ class RSTTree(SearchableTree, Standoff):
     raw RST discourse treebank one.
     """
 
-    def __init__(self, node, children, origin=None):
+    def __init__(self, node, children,
+                 context=None,
+                 origin=None):
         """
         See `educe.rst_dt.parse` to build trees from strings
         """
@@ -167,14 +224,17 @@ class RSTTree(SearchableTree, Standoff):
 
     def text(self):
         """
-        Return the text corresponding to this RST tree
-        (traverses and concatenates leaf node text)
-
-        Note that this (along with the standoff offsets)
-        behave as though there were a single space
-        between each EDU
+        Return the text corresponding to this RST subtree.
+        If the context is set, we return the appropriate
+        segment from the subset of the text.
+        If not we just concatenate the raw text of all
+        EDU leaves.
         """
-        return " ".join(l.text for l in self.leaves())
+        node = treenode(self)
+        if node.context:
+            return node.context.text(node.span)
+        else:
+            return " ".join(l.raw_text for l in self.leaves())
 
 
 class SimpleRSTTree(SearchableTree, Standoff):
