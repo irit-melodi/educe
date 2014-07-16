@@ -122,7 +122,6 @@ def generic_token_spans(text, tokens, offset=0):
     You probably want `token_spans` instead; this function is meant
     to be used for similar tasks outside of pos tagging
     """
-    res = []
     txt_iter = ifilterfalse(lambda x: x[1].isspace(),
                             enumerate(text))
     for token in tokens:
@@ -133,7 +132,8 @@ def generic_token_spans(text, tokens, offset=0):
                 + "is either empty or contains whitespace chars only"
             raise EducePosTagException(msg)
         prefix = list(islice(txt_iter, len(tok_chars)))
-        span = Span(prefix[0][0], prefix[-1][0] + 1)
+        span = Span(prefix[0][0] + offset,
+                    prefix[-1][0] + 1 + offset)
         pretty_prefix = text[span.char_start:span.char_end]
         # check the text prefix to make sure we have the same
         # non-whitespace characters
