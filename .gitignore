@@ -1,5 +1,6 @@
 # Copyright
 tests/wsj*.txt
+tests/wsj*.out
 tests/wsj*.dis
 tests/wsj*.pdtb
 
