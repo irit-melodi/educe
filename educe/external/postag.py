@@ -25,9 +25,22 @@ import itertools
 
 from educe.annotation import Span, Standoff
 
+# I don't yet see how "too few public methods" is helpful
+# pylint: disable=R0903
+
+
+class EducePosTagException(Exception):
+    """
+    Exceptions that arise during POS tagging or when reading
+    POS tag resources
+    """
+    def __init__(self, *args, **kw):
+        super(EducePosTagException, self).__init__(*args, **kw)
+
 # ---------------------------------------------------------------------
 # tokens
 # ---------------------------------------------------------------------
+
 
 class RawToken:
     """
@@ -35,13 +48,14 @@ class RawToken:
     """
     def __init__(self, word, tag):
         self.word = word
-        self.tag  = tag
+        self.tag = tag
 
     def __str__(self):
         return self.word + "/" + self.tag
 
     def __unicode__(self):
         return self.word + "/" + self.tag
+
 
 class Token(RawToken, Standoff):
     """
@@ -67,23 +81,25 @@ def read_token_file(fname):
     The input file format is what I believe to be the CONLL format
     (at least as emitted by the CMU Twitter POS tagger)
     """
-    segment  = []
+    segment = []
     segments = []
-    with codecs.open(fname, 'r', 'utf-8') as f:
-        for l in f:
-            spl = l.split()
+    with codecs.open(fname, 'r', 'utf-8') as stream:
+        for line in stream:
+            spl = line.split()
             if len(spl) == 2 or len(spl) == 3:
-                segment.append(RawToken(spl[0],spl[1]))
+                segment.append(RawToken(spl[0], spl[1]))
             elif len(spl) == 0:
                 segments.append(segment)
                 segment = []
             else:
-                raise Exception("Did not understand this line in tokens file: " + l)
+                raise EducePosTagException("Did not understand this"
+                                           "line in tokens file: " + line)
         return segments
 
 # ---------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------
+
 
 def token_spans(text, tokens, offset=0):
     """
@@ -100,52 +116,53 @@ def token_spans(text, tokens, offset=0):
     span)
     """
     def next_token():
+        "consume a token"
         if len(tokens) == 0:
-            msg  = "Ran out of tokens but still have %d characters" % len(text)
+            msg = "Ran out of tokens but still have %d characters" % len(text)
             msg += "of text in [%s...] left" % text[:8]
-            raise Exception(msg)
+            raise EducePosTagException(msg)
         else:
             return tokens.pop(0)
 
     orig_tokens = copy.copy(tokens)
-    orig_text   = text
-    res   = []
-    left  = 0
+    orig_text = text
+    res = []
+    left = 0
     right = 0
-    tok   = None
+    tok = None
     while (len(text.lstrip()) > 0):
         if tok is None:
             tok = next_token()
         if text.startswith(tok.word):
             right = left + len(tok.word)
-            pair  = Token(tok, Span(left + offset, right + offset))
+            pair = Token(tok, Span(left + offset, right + offset))
             res.append(pair)
-            left  = right
-            text  = text[len(tok.word):]
-            tok   = None
+            left = right
+            text = text[len(tok.word):]
+            tok = None
         elif text[0].isspace():
             # next token
-            prefix = list(itertools.takewhile(lambda x:x.isspace(), text))
-            left  += len(prefix)
-            right  = left
-            text   = text[len(prefix):]
+            prefix = list(itertools.takewhile(lambda x: x.isspace(), text))
+            left += len(prefix)
+            right = left
+            text = text[len(prefix):]
         else:
             snippet = text[0:len(tok.word) + 3]
-            msg =  "Was expecting [%s] to be the next token " % tok.word
+            msg = "Was expecting [%s] to be the next token " % tok.word
             msg += "in the text, but got [%s...] instead." % snippet
-            raise Exception(msg)
+            raise EducePosTagException(msg)
 
     if len(tokens) == 0:
         # sanity checks that should be moved to tests
         for orig_tok, new_tok in zip(orig_tokens, res):
-            sp = Span(new_tok.span.char_start - offset,
-                      new_tok.span.char_end   - offset)
-            snippet = orig_text[sp.char_start : sp.char_end]
-            assert snippet  == new_tok.word
+            span = Span(new_tok.span.char_start - offset,
+                        new_tok.span.char_end - offset)
+            snippet = orig_text[span.char_start:span.char_end]
+            assert snippet == new_tok.word
             assert orig_tok.word == new_tok.word
-            assert orig_tok.tag  == new_tok.tag
+            assert orig_tok.tag == new_tok.tag
         return res
     else:
-        msg =  "Still have %d tokens left " % len(tokens)
+        msg = "Still have %d tokens left " % len(tokens)
         msg += "[%s...] after consuming text" % tokens[:3]
-        raise Exception(msg)
+        raise EducePosTagException(msg)
