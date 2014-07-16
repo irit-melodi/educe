@@ -19,6 +19,7 @@ more general than this one
 .. _ark-tweet-nlp: http://www.ark.cs.cmu.edu/TweetNLP/
 """
 
+from itertools import ifilterfalse, islice
 import codecs
 import copy
 import itertools
@@ -101,6 +102,54 @@ def read_token_file(fname):
 # ---------------------------------------------------------------------
 
 
+def generic_token_spans(text, tokens, offset=0):
+    """
+    Given a string and a sequence of substrings within than string,
+    infer a span for each of the substrings.
+
+    We do this spans by walking the text and the tokens we consume
+    substrings and skipping over any whitespace (including that
+    which is within the tokens). For this to work, the substring
+    sequence must be identical to the text modulo whitespace.
+
+    Spans are relative to the start of the string itself, but can be
+    shifted by passing an offset (the start of the original string's
+    span).
+
+    You probably want `token_spans` instead; this function is meant
+    to be used for similar tasks outside of pos tagging
+    """
+    def is_sp(x):
+        "string is a space character"
+        return x.isspace()
+
+    res = []
+    txt_iter = ifilterfalse(lambda x: x[1].isspace(),
+                            enumerate(text))
+    for token in tokens:
+        tok_chars = list(ifilterfalse(is_sp, token))
+        if not tok_chars:
+            msg = "token [%s] " % token\
+                + "is either empty or contains whitespace chars only"
+            raise EducePosTagException(msg)
+        prefix = list(islice(txt_iter, len(tok_chars)))
+        span = Span(prefix[0][0], prefix[-1][0] + 1)
+        pretty_prefix = text[span.char_start:span.char_end]
+        res.append(span)
+        # check the text prefix to make sure we have the same
+        # non-whitespace characters
+        for txt_pair, tok_char in zip(prefix, tok_chars):
+            idx, txt_char = txt_pair
+            if txt_char != tok_char:
+                msg = "token mismatch at char %d (%s vs %s)\n"\
+                    % (idx, txt_char, tok_char)\
+                    + " token: [%s]\n" % token\
+                    + " text:  [%s]" % pretty_prefix
+                raise EducePosTagException(msg)
+
+    return res
+
+
 def token_spans(text, tokens, offset=0):
     """
     Given a string and a sequence of RawToken representing tokens
@@ -115,54 +164,16 @@ def token_spans(text, tokens, offset=0):
     shifted by passing an offset (the start of the original string's
     span)
     """
-    def next_token():
-        "consume a token"
-        if len(tokens) == 0:
-            msg = "Ran out of tokens but still have %d characters" % len(text)
-            msg += "of text in [%s...] left" % text[:8]
-            raise EducePosTagException(msg)
-        else:
-            return tokens.pop(0)
+    token_words = [tok.word for tok in tokens]
+    spans = generic_token_spans(text, token_words, offset)
+    res = [Token(tok, span) for tok, span in zip(tokens, spans)]
 
-    orig_tokens = copy.copy(tokens)
-    orig_text = text
-    res = []
-    left = 0
-    right = 0
-    tok = None
-    while (len(text.lstrip()) > 0):
-        if tok is None:
-            tok = next_token()
-        if text.startswith(tok.word):
-            right = left + len(tok.word)
-            pair = Token(tok, Span(left + offset, right + offset))
-            res.append(pair)
-            left = right
-            text = text[len(tok.word):]
-            tok = None
-        elif text[0].isspace():
-            # next token
-            prefix = list(itertools.takewhile(lambda x: x.isspace(), text))
-            left += len(prefix)
-            right = left
-            text = text[len(prefix):]
-        else:
-            snippet = text[0:len(tok.word) + 3]
-            msg = "Was expecting [%s] to be the next token " % tok.word
-            msg += "in the text, but got [%s...] instead." % snippet
-            raise EducePosTagException(msg)
-
-    if len(tokens) == 0:
-        # sanity checks that should be moved to tests
-        for orig_tok, new_tok in zip(orig_tokens, res):
-            span = Span(new_tok.span.char_start - offset,
-                        new_tok.span.char_end - offset)
-            snippet = orig_text[span.char_start:span.char_end]
-            assert snippet == new_tok.word
-            assert orig_tok.word == new_tok.word
-            assert orig_tok.tag == new_tok.tag
-        return res
-    else:
-        msg = "Still have %d tokens left " % len(tokens)
-        msg += "[%s...] after consuming text" % tokens[:3]
-        raise EducePosTagException(msg)
+    # sanity checks that should be moved to tests
+    for orig_tok, new_tok in zip(tokens, res):
+        span = Span(new_tok.span.char_start - offset,
+                    new_tok.span.char_end - offset)
+        snippet = text[span.char_start:span.char_end]
+        assert snippet == new_tok.word
+        assert orig_tok.word == new_tok.word
+        assert orig_tok.tag == new_tok.tag
+    return res
