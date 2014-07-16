@@ -138,6 +138,18 @@ def word_last(tokens):
 
 
 @tokens_feature
+def bigram_first(tokens):
+    "first two words in the EDU (normalised)"
+    return " ".join(tokens[:2])
+
+
+@tokens_feature
+def bigram_last(tokens):
+    "first two words in the EDU (normalised)"
+    return " ".join(tokens[-2:])
+
+
+@tokens_feature
 def num_tokens(tokens):
     "number of distinct tokens in EDU text"
     return len(tokens)
@@ -151,6 +163,7 @@ def num_tokens(tokens):
 def num_edus_between(edu1, edu2):
     "number of EDUs between the two EDUs"
     return abs(edu2.num - edu1.num) - 1
+
 
 def feat_grouping(current, edu1, edu2):
     "which file in the corpus this pair appears in"
@@ -216,6 +229,8 @@ class SingleEduSubgroup_Text(SingleEduSubgroup):
     _features =\
         [MagicKey.discrete_fn(word_first),
          MagicKey.discrete_fn(word_last),
+         MagicKey.discrete_fn(bigram_first),
+         MagicKey.discrete_fn(bigram_last),
          MagicKey.continuous_fn(num_tokens)]
 
     def __init__(self):
