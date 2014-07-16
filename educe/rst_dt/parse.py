@@ -197,14 +197,20 @@ def _align_with_context(tree, context):
     return tree
 
 
-def parse_rst_dt_tree(tstr, context):
+def parse_rst_dt_tree(tstr, context=None):
     """
-    Read a single RST tree from its RST DT string representation
-    and align it with the underlying text
+    Read a single RST tree from its RST DT string representation.
+    If context is set, align the tree with it. You should really
+    try to pass in a context (see `RSTContext` if you can, the
+    None case is really intended for testing, or in cases where
+    you don't have an original text)
     """
     pstr = _preprocess(tstr)
     tree_ = Tree.parse(pstr, leaf_pattern=_LEAF_PATTERN)
-    return _align_with_context(_postprocess(tree_), context)
+    tree_ = _postprocess(tree_)
+    if context:
+        tree_ = _align_with_context(tree_, context)
+    return tree_
 
 
 def read_annotation_file(anno_filename, text_filename):
