@@ -63,6 +63,8 @@ class EDU(Standoff):
     """
     An RST leaf node
     """
+    _SUMMARY_LEN = 20
+
     def __init__(self, num, span, text,
                  context=None,
                  origin=None):
@@ -111,7 +113,10 @@ class EDU(Standoff):
             return str(self.num)
 
     def __repr__(self):
-        return self.text
+        txt = self.text()
+        if len(txt) > self._SUMMARY_LEN + 3:
+            txt = txt[:self._SUMMARY_LEN] + "..."
+        return "EDU:[%s]" % txt
 
     def text(self):
         """
@@ -190,7 +195,6 @@ class RSTTree(SearchableTree, Standoff):
     """
 
     def __init__(self, node, children,
-                 context=None,
                  origin=None):
         """
         See `educe.rst_dt.parse` to build trees from strings
