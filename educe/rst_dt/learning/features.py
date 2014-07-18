@@ -73,11 +73,12 @@ def edu_pair_feature(wrapped):
 
 def clean_edu_text(text):
     """
-    Strip metadata from EDU text
+    Strip metadata from EDU text and compress extraneous whitespace
     """
     clean_text = text
     clean_text = re.sub(r'(\.|,)*$', r'', clean_text)
     clean_text = re.sub(r'^"', r'', clean_text)
+    clean_text = re.sub(r'\s+', ' ', clean_text)
     return clean_text
 
 
