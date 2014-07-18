@@ -11,7 +11,7 @@ import re
 import sys
 
 import educe.util
-from educe.internalutil import treenode
+from educe.internalutil import treenode, ifilter
 from educe.rst_dt import SimpleRSTTree, deptree, id_to_path
 from educe.learning.csv import tune_for_csv
 from educe.learning.keys import\
@@ -422,7 +422,7 @@ def _filter0(pred, iterable):
     First item that satisifies a predicate in a given
     iterable, otherwise None
     """
-    matches = itertools.ifilter(pred, iterable)
+    matches = ifilter(pred, iterable)
     return matches.next() if matches else None
 
 

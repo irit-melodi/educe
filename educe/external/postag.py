@@ -19,12 +19,12 @@ more general than this one
 .. _ark-tweet-nlp: http://www.ark.cs.cmu.edu/TweetNLP/
 """
 
-from itertools import ifilterfalse, islice
+from itertools import islice
 import codecs
 import copy
-import itertools
 
 from educe.annotation import Span, Standoff
+from educe.internalutil import ifilterfalse
 
 # I don't yet see how "too few public methods" is helpful
 # pylint: disable=R0903

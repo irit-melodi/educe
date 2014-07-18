@@ -6,16 +6,24 @@ Utility functions which are meant to be used by educe but aren't expected
 to be too useful outside of it
 """
 
+import itertools
 import sys
 
 if sys.version > '3':
     def treenode(tree):
         "API-change padding for NLTK 2 vs NLTK 3 trees"
         return tree.label()
+
+    ifilter = filter
+    ifilterfalse = itertools.filterfalse
+
 else:
     def treenode(tree):
         "API-change padding for NLTK 2 vs NLTK 3 trees"
         return tree.node
+
+    ifilter = itertools.ifilter
+    ifilterfalse = itertools.ifilterfalse
 
 
 class EduceXmlException(Exception):
