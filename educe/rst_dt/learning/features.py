@@ -18,6 +18,14 @@ from educe.learning.keys import\
     ClassKeyGroup, KeyGroup, MergedKeyGroup,\
     MagicKey
 
+class FeatureExtractionException(Exception):
+    """
+    Exceptions related to RST trees not looking like we would
+    expect them to
+    """
+    def __init__(self, msg):
+        super(FeatureExtractionException, self).__init__(msg)
+
 
 # ---------------------------------------------------------------------
 # feature extraction
@@ -32,7 +40,7 @@ FeatureInput = namedtuple('FeatureInput',
 
 # A document and relevant contextual information
 DocumentPlus = namedtuple('DocumentPlus',
-                          ['key', 'rsttree', 'deptree'])
+                          ['key', 'rsttree', 'deptree', 'surrounders'])
 
 # ---------------------------------------------------------------------
 # single EDUs
@@ -161,6 +169,22 @@ def num_edus_between(edu1, edu2):
 def feat_grouping(current, edu1, edu2):
     "which file in the corpus this pair appears in"
     return os.path.basename(id_to_path(current.key))
+
+
+def same_paragraph(current, edu1, edu2):
+    "if in the same paragraph"
+    para1 = current.surrounders[edu1][0]
+    para2 = current.surrounders[edu2][0]
+    return para1 is not None and para2 is not None and\
+        para1 == para2
+
+
+def same_bad_sentence(current, edu1, edu2):
+    "if in the same sentence (bad segmentation)"
+    sent1 = current.surrounders[edu1][1]
+    sent2 = current.surrounders[edu2][1]
+    return sent1 is not None and sent2 is not None and\
+        sent1 == sent2
 
 
 # ---------------------------------------------------------------------
@@ -308,7 +332,9 @@ class PairSubgroup_Gap(PairSubgroup):
     def __init__(self):
         desc = "the gap between EDUs"
         keys =\
-            [MagicKey.continuous_fn(num_edus_between)]
+            [MagicKey.continuous_fn(num_edus_between),
+             MagicKey.discrete_fn(same_paragraph),
+             MagicKey.discrete_fn(same_bad_sentence)]
         super(PairSubgroup_Gap, self).__init__(desc, keys)
 
 
@@ -381,13 +407,75 @@ def simplify_deptree(dtree):
     return relations
 
 
+def containing(span):
+    """
+    span -> anno -> bool
+
+    if this annotation encloses the given span
+    """
+    return lambda x: x.text_span().encloses(span)
+
+
+def _filter0(pred, iterable):
+    """
+    First item that satisifies a predicate in a given
+    iterable, otherwise None
+    """
+    matches = itertools.ifilter(pred, iterable)
+    return matches.next() if matches else None
+
+
+def _surrounding_text(edu):
+    """
+    Determine which paragraph and sentence (if any) surrounds
+    this EDU. Try to accomodate the occasional off-by-a-smidgen
+    error by folks marking these EDU boundaries, eg. original
+    text:
+
+    Para1: "Magazines are not providing us in-depth information on
+    circulation," said Edgar Bronfman Jr., .. "How do readers feel
+    about the magazine?...
+    Research doesn't tell us whether people actually do read the
+    magazines they subscribe to."
+
+    Para2: Reuben Mark, chief executive of Colgate-Palmolive, said...
+
+    Marked up EDU is wide to the left by three characters:
+    "
+
+    Reuben Mark, chief executive of Colgate-Palmolive, said...
+    """
+    espan = edu.text_span()
+    para = _filter0(containing(espan), edu.context.paragraphs)
+    # sloppy EDUs happen; try shaving off some characters
+    # if we can't find a paragraph
+    if not para:
+        espan = copy.copy(espan)
+        espan.char_start += 1
+        espan.char_end -= 1
+        etext = edu.context.text(espan)
+        # kill left whitespace
+        espan.char_start += len(etext) - len(etext.lstrip())
+        etext = etext.lstrip()
+        # kill right whitespace
+        espan.char_end -= len(etext) - len(etext.rstrip())
+        etext = etext.rstrip()
+        # try again
+        para = _filter0(containing(espan), edu.context.paragraphs)
+
+    sent = _filter0(containing(espan), para.sentences) if para else None
+    return para, sent
+
+
 def preprocess(inputs, k):
     """
     Pre-process and bundle up a representation of the current document
     """
     rtree = SimpleRSTTree.from_rst_tree(inputs.corpus[k])
     dtree = deptree.relaxed_nuclearity_to_deptree(rtree)
-    return DocumentPlus(k, rtree, dtree)
+    surrounders = {edu: _surrounding_text(edu)
+                   for edu in rtree.leaves()}
+    return DocumentPlus(k, rtree, dtree, surrounders)
 
 
 def extract_pair_features(inputs, live=False):
