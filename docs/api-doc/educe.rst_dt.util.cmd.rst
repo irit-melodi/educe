@@ -36,6 +36,14 @@ educe.rst_dt.util.cmd.text module
     :undoc-members:
     :show-inheritance:
 
+educe.rst_dt.util.cmd.tmp module
+--------------------------------
+
+.. automodule:: educe.rst_dt.util.cmd.tmp
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Module contents
 ---------------
