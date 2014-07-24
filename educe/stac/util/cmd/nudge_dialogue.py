@@ -13,14 +13,12 @@ import sys
 from educe.annotation import Span
 import educe.stac as st
 
-from ..annotate import show_diff, annotate_doc
+from ..annotate import show_diff
 from ..args import\
     add_usual_input_args, add_usual_output_args,\
     add_commit_args,\
     read_corpus, get_output_dir, announce_output_dir
-from ..context import containing
-from ..doc import narrow_to_span, enclosing_span
-from ..glozz import get_turn
+from ..doc import narrow_to_span
 from ..output import save_document
 
 
@@ -31,63 +29,15 @@ def _mini_diff(k, args, old_doc, new_doc, span):
     """
     mini_old_doc = narrow_to_span(old_doc, span)
     mini_new_doc = narrow_to_span(new_doc, span)
-    return ["======= NUDGE TURN %d %s ========" % (args.turn, args.direction),
+    return ["======= NUDGE TURN %d %s in %s ========" %
+            (args.turn, args.direction, k),
             "...",
             show_diff(mini_old_doc, mini_new_doc),
             "...",
             ""]
 
 
-def _maybe(pred, candidates, helptext):
-    """
-    Get at most one instance of something (or die).
-    None if no instances
-    """
-    results = list(filter(pred, candidates))
-    if not results:
-        return None
-    elif len(results) > 1:
-        sys.exit("Huh? More than one " + helptext)
-    else:
-        return results[0]
-
-
-def _maybe1(pred, candidates, helptext):
-    """
-    Get exactly one instance of something (or die).
-    """
-    res = _maybe(pred, candidates, helptext)
-    if res:
-        return res
-    else:
-        sys.exit("Could not find a " + helptext)
-
-
-def _turn(pred, doc, helptext):
-    """
-    Return turn matching the given predicate
-    """
-    turns = list(filter(st.is_turn, doc.units))
-    return _maybe1(pred, turns, helptext)
-
-
-def _turn_and_dialogue(pred, doc, helptext):
-    """
-    Return turn matching the given predicate, and its surrounding
-    dialogue.
-    """
-    dialogues = list(filter(st.is_dialogue, doc.units))
-    turn = _turn(pred, doc, helptext)
-    if turn:
-        has_turn = lambda x: x.text_span().encloses(turn.text_span())
-        dialogue = _maybe1(has_turn, dialogues,
-                           "dialogue containing " + helptext)
-        return turn, dialogue
-    else:
-        return None
-
-
-def _nudge_up(doc, turn, dialogue, next_turn, prev_dialogue):
+def _nudge_up(turn, dialogue, next_turn, prev_dialogue):
     """
     Move first turn to previous dialogue (ie. extend the
     previous dialogue to incorporate this turn, and push
@@ -112,7 +62,7 @@ def _nudge_up(doc, turn, dialogue, next_turn, prev_dialogue):
     return Span.merge_all([prev_dialogue.span, dialogue.span])
 
 
-def _nudge_down(doc, turn, dialogue, prev_turn, next_dialogue):
+def _nudge_down(turn, dialogue, prev_turn, next_dialogue):
     """
     Move last turn to next dialogue. (ie. shorten the right
     boundary of this dialogue and extend the left boundary of
@@ -174,9 +124,9 @@ def _nudge_dialogue(doc, tid, direction):
                  filter(st.is_dialogue, doc.units))
 
     if direction == "up":
-        return _nudge_up(doc, turn, dialogue, next_turn, prev_dialogue)
+        return _nudge_up(turn, dialogue, next_turn, prev_dialogue)
     elif direction == "down":
-        return _nudge_down(doc, turn, dialogue, prev_turn, next_dialogue)
+        return _nudge_down(turn, dialogue, prev_turn, next_dialogue)
     else:
         raise Exception("Unknown direction " + direction)
 
