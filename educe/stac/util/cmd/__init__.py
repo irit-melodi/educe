@@ -15,6 +15,7 @@ from . import\
     merge_edus,\
     move,\
     nudge,\
+    nudge_dialogue,\
     rename,\
     rewrite,\
     split_edu,\
@@ -32,6 +33,7 @@ SUBCOMMANDS = [clean_emoticons,
                merge_edus,
                split_edu,
                nudge,
+               nudge_dialogue,
                insert,
                tmp,
                move]
