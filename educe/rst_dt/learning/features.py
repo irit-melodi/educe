@@ -453,7 +453,7 @@ def _surrounding_text(edu):
     para = _filter0(containing(espan), edu.context.paragraphs)
     # sloppy EDUs happen; try shaving off some characters
     # if we can't find a paragraph
-    if not para:
+    if para is None:
         espan = copy.copy(espan)
         espan.char_start += 1
         espan.char_end -= 1
