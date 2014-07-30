@@ -13,7 +13,7 @@ import sys
 from educe.annotation import Span
 import educe.stac as st
 
-from ..annotate import show_diff
+from ..annotate import show_diff, annotate_doc
 from ..args import\
     add_usual_input_args, add_usual_output_args,\
     add_commit_args,\
@@ -164,13 +164,12 @@ def commit_msg(info):
     we just did
     """
     k = info.key
-    mini_old_doc = narrow_to_span(info.before, info.span)
     mini_new_doc = narrow_to_span(info.after, info.span)
 
     lines = ["%s_%s: move turn %d %s" % (k.doc, k.subdoc,
                                          info.tid, info.direction),
              "",
-             show_diff(mini_old_doc, mini_new_doc),
+             annotate_doc(mini_new_doc),
              "..."]
     return "\n".join(lines)
 
