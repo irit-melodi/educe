@@ -423,7 +423,10 @@ def _filter0(pred, iterable):
     iterable, otherwise None
     """
     matches = ifilter(pred, iterable)
-    return matches.next() if matches else None
+    try:
+        return matches.next()
+    except StopIteration:
+        return None
 
 
 def _surrounding_text(edu):
