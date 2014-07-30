@@ -84,6 +84,14 @@ educe.stac.util.cmd.nudge module
     :undoc-members:
     :show-inheritance:
 
+educe.stac.util.cmd.nudge_dialogue module
+-----------------------------------------
+
+.. automodule:: educe.stac.util.cmd.nudge_dialogue
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 educe.stac.util.cmd.rename module
 ---------------------------------
 
