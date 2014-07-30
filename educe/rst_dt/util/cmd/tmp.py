@@ -20,7 +20,6 @@ from .reltypes import\
 
 NAME = 'tmp'
 
-
 def config_argparser(parser):
     """
     Subcommand flags.
