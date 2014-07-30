@@ -8,7 +8,6 @@ import copy
 import itertools
 import os
 import re
-import sys
 
 import educe.util
 from educe.internalutil import treenode, ifilter
@@ -17,6 +16,7 @@ from educe.learning.csv import tune_for_csv
 from educe.learning.keys import\
     ClassKeyGroup, KeyGroup, MergedKeyGroup,\
     MagicKey
+
 
 class FeatureExtractionException(Exception):
     """
@@ -487,6 +487,7 @@ def extract_pair_features(inputs, live=False):
     Return a pair of dictionaries, one for attachments
     and one for relations
     """
+
     for k in inputs.corpus:
         current = preprocess(inputs, k)
         edus = current.rsttree.leaves()
@@ -515,7 +516,7 @@ def extract_pair_features(inputs, live=False):
                                    else 'UNRELATED')
                 pairs_vec.set_class(epair in relations)
 
-            yield pairs_vec, rels_vec
+                yield pairs_vec, rels_vec
 
 
 # ---------------------------------------------------------------------
