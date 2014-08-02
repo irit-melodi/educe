@@ -71,7 +71,7 @@ class ConstituencyTree(SearchableTree, Standoff):
     def _members(self):
         return self.children
 
-    def text_span(self, doc):
+    def text_span(self):
         """
         Note: doc is ignored here
         """
