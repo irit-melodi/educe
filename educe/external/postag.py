@@ -101,7 +101,7 @@ def read_token_file(fname):
 # ---------------------------------------------------------------------
 
 
-def generic_token_spans(text, tokens, offset=0):
+def generic_token_spans(text, tokens, offset=0, txtfn=None):
     """
     Given a string and a sequence of substrings within than string,
     infer a span for each of the substrings.
@@ -113,26 +113,33 @@ def generic_token_spans(text, tokens, offset=0):
 
     Spans are relative to the start of the string itself, but can be
     shifted by passing an offset (the start of the original string's
-    span).
+    span). Empty tokens are accepted but have a zero-length span.
 
     Note: this function is lazy so you can use it incrementally
     provided you can generate the tokens lazily too
 
     You probably want `token_spans` instead; this function is meant
     to be used for similar tasks outside of pos tagging
+
+    :param txtfn: function to extract text from a token (default None,
+                  treated as identity function)
     """
     txt_iter = ifilterfalse(lambda x: x[1].isspace(),
                             enumerate(text))
+    txtfn = txtfn or (lambda x: x)
+    last = offset  # for corner case of empty tokens
     for token in tokens:
         tok_chars = list(ifilterfalse(lambda x: x.isspace(),
-                                      token))
+                                      txtfn(token)))
         if not tok_chars:
-            msg = "token [%s] " % token\
-                + "is either empty or contains whitespace chars only"
-            raise EducePosTagException(msg)
+            yield Span(last, last)
+            continue
         prefix = list(islice(txt_iter, len(tok_chars)))
-        span = Span(prefix[0][0] + offset,
-                    prefix[-1][0] + 1 + offset)
+        if not prefix:
+            msg = "Too many tokens (current: %s)" % txtfn(token)
+            raise EducePosTagException(msg)
+        last = prefix[-1][0] + 1 + offset
+        span = Span(prefix[0][0] + offset, last)
         pretty_prefix = text[span.char_start:span.char_end]
         # check the text prefix to make sure we have the same
         # non-whitespace characters
