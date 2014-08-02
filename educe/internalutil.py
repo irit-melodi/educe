@@ -16,6 +16,7 @@ if sys.version > '3':
 
     ifilter = filter
     ifilterfalse = itertools.filterfalse
+    izip = zip
 
 else:
     def treenode(tree):
@@ -24,6 +25,7 @@ else:
 
     ifilter = itertools.ifilter
     ifilterfalse = itertools.ifilterfalse
+    izip = itertools.izip
 
 
 class EduceXmlException(Exception):
