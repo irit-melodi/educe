@@ -21,7 +21,6 @@ more general than this one
 
 from itertools import islice
 import codecs
-import copy
 
 from educe.annotation import Span, Standoff
 from educe.internalutil import ifilterfalse
@@ -43,7 +42,7 @@ class EducePosTagException(Exception):
 # ---------------------------------------------------------------------
 
 
-class RawToken:
+class RawToken(object):
     """
     A token with a part of speech tag associated with it
     """
