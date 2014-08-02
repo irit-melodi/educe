@@ -52,6 +52,14 @@ educe.rst_dt.parse module
     :undoc-members:
     :show-inheritance:
 
+educe.rst_dt.ptb module
+-----------------------
+
+.. automodule:: educe.rst_dt.ptb
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 educe.rst_dt.sdrt module
 ------------------------
 

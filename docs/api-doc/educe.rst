@@ -9,6 +9,7 @@ Subpackages
     educe.external
     educe.learning
     educe.pdtb
+    educe.ptb
     educe.rst_dt
     educe.stac
 
