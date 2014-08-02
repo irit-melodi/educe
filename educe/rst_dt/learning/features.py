@@ -2,6 +2,7 @@
 Feature extraction library functions for RST_DT corpus
 """
 
+from __future__ import print_function
 from collections import namedtuple
 from functools import wraps
 import copy
@@ -12,6 +13,7 @@ import re
 import educe.util
 from educe.internalutil import treenode, ifilter
 from educe.rst_dt import SimpleRSTTree, deptree, id_to_path
+from educe.rst_dt import ptb as r_ptb
 from educe.learning.csv import tune_for_csv
 from educe.learning.keys import\
     ClassKeyGroup, KeyGroup, MergedKeyGroup,\
@@ -36,11 +38,16 @@ class FeatureExtractionException(Exception):
 
 # Global resources and settings used to extract feature vectors
 FeatureInput = namedtuple('FeatureInput',
-                          ['corpus', 'debug'])
+                          ['corpus', 'ptb', 'debug'])
 
 # A document and relevant contextual information
 DocumentPlus = namedtuple('DocumentPlus',
-                          ['key', 'rsttree', 'deptree', 'surrounders'])
+                          ['key',
+                           'rsttree',
+                           'deptree',
+                           'ptb_trees',  # only those that overlap
+                           'ptb_tokens', # only those that overlap
+                           'surrounders'])
 
 # ---------------------------------------------------------------------
 # single EDUs
@@ -104,9 +111,75 @@ def tokens_feature(wrapped):
         return wrapped(tokens)
     return inner
 
+
+def ptb_tokens_feature(wrapped):
+    """
+    Lift a function from `[ptb_token] -> feature`
+    to `single_function_input -> feature`
+    """
+    @wraps(wrapped)
+    def inner(context, edu):
+        "([ptb_token] -> f) -> ((context, edu) -> f)"
+        tokens = context.ptb_tokens[edu]
+        return wrapped(tokens) if tokens is not None else None
+    return inner
+
+
 # ---------------------------------------------------------------------
 # single EDU features
 # ---------------------------------------------------------------------
+
+
+def on_first_unigram(wrapped):
+    """
+    Lift a function from `a -> b` to `[a] -> b`
+    taking the first item or returning None if empty list
+    """
+    @wraps(wrapped)
+    def inner(things):
+        "[a] -> b"
+        return wrapped(things[0]) if things else None
+    return inner
+
+
+def on_last_unigram(wrapped):
+    """
+    Lift a function from `a -> b` to `[a] -> b`
+    taking the last item or returning None if empty list
+    """
+    @wraps(wrapped)
+    def inner(things):
+        "[a] -> b"
+        return wrapped(things[-1]) if things else None
+    return inner
+
+
+def on_first_bigram(wrapped):
+    """
+    Lift a function from `a -> string` to `[a] -> string`
+    the function will be applied to the up to first two
+    elements of the list and the result concatenated.
+    It returns None if the list is empty
+    """
+    @wraps(wrapped)
+    def inner(things):
+        "[a] -> string"
+        return " ".join(map(wrapped, things[:2])) if things else None
+    return inner
+
+
+def on_last_bigram(wrapped):
+    """
+    Lift a function from `a -> string` to `[a] -> string`
+    the function will be applied to the up to the two
+    elements of the list and the result concatenated.
+    It returns None if the list is empty
+    """
+    @wraps(wrapped)
+    def inner(things):
+        "[a] -> string"
+        return " ".join(map(wrapped, things[-2:])) if things else None
+    return inner
 
 
 @edu_feature
@@ -128,33 +201,102 @@ def feat_id(edu):
 
 
 @tokens_feature
-def word_first(tokens):
+@on_first_unigram
+def word_first(token):
     "first word in the EDU (normalised)"
-    return tokens[0] if tokens else None
+    return token
 
 
 @tokens_feature
-def word_last(tokens):
+@on_last_unigram
+def word_last(token):
     "last word in the EDU (normalised)"
-    return tokens[-1] if tokens else None
+    return token
 
 
 @tokens_feature
-def bigram_first(tokens):
+@on_first_bigram
+def bigram_first(token):
     "first two words in the EDU (normalised)"
-    return " ".join(tokens[:2])
+    return token
 
 
 @tokens_feature
-def bigram_last(tokens):
+@on_last_bigram
+def bigram_last(token):
     "first two words in the EDU (normalised)"
-    return " ".join(tokens[-2:])
+    return token
 
 
 @tokens_feature
 def num_tokens(tokens):
     "number of distinct tokens in EDU text"
     return len(tokens)
+
+
+# PTB unigrams
+
+@ptb_tokens_feature
+@on_first_unigram
+def ptb_pos_tag_first(token):
+    "POS tag for first PTB token in the EDU"
+    # note: PTB tokens may not necessarily correspond to words
+    return token.tag
+
+
+@ptb_tokens_feature
+@on_last_bigram
+def ptb_pos_tag_last(token):
+    "POS tag for last PTB token in the EDU"
+    # note: PTB tokens may not necessarily correspond to words
+    return token.tag
+
+
+@ptb_tokens_feature
+@on_first_unigram
+def ptb_word_first(token):
+    "first PTB word in the EDU"
+    return token.word
+
+
+@ptb_tokens_feature
+@on_last_unigram
+def ptb_word_last(token):
+    "last PTB word in the EDU"
+    return token.word
+
+
+# PTB bigrams
+
+@ptb_tokens_feature
+@on_first_bigram
+def ptb_pos_tag_first2(token):
+    "POS tag for first two PTB tokens in the EDU"
+    # note: PTB tokens may not necessarily correspond to words
+    return token.tag
+
+
+@ptb_tokens_feature
+@on_last_bigram
+def ptb_pos_tag_last2(token):
+    "POS tag for last two PTB tokens in the EDU"
+    # note: PTB tokens may not necessarily correspond to words
+    return token.tag
+
+
+@ptb_tokens_feature
+@on_first_bigram
+def ptb_word_first2(token):
+    "first two PTB words in the EDU"
+    return token.word
+
+
+@ptb_tokens_feature
+@on_last_bigram
+def ptb_word_last2(token):
+    "last PTB words in the EDU"
+    return token.word
+
 
 # ---------------------------------------------------------------------
 # pair EDU features
@@ -186,6 +328,17 @@ def same_bad_sentence(current, edu1, edu2):
     sent2 = current.surrounders[edu2][1]
     return sent1 is not None and sent2 is not None and\
         sent1 == sent2
+
+
+def same_ptb_sentence(current, edu1, edu2):
+    "if in the same sentence (ptb segmentation)"
+    sents1 = current.ptb_trees[edu1]
+    sents2 = current.ptb_trees[edu2]
+    if sents1 is None or sents2 is None:
+        return False
+    context = edu1.context
+    has_overlap = bool([s for s in sents1 if s in sents2])
+    return has_overlap
 
 
 # ---------------------------------------------------------------------
@@ -256,13 +409,33 @@ class SingleEduSubgroup_Text(SingleEduSubgroup):
         super(SingleEduSubgroup_Text, self).__init__(desc, self._features)
 
 
+class SingleEduSubgroup_Ptb(SingleEduSubgroup):
+    """
+    Penn Treebank properties for the EDU
+    """
+    _features =\
+        [MagicKey.discrete_fn(ptb_word_first),
+         MagicKey.discrete_fn(ptb_word_last),
+         MagicKey.discrete_fn(ptb_pos_tag_first),
+         MagicKey.discrete_fn(ptb_pos_tag_last),
+         MagicKey.discrete_fn(ptb_word_first2),
+         MagicKey.discrete_fn(ptb_word_last2),
+         MagicKey.discrete_fn(ptb_pos_tag_first2),
+         MagicKey.discrete_fn(ptb_pos_tag_last2)]
+
+    def __init__(self):
+        desc = self.__doc__.strip()
+        super(SingleEduSubgroup_Ptb, self).__init__(desc, self._features)
+
+
 class SingleEduKeys(MergedKeyGroup):
     """
     single EDU features
     """
     def __init__(self, inputs):
         groups = [SingleEduSubgroup_Meta(),
-                  SingleEduSubgroup_Text()]
+                  SingleEduSubgroup_Text(),
+                  SingleEduSubgroup_Ptb()]
         #if inputs.debug:
         #    groups.append(SingleEduSubgroup_Debug())
         desc = self.__doc__.strip()
@@ -335,7 +508,8 @@ class PairSubgroup_Gap(PairSubgroup):
         keys =\
             [MagicKey.continuous_fn(num_edus_between),
              MagicKey.discrete_fn(same_paragraph),
-             MagicKey.discrete_fn(same_bad_sentence)]
+             MagicKey.discrete_fn(same_bad_sentence),
+             MagicKey.discrete_fn(same_ptb_sentence)]
         super(PairSubgroup_Gap, self).__init__(desc, keys)
 
 
@@ -471,6 +645,20 @@ def _surrounding_text(edu):
     return para, sent
 
 
+def _ptb_stuff(doc_ptb_trees, edu):
+    """
+    The PTB trees and tokens which are relevant to any given edu
+    """
+    if doc_ptb_trees is None:
+        return None, None
+    ptb_trees = [t for t in doc_ptb_trees
+                 if t.text_span().overlaps(edu.text_span())]
+    all_tokens = itertools.chain.from_iterable(t.leaves() for t in ptb_trees)
+    ptb_tokens = [tok for tok in all_tokens
+                  if tok.text_span().overlaps(edu.text_span())]
+    return ptb_trees, ptb_tokens
+
+
 def preprocess(inputs, k):
     """
     Pre-process and bundle up a representation of the current document
@@ -479,7 +667,18 @@ def preprocess(inputs, k):
     dtree = deptree.relaxed_nuclearity_to_deptree(rtree)
     surrounders = {edu: _surrounding_text(edu)
                    for edu in rtree.leaves()}
-    return DocumentPlus(k, rtree, dtree, surrounders)
+    doc_ptb_trees = r_ptb.parse_trees(inputs.corpus, k, inputs.ptb)
+    ptb_trees = {}
+    ptb_tokens = {}
+    for edu in rtree.leaves():
+        ptb_trees[edu], ptb_tokens[edu] = _ptb_stuff(doc_ptb_trees, edu)
+
+    return DocumentPlus(key=k,
+                        rsttree=rtree,
+                        deptree=dtree,
+                        ptb_trees=ptb_trees,
+                        ptb_tokens=ptb_tokens,
+                        surrounders=surrounders)
 
 
 def extract_pair_features(inputs, live=False):
@@ -524,11 +723,11 @@ def extract_pair_features(inputs, live=False):
 # ---------------------------------------------------------------------
 
 
-def read_common_inputs(args, corpus):
+def read_common_inputs(args, corpus, ptb):
     """
     Read the data that is common to live/corpus mode.
     """
-    return FeatureInput(corpus, args.debug)
+    return FeatureInput(corpus, ptb, args.debug)
 
 
 def read_help_inputs(_):
@@ -536,7 +735,7 @@ def read_help_inputs(_):
     Read the data (if any) that is needed just to produce
     the help text
     """
-    return FeatureInput(None, True)
+    return FeatureInput(None, None, True)
 
 
 def read_corpus_inputs(args):
@@ -548,4 +747,5 @@ def read_corpus_inputs(args):
     reader = educe.rst_dt.Reader(args.corpus)
     anno_files = reader.filter(reader.files(), is_interesting)
     corpus = reader.slurp(anno_files, verbose=True)
-    return read_common_inputs(args, corpus)
+    ptb = r_ptb.reader(args.ptb)
+    return read_common_inputs(args, corpus, ptb)

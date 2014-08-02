@@ -47,6 +47,8 @@ def config_argparser(parser):
     """
     parser.add_argument('corpus', metavar='DIR',
                         help='Corpus dir (eg. data/pilot)')
+    parser.add_argument('ptb', metavar='DIR',
+                        help='PTB directory (eg. PTBIII/parsed/wsj)')
     parser.add_argument('output', metavar='DIR',
                         help='Output directory')
     # add flags --doc, --subdoc, etc to allow user to filter on these things
