@@ -121,7 +121,7 @@ def ptb_tokens_feature(wrapped):
     def inner(context, edu):
         "([ptb_token] -> f) -> ((context, edu) -> f)"
         tokens = context.ptb_tokens[edu]
-        return wrapped(tokens) if tokens is not None else None
+        return tune_for_csv(wrapped(tokens)) if tokens is not None else None
     return inner
 
 
@@ -138,7 +138,7 @@ def on_first_unigram(wrapped):
     @wraps(wrapped)
     def inner(things):
         "[a] -> b"
-        return wrapped(things[0]) if things else None
+        return clean_edu_text(wrapped(things[0])) if things else None
     return inner
 
 
@@ -150,7 +150,7 @@ def on_last_unigram(wrapped):
     @wraps(wrapped)
     def inner(things):
         "[a] -> b"
-        return wrapped(things[-1]) if things else None
+        return clean_edu_text(wrapped(things[-1])) if things else None
     return inner
 
 
@@ -164,7 +164,8 @@ def on_first_bigram(wrapped):
     @wraps(wrapped)
     def inner(things):
         "[a] -> string"
-        return " ".join(map(wrapped, things[:2])) if things else None
+        return clean_edu_text(" ".join(map(wrapped, things[:2])))\
+            if things else None
     return inner
 
 
@@ -178,7 +179,8 @@ def on_last_bigram(wrapped):
     @wraps(wrapped)
     def inner(things):
         "[a] -> string"
-        return " ".join(map(wrapped, things[-2:])) if things else None
+        return clean_edu_text(" ".join(map(wrapped, things[-2:])))\
+            if things else None
     return inner
 
 
