@@ -34,6 +34,7 @@ def tune_for_csv(string):
         string2 = string
         string2 = re.sub(r'"', r"''", string2)  # imitating PTB slightly
         string2 = re.sub(r',', r'-COMMA-', string2)
+        string2 = re.sub(r'\\', r'-BACKSLASH-', string2)
         return string2
     else:
         return '__nil__'
