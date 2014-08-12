@@ -316,11 +316,6 @@ def subject_lemmas(span, trees):
     return [tree.node.features["lemma"] for tree in subtrees]
 
 
-# TODO: maybe shuffle into educe.stac
-# The trouble with these TODOs is deciding at what point it's genuinely useful,
-# and at what point it's going to clutter the library.  Ideally you pick
-# just the right bits and pieces to maximise composability, but I don't
-# know how to do that, so the process is a bit organic :-(
 def attachments(relations, du1, du2):
     """
     Return any relations between the two discourse units
@@ -333,7 +328,7 @@ def attachments(relations, du1, du2):
         "is a rel between the two discourse units"
         id1 = du1.local_id()
         id2 = du2.local_id()
-        return connects(rel, id1, id2) or connects(rel, id2, id1)
+        return connects(rel, id1, id2)
 
     return list(filter(is_match, relations))
 
@@ -1244,8 +1239,11 @@ class FeatureCache(dict):
 # extraction generators
 # ---------------------------------------------------------------------
 
+# feature extraction environment
+DocEnv = namedtuple("DocEnv", "inputs current sf_cache live")
 
-def mk_current(inputs, people, k):
+
+def _mk_env(inputs, people, k, live):
     """
     Pre-process and bundle up a representation of the current document
     """
@@ -1253,15 +1251,22 @@ def mk_current(inputs, people, k):
     if not inputs.ignore_cdus:
         # replace all CDUs in links with their recursive heads
         graph = stac_gr.Graph.from_doc(inputs.corpus, k)
+        # pylint: disable=maybe-no-member
         graph.strip_cdus(sloppy=True)
+        # pylint: enable=maybe-no-member
 
     contexts = Context.for_edus(doc, inputs.postags[k])
     parses = inputs.parses[k] if inputs.parses else None
     doc_people = people[k.doc]
-    return DocumentPlus(k, doc, contexts, doc_people, parses)
+    current = DocumentPlus(k, doc, contexts, doc_people, parses)
+
+    return DocEnv(inputs=inputs,
+                  current=current,
+                  sf_cache=FeatureCache(inputs, current),
+                  live=live)
 
 
-def get_players(inputs):
+def _get_players(inputs):
     """
     Return a dictionary mapping each document to the set of
     players in that document
@@ -1273,73 +1278,113 @@ def get_players(inputs):
     return people
 
 
+def _extract_pair(env, edu1, edu2):
+    """
+    Extraction for a given pair of EDUs
+    (directional, so would have to be called twice)
+    """
+    doc = env.current.doc
+    vec = PairKeys(env.inputs, sf_cache=env.sf_cache)
+    vec.fill(env.current, edu1, edu2)
+    rels = attachments(doc.relations, edu1, edu2)
+    if env.live:
+        return vec, vec
+    else:
+        rels_vec = ClassKeyGroup(vec)
+        pairs_vec = ClassKeyGroup(vec)
+        if len(rels) > 1:
+            print('More than one relation between %s and %s' %
+                  (edu1, edu2),
+                  file=sys.stderr)
+        rels_vec.set_class(rels[0].type if rels else 'UNRELATED')
+        pairs_vec.set_class(bool(rels))
+        return pairs_vec, rels_vec
+
+
+def _extract_doc_pairs(env, window):
+    """
+    Extraction for all relevant pairs in a document
+    (generator)
+    """
+    doc = env.current.doc
+    edus = sorted([x for x in doc.units if educe.stac.is_edu(x)],
+                  key=lambda x: x.span)
+    for edu1 in edus:
+        for edu2 in itr.dropwhile(lambda x: x.span <= edu1.span, edus):
+            ctx1 = env.current.contexts[edu1]
+            ctx2 = env.current.contexts[edu2]
+            if ctx1.dialogue != ctx2.dialogue:
+                break  # we can break because the EDUs are sorted
+                       # so once we're out of dialogue, anything
+                       # that follows will also be so
+            vecs = _extract_pair(env, edu1, edu2)
+            # pylint: disable=no-member
+            qvec = vecs[0] if env.live else vecs[0].group
+            # pylint: enable=no-member
+            if window >= 0 and qvec["num_edus_between"] > window:
+                break  # move on to next edu1
+            # both directions
+            yield vecs
+            yield _extract_pair(env, edu2, edu1)
+        # we shouldn't ever need edu1 again; expiring this means
+        # the cache uses constantish memory
+        env.sf_cache.expire(edu1)
+
+
 def extract_pair_features(inputs, window, discourse_only=True, live=False):
     """
     Return a pair of dictionaries, one for attachments
     and one for relations
     """
-    people = get_players(inputs)
-
+    people = _get_players(inputs)
     for k in inputs.corpus:
         if discourse_only and k.stage != 'discourse':
             continue
-        current = mk_current(inputs, people, k)
-        doc = current.doc
-        edus = sorted([x for x in doc.units if educe.stac.is_edu(x)],
-                      key=lambda x: x.span)
+        env = _mk_env(inputs, people, k, live)
+        for res in _extract_doc_pairs(env, window):
+            yield res
 
-        sf_cache = FeatureCache(inputs, current)
-        for edu1 in edus:
-            for edu2 in itr.dropwhile(lambda x: x.span <= edu1.span, edus):
-                ctx1 = current.contexts[edu1]
-                ctx2 = current.contexts[edu2]
-                if ctx1.dialogue != ctx2.dialogue:
-                    break  # we can break because the EDUs are sorted
-                           # so once we're out of dialogue, anything
-                           # that follows will also be so
-                vec = PairKeys(inputs, sf_cache=sf_cache)
-                vec.fill(current, edu1, edu2)
-                if window >= 0 and vec["num_edus_between"] > window:
-                    break
-                rels = attachments(doc.relations, edu1, edu2)
-                if live:
-                    yield vec, vec
-                else:
-                    rels_vec = ClassKeyGroup(vec)
-                    pairs_vec = ClassKeyGroup(vec)
-                    if len(rels) > 1:
-                        print('More than one relation between %s and %s' %
-                              (edu1, edu2),
-                              file=sys.stderr)
-                    rels_vec.set_class(rels[0].type if rels else 'UNRELATED')
-                    pairs_vec.set_class(bool(rels))
-                    yield pairs_vec, rels_vec
-            # we shouldn't ever need edu1 again; expiring this means
-            # the cache uses constantish memory
-            sf_cache.expire(edu1)
+# ---------------------------------------------------------------------
+# extraction generators (single edu)
+# ---------------------------------------------------------------------
+
+
+def _extract_single(env, edu):
+    """
+    Extraction for a single EDU
+    """
+    vec = SingleEduKeysForSingleExtraction(env.inputs)
+    vec.fill(env.current, edu)
+    if env.live:
+        return vec
+    else:
+        act = real_dialogue_act(env.inputs.corpus, edu)
+        cl_vec = ClassKeyGroup(vec)
+        cl_vec.set_class(clean_dialogue_act(act))
+        return cl_vec
+
+
+def _extract_doc_singles(env):
+    """
+    Extraction for all relevant single EDUs in a document
+    (generator)
+    """
+    doc = env.current.doc
+    edus = [unit for unit in doc.units if educe.stac.is_edu(unit)]
+    return (_extract_single(env, edu) for edu in edus)
 
 
 def extract_single_features(inputs, live=False):
     """
     Return a dictionary for each EDU
     """
-    people = get_players(inputs)
+    people = _get_players(inputs)
     for k in inputs.corpus:
         if k.stage != 'units':
             continue
-        current = mk_current(inputs, people, k)
-        doc = current.doc
-        edus = [unit for unit in doc.units if educe.stac.is_edu(unit)]
-        for edu in edus:
-            vec = SingleEduKeysForSingleExtraction(inputs)
-            vec.fill(current, edu)
-            if live:
-                yield vec
-            else:
-                act = real_dialogue_act(inputs.corpus, edu)
-                cl_vec = ClassKeyGroup(vec)
-                cl_vec.set_class(clean_dialogue_act(act))
-                yield cl_vec
+        env = _mk_env(inputs, people, k, live)
+        for res in _extract_doc_singles(env):
+            yield res
 
 
 # ---------------------------------------------------------------------
