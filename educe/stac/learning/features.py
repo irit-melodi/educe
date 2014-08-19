@@ -350,18 +350,6 @@ def enclosed_trees(span, trees):
 
     return map_topdown(good, prunable, trees)
 
-
-# ---------------------------------------------------------------------
-# features
-# ---------------------------------------------------------------------
-
-
-def _kg(*args):
-    """
-    Shorthand for KeyGroup, just to save on some indentation
-    """
-    return KeyGroup(*args)
-
 # ---------------------------------------------------------------------
 # feature extraction
 # ---------------------------------------------------------------------
