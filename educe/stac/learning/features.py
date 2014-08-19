@@ -24,7 +24,7 @@ from educe.external.parser import\
     SearchableTree,\
     ConstituencyTree
 from educe.learning.keys import\
-    Key, KeyGroup, MergedKeyGroup, ClassKeyGroup
+    MagicKey, Key, KeyGroup, MergedKeyGroup, ClassKeyGroup
 from educe.stac import postag, corenlp
 from educe.learning.csv import tune_for_csv
 import educe.corpus
@@ -1144,23 +1144,35 @@ class PairSubgroup_Debug(PairSubgroup):
         vec["text"] = tune_for_csv(doc.text(big_span))
 
 
+def feat_dialogue(current, edu1, _):
+    "dialogue that contains both EDUs"
+    ctx1 = current.contexts[edu1]
+    dia_span = ctx1.dialogue.text_span()
+    return friendly_dialogue_id(current.key, dia_span)
+
+
+#pylint: disable=unused-argument
+def feat_annotator(current, edu1, edu2):
+    "annotator for the subdoc"
+    anno = current.doc.origin.annotator
+    return "none" if anno is None or anno is "" else anno
+#pylint: enable=unused-argument
+
+
 class PairSubGroup_Core(PairSubgroup):
     "core features"
 
     def __init__(self):
         desc = self.__doc__.strip()
         keys =\
-            [Key.meta("dialogue", "dialogue that contains both EDUs"),
-             Key.meta("annotator", "annotator for the subdoc")]
+            [MagicKey.meta_fn(feat_dialogue),
+             MagicKey.meta_fn(feat_annotator)]
         super(PairSubGroup_Core, self).__init__(desc, keys)
 
     def fill(self, current, edu1, edu2, target=None):
         vec = self if target is None else target
-        ctx1 = current.contexts[edu1]
-        dia_span = ctx1.dialogue.text_span()
-
-        vec["dialogue"] = friendly_dialogue_id(current.key, dia_span)
-        vec["annotator"] = current.doc.origin.annotator
+        for key in self.keys:
+            vec[key.name] = key.function(current, edu1, edu2)
 
 
 class PairKeys(MergedKeyGroup):
