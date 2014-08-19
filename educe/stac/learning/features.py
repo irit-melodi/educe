@@ -7,6 +7,7 @@ to this library
 
 from __future__ import absolute_import, print_function
 from collections import defaultdict, namedtuple
+from functools import wraps
 from itertools import chain
 import collections
 import copy
@@ -177,14 +178,6 @@ def player_addresees(edu):
         if addressee not in blacklist:
             return frozenset(name.strip() for name in addressee.split(','))
     return frozenset()
-
-
-def speaker_started_dialogue(ctx):
-    """
-    Given an EDU context, determine if the speaker for that EDU is the
-    same as the speaker for the dialogue
-    """
-    return speaker(ctx.dialogue_turns[0]) == speaker(ctx.turn)
 
 
 def position_of_speaker_first_turn(ctx):
@@ -397,6 +390,90 @@ DocumentPlus = namedtuple('DocumentPlus',
                            'players',
                            'parses'])
 
+# ---------------------------------------------------------------------
+# feature decorators
+# ---------------------------------------------------------------------
+
+
+def type_text(wrapped):
+    """
+    Given a feature that emits text, clean its output up so to work
+    with a wide variety of csv parsers ::
+
+        (a -> String) ->
+        (a -> String)
+    """
+    @wraps(wrapped)
+    def inner(*args, **kwargs):
+        "call the wrapped function"
+        return tune_for_csv(wrapped(*args, **kwargs))
+    return inner
+
+
+def context_feature(wrapped):
+    """
+    Lift a context based feature into a standard single EDU one ::
+
+        ((Context, Edu) -> a) ->
+        ((Current, Edu) -> a)
+    """
+    @wraps(wrapped)
+    def inner(current, edu):
+        "call the wrapped fuction"
+        return wrapped(current.contexts[edu], edu)
+    return inner
+
+
+def edu_text_feature(wrapped):
+    """
+    Lift a text based feature into a standard single EDU one ::
+
+        (String -> a) ->
+        ((Current, Edu) -> a)
+    """
+    @wraps(wrapped)
+    def inner(current, edu):
+        "call the wrapped fuction"
+        txt = current.doc.text(edu.text_span())
+        return wrapped(txt)
+    return inner
+
+
+def tuple_feature(combine):
+    """
+    ::
+
+       (a -> a -> b) ->
+       ((current, cache, edu) -> a) ->
+       (current, cache, edu, edu) -> b)
+
+    Combine the result of single-edu feature function to make
+    a pair feature
+    """
+
+    def decorator(wrapped):
+        "apply the combiner"
+
+        @wraps(wrapped)
+        def inner(current, cache, edu1, edu2):
+            "wrapped :: (current, cache, edu) -> String"
+            val1 = wrapped(current, cache, edu1)
+            val2 = wrapped(current, cache, edu2)
+            return combine(val1, val2)
+        return inner
+    return decorator
+
+
+def underscore(str1, str2):
+    """
+    join two strings with an underscore
+    """
+    return '%s_%s' % (str1, str2)
+
+# ---------------------------------------------------------------------
+#
+# ---------------------------------------------------------------------
+
 
 def clean_dialogue_act(act):
     """
@@ -420,6 +497,294 @@ def friendly_dialogue_id(k, span):
     start = span.char_start
     end = span.char_end
     return '%s_%04d_%04d' % (bname, start, end)
+
+
+# ---------------------------------------------------------------------
+# single EDU non-lexical features
+# ---------------------------------------------------------------------
+
+
+def feat_id(_, edu):
+    "some sort of unique identifier for the EDU"
+    return edu.identifier()
+
+
+def feat_start(_, edu):
+    "text span start"
+    return edu.text_span().char_start
+
+
+def feat_end(_, edu):
+    "text span start"
+    return edu.text_span().char_end
+
+
+@type_text
+def feat_text(current, edu):
+    "EDU text [debug only]"
+    return current.doc.text(edu.text_span())
+
+
+@context_feature
+def num_tokens(context, _):
+    "length of this EDU in tokens"
+    return len(context.tokens)
+
+
+@type_text
+@context_feature
+def word_first(context, _):
+    "the first word in this EDU"
+    return clean_chat_word(context.tokens[0]) if context.tokens else None
+
+
+@type_text
+@context_feature
+def word_last(context, _):
+    "the last word in this EDU"
+    return clean_chat_word(context.tokens[-1]) if context.tokens else None
+
+
+def has_player_name_exact(current, edu):
+    "if the EDU text has a player name in it"
+    tokens = current.contexts[edu].tokens
+    return has_one_of_words(current.players, tokens)
+
+
+def has_player_name_fuzzy(current, edu):
+    "if the EDU has a word that sounds like a player name"
+    tokens = current.contexts[edu].tokens
+    return has_one_of_words(current.players, tokens, norm=fuzzy.nysiis)
+
+
+@context_feature
+def feat_has_emoticons(context, _):
+    "if the EDU has emoticon-tagged tokens"
+    return bool(emoticons(context.tokens))
+
+
+@context_feature
+def feat_is_emoticon_only(context, _):
+    "if the EDU consists solely of an emoticon"
+    return is_just_emoticon(context.tokens)
+
+
+@edu_text_feature
+def has_correction_star(text):
+    "if the EDU begins with a '*' but does not contain others"
+    return text[0] == "*" and "*" not in text[1:]
+
+
+@edu_text_feature
+def ends_with_bang(text):
+    "if the EDU text ends with '!'"
+    return text[-1] == '!'
+
+
+@edu_text_feature
+def ends_with_qmark(text):
+    "if the EDU text ends with '?'"
+    return text[-1] == '?'
+
+
+@type_text
+def lemma_subject(current, edu):
+    "the lemma corresponding to the subject of this EDU"
+
+    subjects = subject_lemmas(edu.text_span(),
+                              current.parses.deptrees)
+    return subjects[0] if subjects else None
+
+
+def has_FOR_np(current, edu):
+    "if the EDU has the pattern IN(for).. NP"
+
+    def is_nplike(anno):
+        "is some sort of NP annotation from a parser"
+        return isinstance(anno, ConstituencyTree)\
+            and anno.node in ['NP', 'WHNP', 'NNP', 'NNPS']
+
+    def is_prep_for(anno):
+        "is a node representing for as the prep in a PP"
+        return isinstance(anno, ConstituencyTree)\
+            and anno.node == 'IN'\
+            and len(anno.children) == 1\
+            and anno.children[0].features["lemma"] == "for"
+
+    def is_for_pp_with_np(anno):
+        "is a for PP node (see above) with some NP-like descendant"
+        return any(is_prep_for(child) for child in anno.children)\
+            and anno.topdown(is_nplike, None)
+
+    trees = enclosed_trees(edu.text_span(),
+                           current.parses.trees)
+    return bool(map_topdown(is_for_pp_with_np, None, trees))
+
+
+QUESTION_WORDS = ["what",
+                  "which",
+                  "where",
+                  "when",
+                  "who",
+                  "how",
+                  "why",
+                  "whose"]
+
+
+def is_question(current, edu):
+    "if the EDU is (or contains) a question"
+
+    def is_sqlike(anno):
+        "is some sort of question"
+        return isinstance(anno, ConstituencyTree)\
+            and anno.node in ['SBARQ', 'SQ']
+
+    doc = current.doc
+    span = edu.text_span()
+    has_qmark = "?" in doc.text(span)[-1]
+
+    ctx = current.contexts[edu]
+    tokens = ctx.tokens
+    starts_w_qword = False
+    if tokens:
+        starts_w_qword = tokens[0].word.lower() in QUESTION_WORDS
+
+    parses = current.parses
+    trees = enclosed_trees(span, parses.trees)
+    with_q_tag = map_topdown(is_sqlike, None, trees)
+    has_q_tag = bool(with_q_tag)
+    return has_qmark or starts_w_qword or has_q_tag
+
+
+@context_feature
+def edu_position_in_turn(context, edu):
+    "relative position of the EDU in the turn"
+    return 1 + context.turn_edus.index(edu)
+
+
+@context_feature
+def position_in_dialogue(context, _):
+    "relative position of the turn in the dialogue"
+    return 1 + context.dialogue_turns.index(context.turn)
+
+
+@context_feature
+def position_in_game(context, _):
+    "relative position of the turn in the game"
+    return 1 + context.doc_turns.index(context.turn)
+
+
+@context_feature
+def turn_follows_gap(context, _):
+    "if the EDU turn number is > 1 + previous turn"
+    tid = turn_id(context.turn)
+    dialogue_tids = list(map(turn_id, context.dialogue_turns))
+    return tid and tid - 1 in dialogue_tids and tid != min(dialogue_tids)
+
+
+@context_feature
+def speaker_started_the_dialogue(context, _):
+    """
+    if the speaker for this EDU is the same as that"
+    of the first turn in the dialogue
+    """
+    return speaker(context.dialogue_turns[0]) == speaker(context.turn)
+
+
+@context_feature
+def speaker_already_spoken_in_dialogue(context, _):
+    """
+    if the speaker for this EDU is the same as that
+    of a previous turn in the dialogue
+    """
+    return position_of_speaker_first_turn(context) <\
+        context.dialogue_turns.index(context.turn)
+
+
+@context_feature
+def speakers_first_turn_in_dialogue(context, _):
+    """
+    position in the dialogue of the turn in which
+    the speaker for this EDU first spoke
+    """
+    return 1 + position_of_speaker_first_turn(context)
+
+# ---------------------------------------------------------------------
+# pair features
+# ---------------------------------------------------------------------
+
+
+def feat_dialogue(current, edu1, _):
+    "dialogue that contains both EDUs"
+    ctx1 = current.contexts[edu1]
+    dia_span = ctx1.dialogue.text_span()
+    return friendly_dialogue_id(current.key, dia_span)
+
+
+#pylint: disable=unused-argument
+def feat_annotator(current, edu1, edu2):
+    "annotator for the subdoc"
+    anno = current.doc.origin.annotator
+    return "none" if anno is None or anno is "" else anno
+#pylint: enable=unused-argument
+
+
+@type_text
+def feat_pair_text(current, edu1, edu2):
+    "text from DU1 start to DU2 end [debug only]"
+    doc = current.doc
+    edu1_span = edu1.text_span()
+    edu2_span = edu2.text_span()
+    big_span = edu1_span.merge(edu2_span)
+    return doc.text(big_span)
+
+
+@tuple_feature(underscore)  # decorator does the pairing boilerplate
+def is_question_pairs(_, cache, edu):
+    "boolean tuple: if each EDU is a question"
+    return cache[edu]["is_question"]
+
+
+@tuple_feature(underscore)
+def dialogue_act_pairs(current, _, edu):
+    "tuple of dialogue acts for both EDUs"
+    return clean_dialogue_act(real_dialogue_act(edu, current.unitdoc))
+
+
+EduGap = namedtuple("EduGap", "sf_cache inner_edus turns_between")
+
+
+#pylint: disable=unused-argument
+def num_edus_between(_current, gap, _edu1, _edu2):
+    "number of intervening EDUs (0 if adjacent)"
+    return len(gap.inner_edus)
+
+
+def num_speakers_between(_current, gap, _edu1, _edu2):
+    "number of distinct speakers in intervening EDUs"
+    return len(frozenset(speaker(t) for t in gap.turns_between))
+
+
+def has_inner_question(current, gap, _edu1, _edu2):
+    "if there is an intervening EDU that is a question"
+    return any(gap.sf_cache[x]["is_question"]
+               for x in gap.inner_edus)
+#pylint: enable=unused-argument
+
+
+def same_speaker(current, _, edu1, edu2):
+    "if both EDUs have the same speaker"
+    ctx1 = current.contexts[edu1]
+    ctx2 = current.contexts[edu2]
+    return speaker(ctx1.turn) == speaker(ctx2.turn)
+
+
+def same_turn(current, _, edu1, edu2):
+    "if both EDUs are in the same turn"
+    ctx1 = current.contexts[edu1]
+    ctx2 = current.contexts[edu2]
+    return ctx1.turn == ctx2.turn
+
 
 # ---------------------------------------------------------------------
 # single EDU lexical features
@@ -672,44 +1037,8 @@ class MergedLexKeyGroup(MergedKeyGroup):
 
 
 # ---------------------------------------------------------------------
-# single EDU non-lexical features
+# single EDU non-lexical feature groups
 # ---------------------------------------------------------------------
-
-QUESTION_WORDS = ["what",
-                  "which",
-                  "where",
-                  "when",
-                  "who",
-                  "how",
-                  "why",
-                  "whose"]
-
-
-def is_question(current, edu):
-    """
-    Is this EDU a question (or does it contain one?)
-    """
-
-    def is_sqlike(anno):
-        "is some sort of question"
-        return isinstance(anno, ConstituencyTree)\
-            and anno.node in ['SBARQ', 'SQ']
-
-    doc = current.doc
-    span = edu.text_span()
-    has_qmark = "?" in doc.text(span)[-1]
-
-    ctx = current.contexts[edu]
-    tokens = ctx.tokens
-    starts_w_qword = False
-    if tokens:
-        starts_w_qword = tokens[0].word.lower() in QUESTION_WORDS
-
-    parses = current.parses
-    trees = enclosed_trees(span, parses.trees)
-    with_q_tag = map_topdown(is_sqlike, None, trees)
-    has_q_tag = bool(with_q_tag)
-    return has_qmark or starts_w_qword or has_q_tag
 
 
 class SingleEduSubgroup(KeyGroup):
@@ -729,8 +1058,19 @@ class SingleEduSubgroup(KeyGroup):
         just fill out this group; but in the case of a merged key
         group, you may find it desirable to fill out the merged
         group instead)
+
+        This defaults to _magic_fill if you don't implement it.
         """
-        raise NotImplementedError("fill should be implemented by a subclass")
+        self._magic_fill(current, edu, target)
+
+    def _magic_fill(self, current, edu, target=None):
+        """
+        Possible fill implementation that works on the basis of
+        features defined wholly as magic keys
+        """
+        vec = self if target is None else target
+        for key in self.keys:
+            vec[key.name] = key.function(current, edu)
 
 
 class SingleEduSubgroup_Meta(SingleEduSubgroup):
@@ -740,18 +1080,10 @@ class SingleEduSubgroup_Meta(SingleEduSubgroup):
     def __init__(self):
         desc = self.__doc__.strip()
         keys =\
-            [Key.meta("id",
-                      "some sort of unique identifier for the EDU"),
-             Key.meta("start", "text span start"),
-             Key.meta("end", "text span end")]
+            [MagicKey.meta_fn(feat_id),
+             MagicKey.meta_fn(feat_start),
+             MagicKey.meta_fn(feat_end)]
         super(SingleEduSubgroup_Meta, self).__init__(desc, keys)
-
-    def fill(self, current, edu, target=None):
-        vec = self if target is None else target
-        edu_span = edu.text_span()
-        vec["id"] = edu.identifier()
-        vec["start"] = edu_span.char_start
-        vec["end"] = edu_span.char_end
 
 
 class SingleEduSubgroup_Debug(SingleEduSubgroup):
@@ -760,14 +1092,8 @@ class SingleEduSubgroup_Debug(SingleEduSubgroup):
     """
     def __init__(self):
         desc = self.__doc__.strip()
-        keys = [Key.meta("text", "EDU text [debug only]")]
+        keys = [MagicKey.meta_fn(feat_text)]
         super(SingleEduSubgroup_Debug, self).__init__(desc, keys)
-
-    def fill(self, current, edu, target=None):
-        vec = self if target is None else target
-        doc = current.doc
-        edu_span = edu.text_span()
-        vec["text"] = tune_for_csv(doc.text(edu_span))
 
 
 class SingleEduSubgroup_Token(SingleEduSubgroup):
@@ -777,50 +1103,17 @@ class SingleEduSubgroup_Token(SingleEduSubgroup):
     def __init__(self):
         desc = self.__doc__.strip()
         keys =\
-            [Key.continuous("num_tokens", "length of this EDU in tokens"),
-             Key.discrete("word_first", "the first word in this EDU"),
-             Key.discrete("word_last", "the last word in this EDU"),
-             Key.discrete("has_player_name_exact",
-                          "if the EDU text has a player name in it")]
+            [MagicKey.continuous_fn(num_tokens),
+             MagicKey.discrete_fn(word_first),
+             MagicKey.discrete_fn(word_last),
+             MagicKey.discrete_fn(has_player_name_exact)]
         if not sys.version > '3':
-            keys.append(Key.discrete("has_player_name_fuzzy",
-                                     "if the EDU has a word that sounds like "
-                                     "a player name"),)
+            keys.append(MagicKey.discrete_fn(has_player_name_fuzzy))
         keys2 =\
-            [Key.discrete("has_emoticons",
-                          "if the EDU has emoticon-tagged tokens"),
-             Key.discrete("is_emoticon_only",
-                          "if the EDU consists solely of an emoticon")]
+            [MagicKey.discrete_fn(feat_has_emoticons),
+             MagicKey.discrete_fn(feat_is_emoticon_only)]
         keys.extend(keys2)
         super(SingleEduSubgroup_Token, self).__init__(desc, keys)
-
-    def fill(self, current, edu, target=None):
-        vec = self if target is None else target
-        ctx = current.contexts[edu]
-        tokens = ctx.tokens
-
-        # first and last words
-        if tokens:
-            word_first = clean_chat_word(tokens[0])
-            word_last = clean_chat_word(tokens[-1])
-        else:
-            word_first = None
-            word_last = None
-
-        # basic string features
-        vec["num_tokens"] = len(tokens)
-        # emoticons
-        vec["is_emoticon_only"] = is_just_emoticon(tokens)
-        vec["has_emoticons"] = bool(emoticons(tokens))
-        # other tokens
-        vec["has_player_name_exact"] =\
-            has_one_of_words(current.players, tokens)
-        if not sys.version > '3':
-            vec["has_player_name_fuzzy"] =\
-                has_one_of_words(current.players, tokens, norm=fuzzy.nysiis)
-        # first and last word
-        vec["word_first"] = tune_for_csv(word_first)
-        vec["word_last"] = tune_for_csv(word_last)
 
 
 class SingleEduSubgroup_Punct(SingleEduSubgroup):
@@ -829,37 +1122,10 @@ class SingleEduSubgroup_Punct(SingleEduSubgroup):
     def __init__(self):
         desc = self.__doc__.strip()
         keys =\
-            [Key.discrete("has_correction_star",
-                          "if the EDU begins with a '*' but does "
-                          "not contain others"),
-             Key.discrete("ends_with_bang", "if the EDU text ends with '!'"),
-             Key.discrete("ends_with_qmark", "if the EDU text ends with '?'")]
+            [MagicKey.discrete_fn(has_correction_star),
+             MagicKey.discrete_fn(ends_with_bang),
+             MagicKey.discrete_fn(ends_with_qmark)]
         super(SingleEduSubgroup_Punct, self).__init__(desc, keys)
-
-    def fill(self, current, edu, target=None):
-        doc = current.doc
-
-        def has_initial_star(span):
-            "Text in span has an initial star but no other"
-            txt = doc.text(span)
-            return txt[0] == "*" and "*" not in txt[1:]
-
-        def ends_with_bang(span):
-            "Text in span ends with an exclamation"
-            return doc.text(span)[-1] == '!'
-
-        def ends_with_qmark(span):
-            """
-            Text in span ends with question mark. We might need better
-            detection using eg subject-verb inversion from a parser
-            """
-            return doc.text(span)[-1] == '?'
-
-        vec = self if target is None else target
-        edu_span = edu.text_span()
-        vec["ends_with_bang"] = ends_with_bang(edu_span)
-        vec["ends_with_qmark"] = ends_with_qmark(edu_span)
-        vec["has_correction_star"] = has_initial_star(edu_span)
 
 
 class SingleEduSubgroup_Chat(SingleEduSubgroup):
@@ -871,46 +1137,14 @@ class SingleEduSubgroup_Chat(SingleEduSubgroup):
     def __init__(self):
         desc = "chat history features"
         keys =\
-            [Key.discrete("speaker_started_the_dialogue",
-                          "if the speaker for this EDU is the same as that "
-                          "of the first turn in the dialogue"),
-             Key.discrete("speaker_already_spoken_in_dialogue",
-                          "if the speaker for this EDU is the same as that "
-                          "of a previous turn in the dialogue"),
-             Key.continuous("speakers_first_turn_in_dialogue",
-                            "position in the dialogue of the turn in which "
-                            "the speaker for this EDU first spoke"),
-             Key.discrete("turn_follows_gap",
-                          "if the EDU turn number is > 1 + previous turn"),
-             Key.continuous("position_in_dialogue",
-                            "relative position of the turn in the dialogue"),
-             Key.continuous("position_in_game",
-                            "relative position of the turn in the game"),
-             Key.continuous("edu_position_in_turn",
-                            "relative position of the EDU in the turn")]
+            [MagicKey.discrete_fn(speaker_started_the_dialogue),
+             MagicKey.discrete_fn(speaker_already_spoken_in_dialogue),
+             MagicKey.continuous_fn(speakers_first_turn_in_dialogue),
+             MagicKey.discrete_fn(turn_follows_gap),
+             MagicKey.continuous_fn(position_in_dialogue),
+             MagicKey.continuous_fn(position_in_game),
+             MagicKey.continuous_fn(edu_position_in_turn)]
         super(SingleEduSubgroup_Chat, self).__init__(desc, keys)
-
-    def fill(self, current, edu, target=None):
-        vec = self if target is None else target
-        ctx = current.contexts[edu]
-        spk_turn1_pos = 1 + position_of_speaker_first_turn(ctx)
-        turn_pos_wrt_dia = 1 + ctx.dialogue_turns.index(ctx.turn)
-        turn_pos_wrt_game = 1 + ctx.doc_turns.index(ctx.turn)
-        assert spk_turn1_pos <= turn_pos_wrt_dia
-        edu_pos = 1 + ctx.turn_edus.index(edu)
-
-        dialogue_tids = list(map(turn_id, ctx.dialogue_turns))
-        tid = turn_id(ctx.turn)
-
-        vec["edu_position_in_turn"] = edu_pos
-        vec["position_in_dialogue"] = turn_pos_wrt_dia
-        vec["position_in_game"] = turn_pos_wrt_game
-        vec["turn_follows_gap"] =\
-            tid and tid - 1 in dialogue_tids and tid != min(dialogue_tids)
-        vec["speaker_started_the_dialogue"] = speaker_started_dialogue(ctx)
-        vec["speakers_first_turn_in_dialogue"] = spk_turn1_pos
-        vec["speaker_already_spoken_in_dialogue"] =\
-            spk_turn1_pos < turn_pos_wrt_dia
 
 
 class SingleEduSubgroup_Parser(SingleEduSubgroup):
@@ -921,44 +1155,10 @@ class SingleEduSubgroup_Parser(SingleEduSubgroup):
     def __init__(self):
         desc = "parser features"
         keys =\
-            [Key.discrete("lemma_subject",
-                          "the lemma corresponding to the "
-                          "subject of this EDU"),
-             Key.discrete("has_FOR_np",
-                          "if the EDU has the pattern IN(for).. NP"),
-             Key.discrete("is_question",
-                          "if the EDU is (or contains) a question")]
+            [MagicKey.discrete_fn(lemma_subject),
+             MagicKey.discrete_fn(has_FOR_np),
+             MagicKey.discrete_fn(is_question)]
         super(SingleEduSubgroup_Parser, self).__init__(desc, keys)
-
-    def fill(self, current, edu, target=None):
-        vec = self if target is None else target
-
-        def is_nplike(anno):
-            "is some sort of NP annotation from a parser"
-            return isinstance(anno, ConstituencyTree)\
-                and anno.node in ['NP', 'WHNP', 'NNP', 'NNPS']
-
-        def is_prep_for(anno):
-            "is a node representing for as the prep in a PP"
-            return isinstance(anno, ConstituencyTree)\
-                and anno.node == 'IN'\
-                and len(anno.children) == 1\
-                and anno.children[0].features["lemma"] == "for"
-
-        def is_for_pp_with_np(anno):
-            "is a for PP node (see above) with some NP-like descendant"
-            return any(is_prep_for(child) for child in anno.children)\
-                and anno.topdown(is_nplike, None)
-
-        vec = self if target is None else target
-        edu_span = edu.text_span()
-        parses = current.parses
-        trees = enclosed_trees(edu_span, parses.trees)
-        subjects = subject_lemmas(edu_span, parses.deptrees)
-        subject = subjects[0] if subjects else None
-        vec["has_FOR_np"] = bool(map_topdown(is_for_pp_with_np, None, trees))
-        vec["lemma_subject"] = tune_for_csv(subject)
-        vec["is_question"] = is_question(current, edu)
 
 
 class SingleEduKeys(MergedKeyGroup):
@@ -1057,23 +1257,14 @@ class PairSubgroup_Tuple(PairSubgroup):
         self.sf_cache = sf_cache
         desc = self.__doc__.strip()
         keys =\
-            [Key.discrete("is_question_pairs",
-                          "boolean tuple: if each EDU is a question"),
-             Key.discrete("dialogue_act_pairs",
-                          "tuple of dialogue acts for both EDUs")]
+            [MagicKey.discrete_fn(is_question_pairs),
+             MagicKey.discrete_fn(dialogue_act_pairs)]
         super(PairSubgroup_Tuple, self).__init__(desc, keys)
 
     def fill(self, current, edu1, edu2, target=None):
         vec = self if target is None else target
-        vec_edu1 = self.sf_cache[edu1]
-        vec_edu2 = self.sf_cache[edu2]
-        edu1_q = vec_edu1["is_question"]
-        edu2_q = vec_edu2["is_question"]
-        edu1_act = clean_dialogue_act(real_dialogue_act(edu1, current.unitdoc))
-        edu2_act = clean_dialogue_act(real_dialogue_act(edu2, current.unitdoc))
-
-        vec["is_question_pairs"] = '%s_%s' % (edu1_q, edu2_q)
-        vec["dialogue_act_pairs"] = '%s_%s' % (edu1_act, edu2_act)
+        for key in self.keys:
+            vec[key.name] = key.function(current, self.sf_cache, edu1, edu2)
 
 
 class PairSubgroup_Gap(PairSubgroup):
@@ -1086,44 +1277,37 @@ class PairSubgroup_Gap(PairSubgroup):
         self.sf_cache = sf_cache
         desc = "the gap between EDUs"
         keys =\
-            [Key.continuous("num_edus_between",
-                            "number of intervening EDUs (0 if adjacent)"),
-             Key.continuous("num_speakers_between",
-                            "number of distinct speakers in intervening EDUs"),
-             Key.discrete("same_speaker",
-                          "if both EDUs have the same speaker"),
-             Key.discrete("same_turn", "if both EDUs are in the same turn"),
-             Key.discrete("has_inner_question",
-                          "if there is an intervening EDU that is a question")]
+            [MagicKey.continuous_fn(num_edus_between),
+             MagicKey.continuous_fn(num_speakers_between),
+             MagicKey.discrete_fn(same_speaker),
+             MagicKey.discrete_fn(same_turn),
+             MagicKey.discrete_fn(has_inner_question)]
         super(PairSubgroup_Gap, self).__init__(desc, keys)
 
-    def fill(self, current, edu1, edu2, target):
+    def fill(self, current, edu1, edu2, target=None):
         vec = self if target is None else target
         doc = current.doc
         ctx1 = current.contexts[edu1]
         ctx2 = current.contexts[edu2]
 
-        edu1_span = edu1.text_span()
-        edu2_span = edu2.text_span()
-        big_span = edu1_span.merge(edu2_span)
+        big_span = edu1.text_span().merge(edu2.text_span())
 
         # spans for the turns that come between the two edus
         turns_between_span = Span(ctx1.turn.text_span().char_end,
                                   ctx2.turn.text_span().char_start)
         turns_between = enclosed(turns_between_span,
                                  (t for t in doc.units if t.type == 'Turn'))
-        speakers_between = frozenset(speaker(t) for t in turns_between)
 
         inner_edus = edus_in_span(doc, big_span)
         inner_edus.remove(edu1)
         inner_edus.remove(edu2)
 
-        vec["has_inner_question"] = any(self.sf_cache[x]["is_question"]
-                                        for x in inner_edus)
-        vec["num_edus_between"] = len(inner_edus)
-        vec["num_speakers_between"] = len(speakers_between)
-        vec["same_speaker"] = speaker(ctx1.turn) == speaker(ctx2.turn)
-        vec["same_turn"] = ctx1.turn == ctx2.turn
+        gap = EduGap(inner_edus=inner_edus,
+                     turns_between=turns_between,
+                     sf_cache=self.sf_cache)
+
+        for key in self.keys:
+            vec[key.name] = key.function(current, gap, edu1, edu2)
 
 
 class PairSubgroup_Debug(PairSubgroup):
@@ -1131,32 +1315,13 @@ class PairSubgroup_Debug(PairSubgroup):
 
     def __init__(self):
         desc = self.__doc__.strip()
-        keys = [Key.meta("text",
-                         "text from DU1 start to DU2 end [debug only]")]
+        keys = [MagicKey.meta_fn(feat_pair_text)]
         super(PairSubgroup_Debug, self).__init__(desc, keys)
 
     def fill(self, current, edu1, edu2, target=None):
         vec = self if target is None else target
-        doc = current.doc
-        edu1_span = edu1.text_span()
-        edu2_span = edu2.text_span()
-        big_span = edu1_span.merge(edu2_span)
-        vec["text"] = tune_for_csv(doc.text(big_span))
-
-
-def feat_dialogue(current, edu1, _):
-    "dialogue that contains both EDUs"
-    ctx1 = current.contexts[edu1]
-    dia_span = ctx1.dialogue.text_span()
-    return friendly_dialogue_id(current.key, dia_span)
-
-
-#pylint: disable=unused-argument
-def feat_annotator(current, edu1, edu2):
-    "annotator for the subdoc"
-    anno = current.doc.origin.annotator
-    return "none" if anno is None or anno is "" else anno
-#pylint: enable=unused-argument
+        for key in self.keys:
+            vec[key.name] = key.function(current, edu1, edu2)
 
 
 class PairSubGroup_Core(PairSubgroup):
