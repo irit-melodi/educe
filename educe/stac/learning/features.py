@@ -9,6 +9,7 @@ from __future__ import absolute_import, print_function
 from collections import defaultdict, namedtuple
 from itertools import chain
 import collections
+import copy
 import itertools as itr
 import os
 import re
@@ -272,12 +273,12 @@ def lexical_markers(sublex, tokens):
     return frozenset(sublex[x] for x in sought & present)
 
 
-def real_dialogue_act(corpus, anno):
+def real_dialogue_act(anno, unitdoc=None):
     """
     Given an EDU in the 'discourse' stage of the corpus, return its
     dialogue act from the 'units' stage
     """
-    twin = educe.stac.twin(corpus, anno)
+    twin = educe.stac.twin_from(unitdoc, anno) if unitdoc is not None else None
     edu = twin if twin is not None else anno
     acts = educe.stac.dialogue_act(edu)
     if len(acts) < 1:
@@ -389,7 +390,12 @@ Resources = namedtuple('Resources', "lexicons pdtb_lex")
 
 # A document and relevant contextual information
 DocumentPlus = namedtuple('DocumentPlus',
-                          ['key', 'doc', 'contexts', 'players', 'parses'])
+                          ['key',
+                           'doc',
+                           'unitdoc',  # equiv doc from units
+                           'contexts',
+                           'players',
+                           'parses'])
 
 
 def clean_dialogue_act(act):
@@ -1063,8 +1069,8 @@ class PairSubgroup_Tuple(PairSubgroup):
         vec_edu2 = self.sf_cache[edu2]
         edu1_q = vec_edu1["is_question"]
         edu2_q = vec_edu2["is_question"]
-        edu1_act = clean_dialogue_act(real_dialogue_act(self.corpus, edu1))
-        edu2_act = clean_dialogue_act(real_dialogue_act(self.corpus, edu2))
+        edu1_act = clean_dialogue_act(real_dialogue_act(edu1, current.unitdoc))
+        edu2_act = clean_dialogue_act(real_dialogue_act(edu2, current.unitdoc))
 
         vec["is_question_pairs"] = '%s_%s' % (edu1_q, edu2_q)
         vec["dialogue_act_pairs"] = '%s_%s' % (edu1_act, edu2_act)
@@ -1243,22 +1249,49 @@ class FeatureCache(dict):
 DocEnv = namedtuple("DocEnv", "inputs current sf_cache live")
 
 
-def _mk_env(inputs, people, k, live):
+def _get_unit_key(inputs, key, live):
+    """
+    Given the key for what is presumably a discourse level or
+    unannotated document, return the key for for its unit-level
+    equivalent.
+
+    In live/parsing mode, we assume we are working with
+    unannotated data; so we relax the match a bit by
+    ignoring the author
+
+    May be None if there is no such key equivalent
+    """
+    if live:
+        twins = [k for k in inputs.corpus if
+                 k.doc == key.doc and
+                 k.subdoc == key.subdoc and
+                 k.stage == 'units']
+        return twins[0] if twins else None
+    else:
+        twin = copy.copy(key)
+        twin.stage = 'units'
+        return twin if twin in inputs.corpus else None
+
+
+def _mk_env(inputs, people, key, live):
     """
     Pre-process and bundle up a representation of the current document
     """
-    doc = inputs.corpus[k]
+    doc = inputs.corpus[key]
     if not inputs.ignore_cdus:
         # replace all CDUs in links with their recursive heads
-        graph = stac_gr.Graph.from_doc(inputs.corpus, k)
+        graph = stac_gr.Graph.from_doc(inputs.corpus, key)
         # pylint: disable=maybe-no-member
         graph.strip_cdus(sloppy=True)
         # pylint: enable=maybe-no-member
-
-    contexts = Context.for_edus(doc, inputs.postags[k])
-    parses = inputs.parses[k] if inputs.parses else None
-    doc_people = people[k.doc]
-    current = DocumentPlus(k, doc, contexts, doc_people, parses)
+    unit_key = _get_unit_key(inputs, key, live)
+    current =\
+        DocumentPlus(key=key,
+                     doc=doc,
+                     unitdoc=inputs.corpus[unit_key],
+                     contexts=Context.for_edus(doc, inputs.postags[key]),
+                     players=people[key.doc],
+                     parses=inputs.parses[key] if inputs.parses else None)
 
     return DocEnv(inputs=inputs,
                   current=current,
@@ -1331,14 +1364,20 @@ def _extract_doc_pairs(env, window):
         env.sf_cache.expire(edu1)
 
 
-def extract_pair_features(inputs, window, discourse_only=True, live=False):
+def extract_pair_features(inputs, window,
+                          live=False):
     """
     Return a pair of dictionaries, one for attachments
     and one for relations
+
+    :param stage: only extract from inputs in the given stage
+                  (None to avoid limiting).  For live parsing
+                  mode, you likely want 'unannotated'
     """
+    stage = 'unannotated' if live else 'discourse'
     people = _get_players(inputs)
     for k in inputs.corpus:
-        if discourse_only and k.stage != 'discourse':
+        if stage is not None and k.stage != stage:
             continue
         env = _mk_env(inputs, people, k, live)
         for res in _extract_doc_pairs(env, window):
@@ -1358,7 +1397,7 @@ def _extract_single(env, edu):
     if env.live:
         return vec
     else:
-        act = real_dialogue_act(env.inputs.corpus, edu)
+        act = real_dialogue_act(edu)
         cl_vec = ClassKeyGroup(vec)
         cl_vec.set_class(clean_dialogue_act(act))
         return cl_vec
@@ -1450,16 +1489,6 @@ def read_common_inputs(args, corpus):
     postags = postag.read_tags(corpus, args.corpus)
     parses = corenlp.read_results(corpus, args.corpus)
     return _read_resources(args, corpus, postags, parses)
-
-
-def read_live_inputs(args):
-    """
-    Read the live Glozz data.
-    """
-    reader = educe.stac.LiveInputReader(args.corpus)
-    anno_files = reader.files()
-    corpus = reader.slurp(anno_files, verbose=True)
-    return read_common_inputs(args, corpus)
 
 
 def read_corpus_inputs(args, stage=None):

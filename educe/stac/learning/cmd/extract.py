@@ -87,18 +87,16 @@ def main_parsing_pairs(args):
     that we want to discourse parsing on, so we don't know if they are attached
     or what the label is.
 
-    There used to be an expectation that live data was also flat data
-    (given with --live), but as of 2014-03-24, we are experimenting with
-    have hierarchical live data
+    As of 2014-08-19, there must be an 'unannotated' stage and an optional
+    'units' stage (for dialogue acts)
     """
-    inputs = features.read_corpus_inputs(args)
+    inputs = features.read_corpus_inputs(args, stage='units|unannotated')
     features_file = os.path.join(args.output, 'extracted-features.csv')
     with codecs.open(features_file, 'wb') as ofile:
         header = features.PairKeys(inputs)
         writer = mk_csv_writer(header, ofile)
         feats = features.extract_pair_features(inputs,
                                                args.window,
-                                               discourse_only=False,
                                                live=True)
         for row, _ in feats:
             writer.writerow(row)

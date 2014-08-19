@@ -277,22 +277,30 @@ def twin(corpus, anno, stage='units'):
     The typical use of this would be if you have an EDU in the 'discourse'
     stage and need to get its 'units' stage equvialent to have its
     dialogue act.
+
+    :param twin_doc: unit-level document to fish twin from (None if you
+    want educe to search for it in the corpus; NB: corpus can be None if
+    you supply this)
     """
     if anno.origin is None:
         raise Exception('Annotation origin must be set')
-    anno_local_id = anno.local_id()
     twin_key = copy.copy(anno.origin)
     twin_key.stage = stage
     if twin_key in corpus:
-        udoc = corpus[twin_key]
-        twins = [u for u in udoc.annotations()
-                 if u.local_id() == anno_local_id]
-        if len(twins) > 0:
-            return twins[0]
-        else:
-            return None
+        return twin_from(corpus[twin_key], anno)
     else:
         return None
+
+
+def twin_from(doc, anno):
+    """
+    Given a document and an annotation, return the first annotation in
+    the document with a matching local identifier.
+    """
+    anno_local_id = anno.local_id()
+    twins = [u for u in doc.annotations()
+             if u.local_id() == anno_local_id]
+    return twins[0] if twins else None
 
 # ---------------------------------------------------------------------
 # Adding annotations
