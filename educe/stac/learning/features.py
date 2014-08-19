@@ -503,7 +503,7 @@ def feat_start(_, edu):
 
 
 def feat_end(_, edu):
-    "text span start"
+    "text span end"
     return edu.text_span().char_end
 
 
@@ -672,29 +672,23 @@ def turn_follows_gap(context, _):
 
 @context_feature
 def speaker_started_the_dialogue(context, _):
-    """
-    if the speaker for this EDU is the same as that"
-    of the first turn in the dialogue
-    """
+    "if the speaker for this EDU is the same as that of the\
+ first turn in the dialogue"
     return speaker(context.dialogue_turns[0]) == speaker(context.turn)
 
 
 @context_feature
 def speaker_already_spoken_in_dialogue(context, _):
-    """
-    if the speaker for this EDU is the same as that
-    of a previous turn in the dialogue
-    """
+    "if the speaker for this EDU is the same as that of a\
+ previous turn in the dialogue"
     return position_of_speaker_first_turn(context) <\
         context.dialogue_turns.index(context.turn)
 
 
 @context_feature
 def speakers_first_turn_in_dialogue(context, _):
-    """
-    position in the dialogue of the turn in which
-    the speaker for this EDU first spoke
-    """
+    "position in the dialogue of the turn in which the\
+ speaker for this EDU first spoke"
     return 1 + position_of_speaker_first_turn(context)
 
 # ---------------------------------------------------------------------
