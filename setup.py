@@ -1,4 +1,3 @@
-from setuptools import setup
 import glob
 import os
 import sys
@@ -18,11 +17,6 @@ setup(name='educe',
       version='0.2',
       author='Eric Kow',
       author_email='eric.kow@gmail.com',
-      packages=['educe',
-                'educe.learning',
-                'educe.stac',
-                'educe.rst_dt',
-                'educe.pdtb',
-                'educe.external'],
+      packages=find_packages(),
       scripts=[f for f in glob.glob('scripts/*') if not os.path.isdir(f)],
       install_requires=REQS)
