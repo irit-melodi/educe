@@ -1,3 +1,9 @@
+"""
+educe setup: educe is a library for managing and navigating a
+variety of discourse corpora
+"""
+
+from setuptools import setup, find_packages
 import glob
 import os
 import sys
@@ -16,7 +22,7 @@ REQS = \
 setup(name='educe',
       version='0.2',
       author='Eric Kow',
-      author_email='eric.kow@gmail.com',
+      author_email='eric@erickow.com',
       packages=find_packages(),
       scripts=[f for f in glob.glob('scripts/*') if not os.path.isdir(f)],
       install_requires=REQS)
