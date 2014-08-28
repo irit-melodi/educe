@@ -42,6 +42,20 @@ def config_argparser(parser):
     parser.set_defaults(func=main)
 
 
+def rounded_mean_median(things):
+    """
+    Done in a fairly naive way
+    In Python 3 we should just use statistics
+    """
+    length = len(things)
+    middle = length / 2
+    sorted_things = sorted(things)
+    median = sorted_things[middle] if length % 2 else\
+        (sorted_things[middle] + sorted_things[middle - 1]) / 2.0
+    mean = float(sum(things)) / length
+    return int(round(mean)), int(round(median))
+
+
 def empty_counts():
     "A fresh set of counts"
     return defaultdict(int)
@@ -85,9 +99,15 @@ def count(doc,
     return counts
 
 
-def summary(counts, keys=None, total=None):
+def summary(counts,
+            doc_counts=None,
+            keys=None,
+            total=None):
     """
     (Multi-line) string summary of a categories dict.
+
+    doc_counts gives per-document stats from which we can
+    extract helpful details like means and medians
 
     If you supply the keys sequence, we use it both to select
     a subset of the keys and to assign an order to them.
@@ -99,7 +119,18 @@ def summary(counts, keys=None, total=None):
     if keys is None:
         keys = counts.keys()
 
-    lines = ["%s: %d" % (k, counts[k]) for k in keys]
+    def info(k):
+        "summary line for a given key"
+        if doc_counts is None:
+            return str(counts[k])
+        else:
+            dcounts = [doc_counts[d][k] for d in doc_counts]
+            mean, median = rounded_mean_median(dcounts)
+            return "%d (%d-%d per doc, mean %d, median %d)" %\
+                   (counts[k], min(dcounts), max(dcounts),
+                    mean, median)
+
+    lines = ["%s: %s" % (k, info(k)) for k in keys]
     if total is not False:
         lines.append("TOTAL: %d" % sum(counts.values()))
     return "\n".join(lines)
@@ -203,12 +234,20 @@ def main(args):
     annotators = frozenset(k.annotator for k in corpus
                            if k.annotator is not None)
     unanno_counts = empty_counts()
+    unanno_doc_counts = defaultdict(empty_counts)
 
     for kdoc in frozenset(k.doc for k in unannotated_keys):
         ksubdocs = frozenset(k.subdoc for k in unannotated_keys
                              if k.doc == kdoc)
         unanno_counts["doc"] += 1
         unanno_counts["subdoc"] += len(ksubdocs)
+
+        # separate counts for each doc so that we can collect
+        # min/max/mean/median etc
+        unanno_doc_counts[kdoc]["subdoc"] += len(ksubdocs)
+        for k in (k for k in unannotated_keys if k.doc == kdoc):
+            count(corpus[k], dict(SEGMENT_CATEGORIES),
+                  counts=unanno_doc_counts[kdoc])
 
     for k in unannotated_keys:
         count(corpus[k], dict(SEGMENT_CATEGORIES),
@@ -234,9 +273,13 @@ def main(args):
                   pred_extract=(educe.stac.is_relation_instance,
                                 lambda x: x.type))
 
-    keys = ["doc", "subdoc"] + [k for k, _ in SEGMENT_CATEGORIES]
+    keys = ["subdoc"] + [k for k, _ in SEGMENT_CATEGORIES]
     lines = [big_banner("Document structure"),
-             summary(unanno_counts, keys=keys, total=False),
+             summary(unanno_counts, keys=["doc"],
+                     total=False),
+             summary(unanno_counts,
+                     doc_counts=unanno_doc_counts,
+                     keys=keys, total=False),
              "",
              big_banner("Links"),
              sectioned_summary(anno_links, total=False),
