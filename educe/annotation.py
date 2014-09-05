@@ -201,6 +201,16 @@ class Standoff(object):
         else:
             return None
 
+    def encloses(self, other):
+        """
+        True if this annotations's span encloses the span of the other.
+
+        `s1.encloses(s2)` is shorthand for
+        `s1.text_span().encloses(s2.text_span())`
+        """
+        return self.text_span().encloses(other.text_span())
+
+
 class Annotation(Standoff):
     """
     Any sort of annotation. Annotations tend to have
