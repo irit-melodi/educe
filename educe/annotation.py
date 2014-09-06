@@ -188,10 +188,6 @@ class Standoff(object):
 
         Corner case: if this is an empty non-terminal (which would be a very
         weird thing indeed), return None
-
-        NOTES:
-
-        * the `doc` argument is deprecated
         """
         terminals = list(self._terminals())
         if len(terminals) > 0:
@@ -455,11 +451,3 @@ class Document(Standoff):
             return self._text
         else:
             return self._text[span.char_start:span.char_end]
-
-    def text_for(self, unit):
-        """
-        Return a string representing the text covered by either this document
-        or unit.
-        """
-        warnings.warn("deprecated, use doc.text(x.text_span()) instead", DeprecationWarning)
-        return self.text(unit.span)
