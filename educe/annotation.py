@@ -1,10 +1,3 @@
-# Author: Eric Kow
-# License: BSD3
-
-import collections
-from   itertools import chain
-import warnings
-
 """
 Low-level representation of corpus annotations, following somewhat faithfully
 the Glozz_ model for annotations.
@@ -19,26 +12,35 @@ some sort of graph representation of them
 .. _Glozz: http://erickow.com/posts/anno-models-glozz.html
 """
 
+# Author: Eric Kow
+# License: CeCILL-B (French BSD3)
+
+# pylint: disable=too-many-arguments, protected-access
+
+from itertools import chain
+
+
 class Span(object):
     """
     What portion of text an annotation corresponds to.
     Assumed to be in terms of character offsets
     """
     def __init__(self, start, end):
-        self.char_start=start
-        self.char_end=end
+        self.char_start = start
+        self.char_end = end
 
-    def  __str__(self):
-        return ('(%d,%d)' % (self.char_start, self.char_end))
+    def __str__(self):
+        return '(%d,%d)' % (self.char_start, self.char_end)
 
     def __lt__(self, other):
         return self.char_start < other.char_start or\
             (self.char_start == other.char_start and
-             self.char_end   <  other.char_end)
+             self.char_end < other.char_end)
 
     def __eq__(self, other):
-        return self.char_start == other.char_start and\
-               self.char_end   == other.char_end
+        return\
+            self.char_start == other.char_start and\
+            self.char_end == other.char_end
 
     def __gt__(self, other):
         return other < self
@@ -86,7 +88,7 @@ class Span(object):
         """
         return self.shift(0 - other.char_start)
 
-    def encloses(self, sp):
+    def encloses(self, other):
         """
         Return True if this span includes the argument
 
@@ -97,22 +99,23 @@ class Span(object):
         See also `educe.graph.EnclosureGraph` if you might be repeating
         these checks
         """
-        if sp is None:
+        if other is None:
             return False
         else:
-            return self.char_start <= sp.char_start and\
-                   self.char_end   >= sp.char_end
+            return\
+                self.char_start <= other.char_start and\
+                self.char_end >= other.char_end
 
-    def overlaps(self, sp):
+    def overlaps(self, other):
         """
         Return the overlapping region if two spans have regions
         in common, or else None
         """
-        if sp is None:
+        if other is None:
             return None
         else:
-            common_start = max(self.char_start, sp.char_start)
-            common_end   = min(self.char_end,   sp.char_end)
+            common_start = max(self.char_start, other.char_start)
+            common_end = min(self.char_end, other.char_end)
             if common_start < common_end:
                 return Span(common_start, common_end)
             else:
@@ -140,24 +143,28 @@ class Span(object):
         return Span(big_start, big_end)
 
 
+# pylint: disable=too-few-public-methods, invalid-name
 class RelSpan(object):
     """
     Which two units a relation connections.
     """
     def __init__(self, t1, t2):
-        self.t1=t1
-        self.t2=t2
+        self.t1 = t1
+        self.t2 = t2
 
-    def  __str__(self):
-        return ('%s -> %s' % (self.t1, self.t2))
+    def __str__(self):
+        return '%s -> %s' % (self.t1, self.t2)
+# pylint: enable=too-few-public-methods, invalid-name
 
+
+# pylint: disable=no-self-use
 class Standoff(object):
     """
     A standoff object ultimately points to some piece of text.
     The pointing is not necessarily direct though
     """
     def __init__(self, origin=None):
-        self.origin=origin
+        self.origin = origin
 
     def _members(self):
         """
@@ -168,13 +175,14 @@ class Standoff(object):
         """
         return None
 
-    def _terminals(self, seen=[]):
+    def _terminals(self, seen=None):
         """
         For terminal annotations, this is just the annotation itself.
         For non-terminal annotations, this recursively fetches the
         terminals
         """
         my_members = self._members()
+        seen = seen or []
         if my_members is None:
             return [self]
         else:
@@ -191,8 +199,8 @@ class Standoff(object):
         """
         terminals = list(self._terminals())
         if len(terminals) > 0:
-            start = min( [t.span.char_start for t in terminals] )
-            end   = max( [t.span.char_end   for t in terminals] )
+            start = min(t.span.char_start for t in terminals)
+            end = max(t.span.char_end for t in terminals)
             return Span(start, end)
         else:
             return None
@@ -205,6 +213,7 @@ class Standoff(object):
         `s1.text_span().encloses(s2.text_span())`
         """
         return self.text_span().encloses(other.text_span())
+# pylint: enable=no-self-use
 
 
 class Annotation(Standoff):
@@ -215,21 +224,23 @@ class Annotation(Standoff):
     * type:     some key label (we call a type)
     * features: an attribute to value dictionary
     """
-    def __init__(self, anno_id, span, type, features, metadata=None, origin=None):
+    def __init__(self, anno_id, span, atype, features,
+                 metadata=None, origin=None):
         Standoff.__init__(self, origin)
-        self.origin=origin
-        self._anno_id=anno_id
-        self.span=span
-        self.type=type
-        self.features=features
-        self.metadata=metadata
+        self.origin = origin
+        self._anno_id = anno_id
+        self.span = span
+        self.type = atype
+        self.features = features
+        self.metadata = metadata
 
     def __lt__(self, other):
         return self._anno_id < other._anno_id
 
     def __str__(self):
-        feats=str(self.features)
-        return ('%s [%s] %s %s' % (self.identifier(),self.type, self.span, feats))
+        feats = str(self.features)
+        return ('%s [%s] %s %s' %
+                (self.identifier(), self.type, self.span, feats))
 
     def local_id(self):
         """
@@ -257,19 +268,21 @@ class Annotation(Standoff):
         See also `position` as potentially a safer alternative to this
         (and what we mean by safer)
         """
-        o=self.origin
-        local_id=self._anno_id
-        if o is None:
+        local_id = self._anno_id
+        if self.origin is None:
             return local_id
         else:
-            return o.mk_global_id(local_id)
+            return self.origin.mk_global_id(local_id)
+
 
 class Unit(Annotation):
     """
     An annotation over a span of text
     """
-    def __init__(self, unit_id, span, type, features, metadata=None, origin=None):
-        Annotation.__init__(self, unit_id, span, type, features, metadata, origin)
+    def __init__(self, unit_id, span, utype, features,
+                 metadata=None, origin=None):
+        Annotation.__init__(self, unit_id, span, utype, features,
+                            metadata, origin)
 
     def position(self):
         """
@@ -296,12 +309,15 @@ class Unit(Annotation):
         identify objects that may coincidentally fall in the same span.  So
         how much do you trust your IDs?
         """
-        o=self.origin
-        if o is None:
-            ostuff=[]
+        if self.origin is None:
+            ostuff = []
         else:
-            ostuff=[o.doc, o.subdoc, o.stage]
-        return ":".join(ostuff + map(str,[self.span.char_start, self.span.char_end]))
+            ostuff = [self.origin.doc,
+                      self.origin.subdoc,
+                      self.origin.stage]
+            span = self.span
+        return ":".join(ostuff + [str(span.char_start), str(span.char_end)])
+
 
 class Relation(Annotation):
     """
@@ -313,32 +329,33 @@ class Relation(Annotation):
     `fleshout` is called (when initialising a `Document`, any
     relations and schemas within are also fleshed out)
     """
-    def __init__(self, rel_id, span, type, features, metadata=None):
-        Annotation.__init__(self, rel_id, span, type, features, metadata)
+    def __init__(self, rel_id, span, rtype, features, metadata=None):
+        Annotation.__init__(self, rel_id, span, rtype, features, metadata)
+        self.source = None  # to be defined in fleshout
+        self.target = None
 
     def _members(self):
-        return [ self.source, self.target ]
+        return [self.source, self.target]
 
     def fleshout(self, objects):
         """
         Given a dictionary mapping ids to annotation objects, set this
         relation's source and target fields.
-
-        FIXME: Not sure if there is an idiom for two-stage object creation
-        in Python. The idea here is that we first want to create a pool of
-        annotation objects, and having done so, we want to add pointers
-        from some of these objects to the others; so we have to "flesh"
-        these objects out after creating them, but before using them.
         """
         source_span = self.span.t1
         target_span = self.span.t2
         if source_span not in objects:
-            raise Exception('There is no annotation with id %s [relation source]' % source_span)
+            oops = 'There is no annotation with id %s [relation source]' %\
+                source_span
+            raise Exception(oops)
         elif target_span not in objects:
-            raise Exception('There is no annotation with id %s [relation target]' % target_span)
+            oops = 'There is no annotation with id %s [relation target]' %\
+                target_span
+            raise Exception(oops)
         else:
             self.source = objects[source_span]
             self.target = objects[target_span]
+
 
 class Schema(Annotation):
     """
@@ -347,12 +364,15 @@ class Schema(Annotation):
     Use the `members` field to grab the annotations themselves.
     But note that it is only created when `fleshout` is called.
     """
-    def __init__(self, rel_id, units, relations, schemas, type, features, metadata=None):
-        self.units     = units
+    def __init__(self, rel_id, units, relations, schemas, stype,
+                 features, metadata=None):
+        self.units = units
         self.relations = relations
-        self.schemas   = schemas
-        member_ids     = units | relations | schemas
-        Annotation.__init__(self, rel_id, member_ids, type, features, metadata)
+        self.schemas = schemas
+        member_ids = units | relations | schemas
+        self.members = None  # to be defined :-/
+        Annotation.__init__(self, rel_id, member_ids, stype,
+                            features, metadata)
 
     def terminals(self):
         """
@@ -372,8 +392,10 @@ class Schema(Annotation):
         self.members = []
         for i in self.span:
             if i not in objects:
-                raise Exception('There is no annotation with id %s [schema member]' % i)
+                oops = 'There is no annotation with id %s [schema member]' % i
+                raise Exception(oops)
             self.members.append(objects[i])
+
 
 class Document(Standoff):
     """
@@ -384,10 +406,9 @@ class Document(Standoff):
     def __init__(self, units, relations, schemas, text):
         Standoff.__init__(self, None)
 
-        self.units=units
-        self.relations=relations
-        self.rels=relations # FIXME should find a way to deprecate this
-        self.schemas=schemas
+        self.units = units
+        self.relations = relations
+        self.schemas = schemas
         objects = {}
 
         for i in self.units:
@@ -397,12 +418,12 @@ class Document(Standoff):
         for i in self.schemas:
             objects[i.local_id()] = i
 
-        for x in self.relations:
-            x.fleshout(objects)
-        for x in self.schemas:
-            x.fleshout(objects)
+        for anno in self.relations:
+            anno.fleshout(objects)
+        for anno in self.schemas:
+            anno.fleshout(objects)
 
-        self._text=text
+        self._text = text
 
     def annotations(self):
         """
@@ -426,19 +447,18 @@ class Document(Standoff):
         can more reliably the annotations apart.
         """
         self.origin = origin
-        for x in self.annotations():
-            x.origin = origin
+        for anno in self.annotations():
+            anno.origin = origin
 
     def global_id(self, local_id):
         """
         String representation of an identifier that should be unique
         to this corpus at least.
         """
-        o=self.origin
-        if o is None:
+        if self.origin is None:
             return local_id
         else:
-            return o.mk_global_id(local_id)
+            return self.origin.mk_global_id(local_id)
 
     def text(self, span=None):
         """
