@@ -5,8 +5,11 @@
 Help writing out corpus files
 """
 
+from __future__ import print_function
+import codecs
 import copy
 import os
+import sys
 from io import BytesIO
 
 from educe import glozz
@@ -64,3 +67,20 @@ def save_document(output_dir, k, doc):
     if is_unannotated:
         with open(stub + ".ac", 'wb') as fout:
             fout.write(doc_bytes)
+
+
+def write_dot_graph(k, odir, dot_graph, part=None, run_graphviz=True):
+    """
+    Write a dot graph and possibly run graphviz on it
+    """
+    ofile_basename = output_path_stub(odir, k)
+    if part is not None:
+        ofile_basename += '_' + str(part)
+    dot_file = ofile_basename + '.dot'
+    svg_file = ofile_basename + '.svg'
+    mk_parent_dirs(dot_file)
+    with codecs.open(dot_file, 'w', encoding='utf-8') as dotf:
+        print(dot_graph.to_string(), file=dotf)
+    if run_graphviz:
+        print("Creating %s" % svg_file, file=sys.stderr)
+        os.system('dot -T svg -o %s %s' % (svg_file, dot_file))

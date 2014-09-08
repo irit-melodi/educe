@@ -6,9 +6,7 @@ Visualise discourse and enclosure graphs
 """
 
 from __future__ import print_function
-import os.path
 import sys
-import codecs
 
 from educe import graph
 from educe.stac import postag
@@ -20,7 +18,7 @@ from ..args import\
     get_output_dir, anno_id
 from ..glozz import\
     anno_id_from_tuple
-from ..output import output_path_stub, mk_parent_dirs
+from ..output import write_dot_graph
 
 
 # slightly different from the stock stac-util version because it
@@ -37,23 +35,6 @@ def _read_corpus(args):
         reader = educe.stac.Reader(args.corpus)
         anno_files = reader.filter(reader.files(), is_interesting)
     return reader.slurp(anno_files, verbose=True)
-
-
-def _write_dot_graph(k, odir, dot_graph, part=None, run_graphviz=True):
-    """
-    Write a dot graph and possibly run graphviz on it
-    """
-    ofile_basename = output_path_stub(odir, k)
-    if part is not None:
-        ofile_basename += '_' + str(part)
-    dot_file = ofile_basename + '.dot'
-    svg_file = ofile_basename + '.svg'
-    mk_parent_dirs(dot_file)
-    with codecs.open(dot_file, 'w', encoding='utf-8') as dotf:
-        print(dot_graph.to_string(), file=dotf)
-    if run_graphviz:
-        print("Creating %s" % svg_file, file=sys.stderr)
-        os.system('dot -T svg -o %s %s' % (svg_file, dot_file))
 
 
 def _main_rel_graph(args):
@@ -89,10 +70,10 @@ def _main_rel_graph(args):
                     ccs = gra.connected_components()
                     for part, nodes in enumerate(ccs, 1):
                         gra2 = gra.copy(nodes)
-                        _write_dot_graph(k, output_dir,
-                                         stacgraph.DotGraph(gra2),
-                                         part=part,
-                                         run_graphviz=args.draw)
+                        write_dot_graph(k, output_dir,
+                                        stacgraph.DotGraph(gra2),
+                                        part=part,
+                                        run_graphviz=args.draw)
             else:
                 print("Skipping %s (empty graph)" % k, file=sys.stderr)
         except graph.DuplicateIdException:

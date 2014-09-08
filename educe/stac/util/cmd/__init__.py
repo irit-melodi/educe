@@ -9,6 +9,7 @@ from . import\
     clean_emoticons,\
     count,\
     filter,\
+    filter_graph,\
     graph,\
     insert,\
     merge_dialogue,\
@@ -27,6 +28,7 @@ SUBCOMMANDS = [clean_emoticons,
                count,
                graph,
                filter,
+               filter_graph,
                rename,
                rewrite,
                merge_dialogue,
