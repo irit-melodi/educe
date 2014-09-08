@@ -36,6 +36,14 @@ educe.stac.util.cmd.filter module
     :undoc-members:
     :show-inheritance:
 
+educe.stac.util.cmd.filter_graph module
+---------------------------------------
+
+.. automodule:: educe.stac.util.cmd.filter_graph
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 educe.stac.util.cmd.graph module
 --------------------------------
 
