@@ -64,7 +64,7 @@ def _main_rel_graph(args):
                 gra = gra_
             dot_gra = stacgraph.DotGraph(gra)
             if dot_gra.get_nodes():
-                _write_dot_graph(k, output_dir, dot_gra,
+                write_dot_graph(k, output_dir, dot_gra,
                                  run_graphviz=args.draw)
                 if args.split:
                     ccs = gra.connected_components()
@@ -103,8 +103,8 @@ def _main_enclosure_graph(args):
         dot_gra = stacgraph.EnclosureDotGraph(gra_)
         if dot_gra.get_nodes():
             dot_gra.set("ratio", "compress")
-            _write_dot_graph(k, output_dir, dot_gra,
-                             run_graphviz=args.draw)
+            write_dot_graph(k, output_dir, dot_gra,
+                            run_graphviz=args.draw)
         else:
             print("Skipping %s (empty graph)" % k, file=sys.stderr)
 
