@@ -208,7 +208,7 @@ def read_corenlp_result(doc, corenlp_doc, tid=None):
         # and then shift them back to the right
         sentence_begin = min(t['extent'][0] for t in sentence_toks[sid])
 
-        ttext  = doc.text_for(turn)
+        ttext = doc.text(turn.text_span())
         offset = turn.span.char_start + len(stac.split_turn_text(ttext)[0]) - sentence_begin
 
         for t in sentence_toks[sid]:

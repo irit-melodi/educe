@@ -40,7 +40,7 @@ def extract_turns(doc):
     """
     turns = sorted_by_span(filter(stac.is_turn, doc.units))
     def ttext(turn):
-        return stac.split_turn_text(doc.text_for(turn))[1]
+        return stac.split_turn_text(doc.text(turn.text_span()))[1]
     return "\n".join(map(ttext, turns))
 
 def tagger_cmd(tagger_jar, txt_file):
@@ -98,12 +98,12 @@ def read_tags(corpus, dir):
         raw_toks    = ext.read_token_file(tagged_file)
         pos_tags[k] = []
         for turn, seg in zip(turns, raw_toks):
-            prefix, body = stac.split_turn_text(doc.text_for(turn))
+            prefix, body = stac.split_turn_text(doc.text(turn.text_span()))
             start        = turn.span.char_start + len(prefix)
             toks = ext.token_spans(body, seg, start)
             for t in toks:
                 t.origin = doc
-                dtxt = doc.text_for(t)
+                dtxt = doc.text(t.text_span())
                 assert dtxt == t.word
             pos_tags[k].extend(toks)
     return pos_tags
