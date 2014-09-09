@@ -36,6 +36,19 @@ import educe.external.stanford_xml_reader as corenlp_xml
 # Running the pipeline
 # ---------------------------------------------------------------------
 
+
+def turn_id_text(doc):
+    """
+    Return a list of (turn ids, text) tuples
+    in span order (no speaker)
+    """
+    turns = sorted(filter(stac.is_turn, doc.units),
+                   key=lambda k: k.text_span())
+    return [(stac.turn_id(turn),
+             stac.split_turn_text(doc.text(turn.text_span()))[1])
+            for turn in turns]
+
+
 def run_pipeline(corpus, outdir, corenlp_dir, split=False):
     """
     Run the standard corenlp pipeline on all the (unannotated) documents in
@@ -66,17 +79,13 @@ def run_pipeline(corpus, outdir, corenlp_dir, split=False):
     txt_files = []
     for k in corpus:
         doc   = corpus[k]
-        turns = sorted(filter(stac.is_turn, doc.units),
-                       key=lambda k:k.span)
 
         k_txt           = copy.copy(k)
         k_txt.stage     = 'turns'
         k_txt.annotator = None
 
         if split:
-            for turn in turns:
-                ttext = stac.split_turn_text(doc.text_for(turn))[1]
-                tid   = turn.features['Identifier']
+            for tid, ttext in turn_id_text(doc):
                 root  = stac.id_to_path(k_txt) + '_' + tid.zfill(digits[k.doc])
 
                 txt_file = os.path.join(outdir, 'tmp', root + '.txt')
@@ -95,8 +104,7 @@ def run_pipeline(corpus, outdir, corenlp_dir, split=False):
             if not os.path.exists(txt_dir):
                 os.makedirs(txt_dir)
             with codecs.open(txt_file, 'w', 'utf-8') as f:
-                for turn in turns:
-                    ttext = stac.split_turn_text(doc.text_for(turn))[1]
+                for _, ttext in turn_id_text(doc):
                     print(ttext, file=f)
             txt_files.append(txt_file)
 
