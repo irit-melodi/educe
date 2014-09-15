@@ -27,7 +27,7 @@ run
 
 If you have pip installed, then install educe and its dependencies:
 
-    pip install -r requirements.txt     --use-mirrors .
+    pip install -r requirements.txt .
 
 
 ## See also
