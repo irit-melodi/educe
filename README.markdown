@@ -17,18 +17,26 @@ you may find it useful to add support for it to educe.
 
 First, try
 
-    pip --help
+    pip --version
 
-If this doesn't work, download this [setup script][setup-distribute] and
-run
+
+We require pip 1.5 or greater. If your version of pip is older, you
+should check with your package management software, or barring that,
+try:
+
+    pip install pip --upgrade
+
+If you don't have pip installed, and you don't have a package
+manager to install it with, download this [setup
+script][setup-distribute] and run
 
     python distribute_setup.py
     easy_install pip
 
-If you have pip installed, then install educe and its dependencies:
+Finally, if you have the right version of pip installed, then install
+educe and its dependencies:
 
-    pip install -r requirements.txt .
-
+    pip install -r requirements.txt
 
 ## See also
 
