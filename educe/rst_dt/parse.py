@@ -206,7 +206,7 @@ def parse_rst_dt_tree(tstr, context=None):
     you don't have an original text)
     """
     pstr = _preprocess(tstr)
-    tree_ = Tree.parse(pstr, leaf_pattern=_LEAF_PATTERN)
+    tree_ = Tree.fromstring(pstr, leaf_pattern=_LEAF_PATTERN)
     tree_ = _postprocess(tree_)
     if context:
         tree_ = _align_with_context(tree_, context)

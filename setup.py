@@ -15,7 +15,7 @@ REQS = \
      'pydot' if PY3 else 'pydot == 1.0.28',
      'python-graph-core',
      'python-graph-dot',
-     'nltk' if PY3 else 'nltk == 2.0.4'] +\
+     'nltk == 3.0.0'] +\
     (['fuzzy == 1.0'] if not PY3 else [])
 
 

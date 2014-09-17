@@ -9,20 +9,21 @@ to be too useful outside of it
 import itertools
 import sys
 
-if sys.version > '3':
-    def treenode(tree):
-        "API-change padding for NLTK 2 vs NLTK 3 trees"
-        return tree.label()
 
+# we've only recently switched to NLTK 3, so there may be
+# be bits and pieces of code out there using this function
+# it could be worth replacing them
+def treenode(tree):
+    "API-change padding for NLTK 2 vs NLTK 3 trees"
+    return tree.label()
+
+
+if sys.version > '3':
     ifilter = filter
     ifilterfalse = itertools.filterfalse
     izip = zip
 
 else:
-    def treenode(tree):
-        "API-change padding for NLTK 2 vs NLTK 3 trees"
-        return tree.node
-
     ifilter = itertools.ifilter
     ifilterfalse = itertools.ifilterfalse
     izip = itertools.izip
