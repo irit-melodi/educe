@@ -4,6 +4,5 @@
 --allow-unverified pydot
 --allow-unverified python-graph-core
 --allow-unverified python-graph-dot
-http://www.nltk.org/nltk3-alpha/nltk-3.0a3.tar.gz
 -e hg+https://bitbucket.org/prologic/pydot#egg=pydot
 -e .
