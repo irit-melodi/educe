@@ -1,133 +1,89 @@
-
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-
-
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>Welcome to educe’s documentation! &mdash; educe 0.1 documentation</title>
-    
-    <link rel="stylesheet" href="_static/default.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '',
-        VERSION:     '0.1',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true
-      };
-    </script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="educe 0.1 documentation" href="#" />
-    <link rel="next" title="educe" href="api-doc/modules.html" /> 
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <link href='https://fonts.googleapis.com/css?family=Chivo:900' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <title>Educe by kowey</title>
   </head>
+
   <body>
-    <div class="related">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="api-doc/modules.html" title="educe"
-             accesskey="N">next</a> |</li>
-        <li><a href="#">educe 0.1 documentation</a> &raquo;</li> 
-      </ul>
-    </div>  
+    <div id="container">
+      <div class="inner">
 
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body">
-            
-  <div class="section" id="welcome-to-educe-s-documentation">
-<h1>Welcome to educe&#8217;s documentation!<a class="headerlink" href="#welcome-to-educe-s-documentation" title="Permalink to this headline">¶</a></h1>
-<p>Contents:</p>
-<div class="toctree-wrapper compound">
+        <header>
+          <h1>Educe</h1>
+          <h2>Abstract representation of a discourse-annotated corpus.</h2>
+        </header>
+
+        <section id="downloads" class="clearfix">
+          <a href="https://github.com/kowey/educe/zipball/master" id="download-zip" class="button"><span>Download .zip</span></a>
+          <a href="https://github.com/kowey/educe/tarball/master" id="download-tar-gz" class="button"><span>Download .tar.gz</span></a>
+          <a href="https://github.com/kowey/educe" id="view-on-github" class="button"><span>View on GitHub</span></a>
+        </section>
+
+        <hr>
+
+        <section id="main_content">
+          <p><a href="http://travis-ci.org/kowey/educe"><img src="https://secure.travis-ci.org/kowey/educe.png" alt="Build Status"></a></p>
+
+<h2>
+<a name="about" class="anchor" href="#about"><span class="octicon octicon-link"></span></a>About</h2>
+
+<p>Educe is a library for working with discourse-annotated corpora.
+It also includes some utility scripts for building, maintaining,
+and for querying these corpora. Currently supported corpora are</p>
+
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="api-doc/modules.html">educe</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api-doc/educe.html">educe Package</a></li>
-</ul>
-</li>
-</ul>
-</div>
-</div>
-<div class="section" id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
-<ul class="simple">
-<li><a class="reference internal" href="genindex.html"><em>Index</em></a></li>
-<li><a class="reference internal" href="py-modindex.html"><em>Module Index</em></a></li>
-<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
-</ul>
-</div>
+<li>(SDRT) <a href="http://www.irit.fr/STAC/">STAC</a> corpus</li>
+<li>(RST) RST Discourse Treebank (experimental, 2014-07-14)</li>
+<li>(PDTB) Penn Discourse Treebank (experimental, 2014-07-14)</li>
+</ul><p>If you have a discourse-annotated corpus, or are trying to build one,
+you may find it useful to add support for it to educe.</p>
 
+<h2>
+<a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation</h2>
 
-          </div>
-        </div>
+<p>First, try</p>
+
+<pre><code>pip --help
+</code></pre>
+
+<p>If this doesn't work, download this <a href="http://python-distribute.org/distribute_setup.py">setup script</a> and
+run</p>
+
+<pre><code>python distribute_setup.py
+easy_install pip
+</code></pre>
+
+<p>If you have pip installed, then install educe and its dependencies:</p>
+
+<pre><code>pip install -r requirements.txt .
+</code></pre>
+
+<h2>
+<a name="see-also" class="anchor" href="#see-also"><span class="octicon octicon-link"></span></a>See also</h2>
+
+<ul>
+<li><a href="https://educe.readthedocs.org/en/latest/api-doc/educe.html">Documentation</a></li>
+<li>
+<a href="http://github.com/kowey/attelo">Attelo</a>: a discourse parser</li>
+</ul>
+        </section>
+
+        <footer>
+          Educe is maintained by <a href="https://github.com/kowey">kowey</a><br>
+          This page was generated by <a href="http://pages.github.com">GitHub Pages</a>. Tactile theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.
+        </footer>
+
+        
       </div>
-      <div class="sphinxsidebar">
-        <div class="sphinxsidebarwrapper">
-  <h3><a href="#">Table Of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">Welcome to educe&#8217;s documentation!</a><ul>
-</ul>
-</li>
-<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
-</ul>
-
-  <h4>Next topic</h4>
-  <p class="topless"><a href="api-doc/modules.html"
-                        title="next chapter">educe</a></p>
-  <h3>This Page</h3>
-  <ul class="this-page-menu">
-    <li><a href="_sources/index.txt"
-           rel="nofollow">Show Source</a></li>
-  </ul>
-<div id="searchbox" style="display: none">
-  <h3>Quick search</h3>
-    <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-    <p class="searchtip" style="font-size: 90%">
-    Enter search terms or a module, class or function name.
-    </p>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
-      </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="related">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="api-doc/modules.html" title="educe"
-             >next</a> |</li>
-        <li><a href="#">educe 0.1 documentation</a> &raquo;</li> 
-      </ul>
-    </div>
-    <div class="footer">
-        &copy; Copyright 2013, Eric Kow.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
 </html>
