@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# meant to be run from educe root
+rm -rf docs/api-doc
+sphinx-apidoc educe -o docs/api-doc\
+        educe/*/util/cmd\
+        educe/*/learning/cmd\
+        educe/tests.py\
+        educe/*/tests.py\
+        educe/stac/sanity/test_sanity.py

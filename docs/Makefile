@@ -48,8 +48,7 @@ clean:
 apidoc: $(APIDOCDIR)/educe.rst
 
 $(APIDOCDIR)/educe.rst: $(SOURCE_FILES)
-	rm -rf $(APIDOCDIR)
-	$(SPHINXAPIDOC) ../educe -o $(APIDOCDIR)
+	cd ..; bash etc/redo-api-doc
 
 html: apidoc
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
