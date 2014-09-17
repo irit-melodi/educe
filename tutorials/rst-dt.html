@@ -1687,39 +1687,19 @@ div#notebook {
 cd educe
 pip install -r requirements.txt .</code></pre>
 <p>Note: these instructions assume you are running within a <a href="http://virtualenv.readthedocs.org/en/latest/">virtual environment</a>. If not, and if you have permission denied errors, replace <code>pip</code> with <code>sudo pip</code>.</p>
-<h2 id="tutorial-in-browser-optional">Tutorial in browser (optional)</h2>
+<h2 id="tutorial-setup">Tutorial setup</h2>
+<p>RST-DT portions of this tutorial require that you have a local copy of the RST Discourse Treebank. For purposes of this tutorial, you will need to link this into the data directory, for example</p>
+<pre class="shell"><code>mkdir data
+ln -s ~/CORPORA/rst_discourse_treebank data
+# optional
+ln -s ~/CORPORA/PTBIII/parsed/mrg/wsj data/ptb3 # optional</code></pre>
+<h3 id="tutorial-in-browser-optional">Tutorial in browser (optional)</h3>
 <p>This tutorial can either be followed along with the command line and your favourite text editor, or embedded in an interactive webpage via iPython:</p>
 <pre class="shell"><code>pip install ipython
 cd docs
 ipython notebook</code></pre>
 </div>
 </div>
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="data-setup">Data setup</h2>
-<p>RST-DT portions of this tutorial require that you have a local copy of the RST Discourse Treebank. For purposes of this tutorial, you will need to link this into the data directory, for example</p>
-<pre class="shell"><code>ln -s $HOME/CORPORA/rst_discourse_treebank/data</code></pre>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">
-In&nbsp;[1]:
-</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class="highlight"><pre><span class="n">data_dir</span> <span class="o">=</span> <span class="s">&#39;../data&#39;</span>  <span class="c"># relative to the educe docs directory</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
 </div>
 <div class="cell border-box-sizing text_cell rendered">
 <div class="prompt input_prompt">
@@ -1733,20 +1713,22 @@ In&nbsp;[1]:
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">
-In&nbsp;[17]:
+In&nbsp;[5]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
 <div class="highlight"><pre><span class="kn">import</span> <span class="nn">educe.rst_dt</span>
+
+<span class="c"># relative to the educe docs directory</span>
+<span class="n">data_dir</span> <span class="o">=</span> <span class="s">&#39;../data&#39;</span>  
+
 <span class="c"># read and load the documents from the WSJ which were double-tagged</span>
 <span class="n">rst_reader</span> <span class="o">=</span> <span class="n">educe</span><span class="o">.</span><span class="n">rst_dt</span><span class="o">.</span><span class="n">Reader</span><span class="p">(</span><span class="s">&#39;{dd}/rst_discourse_treebank/data/RSTtrees-WSJ-double-1.0/&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dd</span><span class="o">=</span><span class="n">data_dir</span><span class="p">))</span>
 <span class="n">rst_corpus</span> <span class="o">=</span> <span class="n">rst_reader</span><span class="o">.</span><span class="n">slurp</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 
 <span class="c"># print a text fragment from the first ten files we read</span>
-<span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">rst_corpus</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+<span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">rst_corpus</span><span class="o">.</span><span class="n">keys</span><span class="p">()[:</span><span class="mi">10</span><span class="p">]:</span>
     <span class="n">doc</span> <span class="o">=</span> <span class="n">rst_corpus</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">educe</span><span class="o">.</span><span class="n">rst_dt</span><span class="o">.</span><span class="n">is_binary</span><span class="p">(</span><span class="n">doc</span><span class="p">):</span>
-        <span class="k">continue</span>
     <span class="k">print</span><span class="p">(</span><span class="s">&quot;[{0}] {1}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">doc</span><span class="o">.</span><span class="n">text</span><span class="p">()[:</span><span class="mi">50</span><span class="p">]))</span>
 </pre></div>
 
@@ -1761,7 +1743,7 @@ In&nbsp;[17]:
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stderr output_text">
 <pre>
-Slurping corpus dir [52/53]
+Slurping corpus dir [51/53]
 </pre>
 </div>
 </div>
@@ -1769,32 +1751,16 @@ Slurping corpus dir [52/53]
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>
+[wsj_1365.out [None] discourse unknown] The Justice Department has revised certain interna
 [wsj_0633.out [None] discourse unknown] These are the last words Abbie Hoffman ever uttere
 [wsj_1105.out [None] discourse unknown] CHICAGO - Sears, Roebuck &amp; Co. is struggling as it
+[wsj_1168.out [None] discourse unknown] Wang Laboratories Inc. has sold $25 million of ass
+[wsj_1100.out [None] discourse unknown] Westinghouse Electric Corp. said it will buy Shaw-
 [wsj_1924.out [None] discourse unknown] CALIFORNIA STRUGGLED with the aftermath of a Bay a
+[wsj_0669.out [None] discourse unknown] Nissan Motor Co. expects net income to reach 120 b
 [wsj_0651.out [None] discourse unknown] Nelson Holdings International Ltd. shareholders ap
+[wsj_2309.out [None] discourse unknown] Atco Ltd. said its utilities arm is considering bu
 [wsj_1120.out [None] discourse unknown] Japan has climbed up from the ashes of World War I
-[wsj_1930.out [None] discourse unknown] INSURERS ARE FACING billions of dollars in damage 
-[wsj_0657.out [None] discourse unknown] Nikon Corp. said unconsolidated pretax profit incr
-[wsj_1944.out [None] discourse unknown] Mutual-fund czar John M. Templeton has put his mon
-[wsj_1998.out [None] discourse unknown] Olin Corp. said third-quarter net income rose 26% 
-[wsj_1322.out [None] discourse unknown] The bond market, which sometimes thrives on bad ne
-[wsj_1387.out [None] discourse unknown] Yet another political scandal is racking Japan.
-Bu
-[wsj_2349.out [None] discourse unknown] The following issues were recently filed with the 
-[wsj_2303.out [None] discourse unknown] A consortium of private investors operating as LJH
-[wsj_2356.out [None] discourse unknown] SOUTH AFRICA FREED the ANC&apos;s Sisulu and seven othe
-[wsj_1159.out [None] discourse unknown] The Justice Department scrambled to play down the 
-[wsj_2367.out [None] discourse unknown] This small Dallas suburb&apos;s got trouble.
-Trouble wi
-[wsj_1162.out [None] discourse unknown] People start their own businesses for many reasons
-[wsj_1980.out [None] discourse unknown] Prospect Group Inc., whose recent hostile tender o
-[wsj_1135.out [None] discourse unknown] The Bush administration said it is submitting a &quot;c
-[wsj_1394.out [None] discourse unknown] Ralph Brown was 31,000 feet over Minnesota when bo
-[wsj_1123.out [None] discourse unknown] Blue-chip advertisers have plenty of complaints ab
-[wsj_1372.out [None] discourse unknown] Qintex Australia Ltd., a media and resorts concern
-[wsj_1314.out [None] discourse unknown] Investors dumped stocks of big companies whose ear
-[wsj_1335.out [None] discourse unknown] The dollar weakened in indecisive trading as forei
 
 </pre>
 </div>
@@ -1818,25 +1784,16 @@ Slurping corpus dir [53/53 done]
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<hr />
-<p>An educe corpus is a mapping from <a href="https://educe.readthedocs.org/en/latest/api-doc/educe.html#educe.corpus.FileId">file id keys</a> to documents. The FileId contains the minimally identifying metadata for a document, for example, the document name, or its annotator. For RST-DT, only the <code>doc</code> attribute is used.</p>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
 <h3 id="faster-reading">Faster reading</h3>
 <p>If you know that you only want to work with a subset of the corpus files, you can pre-filter the corpus before reading the files.</p>
+<p>It helps to know here that an educe corpus is a mapping from <a href="https://educe.readthedocs.org/en/latest/api-doc/educe.html#educe.corpus.FileId">file id keys</a> to documents. The FileId contains the minimally identifying metadata for a document, for example, the document name, or its annotator. For RST-DT, only the <code>doc</code> attribute is used.</p>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">
-In&nbsp;[3]:
+In&nbsp;[6]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
@@ -1857,19 +1814,19 @@ In&nbsp;[3]:
 
 
 <div class="output_area"><div class="prompt"></div>
-<div class="output_subarea output_stream output_stderr output_text">
+<div class="output_subarea output_stream output_stdout output_text">
 <pre>
-Slurping corpus dir [2/2 done]
+wsj_0627.out: October employment data -- also could turn out to 
+wsj_0624.out: Costa Rica reached an agreement with its creditor 
 
 </pre>
 </div>
 </div>
 
 <div class="output_area"><div class="prompt"></div>
-<div class="output_subarea output_stream output_stdout output_text">
+<div class="output_subarea output_stream output_stderr output_text">
 <pre>
-wsj_0627.out: October employment data -- also could turn out to 
-wsj_0624.out: Costa Rica reached an agreement with its creditor 
+Slurping corpus dir [2/2 done]
 
 </pre>
 </div>
@@ -1885,8 +1842,51 @@ wsj_0624.out: Costa Rica reached an agreement with its creditor
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <h2 id="working-with-trees">Working with trees</h2>
+<p>RST DT trees function both as NLTK trees, and as <a href="http://educe.readthedocs.org/en/latest/api-doc/educe.html#educe.annotation.Standoff">educe standoff annotations</a></p>
 </div>
 </div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">
+In&nbsp;[11]:
+</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">educe.corpus</span> <span class="kn">import</span> <span class="n">FileId</span>
+
+<span class="n">example_key</span> <span class="o">=</span> <span class="n">FileId</span><span class="p">(</span><span class="n">doc</span> <span class="o">=</span> <span class="s">&quot;wsj_1924.out&quot;</span><span class="p">,</span> <span class="n">subdoc</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="s">&quot;discourse&quot;</span><span class="p">,</span> <span class="n">annotator</span><span class="o">=</span><span class="s">&#39;unknown&#39;</span><span class="p">)</span>
+<span class="n">doc_ex</span> <span class="o">=</span> <span class="n">rst_corpus</span><span class="p">[</span><span class="n">example_key</span><span class="p">]</span> <span class="c"># pick a document from the corpus</span>
+
+<span class="c"># display some edus</span>
+<span class="k">for</span> <span class="n">edu</span> <span class="ow">in</span> <span class="n">subtree_ex</span><span class="o">.</span><span class="n">leaves</span><span class="p">():</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&quot;EDU at {0}: {1}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">edu</span><span class="o">.</span><span class="n">text_span</span><span class="p">(),</span> <span class="n">edu</span><span class="o">.</span><span class="n">text</span><span class="p">()))</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt"></div>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>
+EDU at (1504,1609): At a nationally televised legislative session in Budapest, the Parliament overwhelmingly approved changes
+EDU at (1610,1662): formally ending one-party domination in the country,
+EDU at (1663,1703): regulating free elections by next summer
+EDU at (1704,1750): and establishing the office of state president
+EDU at (1751,1782): to replace a 21-member council.
+
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
 </div>
 <div class="cell border-box-sizing text_cell rendered">
 <div class="prompt input_prompt">
@@ -1900,15 +1900,13 @@ wsj_0624.out: Costa Rica reached an agreement with its creditor
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">
-In&nbsp;[39]:
+In&nbsp;[12]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
 <div class="highlight"><pre><span class="c"># display PNG tree</span>
-<span class="kn">from</span> <span class="nn">educe.corpus</span> <span class="kn">import</span> <span class="n">FileId</span>
 <span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">display</span>
-<span class="n">example_key</span> <span class="o">=</span> <span class="n">FileId</span><span class="p">(</span><span class="n">doc</span> <span class="o">=</span> <span class="s">&quot;wsj_1924.out&quot;</span><span class="p">,</span> <span class="n">subdoc</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="s">&quot;discourse&quot;</span><span class="p">,</span> <span class="n">annotator</span><span class="o">=</span><span class="s">&#39;unknown&#39;</span><span class="p">)</span>
-<span class="n">doc_ex</span> <span class="o">=</span> <span class="n">rst_corpus</span><span class="p">[</span><span class="n">example_key</span><span class="p">]</span> <span class="c"># pick a document from the corpus</span>
+
 <span class="n">subtree_ex</span> <span class="o">=</span> <span class="n">doc_ex</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="c"># navigate down to a small subtree</span>
 <span class="n">display</span><span class="p">(</span><span class="n">subtree_ex</span><span class="p">)</span> <span class="c"># NLTK &gt; 3.0b1 2013-07-11 should display a PNG image of the RST tree</span>
 <span class="c"># Mac users: see note above</span>
@@ -1941,6 +1939,7 @@ In&nbsp;[39]:
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="simplified-trees">Simplified trees</h3>
 <p>The tree representation used in the RST DT can take some getting used to (relation labels are placed on the satellite rather than the root of a subtree). You may prefer to work with the simplified representation instead. In the simple representation, trees are binarised and relation labels are moved to the root node.</p>
 </div>
 </div>
@@ -1979,23 +1978,6 @@ In&nbsp;[40]:
 </div>
 
 </div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">
-In&nbsp;[]:
-</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class="highlight"><pre><span class="c"># display some edus</span>
-<span class="k">for</span> <span class="n">edu</span> <span class="ow">in</span> <span class="n">subtree</span><span class="o">.</span><span class="n">leaves</span><span class="p">():</span>
-    <span class="k">print</span><span class="p">(</span><span class="s">&quot;EDU at {0}: {1}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">edu</span><span class="o">.</span><span class="n">text_span</span><span class="p">(),</span> <span class="n">edu</span><span class="o">.</span><span class="n">text</span><span class="p">()))</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
 <div class="cell border-box-sizing text_cell rendered">
 <div class="prompt input_prompt">
 </div>
@@ -2003,6 +1985,16 @@ In&nbsp;[]:
 <div class="text_cell_render border-box-sizing rendered_html">
 <h2 id="to-be-continued">To be continued</h2>
 <p>This tutorial is very much a work in progress. (last update 2014-09-17)</p>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="future-section-penn-treebank-integration">Future section: Penn Treebank integration</h2>
+<p>RST DT annotations are mostly over the the Penn Treebank. If you have a copy of the latter at the ready, you can ask educe to read and align the two. Note that when aligned with the PTB, we treat the source text as being the PTB rather than the RST DT (so both are possible). This means that annotations will have somewhat different text spans, as the PTB/RST DT have some slight textual diffenrences, mostly whitespace but some punctuation shifts as well. This realignment is hardcoded into educe in ways that we're <a href="https://github.com/kowey/educe/blob/master/educe/rst_dt/ptb.py">not terribly proud of</a></p>
 </div>
 </div>
 </div>
