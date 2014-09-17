@@ -1,13 +1,6 @@
 educe.stac.util package
 =======================
 
-Subpackages
------------
-
-.. toctree::
-
-    educe.stac.util.cmd
-
 Submodules
 ----------
 

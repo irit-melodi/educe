@@ -1,13 +1,6 @@
 educe.stac.learning package
 ===========================
 
-Subpackages
------------
-
-.. toctree::
-
-    educe.stac.learning.cmd
-
 Submodules
 ----------
 

@@ -1,13 +1,6 @@
 educe.rst_dt.util package
 =========================
 
-Subpackages
------------
-
-.. toctree::
-
-    educe.rst_dt.util.cmd
-
 Submodules
 ----------
 

@@ -1,13 +1,6 @@
 educe.rst_dt.learning package
 =============================
 
-Subpackages
------------
-
-.. toctree::
-
-    educe.rst_dt.learning.cmd
-
 Submodules
 ----------
 

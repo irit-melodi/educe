@@ -54,14 +54,6 @@ educe.stac.postag module
     :undoc-members:
     :show-inheritance:
 
-educe.stac.tests module
------------------------
-
-.. automodule:: educe.stac.tests
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 
 Module contents
 ---------------

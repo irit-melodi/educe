@@ -56,14 +56,6 @@ educe.internalutil module
     :undoc-members:
     :show-inheritance:
 
-educe.tests module
-------------------
-
-.. automodule:: educe.tests
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 educe.util module
 -----------------
 

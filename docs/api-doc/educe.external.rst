@@ -44,14 +44,6 @@ educe.external.stanford_xml_reader module
     :undoc-members:
     :show-inheritance:
 
-educe.external.tests module
----------------------------
-
-.. automodule:: educe.external.tests
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 
 Module contents
 ---------------

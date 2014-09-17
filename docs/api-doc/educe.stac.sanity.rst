@@ -28,14 +28,6 @@ educe.stac.sanity.report module
     :undoc-members:
     :show-inheritance:
 
-educe.stac.sanity.test_sanity module
-------------------------------------
-
-.. automodule:: educe.stac.sanity.test_sanity
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 
 Module contents
 ---------------
