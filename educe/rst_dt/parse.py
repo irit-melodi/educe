@@ -274,4 +274,4 @@ def parse_lightweight_tree(tstr):
             posinfo2 = PosInfo(text=end, edu=posinfo.edu+1)
             return EDU(posinfo.edu, Span(start, end), text), posinfo2
 
-    return walk(Tree.parse(tstr))[0]
+    return walk(Tree.fromstring(tstr))[0]
