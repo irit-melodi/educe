@@ -213,6 +213,15 @@ class Standoff(object):
         `s1.text_span().encloses(s2.text_span())`
         """
         return self.text_span().encloses(other.text_span())
+
+    def overlaps(self, other):
+        """
+        True if this annotations's span encloses the span of the other.
+
+        `s1.overlaps(s2)` is shorthand for
+        `s1.text_span().overlaps(s2.text_span())`
+        """
+        return self.text_span().overlaps(other.text_span())
 # pylint: enable=no-self-use
 
 
