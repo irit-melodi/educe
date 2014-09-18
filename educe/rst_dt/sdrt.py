@@ -164,8 +164,8 @@ def rst_to_sdrt(tree):
             raise Exception("Pre-terminal with non-EDU leaf: %s" % edu)
         return edu
     else:
-        nuclei = [x for x in tree if x.node.is_nucleus()]
-        satellites = [x for x in tree if x.node.is_satellite()]
+        nuclei = [x for x in tree if x.label().is_nucleus()]
+        satellites = [x for x in tree if x.label().is_satellite()]
         if len(nuclei) + len(satellites) != len(tree):
             raise Exception("Nodes that are neither Nuclei nor Satellites\n%s" % tree)
 
@@ -175,13 +175,13 @@ def rst_to_sdrt(tree):
             if satellites:
                 raise Exception("Multinuclear with satellites:\n%s" % tree)
             c_nucs    = list(map(rst_to_sdrt, nuclei))
-            rtype     = nuclei[0].node.rel
+            rtype     = nuclei[0].label().rel
             rel_insts = set(RelInst(n1, n2, rtype) for n1,n2 in zip(c_nucs, c_nucs[1:]))
             return CDU(c_nucs, rel_insts)
         else:
             nuc       = nuclei[0]
             c_nuc     = rst_to_sdrt(nuc)
             c_sats    = list(map(rst_to_sdrt,satellites))
-            rel_insts = set(RelInst(c_nuc, cs, s.node.rel) for s,cs in zip(satellites, c_sats))
+            rel_insts = set(RelInst(c_nuc, cs, s.label().rel) for s,cs in zip(satellites, c_sats))
             members   = [c_nuc] + c_sats
             return CDU(members, rel_insts)
