@@ -1713,7 +1713,7 @@ ipython notebook</code></pre>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">
-In&nbsp;[52]:
+In&nbsp;[1]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
@@ -1795,7 +1795,7 @@ Slurping corpus dir [53/53 done]
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">
-In&nbsp;[53]:
+In&nbsp;[2]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
@@ -1816,19 +1816,19 @@ In&nbsp;[53]:
 
 
 <div class="output_area"><div class="prompt"></div>
-<div class="output_subarea output_stream output_stdout output_text">
+<div class="output_subarea output_stream output_stderr output_text">
 <pre>
-wsj_0627.out: October employment data -- also could turn out to 
-wsj_0624.out: Costa Rica reached an agreement with its creditor 
+Slurping corpus dir [2/2 done]
 
 </pre>
 </div>
 </div>
 
 <div class="output_area"><div class="prompt"></div>
-<div class="output_subarea output_stream output_stderr output_text">
+<div class="output_subarea output_stream output_stdout output_text">
 <pre>
-Slurping corpus dir [2/2 done]
+wsj_0627.out: October employment data -- also could turn out to 
+wsj_0624.out: Costa Rica reached an agreement with its creditor 
 
 </pre>
 </div>
@@ -1851,7 +1851,7 @@ Slurping corpus dir [2/2 done]
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">
-In&nbsp;[64]:
+In&nbsp;[3]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
@@ -1912,7 +1912,7 @@ In&nbsp;[64]:
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">
-In&nbsp;[67]:
+In&nbsp;[4]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
@@ -1962,7 +1962,7 @@ The voting for new laws followed dissolution of Hungary&apos;s Communist Party t
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">
-In&nbsp;[79]:
+In&nbsp;[5]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
@@ -1982,9 +1982,30 @@ In&nbsp;[79]:
     <span class="k">return</span> <span class="s">&quot;{tystr} at {span}:</span><span class="se">\t</span><span class="s">{snippet}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tystr</span><span class="o">=</span><span class="n">tystr</span><span class="p">,</span>
                                                  <span class="n">span</span><span class="o">=</span><span class="n">span</span><span class="p">,</span>
                                                  <span class="n">snippet</span><span class="o">=</span><span class="n">text_snippet</span><span class="p">(</span><span class="n">text</span><span class="p">))</span>
-        
+</pre></div>
 
-<span class="c"># in educe RST/DT all annotations have a shared context object</span>
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="edus-and-subtrees">EDUs and subtrees</h3>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">
+In&nbsp;[55]:
+</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class="highlight"><pre><span class="c"># in educe RST/DT all annotations have a shared context object</span>
 <span class="c"># that refers to an RST document; you don&#39;t always need to use</span>
 <span class="c"># it, but it can be handy for writing general code like the</span>
 <span class="c"># above</span>
@@ -1999,7 +2020,11 @@ In&nbsp;[79]:
 <span class="k">print</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Some subtrees&quot;</span><span class="p">)</span>
 <span class="c"># display some RST subtrees and the edus they enclose</span>
 <span class="k">for</span> <span class="n">subtree</span> <span class="ow">in</span> <span class="n">ex_subtree</span><span class="o">.</span><span class="n">subtrees</span><span class="p">():</span>
-    <span class="k">print</span><span class="p">(</span><span class="n">preview_standoff</span><span class="p">(</span><span class="s">&quot;subtree&quot;</span><span class="p">,</span> <span class="n">ex_context</span><span class="p">,</span> <span class="n">subtree</span><span class="p">))</span>
+    <span class="n">node</span> <span class="o">=</span> <span class="n">subtree</span><span class="o">.</span><span class="n">label</span><span class="p">()</span>
+    <span class="n">stat</span> <span class="o">=</span> <span class="s">&quot;N&quot;</span> <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">is_nucleus</span><span class="p">()</span> <span class="k">else</span> <span class="s">&quot;S&quot;</span>
+    <span class="n">label</span> <span class="o">=</span> <span class="s">&quot;{stat} {rel: &lt;30}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">stat</span><span class="o">=</span><span class="n">stat</span><span class="p">,</span>
+                                  <span class="n">rel</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">rel</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">preview_standoff</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">ex_context</span><span class="p">,</span> <span class="n">subtree</span><span class="p">))</span>
 </pre></div>
 
 </div>
@@ -2021,14 +2046,14 @@ EDU at (1704,1750):	and establishing the...e of state president
 EDU at (1751,1782):	to replace a 21-member council.
 
 Some subtrees
-subtree at (1504,1782):	At a nationally tele...a 21-member council.
-subtree at (1504,1609):	At a nationally tele...gly approved changes
-subtree at (1610,1782):	formally ending one-...a 21-member council.
-subtree at (1610,1662):	formally ending one-...tion in the country,
-subtree at (1663,1703):	regulating free elections by next summer
-subtree at (1704,1782):	and establishing the...a 21-member council.
-subtree at (1704,1750):	and establishing the...e of state president
-subtree at (1751,1782):	to replace a 21-member council.
+S elaboration-general-specific   at (1504,1782):	At a nationally tele...a 21-member council.
+N span                           at (1504,1609):	At a nationally tele...gly approved changes
+S elaboration-object-attribute-e at (1610,1782):	formally ending one-...a 21-member council.
+N List                           at (1610,1662):	formally ending one-...tion in the country,
+N List                           at (1663,1703):	regulating free elections by next summer
+N List                           at (1704,1782):	and establishing the...a 21-member council.
+N span                           at (1704,1750):	and establishing the...e of state president
+S purpose                        at (1751,1782):	to replace a 21-member council.
 
 </pre>
 </div>
@@ -2043,6 +2068,7 @@ subtree at (1751,1782):	to replace a 21-member council.
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="paragraphs-and-sentences">Paragraphs and sentences</h3>
 <p>Going back to the source text, we can notice that it seems to be divided into sentences and paragraphs with line separators. This does not seem to be done very consistently, and in any case, RST constituents seem to traverse these boundaries freely. But they can still make for useful standoff annotations.</p>
 </div>
 </div>
@@ -2050,15 +2076,14 @@ subtree at (1751,1782):	to replace a 21-member council.
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">
-In&nbsp;[86]:
+In&nbsp;[7]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
-<div class="highlight"><pre><span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">para</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ex_context</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">):</span>
+<div class="highlight"><pre><span class="k">for</span> <span class="n">para</span> <span class="ow">in</span> <span class="n">ex_context</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="mi">8</span><span class="p">]:</span>
     <span class="k">print</span><span class="p">(</span><span class="n">preview_standoff</span><span class="p">(</span><span class="s">&quot;paragraph&quot;</span><span class="p">,</span> <span class="n">ex_context</span><span class="p">,</span> <span class="n">para</span><span class="p">))</span>
-    <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">7</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">sent</span> <span class="ow">in</span> <span class="n">ex_context</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span><span class="o">.</span><span class="n">sentences</span><span class="p">:</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&quot; &quot;</span> <span class="o">+</span> <span class="n">preview_standoff</span><span class="p">(</span><span class="s">&quot;sentence&quot;</span><span class="p">,</span> <span class="n">ex_context</span><span class="p">,</span> <span class="n">sent</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">sent</span> <span class="ow">in</span> <span class="n">para</span><span class="o">.</span><span class="n">sentences</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\t</span><span class="s">&quot;</span> <span class="o">+</span> <span class="n">preview_standoff</span><span class="p">(</span><span class="s">&quot;sentence&quot;</span><span class="p">,</span> <span class="n">ex_context</span><span class="p">,</span> <span class="n">sent</span><span class="p">))</span>
 </pre></div>
 
 </div>
@@ -2072,26 +2097,18 @@ In&nbsp;[86]:
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>
-paragraph at (0,66):	CALIFORNIA STRUGGLED...ay area earthquake. 
-paragraph at (68,641):	As aftershocks shook...to prevent looting. 
-paragraph at (643,791):	The baseball commiss...n Candlestick Park. 
-paragraph at (793,860):	HONECKER WAS OUSTED ...mid growing unrest. 
 paragraph at (862,1288):	The 77-year-old offi...o-democracy groups. 
+	sentence at (862,1029):	The 77-year-old offi...ttee in East Berlin.
+	sentence at (1030,1144):	Honecker, who was re... for health reasons.
+	sentence at (1145,1288):	He was succeeded by ...o-democracy groups. 
 paragraph at (1290,1432):	Honecker&apos;s departure...nted with his rule. 
+	sentence at (1290,1432):	Honecker&apos;s departure...nted with his rule. 
 paragraph at (1434,1502):	HUNGARY ADOPTED cons... democratic system. 
+	sentence at (1434,1502):	HUNGARY ADOPTED cons... democratic system. 
 paragraph at (1504,1913):	At a nationally tele...e&apos;s republic&quot; since 
- sentence at (1504,1782):	At a nationally tele...a 21-member council.
- sentence at (1783,1831):	The country was rena...Republic of Hungary.
- sentence at (1832,1913):	Like other Soviet bl...e&apos;s republic&quot; since 
-paragraph at (1915,2056):	The voting for new l...le Socialist Party. 
-paragraph at (2058,2379):	The space shuttle At...nday to California. 
-paragraph at (2381,2714):	South Korea&apos;s Presid...ommitment to Seoul. 
-paragraph at (2716,3026):	The Census Bureau re...y income fell 0.2%. 
-paragraph at (3028,3364):	The Bush administrat...Likud bloc opposes. 
-paragraph at (3366,3621):	Cuba was elected to ...n council delegate. 
-paragraph at (3623,3961):	Britain&apos;s Prime Mini...t to end apartheid. 
-paragraph at (3963,4285):	Arab officials in Sa...eirut&apos;s government. 
-paragraph at (4287,4582):	Colombia&apos;s judges la... the work stoppage. 
+	sentence at (1504,1782):	At a nationally tele...a 21-member council.
+	sentence at (1783,1831):	The country was rena...Republic of Hungary.
+	sentence at (1832,1913):	Like other Soviet bl...e&apos;s republic&quot; since 
 
 </pre>
 </div>
@@ -2114,7 +2131,7 @@ paragraph at (4287,4582):	Colombia&apos;s judges la... the work stoppage.
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">
-In&nbsp;[57]:
+In&nbsp;[8]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
@@ -2146,14 +2163,14 @@ In&nbsp;[57]:
 <pre>
 (S
   (NP-SBJ
-    (DT &lt;educe.external.postag.Token object at 0x1090c2410&gt;)
-    (NNP &lt;educe.external.postag.Token object at 0x1090c2510&gt;)
-    (NNP &lt;educe.external.postag.Token object at 0x1090c2650&gt;))
+    (DT &lt;educe.external.postag.Token object at 0x108820d10&gt;)
+    (NNP &lt;educe.external.postag.Token object at 0x108820dd0&gt;)
+    (NNP &lt;educe.external.postag.Token object at 0x108820e90&gt;))
   (VP
-    (VBZ &lt;educe.external.postag.Token object at 0x1090c2750&gt;)
+    (VBZ &lt;educe.external.postag.Token object at 0x108820f50&gt;)
     (VP
       (VP
-        (VBN &lt;educe.external.postag.Token object at 0x1090c2810&gt;)
+        (VBN &lt;educe.external.postag.Token object at 0x10a3aa050&gt;)
         (NP
           (JJ &lt;educe.external.postag.
 
@@ -2177,7 +2194,7 @@ In&nbsp;[57]:
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">
-In&nbsp;[58]:
+In&nbsp;[9]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
@@ -2233,6 +2250,212 @@ In&nbsp;[58]:
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="combining-annotations">Combining annotations</h2>
+<p>We now have several types of annotation at our disposal:</p>
+<ul>
+<li>EDUs and RST trees</li>
+<li>raw text paragraph/sentences (not terribly reliable)</li>
+<li>PTB trees</li>
+</ul>
+<p>The next question that arises is how we can use these annotations in conjuction with each other.</p>
+<h3 id="span-enclosure-and-overlapping">Span enclosure and overlapping</h3>
+<p>The simplest way to reason about annotations (particularly since they tend to be sloppy and to overlap). Suppose for example, we wanted to find all of the edus in a tree that are in the same sentence as an given edu.</p>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">
+In&nbsp;[18]:
+</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span>
+
+<span class="c"># pick an EDU, any edu</span>
+<span class="n">ex_edus</span> <span class="o">=</span> <span class="n">ex_subtree</span><span class="o">.</span><span class="n">leaves</span><span class="p">()</span>
+<span class="n">ex_edu0</span> <span class="o">=</span> <span class="n">ex_edus</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+<span class="k">print</span><span class="p">(</span><span class="n">preview_standoff</span><span class="p">(</span><span class="s">&#39;example EDU&#39;</span><span class="p">,</span> <span class="n">ex_context</span><span class="p">,</span> <span class="n">ex_edu0</span><span class="p">))</span>
+
+<span class="c"># all of the sentences in the example document</span>
+<span class="n">ex_sents</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">sentences</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ex_context</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">))</span>
+
+<span class="c"># sentences that overlap the edu</span>
+<span class="c"># (we use overlaps instead of encloses because edus might</span>
+<span class="c"># span sentence boundaries)</span>
+<span class="n">ex_edu0_sents</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ex_sents</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">overlaps</span><span class="p">(</span><span class="n">ex_edu0</span><span class="p">)]</span>
+
+<span class="c"># and now the edus that overlap those sentences</span>
+<span class="n">ex_edu0_buddies</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">sent</span> <span class="ow">in</span> <span class="n">ex_edu0_sents</span><span class="p">:</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">preview_standoff</span><span class="p">(</span><span class="s">&#39;overlapping sentence&#39;</span><span class="p">,</span> <span class="n">ex_context</span><span class="p">,</span> <span class="n">sent</span><span class="p">))</span>
+    <span class="n">buddies</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ex_edus</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">overlaps</span><span class="p">(</span><span class="n">sent</span><span class="p">)]</span>
+    <span class="n">buddies</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">ex_edu0</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">edu</span> <span class="ow">in</span> <span class="n">buddies</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">preview_standoff</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\t</span><span class="s">nearby EDU&#39;</span><span class="p">,</span> <span class="n">ex_context</span><span class="p">,</span> <span class="n">edu</span><span class="p">))</span>
+    <span class="n">ex_edu0_buddies</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">buddies</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt"></div>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>
+example EDU at (1704,1750):	and establishing the...e of state president
+overlapping sentence at (1504,1782):	At a nationally tele...a 21-member council.
+	nearby EDU at (1504,1609):	At a nationally tele...gly approved changes
+	nearby EDU at (1610,1662):	formally ending one-...tion in the country,
+	nearby EDU at (1663,1703):	regulating free elections by next summer
+	nearby EDU at (1751,1782):	to replace a 21-member council.
+
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="span-example-2-exercise">Span example 2 (exercise)</h3>
+<p>As an exercise, how about extracting the PTB part of speech tags for every token in our example EDU? How for example, would you determine if an EDU contains a VBG-tagged word?</p>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">
+In&nbsp;[38]:
+</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class="highlight"><pre><span class="n">ex_postags</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">leaves</span><span class="p">()</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">ptb_trees</span><span class="p">[</span><span class="n">ex_key</span><span class="p">]))</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">&quot;some of the POS tags&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">postag</span> <span class="ow">in</span> <span class="n">ex_postags</span><span class="p">[</span><span class="mi">300</span><span class="p">:</span><span class="mi">310</span><span class="p">]:</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">preview_standoff</span><span class="p">(</span><span class="n">postag</span><span class="o">.</span><span class="n">tag</span><span class="p">,</span> <span class="n">ex_context</span><span class="p">,</span> <span class="n">postag</span><span class="p">))</span>
+    
+<span class="k">print</span><span class="p">()</span>
+<span class="n">ex_edu0_postags</span> <span class="o">=</span> <span class="p">[]</span> <span class="c"># EXERCISE &lt;-- fill this in</span>
+<span class="k">print</span><span class="p">(</span><span class="s">&quot;has VBG? &quot;</span><span class="p">,</span> <span class="p">)</span> <span class="c"># EXERCISE &lt;-- fill this in</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt"></div>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>
+some of the POS tags
+VBG at (1663,1673):	regulating
+JJ at (1674,1678):	free
+NNS at (1679,1688):	elections
+IN at (1689,1691):	by
+JJ at (1692,1696):	next
+NN at (1697,1703):	summer
+CC at (1704,1707):	and
+VBG at (1708,1720):	establishing
+DT at (1721,1724):	the
+NN at (1725,1731):	office
+
+has VBG? 
+
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="tree-searching">Tree searching</h3>
+<p>The same span enclosure logic can be used to search parse trees for particular constituents, verb phrases. Alternatively, you can use the the <code>topdown</code> method provided by educe trees. This returns just the largest constituent for which some predicate is true. It optionally accepts an additional argument to cut off the search when it is clearly out of bounds.</p>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">
+In&nbsp;[47]:
+</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class="highlight"><pre><span class="n">ex_ptb_trees</span> <span class="o">=</span> <span class="n">ptb_trees</span><span class="p">[</span><span class="n">ex_key</span><span class="p">]</span>
+<span class="n">ex_edu0_ptb_trees</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ex_ptb_trees</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">overlaps</span><span class="p">(</span><span class="n">ex_edu0</span><span class="p">)]</span>
+<span class="n">ex_edu0_cons</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">ptree</span> <span class="ow">in</span> <span class="n">ex_edu0_ptb_trees</span><span class="p">:</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">preview_standoff</span><span class="p">(</span><span class="s">&#39;ptb tree&#39;</span><span class="p">,</span> <span class="n">ex_context</span><span class="p">,</span> <span class="n">ptree</span><span class="p">))</span>
+    <span class="n">ex_edu0_cons</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">ptree</span><span class="o">.</span><span class="n">topdown</span><span class="p">(</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">ex_edu0</span><span class="o">.</span><span class="n">encloses</span><span class="p">(</span><span class="n">c</span><span class="p">)))</span>
+    
+<span class="c"># the largest constituents enclosed by this edu</span>
+<span class="k">for</span> <span class="n">cons</span> <span class="ow">in</span> <span class="n">ex_edu0_cons</span><span class="p">:</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">preview_standoff</span><span class="p">(</span><span class="n">cons</span><span class="o">.</span><span class="n">label</span><span class="p">(),</span> <span class="n">ex_context</span><span class="p">,</span> <span class="n">cons</span><span class="p">))</span>
+    
+<span class="n">display</span><span class="p">(</span><span class="n">ex_edu0_cons</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt"></div>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>
+ptb tree at (1504,1782):	At a nationally tele...a 21-member council.
+CC at (1704,1707):	and
+VBG at (1708,1720):	establishing
+NP at (1721,1731):	the office
+PP at (1732,1750):	of state president
+WHNP-1 at (1750,1750):	
+NP-SBJ at (1750,1750):	
+
+</pre>
+</div>
+</div>
+
+<div class="output_area"><div class="prompt"></div>
+
+
+<div class="output_png output_subarea ">
+<img src="data:image/png;base64,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"
+>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
 <h2 id="simplified-trees">Simplified trees</h2>
 <p>The tree representation used in the RST DT can take some getting used to (relation labels are placed on the satellite rather than the root of a subtree). You may prefer to work with the simplified representation instead. In the simple representation, trees are binarised and relation labels are moved to the root node.</p>
 </div>
@@ -2241,7 +2464,7 @@ In&nbsp;[58]:
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">
-In&nbsp;[59]:
+In&nbsp;[11]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
@@ -2286,7 +2509,7 @@ In&nbsp;[59]:
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">
-In&nbsp;[60]:
+In&nbsp;[12]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
@@ -2332,7 +2555,7 @@ In&nbsp;[60]:
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">
-In&nbsp;[61]:
+In&nbsp;[13]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
@@ -2368,25 +2591,33 @@ In&nbsp;[61]:
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="to-be-continued">To be continued</h2>
-<p>This tutorial is very much a work in progress. (last update 2014-09-17)</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>In this tutorial, we've explored a couple of basic educe concepts, which we hope will enable you to extract some data from your discourse corpora, namely</p>
+<ul>
+<li>reading corpus data (and pre-filtering)</li>
+<li>standoff annotations</li>
+<li>searching by span enclosure, overlapping</li>
+<li>working with trees</li>
+<li>combining annotations from different sources</li>
+</ul>
+<p>The concepts above should transfer to whatever discourse corpus you are working with (that educe supports, or that you are prepared to supply a reader for).</p>
+<p>That said, some of the features mentioned in particular tutorial are specific to the RST DT:</p>
+<ul>
+<li>simplifying RST trees</li>
+<li>converting them to dependency trees</li>
+<li>PTB integration</li>
+</ul>
+<p>This tutorial was last updated on 2014-09-18. Educe is a bit of a moving target, so <a href="https://github.com/kowey/educe/issues">let me know</a> if you run into any trouble!</p>
+<h3 id="see-also">See also</h3>
+<h4 id="rst-dt-util">rst-dt-util</h4>
+<p>Some of the things you may want to do with the RST DT may already exist in the rst-dt-util command line tool. See <code>rst-dt-util --help</code> for more details.</p>
+<p>(At the time of this writing the only really useful tool is the rst-dt-util reltypes one, which prints an inventory of relation labels, but the utility may grow over time)</p>
+<h4 id="external-tool-support">External tool support</h4>
+<p>Educe has some support for reading data from outside the discourse corpus proper. For example, if you run the stanford corenlp parser on the raw text, you can read them back into educe-style <code>ConstituencyTree</code> and <code>DependencyTree</code> annotations. See <a href="https://educe.readthedocs.org/en/latest/api-doc/educe.external.html">educe.external</a> for details.</p>
+<p>If you have a part of speech tagger that you would like to use, the <code>educe.external.postag</code> module may be useful for representing the annotations that come out of it</p>
+<p>You can also add support for your own tools by creating annotations that extend <code>Standoff</code>, directly or otherwise.</p>
 </div>
 </div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">
-In&nbsp;[61]:
-</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class="highlight"><pre> 
-</pre></div>
-
-</div>
-</div>
-</div>
-
 </div>
     </div>
   </div>
