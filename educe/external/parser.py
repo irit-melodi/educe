@@ -94,7 +94,7 @@ class ConstituencyTree(SearchableTree, Standoff):
                     return toks.popleft()
                 else:
                     raise Exception('Must have same number of input tokens as leaves in the tree')
-            return cls(t.node, list(map(step, t)))
+            return cls(t.label(), list(map(step, t)))
         return step(tree)
 
 
@@ -119,7 +119,7 @@ class DependencyTree(SearchableTree, Standoff):
         Standoff.__init__(self, origin)
         nodes = children
         if not self.is_root():
-            nodes.append(self.node)
+            nodes.append(self.label())
         start = min(x.span.char_start for x in nodes)
         end = max(x.span.char_end for x in nodes)
         self.link = link
