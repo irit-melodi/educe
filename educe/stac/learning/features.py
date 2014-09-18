@@ -40,15 +40,6 @@ from ..util.context import Context, enclosed, edus_in_span
 from ..annotation import turn_id
 from ..lexicon.wordclass import WordClass
 
-if sys.version > '3':
-    def treenode(tree):
-        "API-change padding for NLTK 2 vs NLTK 3 trees"
-        return tree.label()
-else:
-    def treenode(tree):
-        "API-change padding for NLTK 2 vs NLTK 3 trees"
-        return tree.node
-
 
 class CorpusConsistencyException(Exception):
     """
@@ -304,10 +295,10 @@ def subject_lemmas(span, trees):
     def good(tree):
         "is within the search span"
         return tree.link == "nsubj" and\
-            span.encloses(tree.node.text_span())
+            span.encloses(tree.label().text_span())
 
     subtrees = map_topdown(good, prunable, trees)
-    return [tree.node.features["lemma"] for tree in subtrees]
+    return [tree.label().features["lemma"] for tree in subtrees]
 
 
 def attachments(relations, du1, du2):
@@ -590,12 +581,12 @@ def has_FOR_np(current, edu):
     def is_nplike(anno):
         "is some sort of NP annotation from a parser"
         return isinstance(anno, ConstituencyTree)\
-            and anno.node in ['NP', 'WHNP', 'NNP', 'NNPS']
+            and anno.label() in ['NP', 'WHNP', 'NNP', 'NNPS']
 
     def is_prep_for(anno):
         "is a node representing for as the prep in a PP"
         return isinstance(anno, ConstituencyTree)\
-            and anno.node == 'IN'\
+            and anno.label() == 'IN'\
             and len(anno.children) == 1\
             and anno.children[0].features["lemma"] == "for"
 
@@ -625,7 +616,7 @@ def is_question(current, edu):
     def is_sqlike(anno):
         "is some sort of question"
         return isinstance(anno, ConstituencyTree)\
-            and anno.node in ['SBARQ', 'SQ']
+            and anno.label() in ['SBARQ', 'SQ']
 
     doc = current.doc
     span = edu.text_span()

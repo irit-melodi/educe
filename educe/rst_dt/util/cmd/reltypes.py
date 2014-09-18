@@ -29,10 +29,10 @@ def empty_counts():
 def walk_and_count(tree, counts):
     "Count relation types in tree, incrementing values in `counts`"
 
-    if tree.node.is_nucleus():
-        counts.multi[tree.node.rel.lower()] += 1
-    elif tree.node.is_satellite():
-        counts.mono[tree.node.rel.lower()] += 1
+    if tree.label().is_nucleus():
+        counts.multi[tree.label().rel.lower()] += 1
+    elif tree.label().is_satellite():
+        counts.mono[tree.label().rel.lower()] += 1
     for child in tree:
         if not isinstance(child, educe.rst_dt.EDU):
             walk_and_count(child, counts)

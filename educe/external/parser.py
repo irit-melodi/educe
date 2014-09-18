@@ -130,7 +130,7 @@ class DependencyTree(SearchableTree, Standoff):
         """
         This is a dependency tree root (has a special node)
         """
-        return self.node == 'ROOT'
+        return self.label() == 'ROOT'
 
     @classmethod
     def build(cls, deps, nodes, k, link=None):
