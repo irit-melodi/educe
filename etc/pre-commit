@@ -1,4 +1,5 @@
 #!/bin/sh
+# copy to .git/hooks/pre-commit and make exeuctable
 git status -s | grep -v api-doc
 if [ $? -eq 0 ]; then
     bash etc/redo-api-doc
