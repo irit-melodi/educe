@@ -25,6 +25,7 @@ import xml.etree.ElementTree as ET
 
 from educe import stac, annotation, graph
 from educe.corpus import FileId
+from educe.stac.corpus import METAL_REVIEWERS, METAL_STR
 from educe.stac.util.context import Context
 import educe.stac.corenlp as stac_corenlp
 import educe.stac.graph as egr
@@ -33,11 +34,11 @@ import educe.util
 from .report import *
 from .checks import *
 
+
+STAC_REVIEWERS = METAL_REVIEWERS
 STAC_GLOBS = {"data/pilot": "pilot*",
               "data/socl-season1": "s1-league*-game*",
               "data/socl-season2": "s2-*"}
-
-STAC_REVIEWERS = ["bronze", "silver", "gold"]
 
 
 def first_or_none(xs):
@@ -1292,7 +1293,7 @@ def easy_settings(args):
         else:
             sys.exit("I don't know about any document called " + args.doc)
 
-    args.annotator = "(?i)" + "|".join(STAC_REVIEWERS)
+    args.annotator = METAL_STR
     print("Guessing convenience settings:")
     print("stac-check %(corpus)s\"\
  --doc \"%(doc)s\"\

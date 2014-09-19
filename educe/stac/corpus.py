@@ -7,6 +7,7 @@ Corpus layout conventions (re-exported by educe.stac)
 
 from glob import glob
 import os
+import re
 import sys
 
 from educe.corpus import FileId
@@ -142,3 +143,14 @@ def write_annotation_file(anno_filename, doc):
     glozz.write_annotation_file(anno_filename,
                                 doc,
                                 settings=STAC_OUTPUT_SETTINGS)
+
+
+METAL_REVIEWERS = ["bronze", "silver", "gold"]
+METAL_STR = "(?i)" + "|".join(METAL_REVIEWERS)
+METAL_RE = re.compile(METAL_STR)
+
+
+def is_metal(fileid):
+    "If the annotator is one of the distinguished standard annotators"
+    anno = fileid.annotator or ""
+    return anno.lower() in METAL_REVIEWERS
