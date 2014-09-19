@@ -4,6 +4,10 @@ tests/wsj*.out
 tests/wsj*.dis
 tests/wsj*.pdtb
 
+# local resources
+data/PTBIII
+data/rst_discourse_treebank
+
 # pip installing externally hosted pkg?
 src
 
