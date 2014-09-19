@@ -48,7 +48,9 @@ def seek_ac_file(aa_file):
 # ---------------------------------------------------------------------
 
 def dump(filename, doc):
-    show_unit = lambda u:"%s | %s" % (u, doc.text_for(u))
+    show_unit = lambda u:\
+        "{anno} | {text}".format(anno=u,
+                                 text=doc.text(u.text_span()))
     lines = ['############### %s units' % filename]\
           + list(map(show_unit, doc.units))\
           + ['############### %s relations' % filename]\
