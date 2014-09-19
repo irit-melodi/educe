@@ -7,6 +7,7 @@ tests/wsj*.pdtb
 # local resources
 data/PTBIII
 data/rst_discourse_treebank
+data/pdtb_v2
 
 # pip installing externally hosted pkg?
 src
