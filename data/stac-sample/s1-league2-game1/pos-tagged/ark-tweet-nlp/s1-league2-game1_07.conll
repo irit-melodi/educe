@@ -1,0 +1,60 @@
+skinnylinny	N	0.3463
+:	,	0.9451
+trade	N	0.8868
+wheat	N	0.9580
+
+?	,	0.9909
+
+sabercat	^	0.6383
+:	,	0.9396
+What	O	0.9862
+would	V	0.9996
+you	O	0.9929
+offer	V	0.5753
+?	,	0.9971
+
+2x	$	0.6615
+ore	N	0.5351
+
+Done	V	0.8777
+
+thanks	N	0.7279
+!	,	0.9973
+
+You're	L	0.9823
+welcome	A	0.7995
+:)	E	0.9948
+
+Don't	V	0.9923
+suppose	V	0.8950
+anyone	N	0.8819
+wants	V	0.9989
+to	P	0.9944
+give	V	0.9999
+me	O	0.9962
+a	D	0.9891
+wheat	N	0.9685
+in	P	0.9919
+exchange	N	0.9355
+for	P	0.9995
+wood	^	0.4703
+or	&	0.9875
+sheep	N	0.9745
+or	&	0.9876
+clay	^	0.8005
+do	V	0.9971
+they	O	0.9915
+?	,	0.9954
+
+no	D	0.6800
+wheat	N	0.9965
+...	,	0.8670
+
+same	A	0.9270
+
+Hmmm	!	0.9950
+,	,	0.9981
+oh	!	0.9929
+well	!	0.9405
+.	,	0.9982
+

@@ -1,0 +1,212 @@
+skinny	A	0.9873
+,	,	0.9974
+got	V	0.9967
+some	D	0.9775
+ore	^	0.6108
+?	,	0.9944
+
+I	O	0.9983
+have	V	0.9987
+...	,	0.7685
+
+Trade	V	0.8248
+you	O	0.9909
+an	D	0.9892
+ore	^	0.5607
+for	P	0.9994
+a	D	0.9858
+clay	^	0.5157
+?	,	0.9957
+
+will	V	0.9979
+you	O	0.9751
+trade	V	0.8958
+for	P	0.9982
+wood	^	0.5641
+?	,	0.9939
+no	!	0.5997
+clay	N	0.8612
+
+Got	V	0.9735
+wood	N	0.5941
+,	,	0.9971
+thanks	N	0.9268
+
+:P	E	0.9846
+
+got	V	0.9189
+clay	^	0.7007
+?	,	0.9953
+
+Nope	!	0.9975
+
+I	O	0.9982
+got	V	0.9989
+clay	^	0.6849
+
+I	O	0.9985
+know	V	0.9989
+
+want	V	0.9945
+to	P	0.9832
+trade	V	0.8351
+for	P	0.9997
+the	D	0.9977
+ore	N	0.4044
+...	,	0.8226
+
+:D	E	0.9898
+
+Sure	A	0.8354
+
+so	P	0.6746
+set	V	0.9116
+it	O	0.9936
+up	T	0.9845
+
+anyone	N	0.9066
+can	V	0.9937
+get	V	0.9995
+wheat	N	0.8574
+?	,	0.9981
+
+Meanie	N	0.8459
+!	,	0.9987
+
+me	O	0.9850
+?	,	0.9978
+
+I	O	0.9977
+can	V	0.9998
+
+okay	!	0.9548
+,	,	0.9980
+for	P	0.9962
+wood	^	0.4950
+or	&	0.9884
+sheep	N	0.9610
+?	,	0.9958
+
+I	O	0.9983
+have	V	0.9997
+nothing	N	0.9991
+at	P	0.9999
+the	D	0.9997
+moment	N	0.9965
+:P	E	0.9970
+
+so	P	0.5390
+want	V	0.9751
+sheep	N	0.9261
+or	&	0.9866
+wood	N	0.6528
+?	,	0.9949
+
+oh	!	0.9988
+,	,	0.9961
+okay	!	0.9287
+
+thank	V	0.9631
+you	O	0.9981
+!!!!	,	0.9987
+
+Heh	!	0.9931
+,	,	0.9983
+you're	L	0.9886
+welcome	A	0.5990
+!	,	0.9978
+
+anyone	N	0.9131
+want	V	0.9989
+a	D	0.9956
+sheep	N	0.9691
+for	P	0.9999
+some	D	0.9803
+wood	N	0.6039
+?	,	0.9960
+
+no	!	0.8055
+thanks	N	0.9919
+
+btw	!	0.6283
+,	,	0.9974
+I	O	0.9980
+need	V	0.9993
+to	P	0.9249
+go	V	0.9993
+away	R	0.9971
+for	P	0.9961
+2	$	0.9337
+min	N	0.9750
+after	P	0.9917
+I	O	0.9993
+roll	V	0.9881
+,	,	0.9990
+okay	!	0.8308
+?	,	0.9987
+
+Sure	A	0.8429
+,	,	0.9984
+ok	!	0.9351
+
+ok	!	0.9836
+
+you	O	0.9980
+want	V	0.9999
+any	D	0.9911
+sheep	N	0.9791
+or	&	0.9897
+clay	^	0.7720
+?	,	0.9954
+
+want	V	0.9975
+some	D	0.9551
+clay	^	0.6816
+?	,	0.9958
+
+Please	V	0.7761
+
+I	O	0.9962
+only	R	0.8079
+have	V	0.9930
+ore	N	0.6056
+to	P	0.9969
+offer	V	0.6681
+
+oh	!	0.9948
+...	,	0.7148
+
+how	R	0.9990
+much	A	0.9340
+?	,	0.9957
+
+I	O	0.9983
+have	V	0.9986
+four	$	0.4039
+...	,	0.9790
+But	&	0.9899
+could	V	0.9951
+do	V	0.9994
+with	P	0.9866
+other	A	0.9845
+materials	N	0.9904
+
+well	!	0.5603
+ill	L	0.9752
+give	V	0.9998
+you	O	0.9867
+3	$	0.9436
+clay	^	0.6354
+for	P	0.9969
+3	$	0.9735
+ore	N	0.5361
+
+Hmmm	!	0.9950
+,	,	0.9976
+sounds	V	0.9688
+like	P	0.9754
+a	D	0.9949
+deal	N	0.9977
+
+ADDTIME	!	0.3006
+

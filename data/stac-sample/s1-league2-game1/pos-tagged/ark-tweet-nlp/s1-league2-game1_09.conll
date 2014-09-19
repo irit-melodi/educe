@@ -1,0 +1,111 @@
+cheers	!	0.6056
+
+No	D	0.8735
+worries	N	0.9974
+:D	E	0.9956
+
+Now	R	0.9822
+hope	V	0.9875
+that	P	0.6581
+I	O	0.9992
+don't	V	1.0000
+roll	V	0.9990
+a	D	0.9920
+7	$	0.9985
+!	,	0.9981
+
+:D	E	0.9676
+good	A	0.9993
+luck	N	0.9959
+
+Thanks	N	0.9125
+:D	E	0.9966
+
+:D	E	0.9898
+
+well	!	0.7849
+...	,	0.9913
+you	O	0.9993
+did	V	0.9999
+it	O	0.9765
+!	,	0.9989
+
+I	O	0.9991
+did	V	0.9991
+!	,	0.9971
+
+Now	R	0.9902
+,	,	0.9985
+let's	L	0.9897
+get	V	0.9998
+that	D	0.6655
+pesky	A	0.4491
+robber	N	0.9957
+out	P	0.9574
+of	P	0.9984
+the	D	0.9994
+way	N	0.9708
+
+yeah	!	0.9985
+,	,	0.9979
+your	D	0.8984
+11	$	0.9889
+seemed	V	0.9210
+to	P	0.9888
+be	V	0.9988
+...	,	0.9589
+stuck	V	0.7907
+...	,	0.9748
+for	P	0.9982
+a	D	0.8532
+while	N	0.7380
+
+giving	V	0.9829
+clay	^	0.6399
+for	P	0.9952
+sheep	N	0.8716
+
+no	D	0.6791
+sheep	N	0.9977
+
+Not	R	0.9892
+got	V	0.9989
+any	D	0.8098
+,	,	0.9986
+sorry	A	0.7092
+
+clay/ore	^	0.8656
+for	P	0.9967
+wood	^	0.4727
+?	,	0.9943
+
+yeah	!	0.9991
+..	,	0.9910
+
+which	D	0.4586
+?	,	0.9897
+
+ore	^	0.6520
+?	,	0.9943
+
+:D	E	0.9898
+
+I	O	0.9948
+dont	V	0.9994
+have	V	0.9995
+wood	N	0.8703
+...	,	0.8530
+
+I	O	0.9983
+have	V	0.9998
+no	D	0.9791
+wood	N	0.9921
+,	,	0.9983
+sorry	A	0.8140
+
+:D	E	0.9898
+
+haha	!	0.9987
+nevrermind	!	0.5087
+then	R	0.9662
+

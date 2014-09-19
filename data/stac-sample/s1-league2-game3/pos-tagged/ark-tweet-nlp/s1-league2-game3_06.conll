@@ -1,0 +1,345 @@
+Congrats	!	0.9364
+
+thanks	N	0.7675
+
+omg	!	0.9990
+!	,	0.9960
+
+what	O	0.9171
+?	,	0.9924
+
+i	O	0.9845
+literally	R	0.9985
+lost	V	0.6169
+coz	P	0.8223
+i	O	0.9947
+pressed	V	0.9996
+done	V	0.9330
+instead	R	0.9492
+of	P	0.9896
+trade	N	0.9068
+
+nnnoooo	!	0.9288
+
+D:	E	0.9686
+
+:D	E	0.9898
+
+sorry	!	0.5410
+
+stupid	A	0.9988
+thing	N	0.9983
+
+boo	!	0.6150
+
+Hmmmm	!	0.9934
+,	,	0.9982
+right	R	0.4540
+,	,	0.9981
+wonder	V	0.9339
+if	P	0.9988
+we	O	0.9992
+can	V	0.9995
+get	V	1.0000
+another	D	0.9945
+game	N	0.9979
+done	V	0.9672
+tonight	R	0.6928
+?	,	0.9988
+
+it	O	0.9478
+snot	V	0.8357
+your	D	0.9890
+fault	N	0.9988
+,	,	0.9992
+but	&	0.9947
+grr	!	0.9106
+
+im	L	0.9868
+up	T	0.4563
+for	P	0.9975
+one	$	0.8086
+
+well	!	0.9012
+,	,	0.9978
+is	V	0.9977
+there	R	0.8077
+anyone	N	0.8601
+esle	V	0.4194
+who	O	0.9988
+wants	V	0.9999
+to	P	0.9945
+play	V	0.9922
+?	,	0.9978
+
+I	O	0.9976
+don't	V	1.0000
+know	V	0.9990
+,	,	0.9977
+quick	A	0.9388
+email	N	0.9930
+around	P	0.7609
+?	,	0.9975
+
+okay	!	0.9548
+,	,	0.9984
+I	O	0.9981
+can	V	0.9999
+wait	V	0.9987
+
+yer	!	0.4459
+,	,	0.9963
+do	V	0.9898
+
+dmm	G	0.2164
+came	V	0.9860
+in	P	0.8876
+the	D	0.9994
+game	N	0.9990
+at	P	0.9995
+10	$	0.9945
+
+they	O	0.9855
+probs	R	0.5478
+can	V	0.9984
+
+shud	V	0.7679
+we	O	0.9911
+just	R	0.9993
+do	V	0.9989
+anyother	D	0.6968
+one	$	0.9517
+if	P	0.9984
+no1	O	0.4338
+else	R	0.9839
+can	V	0.9910
+?	,	0.9975
+
+nope	!	0.9679
+...	,	0.9870
+I	O	0.9986
+mean	V	0.9853
+thats	L	0.9857
+not	R	0.9994
+fair	A	0.6238
+
+and	&	0.9991
+its	L	0.9942
+almost	R	0.9928
+12	$	0.9861
+here	R	0.9837
+anyway	R	0.9959
+
+well	!	0.7437
+just	R	0.9982
+coz	P	0.9342
+we	O	0.9988
+need	V	0.9998
+them	O	0.9529
+all	D	0.8817
+finished	V	0.9744
+by	P	0.9886
+thurs	^	0.9120
+really	R	0.9952
+
+and	&	0.9991
+we	O	0.9978
+could	V	0.9996
+have	V	0.9990
+played	V	0.9966
+the	D	0.9992
+one	$	0.9312
+at	P	0.9992
+7	$	0.9864
+and	&	0.9974
+9	$	0.9927
+
+well	!	0.9012
+,	,	0.9986
+thats	L	0.9563
+a	D	0.9955
+problem	N	0.9985
+.	,	0.9983
+we	O	0.9957
+were	V	0.9982
+supposed	A	0.9665
+to	P	0.9989
+play	V	0.9976
+two	$	0.9010
+today	N	0.9972
+,	,	0.9959
+...	,	0.9482
+and	&	0.9988
+well	R	0.8307
+...	,	0.8290
+
+they	O	0.9925
+missed	V	1.0000
+them	O	0.5876
+both	D	0.3433
+,	,	0.9964
+i	O	0.9890
+missed	V	0.9993
+one	$	0.9187
+bu	G	0.6527
+tim	^	0.6995
+happy	A	0.9708
+to	P	0.9900
+do	V	1.0000
+it	O	0.9968
+now	R	0.9908
+
+coz	P	0.8854
+we	O	0.9968
+schedlued	V	0.9598
+to	P	0.9915
+play	V	0.9969
+2	$	0.8058
+,	,	0.9982
+so	P	0.8717
+it	O	0.9976
+wouldnt	V	0.9826
+be	V	0.9990
+unfair	A	0.9968
+by	P	0.9984
+that	O	0.8371
+means	V	0.9897
+
+if	P	0.9974
+its	L	0.9917
+too	R	0.9994
+late	A	0.9528
+for	P	0.9999
+you	O	0.9991
+thats	L	0.6867
+fine	A	0.9860
+
+so	P	0.8338
+you	O	0.9993
+are	V	0.9994
+playing	V	0.9948
+only	R	0.5100
+one	$	0.9668
+on	P	0.9947
+thursday	^	0.9485
+?	,	0.9981
+
+i	O	0.9728
+dunno	V	0.8511
+,	,	0.9949
+i	O	0.9873
+need	V	0.9992
+to	P	0.9891
+play	V	0.9966
+two	$	0.8889
+more	A	0.6478
+
+I	O	0.9976
+could	V	0.9999
+do	V	0.9990
+one	$	0.9165
+but	&	0.9927
+I	O	0.9991
+am	V	0.9960
+half	R	0.5423
+asleep	R	0.6734
+.	,	0.9985
+
+:D	E	0.9898
+
+just	R	0.9984
+it	O	0.9957
+would	V	0.9994
+make	V	0.9980
+sense	N	0.9663
+really	R	0.9983
+
+get	V	0.9991
+it	O	0.9966
+out	T	0.7386
+the	D	0.9994
+way	N	0.9561
+
+well	!	0.9012
+,	,	0.9977
+skinny	A	0.9897
+?	,	0.9967
+
+and	&	0.9991
+its	L	0.9969
+not	R	0.9999
+unfair	A	0.9989
+coz	P	0.9854
+they	O	0.9962
+missed	V	1.0000
+a	D	0.9977
+game	N	0.9955
+each	D	0.4033
+anyway	R	0.8924
+
+Hmmm	!	0.9950
+,	,	0.9974
+give	V	0.9992
+me	O	0.9811
+ten	$	0.8462
+minutes	N	0.9941
+?	,	0.9976
+Flatmate	N	0.6835
+needs	V	0.9919
+to	P	0.9930
+pick	V	0.9954
+courses	N	0.9793
+for	P	0.9975
+next	A	0.9912
+year	N	0.9771
+and	&	0.9980
+her	D	0.7471
+mac	^	0.6445
+won't	V	0.9384
+do	V	0.9999
+it	O	0.9969
+:P	E	0.9901
+
+yer	L	0.3735
+thats	L	0.9200
+finr	N	0.2730
+
+*	,	0.9609
+fine	A	0.9831
+
+sure	A	0.8345
+
+we	O	0.9969
+can	V	0.9997
+set	V	0.9981
+the	D	0.9995
+new	A	0.9990
+one	$	0.9681
+up	T	0.5457
+in	P	0.9973
+the	D	0.9995
+meantime	N	0.9926
+
+yer	!	0.3232
+,	,	0.9972
+sounds	V	0.9462
+good	A	0.9942
+
+u	O	0.9973
+wanna	V	0.9988
+do	V	0.9998
+that	O	0.7954
+?	,	0.9980
+iv	L	0.6452
+never	R	0.9981
+done	V	0.9963
+it	O	0.9799
+
+:)	E	0.9959
+
+come	V	0.9882
+in	P	0.9783
+the	D	0.9996
+new	A	0.9962
+game	N	0.9950
+

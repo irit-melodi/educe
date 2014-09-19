@@ -1,0 +1,242 @@
+btw	!	0.6283
+,	,	0.9978
+are	V	0.9936
+we	O	0.9984
+playing	V	0.9998
+without	P	0.9987
+the	D	0.9986
+others	N	0.9872
+?	,	0.9982
+
+Not	R	0.9989
+sure	A	0.9768
+.	,	0.9980
+
+well	!	0.9012
+,	,	0.9988
+we	O	0.9979
+should	V	0.9985
+...	,	0.8161
+
+Maybe	R	0.9660
+give	V	0.9878
+till	P	0.9446
+ten	$	0.6323
+past	A	0.9229
+and	&	0.9981
+then	R	0.9903
+just	R	0.9998
+go	V	0.9955
+for	P	0.9988
+it	O	0.9960
+?	,	0.9983
+
+(	,	0.9646
+they	O	0.9911
+said	V	0.9998
+they	O	0.9961
+would	V	0.9998
+be	V	0.9997
+here	R	0.9962
+...	,	0.9899
+and	&	0.9996
+I	O	0.9978
+dont	V	0.9993
+have	V	0.9993
+much	A	0.9560
+time	N	0.9986
+...	,	0.9756
+that	O	0.6123
+sounds	V	0.9703
+okay	!	0.6241
+
+Sorry	A	0.5231
+about	P	0.9940
+that	O	0.9424
+
+Had	V	0.9869
+trouble	N	0.8974
+getting	V	0.9990
+the	D	0.9996
+client	N	0.9986
+to	P	0.9987
+start	V	0.9964
+
+who	O	0.9980
+is	V	0.9999
+the	D	0.9995
+last	A	0.9976
+one	$	0.8472
+?	,	0.9959
+
+James	^	0.9994
+Linehan	^	0.9931
+
+Who's	L	0.9726
+who	O	0.9855
+?	,	0.9965
+I'm	L	0.9967
+assuming	V	0.9533
+IG	^	0.3204
+is	V	0.9857
+Ivan	^	0.9993
+?	,	0.9970
+
+sabercat	^	0.5872
+is	V	0.9957
+Martina	^	0.9986
+
+OK	!	0.9302
+:)	E	0.9959
+
+That's	L	0.9922
+me	O	0.9963
+
+Right	!	0.4961
+,	,	0.9996
+so	R	0.8387
+,	,	0.9972
+who're	V	0.8892
+we	O	0.9990
+waiting	V	0.9997
+for	P	0.9907
+?	,	0.9966
+
+starting	V	0.9870
+at	P	0.9970
+15	$	0.9755
+?	,	0.9966
+
+Sure	A	0.8354
+
+Are	V	0.9955
+we	O	0.9990
+waiting	V	0.9998
+for	P	0.9984
+Amy	^	0.9945
+?	,	0.9946
+
+Looks	V	0.9944
+like	P	0.9384
+it	O	0.9979
+.	,	0.9989
+Someone	N	0.9275
+want	V	0.9983
+to	P	0.9923
+drop	V	0.9966
+her	O	0.6673
+an	D	0.9857
+email	N	0.9837
+?	,	0.9963
+
+Sure	A	0.8354
+
+Have	V	0.9956
+done	V	0.8385
+
+okay	!	0.9548
+,	,	0.9962
+2	$	0.8247
+more	A	0.8904
+minutes	N	0.9939
+
+Shall	V	0.9912
+we	O	0.9894
+?	,	0.9965
+
+Right	!	0.4961
+,	,	0.9993
+it's	L	0.9774
+quarter	N	0.9365
+past	A	0.7909
+
+Sure	A	0.8531
+.	,	0.9978
+
+anyone	N	0.9066
+can	V	0.9967
+trade	V	0.8620
+clay	^	0.7053
+?	,	0.9960
+
+Nope	!	0.9968
+,	,	0.9983
+sorry	A	0.7759
+
+sorry	!	0.5410
+
+everyone	N	0.9727
+got	V	0.9990
+it	O	0.9928
+now	R	0.9944
+:D	E	0.9964
+
+Yup	!	0.9975
+
+Anyone	N	0.9521
+got	V	0.9917
+wood	N	0.6693
+to	P	0.9966
+trade	V	0.6378
+?	,	0.9963
+
+nope	!	0.9960
+
+No	D	0.8186
+wood	N	0.9715
+,	,	0.9975
+sorry	A	0.8396
+
+Anyone	N	0.9521
+got	V	0.9973
+any	D	0.9945
+wheat	N	0.9621
+?	,	0.9981
+
+yes	!	0.9949
+,	,	0.9989
+but	&	0.9907
+wont	V	0.5090
+trade	V	0.8538
+
+Fair	N	0.5029
+enough	N	0.6891
+:P	E	0.9903
+
+sorry	A	0.6856
+:(	E	0.9847
+
+What	O	0.9859
+are	V	0.9978
+you	O	0.9981
+offering	V	0.9896
+?	,	0.9965
+
+Sheep	N	0.4682
+?	,	0.9926
+
+Nah	!	0.9903
+,	,	0.9982
+sorry	A	0.7759
+
+What	O	0.9905
+would	V	0.9997
+you	O	0.9974
+be	V	0.9993
+looking	V	0.9854
+for	P	0.9888
+?	,	0.9957
+
+wood	^	0.4543
+
+I	O	0.9976
+don't	V	1.0000
+have	V	1.0000
+any	D	0.8940
+,	,	0.9980
+sorry	A	0.8869
+.	,	0.9987
+Never	R	0.9532
+mind	N	0.6364
+.	,	0.9967
+

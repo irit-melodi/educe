@@ -1,0 +1,537 @@
+<?xml version='1.0' encoding='utf-8'?>
+<annotationModel>
+	<units>
+		<type name="Commitment" groups="Several_resources">
+			<featureSet>
+				<feature name="Resource">
+					<possibleValues default="Please choose...">
+						<value>clay</value>
+						<value>ore</value>
+						<value>sheep</value>
+						<value>wheat</value>
+						<value>wood</value>
+					</possibleValues>
+				</feature>
+				<feature name="Lower_bound">
+					<possibleValues  default="1">
+						<value>0</value>
+						<value>1</value>
+						<value>2</value>
+						<value>3</value>
+						<value>4</value>
+						<value>5</value>
+						<value>6</value>
+						<value>7</value>
+						<value>8</value>
+						<value>9</value>
+					</possibleValues>
+				</feature>
+				<feature name="Upper_bound">
+					<possibleValues  default="infinity">
+						<value>0</value>
+						<value>1</value>
+						<value>2</value>
+						<value>3</value>
+						<value>4</value>
+						<value>5</value>
+						<value>6</value>
+						<value>7</value>
+						<value>8</value>
+						<value>9</value>
+						<value>infinity</value>
+					</possibleValues>
+				</feature>
+			</featureSet>
+		</type>    
+		<type groups="Bargaining_block" name="Turn">
+			<featureSet>
+				<feature name="Timestamp">
+					<value default="" type="free" />
+				</feature>
+				<feature name="Identifier">
+					<value default="" type="free" />
+				</feature>
+				<feature name="Emitter">
+					<value default="" type="free" />
+				</feature>
+				<feature name="Developments">
+					<value default="" type="free" />
+				</feature>
+				<feature name="Resources">
+					<value default="" type="free" />
+				</feature>
+				<feature name="Comments">
+					<value default="Please write in remarks..." type="free" />
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="Complex_discourse_unit" name="Segment" />
+		<type groups="Complex_discourse_unit" name="Accept">
+			<featureSet>
+				<feature name="Addressee">
+					<possibleValues default="Please choose...">
+						<value>All</value>
+						<value>?</value>
+						<value>sabercat</value>
+						<value>IG</value>
+						<value>skinnylinny</value>
+						<value>IG, sabercat</value>
+						<value>sabercat, skinnylinny</value>
+						<value>IG, skinnylinny</value>
+					</possibleValues>
+				</feature>
+				<feature name="Surface_act">
+					<possibleValues default="Please choose...">
+						<value>Assertion</value>
+						<value>Question</value>
+						<value>Request</value>
+					</possibleValues>
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="Complex_discourse_unit" name="Refusal">
+			<featureSet>
+				<feature name="Addressee">
+					<possibleValues default="Please choose...">
+						<value>All</value>
+						<value>?</value>
+						<value>sabercat</value>
+						<value>IG</value>
+						<value>skinnylinny</value>
+						<value>IG, sabercat</value>
+						<value>sabercat, skinnylinny</value>
+						<value>IG, skinnylinny</value>
+					</possibleValues>
+				</feature>
+				<feature name="Surface_act">
+					<possibleValues default="Please choose...">
+						<value>Assertion</value>
+						<value>Question</value>
+						<value>Request</value>
+					</possibleValues>
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="Complex_discourse_unit" name="Strategic_comment">
+			<featureSet>
+				<feature name="Addressee">
+					<possibleValues default="Please choose...">
+						<value>All</value>
+						<value>?</value>
+						<value>sabercat</value>
+						<value>IG</value>
+						<value>skinnylinny</value>
+						<value>IG, sabercat</value>
+						<value>sabercat, skinnylinny</value>
+						<value>IG, skinnylinny</value>
+					</possibleValues>
+				</feature>
+				<feature name="Surface_act">
+					<possibleValues default="Please choose...">
+						<value>Assertion</value>
+						<value>Question</value>
+						<value>Request</value>
+					</possibleValues>
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="Complex_discourse_unit" name="Other">
+			<featureSet>
+				<feature name="Addressee">
+					<possibleValues default="Please choose...">
+						<value>All</value>
+						<value>?</value>
+						<value>sabercat</value>
+						<value>IG</value>
+						<value>skinnylinny</value>
+						<value>IG, sabercat</value>
+						<value>sabercat, skinnylinny</value>
+						<value>IG, skinnylinny</value>
+					</possibleValues>
+				</feature>
+				<feature name="Surface_act">
+					<possibleValues default="Please choose...">
+						<value>Assertion</value>
+						<value>Question</value>
+						<value>Request</value>
+					</possibleValues>
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="Complex_discourse_unit" name="Offer">
+			<featureSet>
+				<feature name="Addressee">
+					<possibleValues default="Please choose...">
+						<value>All</value>
+						<value>?</value>
+						<value>sabercat</value>
+						<value>IG</value>
+						<value>skinnylinny</value>
+						<value>IG, sabercat</value>
+						<value>sabercat, skinnylinny</value>
+						<value>IG, skinnylinny</value>
+					</possibleValues>
+				</feature>
+				<feature name="Surface_act">
+					<possibleValues default="Please choose...">
+						<value>Assertion</value>
+						<value>Question</value>
+						<value>Request</value>
+					</possibleValues>
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="Complex_discourse_unit" name="Counteroffer">
+			<featureSet>
+				<feature name="Addressee">
+					<possibleValues default="Please choose...">
+						<value>All</value>
+						<value>?</value>
+						<value>sabercat</value>
+						<value>IG</value>
+						<value>skinnylinny</value>
+						<value>IG, sabercat</value>
+						<value>sabercat, skinnylinny</value>
+						<value>IG, skinnylinny</value>
+					</possibleValues>
+				</feature>
+				<feature name="Surface_act">
+					<possibleValues default="Please choose...">
+						<value>Assertion</value>
+						<value>Question</value>
+						<value>Request</value>
+					</possibleValues>
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="Several_resources" name="Resource">
+			<featureSet>
+				<feature name="Correctness">
+					<possibleValues default="Please choose...">
+						<value>True</value>
+						<value>False</value>
+						<value>?</value>
+					</possibleValues>
+				</feature>
+				<feature name="Status">
+					<possibleValues default="Please choose...">
+						<value>Possessed</value>
+						<value>Not possessed</value>
+						<value>Givable</value>
+						<value>Not givable</value>
+						<value>Receivable</value>
+						<value>Not receivable</value>
+						<value>?</value>
+					</possibleValues>
+				</feature>
+				<feature name="Kind">
+					<possibleValues default="Please choose...">
+						<value>?</value>
+						<value>clay</value>
+						<value>Anything but clay</value>
+						<value>ore</value>
+						<value>Anything but ore</value>
+						<value>sheep</value>
+						<value>Anything but sheep</value>
+						<value>wheat</value>
+						<value>Anything but wheat</value>
+						<value>wood</value>
+						<value>Anything but wood</value>
+						<value>Nothing</value>
+						<value>Anaphoric</value>
+					</possibleValues>
+				</feature>
+				<feature name="Quantity">
+					<possibleValues default="Please choose...">
+						<value>?</value>
+						<value>0</value>
+						<value>1</value>
+						<value>2</value>
+						<value>3</value>
+						<value>4</value>
+						<value>5</value>
+						<value>6</value>
+						<value>7</value>
+						<value>8</value>
+						<value>9</value>
+					</possibleValues>
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="Preferences" name="Preference">
+			<featureSet />
+		</type>
+	</units>
+	<relations>
+		<type groups="Several_resources" name="Anaphora" oriented="true">
+			<featureSet>
+				<feature name="Argument_scope">
+					<possibleValues default="Please choose...">
+						<value>Specified</value>
+						<value>Unspecified</value>
+					</possibleValues>
+				</feature>
+				<feature name="Comments">
+					<value default="Please write in remarks..." type="free" />
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="Discourse" name="Question-answer_pair" oriented="true">
+			<featureSet>
+				<feature name="Argument_scope">
+					<possibleValues default="Please choose...">
+						<value>Specified</value>
+						<value>Unspecified</value>
+					</possibleValues>
+				</feature>
+				<feature name="Comments">
+					<value default="Please write in remarks..." type="free" />
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="Discourse" name="Result" oriented="true">
+			<featureSet>
+				<feature name="Argument_scope">
+					<possibleValues default="Please choose...">
+						<value>Specified</value>
+						<value>Unspecified</value>
+					</possibleValues>
+				</feature>
+				<feature name="Comments">
+					<value default="Please write in remarks..." type="free" />
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="Discourse" name="Comment" oriented="true">
+			<featureSet>
+				<feature name="Argument_scope">
+					<possibleValues default="Please choose...">
+						<value>Specified</value>
+						<value>Unspecified</value>
+					</possibleValues>
+				</feature>
+				<feature name="Comments">
+					<value default="Please write in remarks..." type="free" />
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="Discourse" name="Continuation" oriented="true">
+			<featureSet>
+				<feature name="Argument_scope">
+					<possibleValues default="Please choose...">
+						<value>Specified</value>
+						<value>Unspecified</value>
+					</possibleValues>
+				</feature>
+				<feature name="Comments">
+					<value default="Please write in remarks..." type="free" />
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="Discourse" name="Conditional" oriented="true">
+			<featureSet>
+				<feature name="Argument_scope">
+					<possibleValues default="Please choose...">
+						<value>Specified</value>
+						<value>Unspecified</value>
+					</possibleValues>
+				</feature>
+				<feature name="Comments">
+					<value default="Please write in remarks..." type="free" />
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="Discourse" name="Explanation" oriented="true">
+			<featureSet>
+				<feature name="Argument_scope">
+					<possibleValues default="Please choose...">
+						<value>Specified</value>
+						<value>Unspecified</value>
+					</possibleValues>
+				</feature>
+				<feature name="Comments">
+					<value default="Please write in remarks..." type="free" />
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="Discourse" name="Elaboration" oriented="true">
+			<featureSet>
+				<feature name="Argument_scope">
+					<possibleValues default="Please choose...">
+						<value>Specified</value>
+						<value>Unspecified</value>
+					</possibleValues>
+				</feature>
+				<feature name="Comments">
+					<value default="Please write in remarks..." type="free" />
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="Discourse" name="Q-Elab" oriented="true">
+			<featureSet>
+				<feature name="Argument_scope">
+					<possibleValues default="Please choose...">
+						<value>Specified</value>
+						<value>Unspecified</value>
+					</possibleValues>
+				</feature>
+				<feature name="Comments">
+					<value default="Please write in remarks..." type="free" />
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="Discourse" name="Clarification_question" oriented="true">
+			<featureSet>
+				<feature name="Argument_scope">
+					<possibleValues default="Please choose...">
+						<value>Specified</value>
+						<value>Unspecified</value>
+					</possibleValues>
+				</feature>
+				<feature name="Comments">
+					<value default="Please write in remarks..." type="free" />
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="Discourse" name="Contrast" oriented="true">
+			<featureSet>
+				<feature name="Argument_scope">
+					<possibleValues default="Please choose...">
+						<value>Specified</value>
+						<value>Unspecified</value>
+					</possibleValues>
+				</feature>
+				<feature name="Comments">
+					<value default="Please write in remarks..." type="free" />
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="Discourse" name="Correction" oriented="true">
+			<featureSet>
+				<feature name="Argument_scope">
+					<possibleValues default="Please choose...">
+						<value>Specified</value>
+						<value>Unspecified</value>
+					</possibleValues>
+				</feature>
+				<feature name="Comments">
+					<value default="Please write in remarks..." type="free" />
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="Discourse" name="Narration" oriented="true">
+			<featureSet>
+				<feature name="Argument_scope">
+					<possibleValues default="Please choose...">
+						<value>Specified</value>
+						<value>Unspecified</value>
+					</possibleValues>
+				</feature>
+				<feature name="Comments">
+					<value default="Please write in remarks..." type="free" />
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="Discourse" name="Parallel" oriented="true">
+			<featureSet>
+				<feature name="Argument_scope">
+					<possibleValues default="Please choose...">
+						<value>Specified</value>
+						<value>Unspecified</value>
+					</possibleValues>
+				</feature>
+				<feature name="Comments">
+					<value default="Please write in remarks..." type="free" />
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="Discourse" name="Alternation" oriented="true">
+			<featureSet>
+				<feature name="Argument_scope">
+					<possibleValues default="Please choose...">
+						<value>Specified</value>
+						<value>Unspecified</value>
+					</possibleValues>
+				</feature>
+				<feature name="Comments">
+					<value default="Please write in remarks..." type="free" />
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="Discourse" name="Acknowledgement" oriented="true">
+			<featureSet>
+				<feature name="Argument_scope">
+					<possibleValues default="Please choose...">
+						<value>Specified</value>
+						<value>Unspecified</value>
+					</possibleValues>
+				</feature>
+				<feature name="Comments">
+					<value default="Please write in remarks..." type="free" />
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="Discourse" name="Background" oriented="true">
+			<featureSet>
+				<feature name="Argument_scope">
+					<possibleValues default="Please choose...">
+						<value>Specified</value>
+						<value>Unspecified</value>
+					</possibleValues>
+				</feature>
+				<feature name="Comments">
+					<value default="Please write in remarks..." type="free" />
+				</feature>
+			</featureSet>
+		</type>
+	</relations>
+	<schemas>
+		<type groups="Blocks" name="Bargaining_block">
+			<featureSet>
+				<feature name="Status">
+					<possibleValues default="Please choose...">
+						<value>Successful</value>
+						<value>Unsuccessful</value>
+					</possibleValues>
+				</feature>
+				<feature name="Giver">
+					<possibleValues default="Please choose...">
+						<value>All</value>
+						<value>?</value>
+						<value>sabercat</value>
+						<value>IG</value>
+						<value>skinnylinny</value>
+						<value>IG, sabercat</value>
+						<value>sabercat, skinnylinny</value>
+						<value>IG, skinnylinny</value>
+					</possibleValues>
+				</feature>
+				<feature name="Taker">
+					<possibleValues default="Please choose...">
+						<value>All</value>
+						<value>?</value>
+						<value>sabercat</value>
+						<value>IG</value>
+						<value>skinnylinny</value>
+						<value>IG, sabercat</value>
+						<value>sabercat, skinnylinny</value>
+						<value>IG, skinnylinny</value>
+					</possibleValues>
+				</feature>
+			</featureSet>
+		</type>
+		<type groups="CDUs" name="Complex_discourse_unit">
+			<featureSet />
+		</type>
+		<type groups="Resources" name="Several_resources">
+			<featureSet>
+				<feature name="Operator">
+					<possibleValues default="Please choose...">
+						<value>AND</value>
+						<value>OR</value>
+					</possibleValues>
+				</feature>
+			</featureSet>
+		</type>
+	</schemas>
+</annotationModel>

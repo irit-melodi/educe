@@ -1,0 +1,1688 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<annotations>
+<metadata corpusHashcode="649-79562043"/>
+<unit id="stac_-3">
+<metadata>
+<author>stac</author>
+<creation-date>-3</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>paragraph</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="1"/>
+</start>
+<end>
+<singlePosition index="28"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364227359">
+<metadata>
+<author>stac</author>
+<creation-date>1364227359</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Turn</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Developments">roads=3;  settlements=2</feature>
+<feature name="Emitter">sabercat</feature>
+<feature name="Identifier">109</feature>
+<feature name="Timestamp">20:32:22:412</feature>
+<feature name="Resources">clay=3; ore=0; sheep=2; wheat=2; wood=0</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="1"/>
+</start>
+<end>
+<singlePosition index="28"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364257356">
+<metadata>
+<author>stac</author>
+<creation-date>1364257356</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Segment</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="18"/>
+</start>
+<end>
+<singlePosition index="28"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_-4">
+<metadata>
+<author>stac</author>
+<creation-date>-4</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>paragraph</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="29"/>
+</start>
+<end>
+<singlePosition index="50"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364227360">
+<metadata>
+<author>stac</author>
+<creation-date>1364227360</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Turn</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Developments">roads=2;  settlements=2</feature>
+<feature name="Emitter">IG</feature>
+<feature name="Identifier">110</feature>
+<feature name="Timestamp">20:32:23:408</feature>
+<feature name="Resources">clay=4; ore=0; sheep=0; wheat=0; wood=0</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="29"/>
+</start>
+<end>
+<singlePosition index="50"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364267356">
+<metadata>
+<author>stac</author>
+<creation-date>1364267356</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Segment</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="40"/>
+</start>
+<end>
+<singlePosition index="50"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_-7">
+<metadata>
+<author>stac</author>
+<creation-date>-7</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>paragraph</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="51"/>
+</start>
+<end>
+<singlePosition index="69"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364227363">
+<metadata>
+<author>stac</author>
+<creation-date>1364227363</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Turn</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Developments">roads=2;  settlements=2</feature>
+<feature name="Emitter">IG</feature>
+<feature name="Identifier">113</feature>
+<feature name="Timestamp">20:32:41:296</feature>
+<feature name="Resources">clay=4; ore=0; sheep=0; wheat=0; wood=0</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="51"/>
+</start>
+<end>
+<singlePosition index="69"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364297356">
+<metadata>
+<author>stac</author>
+<creation-date>1364297356</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Segment</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="62"/>
+</start>
+<end>
+<singlePosition index="69"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_-8">
+<metadata>
+<author>stac</author>
+<creation-date>-8</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>paragraph</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="70"/>
+</start>
+<end>
+<singlePosition index="126"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364227364">
+<metadata>
+<author>stac</author>
+<creation-date>1364227364</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Turn</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Developments">roads=3;  settlements=2</feature>
+<feature name="Emitter">sabercat</feature>
+<feature name="Identifier">114</feature>
+<feature name="Timestamp">20:33:15:151</feature>
+<feature name="Resources">clay=3; ore=0; sheep=2; wheat=3; wood=0</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="70"/>
+</start>
+<end>
+<singlePosition index="126"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364307356">
+<metadata>
+<author>stac</author>
+<creation-date>1364307356</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Segment</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="87"/>
+</start>
+<end>
+<singlePosition index="126"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_-11">
+<metadata>
+<author>stac</author>
+<creation-date>-11</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>paragraph</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="127"/>
+</start>
+<end>
+<singlePosition index="179"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364227367">
+<metadata>
+<author>stac</author>
+<creation-date>1364227367</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Turn</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Developments">roads=3;  settlements=2</feature>
+<feature name="Emitter">skinnylinny</feature>
+<feature name="Identifier">117</feature>
+<feature name="Timestamp">20:33:32:843</feature>
+<feature name="Resources">clay=2; ore=2; sheep=3; wheat=0; wood=0</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="127"/>
+</start>
+<end>
+<singlePosition index="179"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364337356">
+<metadata>
+<author>stac</author>
+<creation-date>1364337356</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Segment</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="147"/>
+</start>
+<end>
+<singlePosition index="179"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_-12">
+<metadata>
+<author>stac</author>
+<creation-date>-12</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>paragraph</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="180"/>
+</start>
+<end>
+<singlePosition index="226"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364227368">
+<metadata>
+<author>stac</author>
+<creation-date>1364227368</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Turn</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Developments">roads=3;  settlements=2</feature>
+<feature name="Emitter">skinnylinny</feature>
+<feature name="Identifier">118</feature>
+<feature name="Timestamp">20:33:46:167</feature>
+<feature name="Resources">clay=2; ore=2; sheep=3; wheat=0; wood=0</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="180"/>
+</start>
+<end>
+<singlePosition index="226"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364347356">
+<metadata>
+<author>stac</author>
+<creation-date>1364347356</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Segment</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="200"/>
+</start>
+<end>
+<singlePosition index="226"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_-18">
+<metadata>
+<author>stac</author>
+<creation-date>-18</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>paragraph</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="227"/>
+</start>
+<end>
+<singlePosition index="263"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364227374">
+<metadata>
+<author>stac</author>
+<creation-date>1364227374</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Turn</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Developments">roads=2;  settlements=2</feature>
+<feature name="Emitter">IG</feature>
+<feature name="Identifier">124</feature>
+<feature name="Timestamp">20:35:01:676</feature>
+<feature name="Resources">clay=4; ore=2; sheep=0; wheat=0; wood=0</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="227"/>
+</start>
+<end>
+<singlePosition index="263"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364407356">
+<metadata>
+<author>stac</author>
+<creation-date>1364407356</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Segment</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="238"/>
+</start>
+<end>
+<singlePosition index="263"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_-19">
+<metadata>
+<author>stac</author>
+<creation-date>-19</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>paragraph</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="264"/>
+</start>
+<end>
+<singlePosition index="294"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364227375">
+<metadata>
+<author>stac</author>
+<creation-date>1364227375</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Turn</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Developments">roads=3;  settlements=2</feature>
+<feature name="Emitter">sabercat</feature>
+<feature name="Identifier">125</feature>
+<feature name="Timestamp">20:35:09:792</feature>
+<feature name="Resources">clay=0; ore=0; sheep=3; wheat=1; wood=0</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="264"/>
+</start>
+<end>
+<singlePosition index="294"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364417356">
+<metadata>
+<author>stac</author>
+<creation-date>1364417356</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Segment</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="281"/>
+</start>
+<end>
+<singlePosition index="294"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_-20">
+<metadata>
+<author>stac</author>
+<creation-date>-20</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>paragraph</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="295"/>
+</start>
+<end>
+<singlePosition index="329"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364227376">
+<metadata>
+<author>stac</author>
+<creation-date>1364227376</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Turn</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Developments">roads=3;  settlements=2</feature>
+<feature name="Emitter">skinnylinny</feature>
+<feature name="Identifier">126</feature>
+<feature name="Timestamp">20:35:16:372</feature>
+<feature name="Resources">clay=1; ore=3; sheep=3; wheat=1; wood=0</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="295"/>
+</start>
+<end>
+<singlePosition index="329"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364427356">
+<metadata>
+<author>stac</author>
+<creation-date>1364427356</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Segment</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="315"/>
+</start>
+<end>
+<singlePosition index="329"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_-21">
+<metadata>
+<author>stac</author>
+<creation-date>-21</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>paragraph</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="330"/>
+</start>
+<end>
+<singlePosition index="349"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364227377">
+<metadata>
+<author>stac</author>
+<creation-date>1364227377</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Turn</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Developments">roads=3;  settlements=2</feature>
+<feature name="Emitter">sabercat</feature>
+<feature name="Identifier">127</feature>
+<feature name="Timestamp">20:35:20:439</feature>
+<feature name="Resources">clay=0; ore=0; sheep=3; wheat=1; wood=0</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="330"/>
+</start>
+<end>
+<singlePosition index="349"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364437356">
+<metadata>
+<author>stac</author>
+<creation-date>1364437356</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Segment</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="347"/>
+</start>
+<end>
+<singlePosition index="349"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_-22">
+<metadata>
+<author>stac</author>
+<creation-date>-22</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>paragraph</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="350"/>
+</start>
+<end>
+<singlePosition index="372"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364227378">
+<metadata>
+<author>stac</author>
+<creation-date>1364227378</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Turn</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Developments">roads=2;  settlements=2</feature>
+<feature name="Emitter">IG</feature>
+<feature name="Identifier">128</feature>
+<feature name="Timestamp">20:35:27:883</feature>
+<feature name="Resources">clay=4; ore=2; sheep=0; wheat=0; wood=0</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="350"/>
+</start>
+<end>
+<singlePosition index="372"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364447356">
+<metadata>
+<author>stac</author>
+<creation-date>1364447356</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Segment</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="361"/>
+</start>
+<end>
+<singlePosition index="372"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_-26">
+<metadata>
+<author>stac</author>
+<creation-date>-26</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>paragraph</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="373"/>
+</start>
+<end>
+<singlePosition index="396"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364227382">
+<metadata>
+<author>stac</author>
+<creation-date>1364227382</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Turn</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Developments">roads=3;  settlements=2</feature>
+<feature name="Emitter">sabercat</feature>
+<feature name="Identifier">132</feature>
+<feature name="Timestamp">20:35:53:761</feature>
+<feature name="Resources">clay=0; ore=1; sheep=2; wheat=1; wood=0</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="373"/>
+</start>
+<end>
+<singlePosition index="396"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364487356">
+<metadata>
+<author>stac</author>
+<creation-date>1364487356</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Segment</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="390"/>
+</start>
+<end>
+<singlePosition index="396"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_-28">
+<metadata>
+<author>stac</author>
+<creation-date>-28</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>paragraph</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="397"/>
+</start>
+<end>
+<singlePosition index="419"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364227384">
+<metadata>
+<author>stac</author>
+<creation-date>1364227384</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Turn</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Developments">roads=2;  settlements=2</feature>
+<feature name="Emitter">IG</feature>
+<feature name="Identifier">134</feature>
+<feature name="Timestamp">20:36:05:301</feature>
+<feature name="Resources">clay=3; ore=1; sheep=2; wheat=0; wood=0</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="397"/>
+</start>
+<end>
+<singlePosition index="419"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364507356">
+<metadata>
+<author>stac</author>
+<creation-date>1364507356</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Segment</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="408"/>
+</start>
+<end>
+<singlePosition index="419"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_-29">
+<metadata>
+<author>stac</author>
+<creation-date>-29</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>paragraph</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="420"/>
+</start>
+<end>
+<singlePosition index="449"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364227385">
+<metadata>
+<author>stac</author>
+<creation-date>1364227385</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Turn</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Developments">roads=3;  settlements=2</feature>
+<feature name="Emitter">skinnylinny</feature>
+<feature name="Identifier">135</feature>
+<feature name="Timestamp">20:36:07:006</feature>
+<feature name="Resources">clay=2; ore=3; sheep=2; wheat=1; wood=0</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="420"/>
+</start>
+<end>
+<singlePosition index="449"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364517356">
+<metadata>
+<author>stac</author>
+<creation-date>1364517356</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Segment</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="440"/>
+</start>
+<end>
+<singlePosition index="449"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1367227361">
+<metadata>
+<author>stac</author>
+<creation-date>1367227361</creation-date>
+<lastModifier>asoubeille</lastModifier>
+<lastModificationDate>1365158516312</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Dialogue</type>
+<featureSet>
+<feature name="Trades">IG traded 1 clay for 1 sheep from skinnylinny.</feature>
+<feature name="Dice_rolling">skinnylinny rolled a 2 and a 2.</feature>
+<feature name="Gets">IG gets 1 wheat.</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="226"/>
+</start>
+<end>
+<singlePosition index="449"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_-32">
+<metadata>
+<author>stac</author>
+<creation-date>-32</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>paragraph</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="450"/>
+</start>
+<end>
+<singlePosition index="518"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364227388">
+<metadata>
+<author>stac</author>
+<creation-date>1364227388</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Turn</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Developments">roads=3;  settlements=2</feature>
+<feature name="Emitter">skinnylinny</feature>
+<feature name="Identifier">138</feature>
+<feature name="Timestamp">20:37:42:594</feature>
+<feature name="Resources">clay=2; ore=2; sheep=1; wheat=0; wood=0</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="450"/>
+</start>
+<end>
+<singlePosition index="518"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364547356">
+<metadata>
+<author>stac</author>
+<creation-date>1364547356</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Segment</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="470"/>
+</start>
+<end>
+<singlePosition index="518"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_-33">
+<metadata>
+<author>stac</author>
+<creation-date>-33</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>paragraph</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="519"/>
+</start>
+<end>
+<singlePosition index="540"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364227389">
+<metadata>
+<author>stac</author>
+<creation-date>1364227389</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Turn</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Developments">roads=3;  settlements=2</feature>
+<feature name="Emitter">sabercat</feature>
+<feature name="Identifier">139</feature>
+<feature name="Timestamp">20:37:47:759</feature>
+<feature name="Resources">clay=0; ore=1; sheep=2; wheat=1; wood=0</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="519"/>
+</start>
+<end>
+<singlePosition index="540"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364557356">
+<metadata>
+<author>stac</author>
+<creation-date>1364557356</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Segment</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="536"/>
+</start>
+<end>
+<singlePosition index="540"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_-34">
+<metadata>
+<author>stac</author>
+<creation-date>-34</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>paragraph</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="541"/>
+</start>
+<end>
+<singlePosition index="580"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364227390">
+<metadata>
+<author>stac</author>
+<creation-date>1364227390</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Turn</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Developments">roads=3;  settlements=2</feature>
+<feature name="Emitter">sabercat</feature>
+<feature name="Identifier">140</feature>
+<feature name="Timestamp">20:37:53:844</feature>
+<feature name="Resources">clay=0; ore=1; sheep=2; wheat=1; wood=0</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="541"/>
+</start>
+<end>
+<singlePosition index="580"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364567356">
+<metadata>
+<author>stac</author>
+<creation-date>1364567356</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Segment</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="558"/>
+</start>
+<end>
+<singlePosition index="580"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_-35">
+<metadata>
+<author>stac</author>
+<creation-date>-35</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>paragraph</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="581"/>
+</start>
+<end>
+<singlePosition index="611"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364227391">
+<metadata>
+<author>stac</author>
+<creation-date>1364227391</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Turn</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Developments">roads=3;  settlements=2</feature>
+<feature name="Emitter">skinnylinny</feature>
+<feature name="Identifier">141</feature>
+<feature name="Timestamp">20:37:55:167</feature>
+<feature name="Resources">clay=2; ore=2; sheep=1; wheat=0; wood=0</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="581"/>
+</start>
+<end>
+<singlePosition index="611"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364577356">
+<metadata>
+<author>stac</author>
+<creation-date>1364577356</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Segment</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="601"/>
+</start>
+<end>
+<singlePosition index="611"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_-36">
+<metadata>
+<author>stac</author>
+<creation-date>-36</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>paragraph</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="612"/>
+</start>
+<end>
+<singlePosition index="648"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364227392">
+<metadata>
+<author>stac</author>
+<creation-date>1364227392</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Turn</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Developments">roads=3;  settlements=2</feature>
+<feature name="Emitter">skinnylinny</feature>
+<feature name="Identifier">142</feature>
+<feature name="Timestamp">20:37:58:291</feature>
+<feature name="Resources">clay=2; ore=2; sheep=1; wheat=0; wood=0</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="612"/>
+</start>
+<end>
+<singlePosition index="648"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364587356">
+<metadata>
+<author>stac</author>
+<creation-date>1364587356</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Segment</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="632"/>
+</start>
+<end>
+<singlePosition index="648"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1367927362">
+<metadata>
+<author>stac</author>
+<creation-date>1367927362</creation-date>
+<lastModifier>n/a</lastModifier>
+<lastModificationDate>0</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Dialogue</type>
+<featureSet>
+<feature name="Trades"/>
+<feature name="Dice_rolling">sabercat rolled a 2 and a 5. IG rolled a 5 and a 5. skinnylinny rolled a 5 and a 3. sabercat rolled a 1 and a 4. IG rolled a 4 and a 5. skinnylinny rolled a 3 and a 2.</feature>
+<feature name="Gets">sabercat gets 1 wheat. skinnylinny gets 1 sheep. sabercat gets 1 sheep. IG gets 1 ore. skinnylinny gets 1 ore. sabercat gets 1 ore. IG gets 1 ore. No player gets anything. sabercat gets 1 ore. IG gets 1 ore. skinnylinny gets 1 wood.</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="449"/>
+</start>
+<end>
+<singlePosition index="648"/>
+</end>
+</positioning>
+</unit>
+<unit id="stac_1364727358">
+<metadata>
+<author>stac</author>
+<creation-date>1364727358</creation-date>
+<lastModifier>asoubeille</lastModifier>
+<lastModificationDate>1365158365593</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Dialogue</type>
+<featureSet>
+<feature name="Trades">sabercat traded 4 clay for 1 ore from the bank.</feature>
+<feature name="Dice_rolling">skinnylinny rolled a 4 and a 6. sabercat rolled a 5 and a 3. IG rolled a 4 and a 4.</feature>
+<feature name="Gets">sabercat gets 1 wheat. skinnylinny gets 1 sheep. sabercat gets 1 sheep. IG gets 1 ore. skinnylinny gets 1 ore. sabercat gets 1 sheep. IG gets 1 ore. skinnylinny gets 1 ore.</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<start>
+<singlePosition index="0"/>
+</start>
+<end>
+<singlePosition index="226"/>
+</end>
+</positioning>
+</unit>
+<relation id="asoubeille_1365157561453">
+<metadata>
+<author>asoubeille</author>
+<creation-date>1365157561453</creation-date>
+<lastModifier>asoubeille</lastModifier>
+<lastModificationDate>1365157568984</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Comment</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Argument_scope">Unspecified</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<term id="stac_1364267356"/>
+<term id="stac_1364297356"/>
+</positioning>
+</relation>
+<relation id="asoubeille_1365157596937">
+<metadata>
+<author>asoubeille</author>
+<creation-date>1365157596937</creation-date>
+<lastModifier>asoubeille</lastModifier>
+<lastModificationDate>1365157604703</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Question-answer_pair</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Argument_scope">Specified</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<term id="stac_1364307356"/>
+<term id="stac_1364337356"/>
+</positioning>
+</relation>
+<relation id="asoubeille_1365157607828">
+<metadata>
+<author>asoubeille</author>
+<creation-date>1365157607828</creation-date>
+<lastModifier>asoubeille</lastModifier>
+<lastModificationDate>1365157616359</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Alternation</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Argument_scope">Specified</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<term id="stac_1364337356"/>
+<term id="stac_1364347356"/>
+</positioning>
+</relation>
+<relation id="asoubeille_1365157735046">
+<metadata>
+<author>asoubeille</author>
+<creation-date>1365157735046</creation-date>
+<lastModifier>asoubeille</lastModifier>
+<lastModificationDate>1365157748078</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Question-answer_pair</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Argument_scope">Specified</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<term id="stac_1364407356"/>
+<term id="stac_1364417356"/>
+</positioning>
+</relation>
+<relation id="asoubeille_1365157854984">
+<metadata>
+<author>asoubeille</author>
+<creation-date>1365157854984</creation-date>
+<lastModifier>asoubeille</lastModifier>
+<lastModificationDate>1365158465375</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Question-answer_pair</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Argument_scope">Specified</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<term id="stac_1364407356"/>
+<term id="stac_1364427356"/>
+</positioning>
+</relation>
+<relation id="asoubeille_1365158026812">
+<metadata>
+<author>asoubeille</author>
+<creation-date>1365158026812</creation-date>
+<lastModifier>asoubeille</lastModifier>
+<lastModificationDate>1365158033046</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Comment</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Argument_scope">Unspecified</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<term id="stac_1364427356"/>
+<term id="stac_1364437356"/>
+</positioning>
+</relation>
+<relation id="asoubeille_1365158100281">
+<metadata>
+<author>asoubeille</author>
+<creation-date>1365158100281</creation-date>
+<lastModifier>asoubeille</lastModifier>
+<lastModificationDate>1365158132656</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Acknowledgement</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Argument_scope">Specified</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<term id="stac_1364427356"/>
+<term id="stac_1364447356"/>
+</positioning>
+</relation>
+<relation id="asoubeille_1365158171531">
+<metadata>
+<author>asoubeille</author>
+<creation-date>1365158171531</creation-date>
+<lastModifier>asoubeille</lastModifier>
+<lastModificationDate>1365158610062</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Comment</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Argument_scope">Unspecified</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<term id="stac_1364507356"/>
+<term id="stac_1364517356"/>
+</positioning>
+</relation>
+<relation id="asoubeille_1365158187093">
+<metadata>
+<author>asoubeille</author>
+<creation-date>1365158187093</creation-date>
+<lastModifier>asoubeille</lastModifier>
+<lastModificationDate>1365158238562</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Question-answer_pair</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Argument_scope">Specified</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<term id="stac_1364547356"/>
+<term id="asoubeille_1365158228015"/>
+</positioning>
+</relation>
+<relation id="asoubeille_1365158197796">
+<metadata>
+<author>asoubeille</author>
+<creation-date>1365158197796</creation-date>
+<lastModifier>asoubeille</lastModifier>
+<lastModificationDate>1365158206296</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Explanation</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Argument_scope">Specified</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<term id="stac_1364557356"/>
+<term id="stac_1364567356"/>
+</positioning>
+</relation>
+<relation id="asoubeille_1365158246625">
+<metadata>
+<author>asoubeille</author>
+<creation-date>1365158246625</creation-date>
+<lastModifier>asoubeille</lastModifier>
+<lastModificationDate>1365158264203</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Clarification_question</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Argument_scope">Specified</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<term id="asoubeille_1365158228015"/>
+<term id="stac_1364577356"/>
+</positioning>
+</relation>
+<relation id="asoubeille_1365158273437">
+<metadata>
+<author>asoubeille</author>
+<creation-date>1365158273437</creation-date>
+<lastModifier>asoubeille</lastModifier>
+<lastModificationDate>1365158281765</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Acknowledgement</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Argument_scope">Specified</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<term id="asoubeille_1365158228015"/>
+<term id="stac_1364587356"/>
+</positioning>
+</relation>
+<relation id="asoubeille_1365158324125">
+<metadata>
+<author>asoubeille</author>
+<creation-date>1365158324125</creation-date>
+<lastModifier>asoubeille</lastModifier>
+<lastModificationDate>1365158338218</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Narration</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Argument_scope">Unspecified</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<term id="stac_1364257356"/>
+<term id="stac_1364307356"/>
+</positioning>
+</relation>
+<relation id="asoubeille_1365158476875">
+<metadata>
+<author>asoubeille</author>
+<creation-date>1365158476875</creation-date>
+<lastModifier>asoubeille</lastModifier>
+<lastModificationDate>1365158485312</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Comment</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Argument_scope">Unspecified</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<term id="stac_1364417356"/>
+<term id="stac_1364437356"/>
+</positioning>
+</relation>
+<relation id="asoubeille_1365158526937">
+<metadata>
+<author>asoubeille</author>
+<creation-date>1365158526937</creation-date>
+<lastModifier>asoubeille</lastModifier>
+<lastModificationDate>1365158533656</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Comment</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Argument_scope">Unspecified</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<term id="stac_1364447356"/>
+<term id="stac_1364487356"/>
+</positioning>
+</relation>
+<relation id="asoubeille_1365158688468">
+<metadata>
+<author>asoubeille</author>
+<creation-date>1365158688468</creation-date>
+<lastModifier>asoubeille</lastModifier>
+<lastModificationDate>1365158697906</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Result</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Argument_scope">Specified</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<term id="asoubeille_1365158228015"/>
+<term id="stac_1364577356"/>
+</positioning>
+</relation>
+<relation id="asoubeille_1365158719281">
+<metadata>
+<author>asoubeille</author>
+<creation-date>1365158719281</creation-date>
+<lastModifier>asoubeille</lastModifier>
+<lastModificationDate>1365158744015</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Comment</type>
+<featureSet>
+<feature name="Comments">Please write in remarks...</feature>
+<feature name="Argument_scope">Unspecified</feature>
+</featureSet>
+</characterisation>
+<positioning>
+<term id="stac_1364487356"/>
+<term id="stac_1364507356"/>
+</positioning>
+</relation>
+<schema id="asoubeille_1365158228015">
+<metadata>
+<author>asoubeille</author>
+<creation-date>1365158228015</creation-date>
+<lastModifier>asoubeille</lastModifier>
+<lastModificationDate>1365158230671</lastModificationDate>
+</metadata>
+<characterisation>
+<type>Complex_discourse_unit</type>
+<featureSet/>
+</characterisation>
+<positioning>
+<embedded-unit id="stac_1364557356"/>
+<embedded-unit id="stac_1364567356"/>
+</positioning>
+</schema>
+</annotations>

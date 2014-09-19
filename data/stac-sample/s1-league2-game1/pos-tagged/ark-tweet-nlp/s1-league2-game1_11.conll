@@ -1,0 +1,149 @@
+Argh	!	0.9873
+
+How	R	0.9785
+do	V	0.9954
+I	O	0.9878
+trade	V	0.9795
+with	P	0.9986
+a	D	0.9953
+port	N	0.9561
+?	,	0.9973
+
+trade	N	0.7621
+with	P	0.9987
+bank/port	N	0.9102
+
+Yes	!	0.9939
+
+I	O	0.9976
+can't	V	0.9999
+get	V	1.0000
+it	O	0.9947
+to	P	0.9909
+accept	V	0.9990
+
+you	O	0.9980
+have	V	0.9994
+to	P	0.9917
+have	V	0.9990
+four	$	0.7440
+resources	N	0.9986
+of	P	0.9986
+a	D	0.9971
+kind	N	0.9218
+
+wood	^	0.8054
+port	N	0.7590
+
+hm	!	0.9765
+...	,	0.8234
+
+Ah	!	0.9937
+
+3:1	$	0.3322
+maybe	R	0.9626
+?	,	0.9970
+
+Did	V	0.9990
+it	O	0.9898
+
+good	A	0.9723
+:D	E	0.9947
+
+um	!	0.9144
+not	R	0.9896
+really	R	0.9989
+?	,	0.9970
+
+anyone	N	0.9098
+has	V	0.9907
+wheat	N	0.8614
+?	,	0.9974
+
+yea	!	0.9970
+
+what	O	0.9931
+do	V	0.9993
+you	O	0.9997
+need	V	0.9829
+?	,	0.9974
+
+wood	^	0.4703
+or	&	0.9880
+sheep	N	0.9761
+
+thanks	N	0.7675
+
+need	V	0.9309
+sheep	N	0.8990
+...	,	0.7062
+
+have	V	0.9850
+none	N	0.9842
+
+sorry	!	0.5410
+
+Who	O	0.9968
+is	V	0.9990
+yiin	N	0.6742
+?	,	0.9959
+
+no	D	0.5748
+ides	N	0.9851
+
+*	,	0.9511
+idea	!	0.4176
+
+no	D	0.8913
+idea	N	0.9985
+,	,	0.9987
+but	&	0.9944
+he	O	0.9978
+should	V	0.9995
+go	V	0.9992
+away	R	0.9971
+for	P	0.9166
+good	A	0.9937
+!	,	0.9984
+
+theres	Y	0.3173
+your	D	0.9684
+sheep	N	0.9943
+:)	E	0.9975
+
+Does	V	0.9980
+anyone	N	0.8629
+have	V	0.9991
+any	D	0.9947
+wood	N	0.7726
+?	,	0.9949
+
+nope	!	0.9960
+
+sorry	!	0.5410
+
+Or	&	0.9839
+does	V	0.9983
+anyone	N	0.8741
+have	V	0.9988
+any	D	0.9923
+ore	N	0.4539
+they'd	L	0.8837
+give	V	0.9999
+me	O	0.9985
+for	P	0.9969
+a	D	0.9888
+clay	N	0.5978
+or	&	0.9957
+a	D	0.9789
+sheep	N	0.9767
+?	,	0.9971
+
+nope	!	0.9960
+
+nah	!	0.9921
+
+*	,	0.9564
+sigh	V	0.9506
+*	,	0.9778
+

@@ -1,0 +1,126 @@
+anyone	N	0.9098
+has	V	0.9986
+any	D	0.9859
+wood	N	0.8521
+?	,	0.9967
+
+Nope	!	0.9940
+,	,	0.9983
+sorry	A	0.8610
+.	,	0.9979
+
+haha	!	0.9948
+no	!	0.9816
+,	,	0.9986
+seems	V	0.9879
+to	P	0.9888
+be	V	0.9998
+a	D	0.9704
+very	R	0.7462
+clay-heavy	A	0.7678
+game	N	0.9806
+this	D	0.5112
+
+trading	V	0.5323
+1	$	0.9950
+ore	^	0.5826
+for	P	0.9987
+one	$	0.8967
+sheep	N	0.9677
+?	,	0.9958
+
+hmm	!	0.9965
+..	,	0.9895
+
+which	D	0.7479
+are	V	0.9917
+you	O	0.9981
+offering	V	0.9896
+?	,	0.9965
+
+ore	^	0.4709
+
+I	O	0.9976
+could	V	0.9999
+do	V	0.9995
+that	O	0.8292
+
+okay	!	0.9548
+,	,	0.9986
+you	O	0.9990
+need	V	0.9984
+to	P	0.9691
+offer	V	0.8903
+more	A	0.5296
+
+:D	E	0.9898
+
+awesome	A	0.7963
+,	,	0.9985
+cheers	N	0.6670
+
+Excellent	A	0.9429
+!	,	0.9985
+
+No	D	0.8735
+worries	N	0.9962
+
+Gah	!	0.9881
+,	,	0.9977
+lost	A	0.5974
+four	$	0.7153
+resources	N	0.9819
+because	P	0.9986
+of	P	0.9968
+the	D	0.9991
+robber	N	0.9933
+
+sorry	!	0.5410
+
+:(	E	0.9836
+
+Not	R	0.9771
+your	D	0.9783
+fault	N	0.9990
+:P	E	0.9971
+
+anyone	N	0.9098
+has	V	0.9891
+ore	^	0.5537
+?	,	0.9956
+
+or	&	0.9890
+wood	N	0.7690
+?	,	0.9945
+
+I	O	0.9927
+*	,	0.9460
+had	V	0.9963
+*	,	0.9808
+ore	G	0.2777
+
+:D	E	0.9898
+
+:P	E	0.9846
+
+Sorry	A	0.4911
+
+And	&	0.9980
+nobody's	L	0.9885
+got	V	0.9743
+wood	N	0.5725
+yet	R	0.9432
+-	,	0.9718
+watch	V	0.9920
+the	D	0.9996
+top	N	0.7077
+!	,	0.9990
+
+I	O	0.9982
+got	V	1.0000
+it	O	0.9876
+in	P	0.9751
+the	D	0.9985
+beginning	N	0.9585
+...	,	0.9550
+

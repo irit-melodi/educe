@@ -1,0 +1,216 @@
+skinnylinny	!	0.2987
+
+som	D	0.6084
+wood	N	0.7954
+please	V	0.8897
+?	,	0.9982
+
+sabercat	^	0.6383
+:	,	0.9396
+What	O	0.9804
+are	V	0.9974
+you	O	0.9974
+offering	V	0.9943
+?	,	0.9959
+
+hey	!	0.9978
+,	,	0.9979
+I	O	0.9981
+want	V	0.9997
+wood	N	0.4879
+as	P	0.7143
+well	R	0.6658
+
+ore	^	0.7668
+and	&	0.9984
+clay	^	0.7352
+
+offering	V	0.9564
+2	$	0.5164
+ore	^	0.5326
+for	P	0.9987
+one	$	0.8967
+wood	N	0.7710
+
+If	P	0.9738
+anyone	N	0.8385
+offers	V	0.9983
+me	O	0.9169
+one	$	0.9618
+ore	^	0.4421
+and	&	0.9978
+one	$	0.9560
+wheat	N	0.9244
+they	O	0.9778
+can	V	0.9997
+have	V	0.9999
+a	D	0.9959
+wood	N	0.8867
+
+go	V	0.9676
+on	P	0.8800
+then	R	0.9362
+
+okay	!	0.9548
+,	,	0.9984
+can	V	0.9978
+anyone	N	0.7122
+give	V	0.9993
+me	O	0.9966
+clay	^	0.8783
+?	,	0.9957
+
+for	P	0.9982
+ore	^	0.6497
+?	,	0.9949
+
+for	P	0.9974
+what	O	0.9950
+
+please	V	0.8246
+
+IG	!	0.8048
+,	,	0.9982
+on	P	0.9858
+your	D	0.9238
+turn	N	0.7895
+
+gotcha	!	0.7072
+
+which	D	0.9901
+one	$	0.8166
+?	,	0.9957
+
+are	V	0.9870
+we	O	0.9790
+trading	V	0.7447
+?	,	0.9971
+
+im	L	0.9835
+trading	V	0.6324
+with	P	0.9909
+skinny	A	0.9969
+next	P	0.6130
+turn	V	0.8223
+
+skinny	A	0.9873
+,	,	0.9974
+give	V	0.9992
+me	O	0.9954
+clay	^	0.9082
+for	P	0.9984
+ore	^	0.7712
+?	,	0.9957
+
+please	V	0.7885
+?	,	0.9975
+
+I	O	0.9983
+have	V	0.9997
+no	D	0.9068
+clay	N	0.9569
+
+incredible	A	0.9525
+!	,	0.9985
+
+Does	V	0.9985
+that	O	0.8872
+mean	V	0.9967
+you	O	0.9977
+won't	V	0.9727
+trade	V	0.9034
+with	P	0.9991
+me	O	0.9978
+,	,	0.9990
+IG	!	0.6987
+?	,	0.9980
+
+:D	E	0.9898
+
+looks	V	0.9894
+like	P	0.9356
+it	O	0.9987
+
+actually	R	0.9955
+...	,	0.8753
+
+:P	E	0.9846
+
+you	O	0.9980
+got	V	0.9983
+what	O	0.9871
+you	O	0.9995
+needed	V	0.9773
+?	,	0.9975
+
+why	R	0.9450
+would	V	0.9991
+you	O	0.9980
+throw	V	0.9760
+four	$	0.5293
+?	,	0.9961
+
+or	&	0.9895
+roll	V	0.5891
+..	,	0.9903
+
+:P	E	0.9846
+
+:P	E	0.9846
+
+!!!	,	0.9690
+
+:D	E	0.9898
+
+I	O	0.9981
+need	V	0.9998
+an	D	0.9768
+ore	N	0.5469
+...	,	0.8275
+
+Anyone	N	0.9521
+got	V	0.9906
+one	$	0.9340
+for	P	0.9998
+a	D	0.9952
+sheep	N	0.9717
+?	,	0.9958
+
+what	O	0.9835
+are	V	0.9978
+you	O	0.9981
+offfering	V	0.9883
+?	,	0.9965
+
+na	!	0.6203
+
+Or	&	0.9924
+another	D	0.9697
+wood	N	0.9469
+...	,	0.8785
+
+haha	!	0.9958
+deal	N	0.8012
+
+Oh	!	0.9987
+!	,	0.9944
+
+Whoops	!	0.9759
+
+Sorry	!	0.5130
+!	,	0.9966
+
+:D	E	0.9898
+
+wait	V	0.9509
+,	,	0.9972
+what	O	0.9685
+?	,	0.9940
+
+:D	E	0.9898
+
+thanks	N	0.7279
+!	,	0.9973
+
+ugh	!	0.9949
+

@@ -1,0 +1,97 @@
+well	!	0.5908
+done	V	0.7636
+!	,	0.9987
+
+More	A	0.9616
+clay	N	0.7587
+!	,	0.9985
+
+Christ	^	0.9861
+.	,	0.9951
+
+I	O	0.9983
+want	V	0.9998
+clay	^	0.9236
+for	P	0.9972
+sheep	N	0.8854
+or	&	0.9909
+wheat	N	0.9147
+,	,	0.9986
+anyone	N	0.9746
+?	,	0.9980
+
+I'll	L	0.9855
+give	V	0.9999
+you	O	0.9958
+a	D	0.9842
+clay	^	0.6153
+for	P	0.9989
+a	D	0.9974
+wheat	N	0.9575
+
+or	&	0.9900
+two	$	0.9709
+for	P	0.9981
+two	$	0.9635
+if	P	0.9992
+you	O	0.9998
+want	V	0.9988
+
+Need	V	0.9252
+sheep	N	0.9349
+.	,	0.9961
+Have	V	0.9837
+ore/clay	^	0.6995
+
+sheep	N	0.8312
+for	P	0.9997
+ore	^	0.6251
+
+sheep	N	0.8312
+for	P	0.9991
+clay	^	0.8671
+
+:D	E	0.9898
+
+right	R	0.5224
+right	A	0.5585
+
+thanks	N	0.7675
+
+Cheers	N	0.4514
+guys	N	0.9965
+
+thank	V	0.9631
+you	O	0.9987
+
+Hmmm	!	0.9950
+,	,	0.9977
+can	V	0.9973
+I	O	0.9981
+not	R	0.9959
+play	V	0.9978
+a	D	0.9939
+card	N	0.9867
+immediately	R	0.9824
+I	O	0.9983
+buy	V	0.9998
+it	O	0.9707
+?	,	0.9986
+
+nope	!	0.9960
+
+have	V	0.9954
+to	P	0.9966
+wait	V	0.9992
+one	$	0.8996
+round	N	0.9066
+
+Next	A	0.3503
+turn	N	0.8372
+?	,	0.9961
+
+Ahhhh	!	0.9938
+ok	!	0.8868
+,	,	0.9973
+thanks	N	0.9268
+

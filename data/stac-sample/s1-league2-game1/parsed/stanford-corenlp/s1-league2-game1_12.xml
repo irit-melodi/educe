@@ -1,0 +1,1308 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="CoreNLP-to-HTML.xsl" type="text/xsl"?>
+<root>
+  <document>
+    <sentences>
+      <sentence id="1" line="1">
+        <tokens>
+          <token id="1">
+            <word>yes</word>
+            <lemma>yes</lemma>
+            <CharacterOffsetBegin>0</CharacterOffsetBegin>
+            <CharacterOffsetEnd>3</CharacterOffsetEnd>
+            <POS>RB</POS>
+            <NER>O</NER>
+          </token>
+          <token id="2">
+            <word>!</word>
+            <lemma>!</lemma>
+            <CharacterOffsetBegin>3</CharacterOffsetBegin>
+            <CharacterOffsetEnd>4</CharacterOffsetEnd>
+            <POS>.</POS>
+            <NER>O</NER>
+          </token>
+        </tokens>
+        <parse>(ROOT (FRAG (NP (RB yes)) (. !))) </parse>
+        <dependencies type="basic-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="1">yes</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="1">yes</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-ccprocessed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="1">yes</dependent>
+          </dep>
+        </dependencies>
+      </sentence>
+      <sentence id="2" line="2">
+        <tokens>
+          <token id="1">
+            <word>:D</word>
+            <lemma>:d</lemma>
+            <CharacterOffsetBegin>5</CharacterOffsetBegin>
+            <CharacterOffsetEnd>7</CharacterOffsetEnd>
+            <POS>NN</POS>
+            <NER>O</NER>
+          </token>
+        </tokens>
+        <parse>(ROOT (NP (NN :D))) </parse>
+        <dependencies type="basic-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="1">:D</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="1">:D</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-ccprocessed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="1">:D</dependent>
+          </dep>
+        </dependencies>
+      </sentence>
+      <sentence id="3" line="3">
+        <tokens>
+          <token id="1">
+            <word>anyone</word>
+            <lemma>anyone</lemma>
+            <CharacterOffsetBegin>8</CharacterOffsetBegin>
+            <CharacterOffsetEnd>14</CharacterOffsetEnd>
+            <POS>NN</POS>
+            <NER>O</NER>
+          </token>
+          <token id="2">
+            <word>has</word>
+            <lemma>have</lemma>
+            <CharacterOffsetBegin>15</CharacterOffsetBegin>
+            <CharacterOffsetEnd>18</CharacterOffsetEnd>
+            <POS>VBZ</POS>
+            <NER>O</NER>
+          </token>
+          <token id="3">
+            <word>ore</word>
+            <lemma>ore</lemma>
+            <CharacterOffsetBegin>19</CharacterOffsetBegin>
+            <CharacterOffsetEnd>22</CharacterOffsetEnd>
+            <POS>NN</POS>
+            <NER>O</NER>
+          </token>
+          <token id="4">
+            <word>?</word>
+            <lemma>?</lemma>
+            <CharacterOffsetBegin>22</CharacterOffsetBegin>
+            <CharacterOffsetEnd>23</CharacterOffsetEnd>
+            <POS>.</POS>
+            <NER>O</NER>
+          </token>
+          <token id="5">
+            <word>for</word>
+            <lemma>for</lemma>
+            <CharacterOffsetBegin>24</CharacterOffsetBegin>
+            <CharacterOffsetEnd>27</CharacterOffsetEnd>
+            <POS>IN</POS>
+            <NER>O</NER>
+          </token>
+          <token id="6">
+            <word>sheep</word>
+            <lemma>sheep</lemma>
+            <CharacterOffsetBegin>28</CharacterOffsetBegin>
+            <CharacterOffsetEnd>33</CharacterOffsetEnd>
+            <POS>NN</POS>
+            <NER>O</NER>
+          </token>
+          <token id="7">
+            <word>?</word>
+            <lemma>?</lemma>
+            <CharacterOffsetBegin>33</CharacterOffsetBegin>
+            <CharacterOffsetEnd>34</CharacterOffsetEnd>
+            <POS>.</POS>
+            <NER>O</NER>
+          </token>
+          <token id="8">
+            <word>or</word>
+            <lemma>or</lemma>
+            <CharacterOffsetBegin>35</CharacterOffsetBegin>
+            <CharacterOffsetEnd>37</CharacterOffsetEnd>
+            <POS>CC</POS>
+            <NER>O</NER>
+          </token>
+          <token id="9">
+            <word>clay</word>
+            <lemma>clay</lemma>
+            <CharacterOffsetBegin>38</CharacterOffsetBegin>
+            <CharacterOffsetEnd>42</CharacterOffsetEnd>
+            <POS>NN</POS>
+            <NER>O</NER>
+          </token>
+          <token id="10">
+            <word>?</word>
+            <lemma>?</lemma>
+            <CharacterOffsetBegin>42</CharacterOffsetBegin>
+            <CharacterOffsetEnd>43</CharacterOffsetEnd>
+            <POS>.</POS>
+            <NER>O</NER>
+          </token>
+        </tokens>
+        <parse>(ROOT (S (NP (NN anyone)) (VP (VBZ has) (FRAG (INTJ (NN ore) (. ?)))) (PP (IN for) (NP (NP (FRAG (NP (NN sheep)) (. ?))) (CC or) (NP (NN clay)))) (. ?))) </parse>
+        <dependencies type="basic-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="2">has</dependent>
+          </dep>
+          <dep type="nsubj">
+            <governor idx="2">has</governor>
+            <dependent idx="1">anyone</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="2">has</governor>
+            <dependent idx="3">ore</dependent>
+          </dep>
+          <dep type="prep">
+            <governor idx="2">has</governor>
+            <dependent idx="5">for</dependent>
+          </dep>
+          <dep type="pobj">
+            <governor idx="5">for</governor>
+            <dependent idx="6">sheep</dependent>
+          </dep>
+          <dep type="cc">
+            <governor idx="6">sheep</governor>
+            <dependent idx="8">or</dependent>
+          </dep>
+          <dep type="conj">
+            <governor idx="6">sheep</governor>
+            <dependent idx="9">clay</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="2">has</dependent>
+          </dep>
+          <dep type="nsubj">
+            <governor idx="2">has</governor>
+            <dependent idx="1">anyone</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="2">has</governor>
+            <dependent idx="3">ore</dependent>
+          </dep>
+          <dep type="prep_for">
+            <governor idx="2">has</governor>
+            <dependent idx="6">sheep</dependent>
+          </dep>
+          <dep type="conj_or">
+            <governor idx="6">sheep</governor>
+            <dependent idx="9">clay</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-ccprocessed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="2">has</dependent>
+          </dep>
+          <dep type="nsubj">
+            <governor idx="2">has</governor>
+            <dependent idx="1">anyone</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="2">has</governor>
+            <dependent idx="3">ore</dependent>
+          </dep>
+          <dep type="prep_for">
+            <governor idx="2">has</governor>
+            <dependent idx="6">sheep</dependent>
+          </dep>
+          <dep type="prep_for">
+            <governor idx="2">has</governor>
+            <dependent idx="9">clay</dependent>
+          </dep>
+          <dep type="conj_or">
+            <governor idx="6">sheep</governor>
+            <dependent idx="9">clay</dependent>
+          </dep>
+        </dependencies>
+      </sentence>
+      <sentence id="4" line="4">
+        <tokens>
+          <token id="1">
+            <word>only</word>
+            <lemma>only</lemma>
+            <CharacterOffsetBegin>44</CharacterOffsetBegin>
+            <CharacterOffsetEnd>48</CharacterOffsetEnd>
+            <POS>RB</POS>
+            <NER>O</NER>
+          </token>
+          <token id="2">
+            <word>for</word>
+            <lemma>for</lemma>
+            <CharacterOffsetBegin>49</CharacterOffsetBegin>
+            <CharacterOffsetEnd>52</CharacterOffsetEnd>
+            <POS>IN</POS>
+            <NER>O</NER>
+          </token>
+          <token id="3">
+            <word>wood</word>
+            <lemma>wood</lemma>
+            <CharacterOffsetBegin>53</CharacterOffsetBegin>
+            <CharacterOffsetEnd>57</CharacterOffsetEnd>
+            <POS>NN</POS>
+            <NER>O</NER>
+          </token>
+        </tokens>
+        <parse>(ROOT (FRAG (ADVP (RB only)) (PP (IN for) (NP (NN wood))))) </parse>
+        <dependencies type="basic-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="1">only</dependent>
+          </dep>
+          <dep type="prep">
+            <governor idx="1">only</governor>
+            <dependent idx="2">for</dependent>
+          </dep>
+          <dep type="pobj">
+            <governor idx="2">for</governor>
+            <dependent idx="3">wood</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="1">only</dependent>
+          </dep>
+          <dep type="prep_for">
+            <governor idx="1">only</governor>
+            <dependent idx="3">wood</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-ccprocessed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="1">only</dependent>
+          </dep>
+          <dep type="prep_for">
+            <governor idx="1">only</governor>
+            <dependent idx="3">wood</dependent>
+          </dep>
+        </dependencies>
+      </sentence>
+      <sentence id="5" line="5">
+        <tokens>
+          <token id="1">
+            <word>okay</word>
+            <lemma>okay</lemma>
+            <CharacterOffsetBegin>58</CharacterOffsetBegin>
+            <CharacterOffsetEnd>62</CharacterOffsetEnd>
+            <POS>JJ</POS>
+            <NER>O</NER>
+          </token>
+          <token id="2">
+            <word>.</word>
+            <lemma>.</lemma>
+            <CharacterOffsetBegin>62</CharacterOffsetBegin>
+            <CharacterOffsetEnd>63</CharacterOffsetEnd>
+            <POS>.</POS>
+            <NER>O</NER>
+          </token>
+          <token id="3">
+            <word>.</word>
+            <lemma>.</lemma>
+            <CharacterOffsetBegin>63</CharacterOffsetBegin>
+            <CharacterOffsetEnd>64</CharacterOffsetEnd>
+            <POS>.</POS>
+            <NER>O</NER>
+          </token>
+        </tokens>
+        <parse>(ROOT (FRAG (ADJP (JJ okay) (. .)) (. .))) </parse>
+        <dependencies type="basic-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="1">okay</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="1">okay</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-ccprocessed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="1">okay</dependent>
+          </dep>
+        </dependencies>
+      </sentence>
+      <sentence id="6" line="6">
+        <tokens>
+          <token id="1">
+            <word>how</word>
+            <lemma>how</lemma>
+            <CharacterOffsetBegin>65</CharacterOffsetBegin>
+            <CharacterOffsetEnd>68</CharacterOffsetEnd>
+            <POS>WRB</POS>
+            <NER>O</NER>
+          </token>
+          <token id="2">
+            <word>about</word>
+            <lemma>about</lemma>
+            <CharacterOffsetBegin>69</CharacterOffsetBegin>
+            <CharacterOffsetEnd>74</CharacterOffsetEnd>
+            <POS>RB</POS>
+            <NER>O</NER>
+          </token>
+          <token id="3">
+            <word>clay</word>
+            <lemma>clay</lemma>
+            <CharacterOffsetBegin>75</CharacterOffsetBegin>
+            <CharacterOffsetEnd>79</CharacterOffsetEnd>
+            <POS>NN</POS>
+            <NER>O</NER>
+          </token>
+          <token id="4">
+            <word>for</word>
+            <lemma>for</lemma>
+            <CharacterOffsetBegin>80</CharacterOffsetBegin>
+            <CharacterOffsetEnd>83</CharacterOffsetEnd>
+            <POS>IN</POS>
+            <NER>O</NER>
+          </token>
+          <token id="5">
+            <word>sheep</word>
+            <lemma>sheep</lemma>
+            <CharacterOffsetBegin>84</CharacterOffsetBegin>
+            <CharacterOffsetEnd>89</CharacterOffsetEnd>
+            <POS>NN</POS>
+            <NER>O</NER>
+          </token>
+          <token id="6">
+            <word>:</word>
+            <lemma>:</lemma>
+            <CharacterOffsetBegin>89</CharacterOffsetBegin>
+            <CharacterOffsetEnd>90</CharacterOffsetEnd>
+            <POS>:</POS>
+            <NER>O</NER>
+          </token>
+        </tokens>
+        <parse>(ROOT (FRAG (WHADVP (WRB how) (NP (NP (RB about) (NN clay)) (PP (IN for) (NP (NN sheep)) (: :)))))) </parse>
+        <dependencies type="basic-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="1">how</dependent>
+          </dep>
+          <dep type="advmod">
+            <governor idx="3">clay</governor>
+            <dependent idx="2">about</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="1">how</governor>
+            <dependent idx="3">clay</dependent>
+          </dep>
+          <dep type="prep">
+            <governor idx="3">clay</governor>
+            <dependent idx="4">for</dependent>
+          </dep>
+          <dep type="pobj">
+            <governor idx="4">for</governor>
+            <dependent idx="5">sheep</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="1">how</dependent>
+          </dep>
+          <dep type="advmod">
+            <governor idx="3">clay</governor>
+            <dependent idx="2">about</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="1">how</governor>
+            <dependent idx="3">clay</dependent>
+          </dep>
+          <dep type="prep_for">
+            <governor idx="3">clay</governor>
+            <dependent idx="5">sheep</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-ccprocessed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="1">how</dependent>
+          </dep>
+          <dep type="advmod">
+            <governor idx="3">clay</governor>
+            <dependent idx="2">about</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="1">how</governor>
+            <dependent idx="3">clay</dependent>
+          </dep>
+          <dep type="prep_for">
+            <governor idx="3">clay</governor>
+            <dependent idx="5">sheep</dependent>
+          </dep>
+        </dependencies>
+      </sentence>
+      <sentence id="7" line="7">
+        <tokens>
+          <token id="1">
+            <word>yiin</word>
+            <lemma>yiin</lemma>
+            <CharacterOffsetBegin>91</CharacterOffsetBegin>
+            <CharacterOffsetEnd>95</CharacterOffsetEnd>
+            <POS>NN</POS>
+            <NER>O</NER>
+          </token>
+          <token id="2">
+            <word>GO</word>
+            <lemma>go</lemma>
+            <CharacterOffsetBegin>96</CharacterOffsetBegin>
+            <CharacterOffsetEnd>98</CharacterOffsetEnd>
+            <POS>NN</POS>
+            <NER>O</NER>
+          </token>
+          <token id="3">
+            <word>AWAY</word>
+            <lemma>away</lemma>
+            <CharacterOffsetBegin>99</CharacterOffsetBegin>
+            <CharacterOffsetEnd>103</CharacterOffsetEnd>
+            <POS>RB</POS>
+            <NER>O</NER>
+          </token>
+          <token id="4">
+            <word>!</word>
+            <lemma>!</lemma>
+            <CharacterOffsetBegin>103</CharacterOffsetBegin>
+            <CharacterOffsetEnd>104</CharacterOffsetEnd>
+            <POS>.</POS>
+            <NER>O</NER>
+          </token>
+        </tokens>
+        <parse>(ROOT (FRAG (NP (NN yiin) (NN GO)) (ADVP (RB AWAY)) (. !))) </parse>
+        <dependencies type="basic-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="2">GO</dependent>
+          </dep>
+          <dep type="nn">
+            <governor idx="2">GO</governor>
+            <dependent idx="1">yiin</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="2">GO</governor>
+            <dependent idx="3">AWAY</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="2">GO</dependent>
+          </dep>
+          <dep type="nn">
+            <governor idx="2">GO</governor>
+            <dependent idx="1">yiin</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="2">GO</governor>
+            <dependent idx="3">AWAY</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-ccprocessed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="2">GO</dependent>
+          </dep>
+          <dep type="nn">
+            <governor idx="2">GO</governor>
+            <dependent idx="1">yiin</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="2">GO</governor>
+            <dependent idx="3">AWAY</dependent>
+          </dep>
+        </dependencies>
+      </sentence>
+      <sentence id="8" line="8">
+        <tokens>
+          <token id="1">
+            <word>haha</word>
+            <lemma>haha</lemma>
+            <CharacterOffsetBegin>105</CharacterOffsetBegin>
+            <CharacterOffsetEnd>109</CharacterOffsetEnd>
+            <POS>NN</POS>
+            <NER>O</NER>
+          </token>
+          <token id="2">
+            <word>nice</word>
+            <lemma>nice</lemma>
+            <CharacterOffsetBegin>110</CharacterOffsetBegin>
+            <CharacterOffsetEnd>114</CharacterOffsetEnd>
+            <POS>JJ</POS>
+            <NER>O</NER>
+          </token>
+        </tokens>
+        <parse>(ROOT (ADJP (NP (NN haha)) (JJ nice))) </parse>
+        <dependencies type="basic-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="2">nice</dependent>
+          </dep>
+          <dep type="npadvmod">
+            <governor idx="2">nice</governor>
+            <dependent idx="1">haha</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="2">nice</dependent>
+          </dep>
+          <dep type="npadvmod">
+            <governor idx="2">nice</governor>
+            <dependent idx="1">haha</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-ccprocessed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="2">nice</dependent>
+          </dep>
+          <dep type="npadvmod">
+            <governor idx="2">nice</governor>
+            <dependent idx="1">haha</dependent>
+          </dep>
+        </dependencies>
+      </sentence>
+      <sentence id="9" line="9">
+        <tokens>
+          <token id="1">
+            <word>and</word>
+            <lemma>and</lemma>
+            <CharacterOffsetBegin>115</CharacterOffsetBegin>
+            <CharacterOffsetEnd>118</CharacterOffsetEnd>
+            <POS>CC</POS>
+            <NER>O</NER>
+          </token>
+          <token id="2">
+            <word>sorry</word>
+            <lemma>sorry</lemma>
+            <CharacterOffsetBegin>119</CharacterOffsetBegin>
+            <CharacterOffsetEnd>124</CharacterOffsetEnd>
+            <POS>JJ</POS>
+            <NER>O</NER>
+          </token>
+          <token id="3">
+            <word>,</word>
+            <lemma>,</lemma>
+            <CharacterOffsetBegin>124</CharacterOffsetBegin>
+            <CharacterOffsetEnd>125</CharacterOffsetEnd>
+            <POS>,</POS>
+            <NER>O</NER>
+          </token>
+          <token id="4">
+            <word>no</word>
+            <lemma>no</lemma>
+            <CharacterOffsetBegin>126</CharacterOffsetBegin>
+            <CharacterOffsetEnd>128</CharacterOffsetEnd>
+            <POS>DT</POS>
+            <NER>O</NER>
+          </token>
+          <token id="5">
+            <word>clay</word>
+            <lemma>clay</lemma>
+            <CharacterOffsetBegin>129</CharacterOffsetBegin>
+            <CharacterOffsetEnd>133</CharacterOffsetEnd>
+            <POS>NN</POS>
+            <NER>O</NER>
+          </token>
+          <token id="6">
+            <word>for</word>
+            <lemma>for</lemma>
+            <CharacterOffsetBegin>134</CharacterOffsetBegin>
+            <CharacterOffsetEnd>137</CharacterOffsetEnd>
+            <POS>IN</POS>
+            <NER>O</NER>
+          </token>
+          <token id="7">
+            <word>sheep</word>
+            <lemma>sheep</lemma>
+            <CharacterOffsetBegin>138</CharacterOffsetBegin>
+            <CharacterOffsetEnd>143</CharacterOffsetEnd>
+            <POS>NN</POS>
+            <NER>O</NER>
+          </token>
+        </tokens>
+        <parse>(ROOT (PRN (CC and) (NP (NP (NP (JJ sorry)) (, ,) (NP (DT no) (NN clay))) (PP (IN for) (NP (NN sheep)))))) </parse>
+        <dependencies type="basic-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="2">sorry</dependent>
+          </dep>
+          <dep type="cc">
+            <governor idx="2">sorry</governor>
+            <dependent idx="1">and</dependent>
+          </dep>
+          <dep type="det">
+            <governor idx="5">clay</governor>
+            <dependent idx="4">no</dependent>
+          </dep>
+          <dep type="appos">
+            <governor idx="2">sorry</governor>
+            <dependent idx="5">clay</dependent>
+          </dep>
+          <dep type="prep">
+            <governor idx="2">sorry</governor>
+            <dependent idx="6">for</dependent>
+          </dep>
+          <dep type="pobj">
+            <governor idx="6">for</governor>
+            <dependent idx="7">sheep</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="2">sorry</dependent>
+          </dep>
+          <dep type="cc">
+            <governor idx="2">sorry</governor>
+            <dependent idx="1">and</dependent>
+          </dep>
+          <dep type="det">
+            <governor idx="5">clay</governor>
+            <dependent idx="4">no</dependent>
+          </dep>
+          <dep type="appos">
+            <governor idx="2">sorry</governor>
+            <dependent idx="5">clay</dependent>
+          </dep>
+          <dep type="prep_for">
+            <governor idx="2">sorry</governor>
+            <dependent idx="7">sheep</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-ccprocessed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="2">sorry</dependent>
+          </dep>
+          <dep type="cc">
+            <governor idx="2">sorry</governor>
+            <dependent idx="1">and</dependent>
+          </dep>
+          <dep type="det">
+            <governor idx="5">clay</governor>
+            <dependent idx="4">no</dependent>
+          </dep>
+          <dep type="appos">
+            <governor idx="2">sorry</governor>
+            <dependent idx="5">clay</dependent>
+          </dep>
+          <dep type="prep_for">
+            <governor idx="2">sorry</governor>
+            <dependent idx="7">sheep</dependent>
+          </dep>
+        </dependencies>
+      </sentence>
+      <sentence id="10" line="10">
+        <tokens>
+          <token id="1">
+            <word>skinnylinny</word>
+            <lemma>skinnylinny</lemma>
+            <CharacterOffsetBegin>144</CharacterOffsetBegin>
+            <CharacterOffsetEnd>155</CharacterOffsetEnd>
+            <POS>NN</POS>
+            <NER>O</NER>
+          </token>
+          <token id="2">
+            <word>?</word>
+            <lemma>?</lemma>
+            <CharacterOffsetBegin>155</CharacterOffsetBegin>
+            <CharacterOffsetEnd>156</CharacterOffsetEnd>
+            <POS>.</POS>
+            <NER>O</NER>
+          </token>
+        </tokens>
+        <parse>(ROOT (FRAG (NP (NN skinnylinny)) (. ?))) </parse>
+        <dependencies type="basic-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="1">skinnylinny</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="1">skinnylinny</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-ccprocessed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="1">skinnylinny</dependent>
+          </dep>
+        </dependencies>
+      </sentence>
+      <sentence id="11" line="11">
+        <tokens>
+          <token id="1">
+            <word>No</word>
+            <lemma>no</lemma>
+            <CharacterOffsetBegin>157</CharacterOffsetBegin>
+            <CharacterOffsetEnd>159</CharacterOffsetEnd>
+            <POS>DT</POS>
+            <NER>O</NER>
+          </token>
+          <token id="2">
+            <word>thanks</word>
+            <lemma>thanks</lemma>
+            <CharacterOffsetBegin>160</CharacterOffsetBegin>
+            <CharacterOffsetEnd>166</CharacterOffsetEnd>
+            <POS>NNS</POS>
+            <NER>O</NER>
+          </token>
+        </tokens>
+        <parse>(ROOT (FRAG (NP (DT No) (NNS thanks)))) </parse>
+        <dependencies type="basic-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="2">thanks</dependent>
+          </dep>
+          <dep type="det">
+            <governor idx="2">thanks</governor>
+            <dependent idx="1">No</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="2">thanks</dependent>
+          </dep>
+          <dep type="det">
+            <governor idx="2">thanks</governor>
+            <dependent idx="1">No</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-ccprocessed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="2">thanks</dependent>
+          </dep>
+          <dep type="det">
+            <governor idx="2">thanks</governor>
+            <dependent idx="1">No</dependent>
+          </dep>
+        </dependencies>
+      </sentence>
+      <sentence id="12" line="12">
+        <tokens>
+          <token id="1">
+            <word>Anyone</word>
+            <lemma>anyone</lemma>
+            <CharacterOffsetBegin>167</CharacterOffsetBegin>
+            <CharacterOffsetEnd>173</CharacterOffsetEnd>
+            <POS>NN</POS>
+            <NER>O</NER>
+          </token>
+          <token id="2">
+            <word>need</word>
+            <lemma>need</lemma>
+            <CharacterOffsetBegin>174</CharacterOffsetBegin>
+            <CharacterOffsetEnd>178</CharacterOffsetEnd>
+            <POS>VBP</POS>
+            <NER>O</NER>
+          </token>
+          <token id="3">
+            <word>any</word>
+            <lemma>any</lemma>
+            <CharacterOffsetBegin>179</CharacterOffsetBegin>
+            <CharacterOffsetEnd>182</CharacterOffsetEnd>
+            <POS>DT</POS>
+            <NER>O</NER>
+          </token>
+          <token id="4">
+            <word>clay</word>
+            <lemma>clay</lemma>
+            <CharacterOffsetBegin>183</CharacterOffsetBegin>
+            <CharacterOffsetEnd>187</CharacterOffsetEnd>
+            <POS>NN</POS>
+            <NER>O</NER>
+          </token>
+          <token id="5">
+            <word>?</word>
+            <lemma>?</lemma>
+            <CharacterOffsetBegin>187</CharacterOffsetBegin>
+            <CharacterOffsetEnd>188</CharacterOffsetEnd>
+            <POS>.</POS>
+            <NER>O</NER>
+          </token>
+          <token id="6">
+            <word>:P</word>
+            <lemma>:p</lemma>
+            <CharacterOffsetBegin>189</CharacterOffsetBegin>
+            <CharacterOffsetEnd>191</CharacterOffsetEnd>
+            <POS>NN</POS>
+            <NER>O</NER>
+          </token>
+        </tokens>
+        <parse>(ROOT (SINV (FRAG (NP (NN Anyone))) (VP (VBP need) (NP (NP (DT any)) (FRAG (INTJ (NN clay) (. ?))))) (NP (NN :P)))) </parse>
+        <dependencies type="basic-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="2">need</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="2">need</governor>
+            <dependent idx="1">Anyone</dependent>
+          </dep>
+          <dep type="dobj">
+            <governor idx="2">need</governor>
+            <dependent idx="3">any</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="3">any</governor>
+            <dependent idx="4">clay</dependent>
+          </dep>
+          <dep type="nsubj">
+            <governor idx="2">need</governor>
+            <dependent idx="6">:P</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="2">need</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="2">need</governor>
+            <dependent idx="1">Anyone</dependent>
+          </dep>
+          <dep type="dobj">
+            <governor idx="2">need</governor>
+            <dependent idx="3">any</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="3">any</governor>
+            <dependent idx="4">clay</dependent>
+          </dep>
+          <dep type="nsubj">
+            <governor idx="2">need</governor>
+            <dependent idx="6">:P</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-ccprocessed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="2">need</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="2">need</governor>
+            <dependent idx="1">Anyone</dependent>
+          </dep>
+          <dep type="dobj">
+            <governor idx="2">need</governor>
+            <dependent idx="3">any</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="3">any</governor>
+            <dependent idx="4">clay</dependent>
+          </dep>
+          <dep type="nsubj">
+            <governor idx="2">need</governor>
+            <dependent idx="6">:P</dependent>
+          </dep>
+        </dependencies>
+      </sentence>
+      <sentence id="13" line="13">
+        <tokens>
+          <token id="1">
+            <word>so</word>
+            <lemma>so</lemma>
+            <CharacterOffsetBegin>192</CharacterOffsetBegin>
+            <CharacterOffsetEnd>194</CharacterOffsetEnd>
+            <POS>IN</POS>
+            <NER>O</NER>
+          </token>
+          <token id="2">
+            <word>I</word>
+            <lemma>I</lemma>
+            <CharacterOffsetBegin>195</CharacterOffsetBegin>
+            <CharacterOffsetEnd>196</CharacterOffsetEnd>
+            <POS>PRP</POS>
+            <NER>O</NER>
+          </token>
+          <token id="3">
+            <word>need</word>
+            <lemma>need</lemma>
+            <CharacterOffsetBegin>197</CharacterOffsetBegin>
+            <CharacterOffsetEnd>201</CharacterOffsetEnd>
+            <POS>VBP</POS>
+            <NER>O</NER>
+          </token>
+          <token id="4">
+            <word>wood</word>
+            <lemma>wood</lemma>
+            <CharacterOffsetBegin>202</CharacterOffsetBegin>
+            <CharacterOffsetEnd>206</CharacterOffsetEnd>
+            <POS>NN</POS>
+            <NER>O</NER>
+          </token>
+          <token id="5">
+            <word>...</word>
+            <lemma>...</lemma>
+            <CharacterOffsetBegin>206</CharacterOffsetBegin>
+            <CharacterOffsetEnd>209</CharacterOffsetEnd>
+            <POS>:</POS>
+            <NER>O</NER>
+          </token>
+        </tokens>
+        <parse>(ROOT (SBAR (IN so) (S (NP (PRP I)) (VP (VBP need) (NP (NN wood)))) (: ...))) </parse>
+        <dependencies type="basic-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="3">need</dependent>
+          </dep>
+          <dep type="mark">
+            <governor idx="3">need</governor>
+            <dependent idx="1">so</dependent>
+          </dep>
+          <dep type="nsubj">
+            <governor idx="3">need</governor>
+            <dependent idx="2">I</dependent>
+          </dep>
+          <dep type="dobj">
+            <governor idx="3">need</governor>
+            <dependent idx="4">wood</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="3">need</dependent>
+          </dep>
+          <dep type="mark">
+            <governor idx="3">need</governor>
+            <dependent idx="1">so</dependent>
+          </dep>
+          <dep type="nsubj">
+            <governor idx="3">need</governor>
+            <dependent idx="2">I</dependent>
+          </dep>
+          <dep type="dobj">
+            <governor idx="3">need</governor>
+            <dependent idx="4">wood</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-ccprocessed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="3">need</dependent>
+          </dep>
+          <dep type="mark">
+            <governor idx="3">need</governor>
+            <dependent idx="1">so</dependent>
+          </dep>
+          <dep type="nsubj">
+            <governor idx="3">need</governor>
+            <dependent idx="2">I</dependent>
+          </dep>
+          <dep type="dobj">
+            <governor idx="3">need</governor>
+            <dependent idx="4">wood</dependent>
+          </dep>
+        </dependencies>
+      </sentence>
+      <sentence id="14" line="14">
+        <tokens>
+          <token id="1">
+            <word>Sorry</word>
+            <lemma>sorry</lemma>
+            <CharacterOffsetBegin>210</CharacterOffsetBegin>
+            <CharacterOffsetEnd>215</CharacterOffsetEnd>
+            <POS>JJ</POS>
+            <NER>O</NER>
+          </token>
+          <token id="2">
+            <word>,</word>
+            <lemma>,</lemma>
+            <CharacterOffsetBegin>215</CharacterOffsetBegin>
+            <CharacterOffsetEnd>216</CharacterOffsetEnd>
+            <POS>,</POS>
+            <NER>O</NER>
+          </token>
+          <token id="3">
+            <word>not</word>
+            <lemma>not</lemma>
+            <CharacterOffsetBegin>217</CharacterOffsetBegin>
+            <CharacterOffsetEnd>220</CharacterOffsetEnd>
+            <POS>RB</POS>
+            <NER>O</NER>
+          </token>
+          <token id="4">
+            <word>got</word>
+            <lemma>get</lemma>
+            <CharacterOffsetBegin>221</CharacterOffsetBegin>
+            <CharacterOffsetEnd>224</CharacterOffsetEnd>
+            <POS>VBD</POS>
+            <NER>O</NER>
+          </token>
+          <token id="5">
+            <word>any</word>
+            <lemma>any</lemma>
+            <CharacterOffsetBegin>225</CharacterOffsetBegin>
+            <CharacterOffsetEnd>228</CharacterOffsetEnd>
+            <POS>DT</POS>
+            <NER>O</NER>
+          </token>
+        </tokens>
+        <parse>(ROOT (SINV (ADJP (JJ Sorry)) (, ,) (VP (ADVP (RB not)) (VBD got)) (NP (DT any)))) </parse>
+        <dependencies type="basic-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="4">got</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="4">got</governor>
+            <dependent idx="1">Sorry</dependent>
+          </dep>
+          <dep type="neg">
+            <governor idx="4">got</governor>
+            <dependent idx="3">not</dependent>
+          </dep>
+          <dep type="nsubj">
+            <governor idx="4">got</governor>
+            <dependent idx="5">any</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="4">got</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="4">got</governor>
+            <dependent idx="1">Sorry</dependent>
+          </dep>
+          <dep type="neg">
+            <governor idx="4">got</governor>
+            <dependent idx="3">not</dependent>
+          </dep>
+          <dep type="nsubj">
+            <governor idx="4">got</governor>
+            <dependent idx="5">any</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-ccprocessed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="4">got</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="4">got</governor>
+            <dependent idx="1">Sorry</dependent>
+          </dep>
+          <dep type="neg">
+            <governor idx="4">got</governor>
+            <dependent idx="3">not</dependent>
+          </dep>
+          <dep type="nsubj">
+            <governor idx="4">got</governor>
+            <dependent idx="5">any</dependent>
+          </dep>
+        </dependencies>
+      </sentence>
+      <sentence id="15" line="15">
+        <tokens>
+          <token id="1">
+            <word>nope</word>
+            <lemma>nope</lemma>
+            <CharacterOffsetBegin>229</CharacterOffsetBegin>
+            <CharacterOffsetEnd>233</CharacterOffsetEnd>
+            <POS>RB</POS>
+            <NER>O</NER>
+          </token>
+          <token id="2">
+            <word>...</word>
+            <lemma>...</lemma>
+            <CharacterOffsetBegin>233</CharacterOffsetBegin>
+            <CharacterOffsetEnd>236</CharacterOffsetEnd>
+            <POS>:</POS>
+            <NER>O</NER>
+          </token>
+          <token id="3">
+            <word>none</word>
+            <lemma>none</lemma>
+            <CharacterOffsetBegin>237</CharacterOffsetBegin>
+            <CharacterOffsetEnd>241</CharacterOffsetEnd>
+            <POS>NN</POS>
+            <NER>O</NER>
+          </token>
+          <token id="4">
+            <word>here</word>
+            <lemma>here</lemma>
+            <CharacterOffsetBegin>242</CharacterOffsetBegin>
+            <CharacterOffsetEnd>246</CharacterOffsetEnd>
+            <POS>RB</POS>
+            <NER>O</NER>
+          </token>
+          <token id="5">
+            <word>:-LRB-</word>
+            <lemma>:-lrb-_NN</lemma>
+            <CharacterOffsetBegin>247</CharacterOffsetBegin>
+            <CharacterOffsetEnd>249</CharacterOffsetEnd>
+            <POS>NN</POS>
+            <NER>O</NER>
+          </token>
+        </tokens>
+        <parse>(ROOT (FRAG (FRAG (RB nope)) (: ...) (FRAG (NP (NN none) (RB here)) (NP (NN :-LRB-))))) </parse>
+        <dependencies type="basic-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="1">nope</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="1">nope</governor>
+            <dependent idx="3">none</dependent>
+          </dep>
+          <dep type="advmod">
+            <governor idx="3">none</governor>
+            <dependent idx="4">here</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="3">none</governor>
+            <dependent idx="5">:-LRB-</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="1">nope</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="1">nope</governor>
+            <dependent idx="3">none</dependent>
+          </dep>
+          <dep type="advmod">
+            <governor idx="3">none</governor>
+            <dependent idx="4">here</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="3">none</governor>
+            <dependent idx="5">:-LRB-</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-ccprocessed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="1">nope</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="1">nope</governor>
+            <dependent idx="3">none</dependent>
+          </dep>
+          <dep type="advmod">
+            <governor idx="3">none</governor>
+            <dependent idx="4">here</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="3">none</governor>
+            <dependent idx="5">:-LRB-</dependent>
+          </dep>
+        </dependencies>
+      </sentence>
+      <sentence id="16" line="16">
+        <tokens>
+          <token id="1">
+            <word>oh</word>
+            <lemma>oh</lemma>
+            <CharacterOffsetBegin>250</CharacterOffsetBegin>
+            <CharacterOffsetEnd>252</CharacterOffsetEnd>
+            <POS>UH</POS>
+            <NER>O</NER>
+          </token>
+          <token id="2">
+            <word>well</word>
+            <lemma>well</lemma>
+            <CharacterOffsetBegin>253</CharacterOffsetBegin>
+            <CharacterOffsetEnd>257</CharacterOffsetEnd>
+            <POS>RB</POS>
+            <NER>O</NER>
+          </token>
+        </tokens>
+        <parse>(ROOT (INTJ (UH oh) (RB well))) </parse>
+        <dependencies type="basic-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="1">oh</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="1">oh</governor>
+            <dependent idx="2">well</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="1">oh</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="1">oh</governor>
+            <dependent idx="2">well</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-ccprocessed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="1">oh</dependent>
+          </dep>
+          <dep type="dep">
+            <governor idx="1">oh</governor>
+            <dependent idx="2">well</dependent>
+          </dep>
+        </dependencies>
+      </sentence>
+    </sentences>
+    <coreference>
+      <coreference>
+        <mention representative="true">
+          <sentence>6</sentence>
+          <start>2</start>
+          <end>7</end>
+          <head>3</head>
+        </mention>
+        <mention>
+          <sentence>9</sentence>
+          <start>2</start>
+          <end>8</end>
+          <head>2</head>
+        </mention>
+        <mention>
+          <sentence>9</sentence>
+          <start>2</start>
+          <end>3</end>
+          <head>2</head>
+        </mention>
+        <mention>
+          <sentence>9</sentence>
+          <start>4</start>
+          <end>6</end>
+          <head>5</head>
+        </mention>
+      </coreference>
+    </coreference>
+  </document>
+</root>

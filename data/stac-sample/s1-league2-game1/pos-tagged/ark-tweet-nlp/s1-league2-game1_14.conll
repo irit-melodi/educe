@@ -1,0 +1,236 @@
+skinny	A	0.9730
+
+I	O	0.9981
+need	V	0.9982
+2	P	0.4972
+sheep	N	0.9098
+...	,	0.8530
+
+Yes	!	0.9936
+?	,	0.9967
+
+What	O	0.9937
+do	V	0.9993
+you	O	0.9997
+want	V	0.9997
+for	P	0.9987
+them	O	0.9810
+?	,	0.9982
+
+can	V	0.9990
+you	O	0.9749
+trade	V	0.8958
+for	P	0.9978
+3	$	0.9600
+clays	N	0.9939
+
+*	,	0.9532
+want	V	0.9999
+them	O	0.9780
+for	P	0.9918
+
+I'll	L	0.9855
+give	V	0.9999
+you	O	0.9889
+two	$	0.8432
+sheep	N	0.9637
+for	P	0.9993
+2	$	0.8926
+clay	^	0.5848
+or	&	0.9758
+for	P	0.9985
+a	D	0.9888
+clay	^	0.6486
+and	&	0.9996
+a	D	0.9924
+wheat	N	0.9693
+or	&	0.9939
+a	D	0.9630
+clay	^	0.6486
+and	&	0.9996
+a	D	0.9874
+wood	N	0.8800
+
+dont	V	0.9570
+have	V	0.9999
+the	D	0.9998
+other	A	0.9605
+...	,	0.8801
+
+Hmmm	!	0.9964
+
+2	$	0.6911
+sheep	N	0.9446
+for	P	0.9991
+2	$	0.8685
+clay	^	0.7207
+?	,	0.9942
+
+okay	!	0.9728
+:D	E	0.9959
+
+btw	G	0.9272
+...	,	0.8984
+originally	R	0.9557
+,	,	0.9972
+I	O	0.9980
+was	V	0.9999
+offering	V	0.9543
+3	$	0.9680
+clay	N	0.6731
+..	,	0.9940
+
+Ah	!	0.9984
+!	,	0.9972
+
+:D	E	0.9898
+
+damn	!	0.9926
+!	,	0.9968
+
+I	O	0.9978
+didn't	V	1.0000
+want	V	0.9997
+three	$	0.8589
+clay	^	0.7372
+
+didn't	V	0.9977
+even	R	0.9798
+see	V	0.9983
+that	P	0.5785
+coming	V	0.9901
+.	,	0.9972
+Nice	A	0.9912
+one	$	0.9193
+.	,	0.9981
+
+yeah	!	0.9985
+,	,	0.9988
+but	&	0.9919
+would	V	0.9911
+be	V	0.9998
+better	A	0.7285
+than	P	0.9841
+two	$	0.9180
+...	,	0.8224
+
+Nor	&	0.9190
+did	V	0.9934
+I	O	0.9980
+!	,	0.9973
+
+thanks	N	0.7675
+
+Congrats	!	0.9443
+!	,	0.9968
+
+anyway	R	0.9763
+,	,	0.9969
+good	A	0.9948
+game	N	0.9960
+guys	N	0.9983
+.	,	0.9982
+
+I	O	0.9965
+hve	V	0.9937
+built	V	0.9928
+the	D	0.9997
+buildings	N	0.9973
+really	R	0.9998
+badly	R	0.8151
+in	P	0.9990
+the	D	0.9985
+beginning	N	0.9226
+
+so	R	0.6480
+...	,	0.9825
+a	D	0.9861
+surprise	N	0.9808
+here	R	0.9800
+too	R	0.9914
+..	,	0.9920
+
+so	R	0.6480
+...	,	0.9825
+a	D	0.9861
+surprise	N	0.9808
+here	R	0.9800
+too	R	0.9914
+..	,	0.9920
+
+Right	!	0.7761
+
+What	O	0.9883
+happens	V	0.9961
+now	R	0.9957
+?	,	0.9982
+Do	V	0.9971
+we	O	0.9985
+play	V	0.9962
+more	A	0.6788
+?	,	0.9977
+
+So	P	0.5666
+
+Amy	^	0.9913
+said	V	0.9945
+she	O	0.9988
+can	V	0.9996
+do	V	0.9998
+tomorrow	N	0.8710
+night	N	0.8944
+
+Can	V	0.9984
+either	D	0.5517
+of	P	0.9914
+you	O	0.9979
+?	,	0.9994
+
+yea	!	0.9970
+
+same	A	0.9920
+time	N	0.9983
+?	,	0.9973
+
+yeah	!	0.9988
+
+ok	!	0.9836
+
+OK	!	0.8898
+,	,	0.9989
+I'll	L	0.9828
+send	V	0.9996
+out	T	0.8897
+a	D	0.9919
+group	N	0.9909
+email	N	0.9552
+
+thanks	N	0.8689
+guys	N	0.9938
+
+good	A	0.9957
+stuff	N	0.9990
+.	,	0.9973
+see	V	0.9975
+you	O	0.7692
+guys	N	0.9571
+tomorrow	N	0.9203
+:)	E	0.9961
+
+Indeed	R	0.9172
+,	,	0.9984
+thanks	N	0.7268
+all	D	0.6051
+
+Indeed	R	0.9172
+,	,	0.9984
+thanks	N	0.7268
+all	D	0.6051
+
+What	O	0.5526
+time	N	0.9953
+?	,	0.9973
+
+8	$	0.9938
+pm	N	0.9502
+
