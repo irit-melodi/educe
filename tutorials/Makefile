@@ -7,7 +7,7 @@ GIT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
 convert: update $(TUTORIALS_HTML)
 
 update:
-ifeq($(GIT_BRANCH),gh-pages)
+ifeq ($(GIT_BRANCH),gh-pages)
 	git fetch origin master:master
 	git checkout master .
 endif
