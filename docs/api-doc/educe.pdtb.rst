@@ -27,6 +27,14 @@ educe.pdtb.parse module
     :undoc-members:
     :show-inheritance:
 
+educe.pdtb.ptb module
+---------------------
+
+.. automodule:: educe.pdtb.ptb
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 educe.pdtb.xml_ module
 ----------------------
 
