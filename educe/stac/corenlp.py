@@ -111,6 +111,8 @@ def run_pipeline(corpus, outdir, corenlp_dir, split=False):
     # manifest tells corenlp what to files to read as input
     manifest_dir  = os.path.join(outdir, 'tmp')
     manifest_file = os.path.join(manifest_dir, 'manifest')
+    if not os.path.exists(manifest_dir):
+        os.makedirs(manifest_dir)
     with codecs.open(manifest_file, 'w', 'utf-8') as f:
         print('\n'.join(txt_files), file=f)
 
