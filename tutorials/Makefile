@@ -1,9 +1,16 @@
 TUTORIALS=stac pdtb rst-dt
 TUTORIALS_HTML=$(patsubst %,%.html,$(TUTORIALS))
+GIT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
 
-.PHONY: convert clean
+.PHONY: convert clean update
 
-convert: $(TUTORIALS_HTML)
+convert: update $(TUTORIALS_HTML)
+
+update:
+ifeq($(GIT_BRANCH),gh-pages)
+	git fetch origin master:master
+	git checkout master .
+endif
 
 clean:
 	rm -f $(TUTORIALS_HTML)
