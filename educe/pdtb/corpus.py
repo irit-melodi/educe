@@ -30,10 +30,7 @@ class Reader(educe.corpus.Reader):
         for fname in glob(full_glob):
             bname = os.path.basename(fname)
             doc = os.path.splitext(bname)[0]
-            k = FileId(doc=doc,
-                       subdoc=None,
-                       stage='discourse',
-                       annotator='unknown')
+            k = mk_key(doc)
             anno_files[k] = fname
         return anno_files
 
@@ -56,6 +53,17 @@ class Reader(educe.corpus.Reader):
             sys.stderr.write("\rSlurping corpus dir [%d/%d done]\n" %
                              (counter, len(cfiles)))
         return corpus
+
+
+def mk_key(doc):
+    """
+    Return an corpus key for a given document name
+    """
+    return FileId(doc=doc,
+                  subdoc=None,
+                  stage='discourse',
+                  annotator='unknown')
+
 
 def id_to_path(k):
     """
