@@ -33,7 +33,7 @@ class Reader(educe.corpus.Reader):
             k = FileId(doc=doc,
                        subdoc=None,
                        stage='discourse',
-                       annotator='None')
+                       annotator='unknown')
             anno_files[k] = fname
         return anno_files
 
