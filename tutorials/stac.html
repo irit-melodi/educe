@@ -1706,27 +1706,46 @@ text editor, or embedded in an interactive webpage via iPython:</p>
 </div>
 </div>
 </div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">
+In&nbsp;[33]:
+</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class="highlight"><pre><span class="c"># some helper functions for the tutorial below</span>
+
+<span class="k">def</span> <span class="nf">text_snippet</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+    <span class="s">&quot;short text fragment&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">43</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">text</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s">&quot;{0}...{1}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">text</span><span class="p">[:</span><span class="mi">20</span><span class="p">],</span> <span class="n">text</span><span class="p">[</span><span class="o">-</span><span class="mi">20</span><span class="p">:])</span>
+
+<span class="k">def</span> <span class="nf">highlight</span><span class="p">(</span><span class="n">astring</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="s">&quot;coloured text&quot;</span>
+    <span class="k">return</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\x1b</span><span class="s">[3{color}m{str}</span><span class="se">\x1b</span><span class="s">[0m&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="nb">str</span><span class="o">=</span><span class="n">astring</span><span class="p">))</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
 <div class="cell border-box-sizing text_cell rendered">
 <div class="prompt input_prompt">
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <h2 id="reading-corpus-files-stac-">Reading corpus files (STAC)</h2>
-<p>It helps to know here that an educe corpus is a mapping from <a href="https://educe.readthedocs.org/en/latest/api-doc/educe.html#educe.corpus.FileId">file id keys</a> to Documents. The <code>FileId</code> tells us what makes a Document distinct from another:</p>
-<ul>
-<li>document (eg. s1-league2-game1): in STAC, the game that was played (here, season 1, league 2, game 1)</li>
-<li>subdocument (eg. 05): a mostly arbitrary subdivision of the documents motivated by technical constraints (overly large documents would cause our annotation tool to crash)</li>
-<li>stage (eg. units, discourse, parsed): the kinds of annotations available in the document</li>
-<li>annotator (eg. hjoseph): the main annotator for a document (gold standard documents have the distinguished annotators, BRONZE, SILVER, or GOLD)</li>
-</ul>
-<p>NB: unfortunately we have overloaded the word “document” here. When talking about file ids, “document” refers to a whole game.  But when talking about actual annotation objects an educe Document actually corresponds to a specific combination of document, subdocument, stage, and annotator</p>
+<p>Typically, the first thing we want to do when working in educe is to read the corpus in.  This can be a bit slow, but as we will see later on, we can speed things up if we know what we&#39;re looking for.</p>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">
-In&nbsp;[2]:
+In&nbsp;[36]:
 </div>
 <div class="inner_cell">
     <div class="input_area">
@@ -1793,6 +1812,14 @@ Slurping corpus dir [100/100 done]
 <div class="text_cell_render border-box-sizing rendered_html">
 <h3 id="faster-reading">Faster reading</h3>
 <p>If you know that you only want to work with a subset of the corpus files, you can pre-filter the corpus before reading the files. </p>
+<p>It helps to know here that an educe corpus is a mapping from <a href="https://educe.readthedocs.org/en/latest/api-doc/educe.html#educe.corpus.FileId">file id keys</a> to Documents. The <code>FileId</code> tells us what makes a Document distinct from another:</p>
+<ul>
+<li>document (eg. s1-league2-game1): in STAC, the game that was played (here, season 1, league 2, game 1)</li>
+<li>subdocument (eg. 05): a mostly arbitrary subdivision of the documents motivated by technical constraints (overly large documents would cause our annotation tool to crash)</li>
+<li>stage (eg. units, discourse, parsed): the kinds of annotations available in the document</li>
+<li>annotator (eg. hjoseph): the main annotator for a document (gold standard documents have the distinguished annotators, BRONZE, SILVER, or GOLD)</li>
+</ul>
+<p>NB: unfortunately we have overloaded the word “document” here. When talking about file ids, “document” refers to a whole game.  But when talking about actual annotation objects an educe Document actually corresponds to a specific combination of document, subdocument, stage, and annotator</p>
 </div>
 </div>
 </div>
@@ -1869,6 +1896,144 @@ Slurping corpus dir [12/12 done]
 </div>
 
 </div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">
+In&nbsp;[37]:
+</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class="highlight"><pre><span class="kn">from</span> <span class="nn">educe.corpus</span> <span class="kn">import</span> <span class="n">FileId</span>
+
+<span class="c"># pick out an example document to work with creating FileIds by hand</span>
+<span class="c"># is not something we would typically do (normally we would just iterate</span>
+<span class="c"># through a corpus), but it&#39;s useful for illustration</span>
+<span class="n">ex_key</span> <span class="o">=</span> <span class="n">FileId</span><span class="p">(</span><span class="n">doc</span><span class="o">=</span><span class="s">&#39;s1-league2-game3&#39;</span><span class="p">,</span>
+                <span class="n">subdoc</span><span class="o">=</span><span class="s">&#39;03&#39;</span><span class="p">,</span>
+                <span class="n">stage</span><span class="o">=</span><span class="s">&#39;units&#39;</span><span class="p">,</span>
+                <span class="n">annotator</span><span class="o">=</span><span class="s">&#39;BRONZE&#39;</span><span class="p">)</span>
+<span class="n">ex_doc</span> <span class="o">=</span> <span class="n">corpus</span><span class="p">[</span><span class="n">ex_key</span><span class="p">]</span>
+<span class="k">print</span><span class="p">(</span><span class="n">ex_key</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt"></div>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>
+s1-league2-game3 [03] units BRONZE
+
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="standing-off">Standing off</h2>
+<p>Most annotations in the STAC corpus are <a href="http://educe.readthedocs.org/en/latest/api-doc/educe.html#educe.annotation.Standoff">educe standoff annotations</a>. In educe terms, this means that they (perhaps indirectly) extend the <code>educe.annotation.Standoff</code> class and provide a <code>text_span()</code> function.  Much of our reasoning around annotations essentially consists of checking that their text spans overlap or enclose each other.</p>
+<p>As for the text spans, these refer to the raw text saved in files with an <code>.ac</code> extension (eg. <code>s1-league1-game3.ac</code>). In the <a href="http://www.glozz.org">Glozz annotation tool</a>, these <code>.ac</code> text files form a pair with their <code>.aa</code> xml counterparts.  Multiple annotation files can point to the same text file.</p>
+<p>There are also some annotations that come from 3rd party tools, which we will uncover later.</p>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="documents-and-edus">Documents and EDUs</h2>
+<p>A document is a sort of giant annotation that contains three other kinds of annotation</p>
+<ul>
+<li>units - annotations that directly cover a span of text (EDUs, Resources, but also turns, dialogues)</li>
+<li>relations - annotations that point from one annotation to another</li>
+<li>schemas - annotations that point to a set of annotations</li>
+</ul>
+<p>To start things off, we&#39;ll focus on one type of unit-level annotation, the Elementary Discourse Unit</p>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">
+In&nbsp;[40]:
+</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class="highlight"><pre><span class="k">def</span> <span class="nf">preview_unit</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="n">anno</span><span class="p">):</span>
+    <span class="s">&quot;the default str(anno) can be a bit overwhelming&quot;</span>
+    <span class="n">preview</span> <span class="o">=</span> <span class="s">&quot;{span: &lt;11} {id: &lt;20} [{type: &lt;12}] {text}&quot;</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">doc</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">anno</span><span class="o">.</span><span class="n">text_span</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">preview</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">anno</span><span class="o">.</span><span class="n">local_id</span><span class="p">(),</span>
+                          <span class="nb">type</span><span class="o">=</span><span class="n">anno</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
+                          <span class="n">span</span><span class="o">=</span><span class="n">anno</span><span class="o">.</span><span class="n">text_span</span><span class="p">(),</span>
+                          <span class="n">text</span><span class="o">=</span><span class="n">text_snippet</span><span class="p">(</span><span class="n">text</span><span class="p">))</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">&quot;Example units&quot;</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">&quot;-------------&quot;</span><span class="p">)</span>
+<span class="n">seen</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">anno</span> <span class="ow">in</span> <span class="n">ex_doc</span><span class="o">.</span><span class="n">units</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">anno</span><span class="o">.</span><span class="n">type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+        <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">anno</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">preview_unit</span><span class="p">(</span><span class="n">ex_doc</span><span class="p">,</span> <span class="n">anno</span><span class="p">))</span>
+    
+<span class="k">print</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="s">&quot;First few EDUs&quot;</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">&quot;--------------&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">anno</span> <span class="ow">in</span> <span class="nb">filter</span><span class="p">(</span><span class="n">educe</span><span class="o">.</span><span class="n">stac</span><span class="o">.</span><span class="n">is_edu</span><span class="p">,</span> <span class="n">ex_doc</span><span class="o">.</span><span class="n">units</span><span class="p">)[:</span><span class="mi">4</span><span class="p">]:</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">preview_unit</span><span class="p">(</span><span class="n">ex_doc</span><span class="p">,</span> <span class="n">anno</span><span class="p">))</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area"><div class="prompt"></div>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>
+Example units
+-------------
+(1,34)      stac_1368693094      [paragraph   ] 151 : amycharl : got wood anyone?
+(52,66)     stac_1368693099      [Accept      ] yep, for what?
+(117,123)   stac_1368693105      [Refusal     ] no way
+(189,191)   stac_1368693114      [Other       ] :)
+(209,210)   stac_1368693117      [Counteroffer] ?
+(659,668)   stac_1368693162      [Offer       ] how much?
+(22,26)     asoubeille_1374939590843 [Resource    ] wood
+(35,66)     stac_1368693098      [Turn        ] 152 : sabercat : yep, for what?
+(0,266)     stac_1368693124      [Dialogue    ]  151 : amycharl : go...cat : yep, thank you
+
+First few EDUs
+--------------
+(52,66)     stac_1368693099      [Accept      ] yep, for what?
+(117,123)   stac_1368693105      [Refusal     ] no way
+(163,171)   stac_1368693111      [Accept      ] could be
+(189,191)   stac_1368693114      [Other       ] :)
+
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
 <div class="cell border-box-sizing text_cell rendered">
 <div class="prompt input_prompt">
 </div>
@@ -1882,6 +2047,7 @@ It needs to ported over from its RST/DT considerations to STAC</p>
 <ul>
 <li>standing off (ac/aa) - shared aa</li>
 <li>layers (units/discourse)</li>
+<li>working with relations and schemas</li>
 <li>grabbing resources etc (example of working with unit level annotation)</li>
 <li>synchronising layers (grabbing the dialogue act and relations at the same time)</li>
 <li>external annotations (postags, parse trees)</li>
@@ -1898,22 +2064,6 @@ It needs to ported over from its RST/DT considerations to STAC</p>
 <div class="text_cell_render border-box-sizing rendered_html">
 <h2 id="trees-and-annotations">Trees and annotations</h2>
 <p>RST DT documents are basically trees</p>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="standing-off">Standing off</h3>
-<p>Most annotations in the STAC corpus are <a href="http://educe.readthedocs.org/en/latest/api-doc/educe.html#educe.annotation.Standoff">educe standoff annotations</a>. In educe terms, this means that they (perhaps indirectly) extend the <code>educe.annotation.Standoff</code> class and provide a <code>text_span()</code> function.  Much of our reasoning around annotations essentially consists of checking that their text spans overlap or enclose each other.</p>
-<p>As for the text spans, these refer to the raw text saved in files with an <code>.ac</code> extension (eg. <code>s1-league1-game3.ac</code>). In the [Glozz annotation tool][glozz], these <code>.ac</code> text files form a pair with their <code>.aa</code> xml counterparts.  Because we have several layers of annotations (and sometimes multiple annotators), TODO</p>
-<p>In STAC, we tend to have several Documents that refer to the same text, for example, annotations done by two different people.  </p>
-<p>Along with their <code>.aa</code> counterparts (the actual annotations)</p>
-<p>These annotation files form a pair along with their <code>.aa</code> counterparts.</p>
-<p>All Glozz documents</p>
-<p>[glozz]: </p>
 </div>
 </div>
 </div>
@@ -2070,16 +2220,6 @@ S purpose                        at (1751,1782):	to replace a 21-member council.
 </div>
 </div>
 
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="penn-treebank-integration">Penn Treebank integration</h2>
-<p>RST DT annotations are mostly over Wall Street Journal articles from the Penn Treebank. If you have a copy of the latter at the ready, you can ask educe to read and align the two (ie. PTB annotations treated as standing off the RST source text).  This alignment consists of some universal substitutions (eg. <code>-LBR-</code> to <code>(</code>) and with a <a href="https://github.com/kowey/educe/blob/master/educe/rst_dt/ptb.py">bit of hardcoding</a> to account for seemingly random differences in whitespace/punctuation.</p>
-</div>
-</div>
 </div>
 <div class="cell border-box-sizing text_cell rendered">
 <div class="prompt input_prompt">
