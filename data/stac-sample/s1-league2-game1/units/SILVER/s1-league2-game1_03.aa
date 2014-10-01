@@ -56,7 +56,7 @@
 <lastModificationDate>1364914535968</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">?</feature>
 <feature name="Surface_act">Assertion</feature>
@@ -126,7 +126,7 @@
 <lastModificationDate>1364914552218</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">?</feature>
 <feature name="Surface_act">Assertion</feature>
@@ -1060,7 +1060,7 @@
 <lastModificationDate>1364915239859</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">IG, sabercat</feature>
 <feature name="Surface_act">Question</feature>
@@ -1130,7 +1130,7 @@
 <lastModificationDate>1364915246968</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">skinnylinny</feature>
 <feature name="Surface_act">Assertion</feature>
@@ -1200,7 +1200,7 @@
 <lastModificationDate>1364915253937</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">skinnylinny</feature>
 <feature name="Surface_act">Assertion</feature>
@@ -1270,7 +1270,7 @@
 <lastModificationDate>1364915261796</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">sabercat</feature>
 <feature name="Surface_act">Question</feature>

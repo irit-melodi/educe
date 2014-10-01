@@ -126,7 +126,7 @@
 <lastModificationDate>1364976544625</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">IG, sabercat</feature>
 <feature name="Surface_act">Assertion</feature>
@@ -196,7 +196,7 @@
 <lastModificationDate>1364976566796</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">skinnylinny</feature>
 <feature name="Surface_act">Assertion</feature>
@@ -266,7 +266,7 @@
 <lastModificationDate>1364976592140</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">skinnylinny</feature>
 <feature name="Surface_act">Assertion</feature>
@@ -336,7 +336,7 @@
 <lastModificationDate>1364976601890</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">IG</feature>
 <feature name="Surface_act">Assertion</feature>
@@ -406,7 +406,7 @@
 <lastModificationDate>1364977638906</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">skinnylinny</feature>
 <feature name="Surface_act">Assertion</feature>
@@ -920,7 +920,7 @@
 <lastModificationDate>1364976796750</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">skinnylinny</feature>
 <feature name="Surface_act">Assertion</feature>
@@ -1060,7 +1060,7 @@
 <lastModificationDate>1364976817125</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">?</feature>
 <feature name="Surface_act">Assertion</feature>
@@ -1130,7 +1130,7 @@
 <lastModificationDate>1364976823171</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">?</feature>
 <feature name="Surface_act">Assertion</feature>
@@ -1270,7 +1270,7 @@
 <lastModificationDate>1364977842765</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">sabercat</feature>
 <feature name="Surface_act">Assertion</feature>
@@ -1527,7 +1527,7 @@
 <lastModificationDate>1364977875765</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">IG</feature>
 <feature name="Surface_act">Assertion</feature>

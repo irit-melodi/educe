@@ -336,7 +336,7 @@
 <lastModificationDate>1374996536233</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">sabercat</feature>
 <feature name="Surface_act">Assertion</feature>
@@ -359,7 +359,7 @@
 <lastModificationDate>1374996546649</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">sabercat</feature>
 <feature name="Surface_act">Assertion</feature>
@@ -429,7 +429,7 @@
 <lastModificationDate>1374996574784</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">amycharl</feature>
 <feature name="Surface_act">Assertion</feature>
@@ -709,7 +709,7 @@
 <lastModificationDate>1374996622592</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">All</feature>
 <feature name="Surface_act">Assertion</feature>

@@ -92,7 +92,7 @@
 <lastModificationDate>1364971603453</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">All</feature>
 <feature name="Surface_act">Assertion</feature>
@@ -198,7 +198,7 @@
 <lastModificationDate>1364971725703</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">skinnylinny</feature>
 <feature name="Surface_act">Assertion</feature>
@@ -562,7 +562,7 @@
 <lastModificationDate>1364972225796</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">IG</feature>
 <feature name="Surface_act">Assertion</feature>
@@ -1194,7 +1194,7 @@
 <lastModificationDate>1364971549359</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">skinnylinny</feature>
 <feature name="Surface_act">Assertion</feature>

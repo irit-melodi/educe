@@ -1593,7 +1593,7 @@
 <lastModificationDate>1370529615766</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">All</feature>
 <feature name="Surface_act">Assertion</feature>
