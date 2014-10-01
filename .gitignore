@@ -16,8 +16,9 @@ src
 pilot
 socl-season[1,2]
 
-# iPython
+# tutorials
 .ipynb_checkpoints/
+tutorials/*.html
 
 # Syphinx
 _build
