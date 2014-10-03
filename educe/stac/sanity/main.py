@@ -799,7 +799,7 @@ def summarise_anno_html(doc, contexts):
 
         if not stac.is_relation_instance(t):
             t_span = t.text_span()
-            t_text = doc.text(t_span)
+            t_text = doc.text(t_span) if t_span is not None else "(NO CONTENT?)"
             if stac.is_cdu(t):
                 tids = [x for x in map(tid, t.terminals()) if x]
                 if tids:

@@ -1194,7 +1194,7 @@
 <lastModificationDate>1364974215593</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">skinnylinny</feature>
 <feature name="Surface_act">Assertion</feature>
@@ -1404,7 +1404,7 @@
 <lastModificationDate>1364974268234</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">sabercat</feature>
 <feature name="Surface_act">Question</feature>
@@ -1474,7 +1474,7 @@
 <lastModificationDate>1364974310328</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">skinnylinny, IG</feature>
 <feature name="Surface_act">Assertion</feature>

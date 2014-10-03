@@ -154,15 +154,17 @@ def commit_msg(args, corpus, k, sought):
     we are about to do (has to be run before merging happens)
     """
     doc = corpus[k]
-    prefix = "Turns %d-%d" % tuple(args.turns)\
-        if args.turns else "Dialogues"
     dstr = ", ".join(map(anno_id_from_tuple, sought))
     dialogues = [_get_annotation_with_id(d, doc.units) for d in sought]
     if dialogues:
+        title_fmt = "{doc}_{subdoc}: merge dialogues{hint}"
+        title_hint = " (turns %d-%d)" % tuple(args.turns) if args.turns else ""
         dspan = _merge_spans(dialogues)
-        lines = ["%s_%s: merge dialogues" % (k.doc, k.subdoc),
+        lines = [title_fmt.format(doc=k.doc,
+                                  subdoc=k.subdoc,
+                                  hint=title_hint),
                  "",
-                 "%s (%s), was:" % (prefix, dstr),
+                 "Dialogues ({}), was:".format(dstr),
                  "",
                  annotate_doc(doc, span=dspan)]
         return "\n".join(lines)

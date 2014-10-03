@@ -33,10 +33,7 @@ class Reader(educe.corpus.Reader):
             text_file = os.path.splitext(fname)[0]
             bname = os.path.basename(fname)
             doc = os.path.splitext(bname)[0]
-            k = FileId(doc=doc,
-                       subdoc=None,
-                       stage='discourse',
-                       annotator='unknown')
+            k = mk_key(doc)
             anno_files[k] = (fname, text_file)
         return anno_files
 
@@ -59,6 +56,15 @@ class Reader(educe.corpus.Reader):
                              (counter, len(cfiles)))
         return corpus
 
+
+def mk_key(doc):
+    """
+    Return an corpus key for a given document name
+    """
+    return FileId(doc=doc,
+                  subdoc=None,
+                  stage='discourse',
+                  annotator='unknown')
 
 def id_to_path(k):
     """

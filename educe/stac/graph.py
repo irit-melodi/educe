@@ -10,6 +10,7 @@ STAC-specific conventions related to graphs.
 import copy
 import collections
 import itertools
+import re
 import textwrap
 
 from pygraph.readwrite import dot
@@ -335,6 +336,16 @@ class DotGraph(educe.graph.DotGraph):
         for i,n in enumerate(nodes):
             self.node_order[anno_graph.annotation(n)] = i
         educe.graph.DotGraph.__init__(self, anno_graph)
+        self.set_name(self._format_name())
+
+    def _format_name(self):
+        "graphviz-friendly version of our doc key"
+        key = self.doc_key
+        name = "_".join([key.doc,
+                         key.subdoc,
+                         key.stage,
+                         key.annotator])
+        return re.sub(r'[-\[\]\r\n]', "_", name)
 
     def _get_turn_info(self, u):
         enclosing_turns = [ t for t in self.turns if t.span.encloses(u.span) ]

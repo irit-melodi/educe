@@ -1948,7 +1948,7 @@
 <lastModificationDate>1364909514250</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">skinnylinny, IG</feature>
 <feature name="Surface_act">Assertion</feature>
@@ -2018,7 +2018,7 @@
 <lastModificationDate>1364909526312</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">sabercat</feature>
 <feature name="Surface_act">Assertion</feature>
@@ -2462,7 +2462,7 @@
 <lastModificationDate>1364909837562</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">sabercat</feature>
 <feature name="Surface_act">Assertion</feature>
@@ -2532,7 +2532,7 @@
 <lastModificationDate>1364909845046</lastModificationDate>
 </metadata>
 <characterisation>
-<type>Strategic_comment</type>
+<type>Other</type>
 <featureSet>
 <feature name="Addressee">skinnylinny</feature>
 <feature name="Surface_act">Assertion</feature>
