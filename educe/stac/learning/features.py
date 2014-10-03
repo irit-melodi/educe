@@ -28,6 +28,7 @@ from educe.learning.keys import\
     MagicKey, Key, KeyGroup, MergedKeyGroup, ClassKeyGroup
 from educe.stac import postag, corenlp
 from educe.learning.csv import tune_for_csv
+from educe.learning.util import tuple_feature, underscore
 import educe.corpus
 import educe.glozz
 import educe.learning.csv as educe_csv
@@ -417,37 +418,6 @@ def edu_text_feature(wrapped):
         return wrapped(txt)
     return inner
 
-
-def tuple_feature(combine):
-    """
-    ::
-
-       (a -> a -> b) ->
-       ((current, cache, edu) -> a) ->
-       (current, cache, edu, edu) -> b)
-
-    Combine the result of single-edu feature function to make
-    a pair feature
-    """
-
-    def decorator(wrapped):
-        "apply the combiner"
-
-        @wraps(wrapped)
-        def inner(current, cache, edu1, edu2):
-            "wrapped :: (current, cache, edu) -> String"
-            val1 = wrapped(current, cache, edu1)
-            val2 = wrapped(current, cache, edu2)
-            return combine(val1, val2)
-        return inner
-    return decorator
-
-
-def underscore(str1, str2):
-    """
-    join two strings with an underscore
-    """
-    return '%s_%s' % (str1, str2)
 
 # ---------------------------------------------------------------------
 #

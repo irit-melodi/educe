@@ -18,7 +18,7 @@ from educe.learning.csv import tune_for_csv
 from educe.learning.keys import\
     ClassKeyGroup, KeyGroup, MergedKeyGroup,\
     MagicKey
-
+from educe.learning.util import tuple_feature, underscore
 
 class FeatureExtractionException(Exception):
     """
@@ -343,6 +343,37 @@ def same_ptb_sentence(current, edu1, edu2):
     return has_overlap
 
 
+@tuple_feature(underscore)
+def word_first_pairs(_, cache, edu):
+    "pair of the first words in the two EDUs"
+    return cache[edu]["word_first"]
+
+
+@tuple_feature(underscore)
+def word_last_pairs(_, cache, edu):
+    "pair of the last words in the two EDUs"
+    return cache[edu]["word_last"]
+
+
+@tuple_feature(underscore)
+def bigram_first_pairs(_, cache, edu):
+    "pair of the first bigrams in the two EDUs"
+    return cache[edu]["bigram_first"]
+
+
+@tuple_feature(underscore)
+def bigram_last_pairs(_, cache, edu):
+    "pair of the last bigrams in the two EDUs"
+    return cache[edu]["bigram_last"]
+
+
+@tuple_feature(underscore)
+def ptb_pos_tag_first_pairs(_, cache, edu):
+    "pair of the first POS in the two EDUs"
+    # FIXME: should be POS tag of first non-nil ptb word
+    return cache[edu]["ptb_pos_tag_first"] # or ["pos_first2"]
+
+
 # ---------------------------------------------------------------------
 # single EDU key groups
 # ---------------------------------------------------------------------
@@ -515,6 +546,28 @@ class PairSubgroup_Gap(PairSubgroup):
         super(PairSubgroup_Gap, self).__init__(desc, keys)
 
 
+# largely c/c'ed from educe.stac.learning.features
+class PairSubgroup_Tuple(PairSubgroup):
+    "artificial tuple features"
+
+    def __init__(self, inputs, sf_cache):
+        self.corpus = inputs.corpus
+        self.sf_cache = sf_cache
+        desc = self.__doc__.strip()
+        keys =\
+            [MagicKey.discrete_fn(word_first_pairs),
+             MagicKey.discrete_fn(word_last_pairs),
+             MagicKey.discrete_fn(bigram_first_pairs),
+             MagicKey.discrete_fn(bigram_last_pairs),
+             MagicKey.discrete_fn(ptb_pos_tag_first_pairs)]
+        super(PairSubgroup_Tuple, self).__init__(desc, keys)
+
+    def fill(self, current, edu1, edu2, target=None):
+        vec = self if target is None else target
+        for key in self.keys:
+            vec[key.name] = key.function(current, self.sf_cache, edu1, edu2)
+
+
 class PairKeys(MergedKeyGroup):
     """
     pair features
@@ -527,8 +580,8 @@ class PairKeys(MergedKeyGroup):
         """
         self.sf_cache = sf_cache
         groups = [PairSubGroup_Core(),
-                  PairSubgroup_Gap()]
-        #          PairSubgroup_Tuple(inputs, sf_cache)]
+                  PairSubgroup_Gap(),
+                  PairSubgroup_Tuple(inputs, sf_cache)]
         #if inputs.debug:
         #    groups.append(PairSubgroup_Debug())
 
