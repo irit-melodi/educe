@@ -44,6 +44,25 @@ class SearchableTree(nltk.Tree):
             return chain.from_iterable(x.topdown(pred) for x in self
                                        if isinstance(x,SearchableTree))
 
+    def depth_first_iterator(self):
+        """
+        Iterate on the nodes of the tree, depth-first, pre-order.
+        """
+        node = self
+        parent_stack = []
+        while(parent_stack or (node is not None)):
+            if (node is not None):
+                yield node
+                if isinstance(node,SearchableTree):
+                    for child in reversed(node[1:]):
+                        parent_stack.append(child)
+                    node = node[0]
+                else:
+                    node = None
+            else:
+                node = parent_stack.pop()
+
+
 class ConstituencyTree(SearchableTree, Standoff):
     """
     A variant of the NLTK Tree data structure which can be
