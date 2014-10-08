@@ -54,8 +54,7 @@ class SearchableTree(nltk.Tree):
             if (node is not None):
                 yield node
                 if isinstance(node,SearchableTree):
-                    for child in reversed(node[1:]):
-                        parent_stack.append(child)
+                    parent_stack.extend(reversed(node[1:]))
                     node = node[0]
                 else:
                     node = None
