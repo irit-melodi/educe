@@ -16,11 +16,12 @@ without.
 """
 
 import collections
-from   itertools import chain
+from itertools import chain
 
 import nltk.tree
 
-from   educe.annotation import Span, Standoff
+from educe.annotation import Span, Standoff
+
 
 class SearchableTree(nltk.Tree):
     """
@@ -42,7 +43,25 @@ class SearchableTree(nltk.Tree):
             return []
         else:
             return chain.from_iterable(x.topdown(pred) for x in self
-                                       if isinstance(x,SearchableTree))
+                                       if isinstance(x, SearchableTree))
+
+    def depth_first_iterator(self):
+        """
+        Iterate on the nodes of the tree, depth-first, pre-order.
+        """
+        node = self
+        parent_stack = []
+        while parent_stack or (node is not None):
+            if node is not None:
+                yield node
+                if isinstance(node, SearchableTree):
+                    parent_stack.extend(reversed(node[1:]))
+                    node = node[0]
+                else:
+                    node = None
+            else:
+                node = parent_stack.pop()
+
 
 class ConstituencyTree(SearchableTree, Standoff):
     """
@@ -65,7 +84,7 @@ class ConstituencyTree(SearchableTree, Standoff):
             raise Exception("Can't create a tree with no children")
         self.children = children
         start = min(x.span.char_start for x in children)
-        end   = max(x.span.char_end   for x in children)
+        end = max(x.span.char_end for x in children)
         self.span = Span(start, end)
 
     def _members(self):
@@ -88,12 +107,14 @@ class ConstituencyTree(SearchableTree, Standoff):
         those words
         """
         toks = collections.deque(tokens)
+
         def step(t):
             if not isinstance(t, nltk.tree.Tree):
                 if toks:
                     return toks.popleft()
                 else:
-                    raise Exception('Must have same number of input tokens as leaves in the tree')
+                    raise Exception('Must have same number of input tokens '
+                                    'as leaves in the tree')
             return cls(t.label(), list(map(step, t)))
         return step(tree)
 
@@ -149,7 +170,8 @@ class DependencyTree(SearchableTree, Standoff):
             node = 'ROOT'
 
         if k in deps:
-            children = [ cls.build(deps, nodes, k2, link2) for link2, k2 in deps[k] ]
+            children = [cls.build(deps, nodes, k2, link2)
+                        for link2, k2 in deps[k]]
             return cls(node, children, link)
         else:
             return node
