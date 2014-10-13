@@ -12,38 +12,102 @@ import csv
 import re
 
 
+# pylint: disable=too-few-public-methods
+class Substance(object):
+    """
+    The kind of the variable represented by this key.
+
+       * continuous
+       * discrete
+       * string (for meta vars; you probably want discrete instead)
+
+    If we ever reach a point where we're happy to switch to Python 3
+    wholesale, we should subclass Enum
+    """
+    CONTINUOUS = 1
+    DISCRETE = 2
+    STRING = 3
+
+
+class Purpose(object):
+    """
+    A key can have one of there purposes:
+
+        * feature: feature for learning tasks
+        * meta: some sort of indexing feature (eg. id)
+        * class: the thing we are trying to learn (normally only one
+          key has this purpose)
+
+    If we ever reach a point where we're happy to switch to Python 3
+    wholesale, we should subclass Enum
+    """
+    FEATURE = 1
+    META = 2
+    CLASS = 3
+# pylint: enable=too-few-public-methods
+
+
 class Key(object):
     """
     Feature name plus a bit of metadata
     """
 
-    CONT = "C"
-    META = "m"
-    DISC = "D"
-
-    def __init__(self, code, name, description):
-        self.code = code
+    def __init__(self, substance, purpose, name, description):
+        """
+        You probably want to use the methods `continuous`,
+        or `discrete` instead
+        """
+        self.substance = substance
+        "see `Substance`"
+        self.purpose = purpose
+        "see `Purpose`"
         self.name = name
         self.description = description
 
     def to_csv(self):
         "Return a string that could be used as a CSV field"
-        return self.code + "#" + self.name
+        if self.purpose is Purpose.CLASS:
+            code = "c"
+        elif self.purpose is Purpose.META:
+            code = "m"
+        elif self.purpose is Purpose.FEATURE:
+            if self.substance is Substance.CONTINUOUS:
+                code = "C"
+            elif self.substance is Substance.DISCRETE:
+                code = "d"
+            else:
+                oops = "Unknown substance {0} in key {1}".format(self.substance,
+                                                                 self.name)
+                raise Exception(oops)
+        else:
+            oops = "Unknown purpose {0} in key {1}".format(self.purpose,
+                                                           self.name)
+            raise Exception(oops)
+        return code + "#" + self.name
 
     @classmethod
-    def continuous(cls, name, description):
+    def continuous(cls, name, description, purpose=None):
         "A key for fields that have range value (eg. numbers)"
-        return cls(cls.CONT, name, description)
+        purpose = purpose or Purpose.FEATURE
+        return cls(Substance.CONTINUOUS, purpose, name, description)
 
     @classmethod
-    def meta(cls, name, description):
-        "A key for fields that are used for indexing only"
-        return cls(cls.META, name, description)
+    def meta(cls, name, description, substance=None):
+        """
+        A key for fields that are used for indexing only.
+
+        Slightly deprecated. You should really use `discrete`
+        instead and specify that purpose=Purpose.META. But it's not a
+        big deal.
+        """
+        substance = substance or Substance.STRING
+        return cls(substance, Purpose.META, name, description)
 
     @classmethod
-    def discrete(cls, name, description):
+    def discrete(cls, name, description, purpose=None):
         "A key for fields that have a finite set of possible values"
-        return cls(cls.DISC, name, description)
+        purpose = purpose or Purpose.FEATURE
+        return cls(Substance.DISCRETE, purpose, name, description)
 
 
 class MagicKey(Key):
@@ -52,26 +116,35 @@ class MagicKey(Key):
     The goal of the magic key is to reduce the amount of boilerplate
     needed to define keys
     """
-    def __init__(self, code, function):
+    def __init__(self, substance, purpose, function):
         name = re.sub("^feat_", "", function.__name__)
         description = function.__doc__
-        super(MagicKey, self).__init__(code, name, description)
+        super(MagicKey, self).__init__(substance, purpose, name, description)
         self.function = function
 
     @classmethod
-    def continuous_fn(cls, function):
+    def continuous_fn(cls, function, purpose=None):
         "A key for fields that have range value (eg. numbers)"
-        return cls(cls.CONT, function)
+        purpose = purpose or Purpose.FEATURE
+        return cls(Substance.CONTINUOUS, purpose, function)
 
     @classmethod
-    def meta_fn(cls, function):
-        "A key for fields that are used for indexing only"
-        return cls(cls.META, function)
+    def meta_fn(cls, function, substance=None):
+        """
+        A key for fields that are used for indexing only.
+
+        Slightly deprecated. You should really use `discrete`
+        instead and specify that purpose=Purpose.META. But it's not a
+        big deal.
+        """
+        substance = substance or Substance.STRING
+        return cls(substance, Purpose.META, function)
 
     @classmethod
-    def discrete_fn(cls, function):
+    def discrete_fn(cls, function, purpose=None):
         "A key for fields that have a finite set of possible values"
-        return cls(cls.DISC, function)
+        purpose = purpose or Purpose.FEATURE
+        return cls(Substance.DISCRETE, purpose, function)
 
 
 class KeyGroup(dict):
@@ -168,7 +241,7 @@ class MergedKeyGroup(KeyGroup):
         return "\n".join(lines)
 
 
-# pylint: disable=R0904
+# pylint: disable=too-many-public-methods, pointless-string-statement
 class ClassKeyGroup(KeyGroup):
     """
     A key group which contains a single class key and another
@@ -179,7 +252,8 @@ class ClassKeyGroup(KeyGroup):
     mind having to remember the name of the key)
     """
     def __init__(self, group, classname="CLASS"):
-        keys = [Key("c", classname, "what we are trying to learn")]
+        keys = [Key.discrete(classname, "what we are trying to learn",
+                             purpose=Purpose.CLASS)]
         self.classname = classname
         self.group = group
         self.value = None
@@ -211,8 +285,8 @@ class ClassKeyGroup(KeyGroup):
             self.group.csv_values()
 
     def help_text(self):
-        return group.help_text()
-# pylint: enable=R0904
+        return self.group.help_text()
+# pylint: enable=too-many-public-methods, pointless-string-statement
 
 
 class KeyGroupWriter(object):
