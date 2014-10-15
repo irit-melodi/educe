@@ -9,6 +9,7 @@ to another
 
 from __future__ import print_function
 from collections import defaultdict
+from itertools import chain
 import copy
 
 from educe.annotation import Unit, Span
@@ -17,6 +18,35 @@ import educe.stac
 from .glozz import\
     anno_id_from_tuple,\
     anno_author, anno_date, set_anno_date
+
+
+class StacDocException(Exception):
+    """
+    An exception that arises from trying to manipulate a stac
+    document (typically moving things around, etc)
+    """
+    def __init__(self, msg):
+        super(StacDocException, self).__init__(msg)
+
+
+def _concat(lists):
+    """
+    Append all elements of a list of lists
+    """
+    return list(chain.from_iterable(lists))
+
+
+def _set_doc_parts(doc, parts):
+    """
+    Update a document so that it has annotations from all
+    the given subdocuments.
+
+    Note that no attention is paid to annotation ids, spans,
+    etc. It's up to you to ensure that everything is kosher.
+    """
+    doc.units = _concat(x.units for x in parts)
+    doc.relations = _concat(x.relations for x in parts)
+    doc.schemas = _concat(x.schemas for x in parts)
 
 
 def evil_set_id(anno, author, date):
@@ -73,17 +103,32 @@ def retarget(doc, old_id, new_anno):
     return replaced
 
 
-def shift_annotations(doc, offset):
+def shift_annotations(doc, offset, point=None):
     """
     Return a deep copy of a document such that all annotations
     have been shifted by an offset.
 
     If shifting right, we pad the document with whitespace
     to act as filler. If shifting left, we cut the text
+
+    If a shift point is specified and the offset is positive,
+    we only shift annotations that are to the right of the
+    point. Likewise if the offset is negative, we only shift
+    those that are to the left of the point.
     """
+    def is_moveable(anno):
+        "If the annotation should be shifted"
+        if point is None:
+            return True
+        elif offset >= 0:
+            return anno.text_span().char_start >= point
+        else:
+            return anno.text_span().char_end <= point
+
     def shift(anno):
         "Shift a single annotation"
-        if offset != 0 and isinstance(anno, Unit):
+        if offset != 0 and isinstance(anno, Unit)\
+            and is_moveable(anno):
             anno2 = copy.deepcopy(anno)
             anno2.span = anno.span.shift(offset)
             return anno2
@@ -170,6 +215,43 @@ def narrow_to_span(doc, span):
     return doc2
 
 
+def split_doc(doc, middle):
+    """
+    Given a split point, break a document into two pieces.
+    If the split point is None, we take the whole document
+    (this is slightly different from having -1 as a split
+    point)
+
+    Raise an exception if there are any annotations that span the point.
+    """
+    doc_len = doc.text_span().char_end
+    if middle < 0:
+        middle = doc_len + 1 + middle
+
+    def straddles(point, span):
+        """
+        True if the point is somewhere in the middle of the span
+        (sitting at right edge doesn't count).
+
+        Note that this is not the same as checking for enclosure
+        because we do not include the rightward edge
+        """
+        return span.char_start < point and span.char_end > point
+
+    leftovers = [x for x in doc.annotations()
+                 if straddles(middle, x.text_span())]
+    if leftovers:
+        oops = "Can't split document [{0}] at {1}".format(doc.origin, middle) +\
+               " because it is straddled by following annotations:\n" +\
+               "\n".join(map(str, leftovers)) +\
+               "\nEither split at a different place, or remove the annotations"
+        raise StacDocException(oops)
+
+    prefix = Span(0, middle)
+    suffix = Span(middle, doc_len)
+    return narrow_to_span(doc, prefix), narrow_to_span(doc, suffix)
+
+
 def rename_ids(renames, doc):
     """
     Return a deep copy of a document, with ids reassigned
@@ -186,53 +268,71 @@ def rename_ids(renames, doc):
     return doc2
 
 
-def move_portion(renames, src_doc, tgt_doc, src_span, prepend=False):
+def move_portion(renames, src_doc, tgt_doc,
+                 src_split,
+                 tgt_split=-1):
     """
-    Return a copy of the documents such that the src_span has been moved
-    from source to target
+    Return a copy of the documents such that part of the source
+    document has been moved into the target document.
+
+    This can capture a couple of patterns:
+
+        * reshuffling the boundary between the target and source
+          document (if `tgt | src1 src2 ==> tgt src1 | src2`)
+          (`tgt_split = -1`)
+        * prepending the source document to the target
+          (`src | tgt ==> src tgt`; `src_split=-1; tgt_split=0`)
+        * inserting the whole source document into the other
+          (`tgt1 tgt2 + src ==> tgt1 src tgt2`; `src_split=-1`)
+
+    There's a bit of potential trickiness here:
+
+        * we'd like to preserve the property that text has a single
+          starting and ending space (no real reason just seems safer
+          that way)
+        * if we're splicing documents together particularly at their
+          respective ends, there's a strong off-by-one risk because
+          some annotations span the whole text (whitespace and all),
+          particularly dialogues
     """
-    snipped = narrow_to_span(src_doc, src_span)
-    src_txt = snipped.text()
-    tgt_txt = tgt_doc.text()
-    if prepend and tgt_txt[0] == ' ':
-        old_len = len(tgt_txt)
-        tgt_txt = tgt_txt.lstrip()
-        pad_len = old_len - len(tgt_txt)
-        src_offset = 0
-        tgt_offset = len(src_txt) - pad_len
-    elif not prepend and src_txt[0] == ' ':
-        tgt_txt = tgt_txt.rstrip()
-        src_offset = len(tgt_txt)
-        tgt_offset = 0
+    def snippet(txt, point, width=30):
+        "text fragment with highlight"
+        if point > 0:
+            return "[{0}]{1}...".format(txt[point],
+                                        txt[point+1:point+width])
+        else:
+            return "...{0}[{1}]".format(txt[point-width:point-1],
+                                        txt[point])
 
-    # TODO: err, is this correctly shifting the schema and relation
-    # pointers?
-    snipped = shift_annotations(snipped, src_offset)
-    snipped = rename_ids(renames, snipped)
+    tgt_text = tgt_doc.text()
+    src_text = src_doc.text()
 
-    new_tgt_doc = shift_annotations(tgt_doc, tgt_offset)
-    new_tgt_doc.units = new_tgt_doc.units + snipped.units
-    new_tgt_doc.relations = new_tgt_doc.relations + snipped.relations
-    new_tgt_doc.schemas = new_tgt_doc.schemas + snipped.schemas
+    if not tgt_text[tgt_split] == ' ':
+        oops = "Target text does not start with a space at the " + \
+               "insertion point:\n{}...".format(snippet(tgt_text, tgt_split))
+        raise StacDocException(oops)
+    if not src_text[0] == ' ':
+        oops = "Source text does not start with a space\n" +\
+                snippet(src_text, 0)
+    if not src_text[src_split] == ' ':
+        oops = "Source text does not have a space at its split point\n" +\
+               snippet(src_text, src_split)
+        raise StacDocException(oops)
 
-    if prepend:
-        if src_span != snipped.text_span():
-            print(src_span)
-            print(snipped.text_span())
-            raise Exception("Not yet implemented: prepending from other " +
-                            "than whole doc: %s" % src_span)
-        # tgt_doc is on the right
-        evil_set_text(new_tgt_doc, src_txt + tgt_txt)
-        return None, new_tgt_doc
-    else:
-        if src_span.char_start != 0:
-            raise Exception("Not yet implemented: moving from other " +
-                            "than document start: %s" % src_span)
-        # tgt_doc is on the left
-        evil_set_text(new_tgt_doc, tgt_txt + src_txt)
-        leftover_src_span = Span(src_span.char_end, len(src_doc.text()))
-        new_src_doc = narrow_to_span(src_doc, leftover_src_span)
-        return new_src_doc, new_tgt_doc
+    snipped, new_src_doc = split_doc(src_doc, src_split)
+
+    prefix_text = tgt_text[:tgt_split]
+    middle_text = snipped.text()
+    suffix_text = tgt_text[tgt_split:]
+
+    middle = shift_annotations(snipped, len(prefix_text))
+
+    new_tgt_doc = shift_annotations(tgt_doc, len(middle_text),
+                                    point=tgt_split)
+    _set_doc_parts(new_tgt_doc, [new_tgt_doc, middle])
+    evil_set_text(new_tgt_doc, prefix_text + middle_text + suffix_text)
+
+    return new_src_doc, new_tgt_doc
 
 
 def strip_fixme(act):

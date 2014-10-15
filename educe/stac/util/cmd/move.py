@@ -96,8 +96,6 @@ def main(args):
     src_corpus = read_source_corpus(args)
     tgt_corpus = read_target_corpus(args)
 
-    portion = Span(args.start, args.end)
-
     renames = compute_renames(tgt_corpus, src_corpus)
     for src_k in src_corpus:
         tgt_k = copy.copy(src_k)
@@ -108,7 +106,7 @@ def main(args):
             src_doc = src_corpus[src_k]
             tgt_doc = tgt_corpus[tgt_k]
             new_src_doc, new_tgt_doc =\
-                move_portion(renames, src_doc, tgt_doc, portion)
+                move_portion(renames, src_doc, tgt_doc, args.end)
             diffs = ["======= TO %s   ========" % tgt_k,
                      show_diff(tgt_doc, new_tgt_doc),
                      "^------ FROM %s" % src_k,

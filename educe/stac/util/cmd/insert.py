@@ -39,7 +39,7 @@ def config_argparser(parser):
     parser.add_argument('insert', metavar='DIR',
                         help='dir with just one pair of .aa/.ac files')
     parser.add_argument('start', metavar='INT', type=int,
-                        help='insert before Nth char')
+                        help='insert before Nth char (negative indices ok)')
     parser.set_defaults(func=main)
 
 
@@ -50,8 +50,6 @@ def main(args):
     You shouldn't need to call this yourself if you're using
     `config_argparser`
     """
-    if args.start != 0:
-        sys.exit("Sorry, only know how to deal with start=0 at the moment")
     output_dir = get_output_dir(args)
 
     src_reader = educe.stac.LiveInputReader(args.insert)
@@ -64,7 +62,6 @@ def main(args):
                  len(src_corpus))
 
     src_doc = src_corpus.values()[0]
-    src_span = src_doc.text_span()
 
     reader = educe.stac.Reader(args.corpus)
     tgt_files = reader.filter(reader.files(), is_requested(args))
@@ -76,8 +73,8 @@ def main(args):
         _, new_tgt_doc = move_portion(renames,
                                       src_doc,
                                       tgt_doc,
-                                      src_span,
-                                      prepend=True)
+                                      -1,
+                                      tgt_split=args.start)
         diffs = ["======= INSERT IN %s   ========" % tgt_k,
                  show_diff(tgt_doc, new_tgt_doc)]
         print("\n".join(diffs).encode('utf-8'), file=sys.stderr)
