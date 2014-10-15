@@ -28,6 +28,20 @@ class Substance(object):
     DISCRETE = 2
     STRING = 3
 
+    @classmethod
+    def to_orange(cls, substance):
+        """
+        Orange-compatible string representation
+        """
+        if substance is cls.CONTINUOUS:
+            return "c"
+        elif substance is cls.DISCRETE:
+            return "d"
+        elif substance is cls.STRING:
+            return "s"
+        else:
+            raise ValueError("Unknown substance " + substance)
+
 
 class Purpose(object):
     """
@@ -44,7 +58,33 @@ class Purpose(object):
     FEATURE = 1
     META = 2
     CLASS = 3
+
+    @classmethod
+    def to_orange(cls, substance):
+        """
+        Orange-compatible string representation
+        """
+        if substance is cls.FEATURE:
+            return ""
+        elif substance is cls.META:
+            return "m"
+        elif substance is cls.CLASS:
+            return "class"
+        else:
+            raise IllegalArgumentException("Unknown purpose" + substance)
 # pylint: enable=too-few-public-methods
+
+class HeaderType(object):
+    """
+    For output files
+
+    If we ever reach a point where we're happy to switch to Python 3
+    wholesale, we should subclass Enum
+    """
+    OLD_CSV = 1
+    NAME = 2
+    SUBSTANCE = 3
+    PURPOSE = 4
 
 
 class Key(object):
@@ -52,6 +92,7 @@ class Key(object):
     Feature name plus a bit of metadata
     """
 
+# pylint: disable=pointless-string-statement
     def __init__(self, substance, purpose, name, description):
         """
         You probably want to use the methods `continuous`,
@@ -63,18 +104,26 @@ class Key(object):
         "see `Purpose`"
         self.name = name
         self.description = description
+# pylint: disable=pointless-string-statement
 
-    def to_csv(self):
-        "Return a string that could be used as a CSV field"
+    def keycode(self):
+        """
+        A short code indicating the purpose and substance of the
+        feature.
+
+        If you stay within continuous/discrete for non-meta features,
+        this will be compatible with those recognised by the Orange
+        CSV reader.
+        """
         if self.purpose is Purpose.CLASS:
-            code = "c"
+            return "c"
         elif self.purpose is Purpose.META:
-            code = "m"
+            return "m"
         elif self.purpose is Purpose.FEATURE:
             if self.substance is Substance.CONTINUOUS:
-                code = "C"
+                return "C"
             elif self.substance is Substance.DISCRETE:
-                code = "d"
+                return "d"
             else:
                 oops = "Unknown substance {0} in key {1}".format(self.substance,
                                                                  self.name)
@@ -83,7 +132,9 @@ class Key(object):
             oops = "Unknown purpose {0} in key {1}".format(self.purpose,
                                                            self.name)
             raise Exception(oops)
-        return code + "#" + self.name
+
+    def to_csv(self):
+        return self.keycode() + "#" + self.name
 
     @classmethod
     def continuous(cls, name, description, purpose=None):
@@ -169,12 +220,22 @@ class KeyGroup(dict):
         else:
             super(KeyGroup, self).__setitem__(key, val)
 
-    def csv_headers(self):
+    def csv_headers(self, htype):
         """
         A list of key names in a format that can be understood
         by the Orange machine learning library.
         """
-        return [k.to_csv() for k in self.keys]
+        if htype is HeaderType.OLD_CSV:
+            return [k.to_csv() for k in self.keys]
+        elif htype is HeaderType.NAME:
+            return [k.name for k in self.keys]
+        elif htype is HeaderType.SUBSTANCE:
+            return [Substance.to_orange(k.substance) for k in self.keys]
+        elif htype is HeaderType.PURPOSE:
+            return [Purpose.to_orange(k.purpose) for k in self.keys]
+        else:
+            raise ValueError("Unknown header type " + htype)
+
 
     def csv_values(self):
         """
@@ -202,7 +263,7 @@ class KeyGroup(dict):
                  "-" * len(self.description)]
         for k in self.keys:
             lines.append("[%s] %s %s" %
-                         (k.code,
+                         (k.keycode(),
                           k.name.ljust(self.NAME_WIDTH),
                           k.description))
         return "\n".join(lines)
@@ -266,13 +327,13 @@ class ClassKeyGroup(KeyGroup):
         """
         self[self.classname] = value
 
-    def csv_headers(self):
+    def csv_headers(self, htype):
         """
         A list of key names in a format that can be understood
         by the Orange machine learning library.
         """
-        return super(ClassKeyGroup, self).csv_headers() +\
-            self.group.csv_headers()
+        return super(ClassKeyGroup, self).csv_headers(htype) +\
+            self.group.csv_headers(htype)
 
     def csv_values(self):
         """
@@ -309,7 +370,7 @@ class KeyGroupWriter(object):
         Write a row representing the CSV header for the
         KeyGroup object.
         """
-        self.writer.writerow(self.keys.csv_headers())
+        self.writer.writerow(self.keys.csv_headers(HeaderType.OLD_CSV))
 
     def writerow(self, row):
         """
@@ -332,3 +393,24 @@ class KeyGroupWriter(object):
         """
         for row in rows:
             self.writerow(row)
+
+
+class OrangeWriter(KeyGroupWriter):
+    """
+    A tab-separated variant of the KeyGroupWriter which is closer
+    to Orange's native format.
+
+    It supplies extra headers which add substance/purpose information
+    about the variables
+    """
+    def __init__(self, f, keys, dialect=csv.excel_tab, **kwds):
+        super(OrangeWriter, self).__init__(f, keys, dialect=dialect, **kwds)
+
+    def writeheader(self):
+        """
+        Write *three rows* representing the CSV header for the
+        KeyGroup object.
+        """
+        self.writer.writerow(self.keys.csv_headers(HeaderType.NAME))
+        self.writer.writerow(self.keys.csv_headers(HeaderType.SUBSTANCE))
+        self.writer.writerow(self.keys.csv_headers(HeaderType.PURPOSE))

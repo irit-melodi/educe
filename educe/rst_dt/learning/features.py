@@ -16,7 +16,7 @@ from educe.rst_dt import SimpleRSTTree, deptree, id_to_path
 from educe.rst_dt import ptb as r_ptb
 from educe.learning.csv import tune_for_csv
 from educe.learning.keys import\
-    ClassKeyGroup, KeyGroup, MergedKeyGroup,\
+    ClassKeyGroup, KeyGroup, MergedKeyGroup, HeaderType,\
     MagicKey
 from educe.learning.util import tuple_feature, underscore
 
@@ -595,10 +595,16 @@ class PairKeys(MergedKeyGroup):
         desc = "pair features"
         super(PairKeys, self).__init__(desc, groups)
 
-    def csv_headers(self):
-        return super(PairKeys, self).csv_headers() +\
-            [h + "_EDU1" for h in self.edu1.csv_headers()] +\
-            [h + "_EDU2" for h in self.edu2.csv_headers()]
+    def csv_headers(self, htype=False):
+        if htype in [HeaderType.OLD_CSV, HeaderType.NAME]:
+            return super(PairKeys, self).csv_headers(htype) +\
+                    [h + "_EDU1" for h in self.edu1.csv_headers(htype)] +\
+                    [h + "_EDU2" for h in self.edu2.csv_headers(htype)]
+        else:
+            return super(PairKeys, self).csv_headers(htype) +\
+                    self.edu1.csv_headers(htype) +\
+                    self.edu2.csv_headers(htype)
+
 
     def csv_values(self):
         return super(PairKeys, self).csv_values() +\

@@ -25,6 +25,7 @@ from educe.external.parser import\
     SearchableTree,\
     ConstituencyTree
 from educe.learning.keys import\
+    HeaderType,\
     MagicKey, Key, KeyGroup, MergedKeyGroup, ClassKeyGroup
 from educe.stac import postag, corenlp
 from educe.learning.csv import tune_for_csv
@@ -1305,10 +1306,16 @@ class PairKeys(MergedKeyGroup):
         super(PairKeys, self).__init__("pair features",
                                        groups)
 
-    def csv_headers(self):
-        return super(PairKeys, self).csv_headers() +\
-            [h + "_DU1" for h in self.edu1.csv_headers()] +\
-            [h + "_DU2" for h in self.edu2.csv_headers()]
+    def csv_headers(self, htype):
+        if htype in [HeaderType.OLD_CSV, HeaderType.NAME]:
+            return super(PairKeys, self).csv_headers(htype) +\
+                    [h + "_DU1" for h in self.edu1.csv_headers(htype)] +\
+                    [h + "_DU2" for h in self.edu2.csv_headers(htype)]
+        else:
+            return super(PairKeys, self).csv_headers(htype) +\
+                    self.edu1.csv_headers(htype) +\
+                    self.edu2.csv_headers(htype)
+
 
     def csv_values(self):
         return super(PairKeys, self).csv_values() +\

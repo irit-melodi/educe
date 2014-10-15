@@ -29,9 +29,9 @@ def mk_csv_writer(keys, fstream):
     start off csv writer for a given mode
     """
     csv_quoting = csv.QUOTE_MINIMAL
-    writer = educe.learning.keys.KeyGroupWriter(fstream,
-                                                keys,
-                                                quoting=csv_quoting)
+    writer = educe.learning.keys.OrangeWriter(fstream,
+                                              keys,
+                                              quoting=csv_quoting)
     writer.writeheader()
     return writer
 

@@ -196,10 +196,16 @@ class RelKeys(MergedKeyGroup):
         super(RelKeys, self).__init__("relation features",
                                       groups)
 
-    def csv_headers(self):
-        return super(RelKeys, self).csv_headers() +\
-            [h + "_Arg1" for h in self.arg1.csv_headers()] +\
-            [h + "_Arg2" for h in self.arg2.csv_headers()]
+    def csv_headers(self, htype):
+        if htype in [HeaderType.OLD_CSV, HeaderType.NAME]:
+            return super(RelKeys, self).csv_headers(htype) +\
+                    [h + "_Arg1" for h in self.arg1.csv_headers(htype)] +\
+                    [h + "_Arg2" for h in self.arg2.csv_headers(htype)]
+        else:
+            return super(RelKeys, self).csv_headers(htype) +\
+                    self.arg1.csv_headers(htype) +\
+                    self.arg2.csv_headers(htype)
+
 
     def csv_values(self):
         return super(RelKeys, self).csv_values() +\
