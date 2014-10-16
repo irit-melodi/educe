@@ -84,7 +84,7 @@ def main_parsing_pairs(args):
     have hierarchical live data
     """
     inputs = features.read_corpus_inputs(args)
-    features_file = os.path.join(args.output, 'extracted-features.csv')
+    features_file = os.path.join(args.output, 'extracted-features.tab')
     with codecs.open(features_file, 'wb') as ofile:
         header = features.PairKeys(inputs)
         writer = mk_csv_writer(header, ofile)
@@ -123,7 +123,7 @@ def main_corpus_pairs(args):
     """
     inputs = features.read_corpus_inputs(args)
     of_bn = os.path.join(args.output, os.path.basename(args.corpus))
-    of_ext = '.csv'
+    of_ext = '.tab'
     if not os.path.exists(args.output):
         os.makedirs(args.output)
 
