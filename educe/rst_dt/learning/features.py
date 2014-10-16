@@ -3,7 +3,7 @@ Feature extraction library functions for RST_DT corpus
 """
 
 from __future__ import print_function
-from collections import namedtuple
+from collections import namedtuple, Counter
 from functools import wraps
 import copy
 import itertools
@@ -300,6 +300,11 @@ def ptb_word_last2(token):
     return token.word
 
 
+def ptb_pos_tags(context, edu):
+    "demonstrator for use of basket features"
+    tokens = context.ptb_tokens[edu]
+    return Counter(t.tag for t in tokens)
+
 # ---------------------------------------------------------------------
 # pair EDU features
 # ---------------------------------------------------------------------
@@ -461,6 +466,18 @@ class SingleEduSubgroup_Ptb(SingleEduSubgroup):
         super(SingleEduSubgroup_Ptb, self).__init__(desc, self._features)
 
 
+class SingleEduSubgroup_Basket(SingleEduSubgroup):
+    """
+    Sparse features
+    """
+    _features =\
+        [MagicKey.basket_fn(ptb_pos_tags)]
+
+    def __init__(self):
+        desc = self.__doc__.strip()
+        super(SingleEduSubgroup_Basket, self).__init__(desc, self._features)
+
+
 class SingleEduKeys(MergedKeyGroup):
     """
     single EDU features
@@ -468,7 +485,12 @@ class SingleEduKeys(MergedKeyGroup):
     def __init__(self, inputs):
         groups = [SingleEduSubgroup_Meta(),
                   SingleEduSubgroup_Text(),
-                  SingleEduSubgroup_Ptb()]
+                  SingleEduSubgroup_Ptb(),
+                  # TODO: for performance reasons, basket features should
+                  # really be at the very end of the collected features
+                  # the pair code would need to be a bit more clever about
+                  # this
+                  SingleEduSubgroup_Basket()]
         #if inputs.debug:
         #    groups.append(SingleEduSubgroup_Debug())
         desc = self.__doc__.strip()
