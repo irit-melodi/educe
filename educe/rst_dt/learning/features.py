@@ -300,11 +300,6 @@ def ptb_word_last2(token):
     return token.word
 
 
-def ptb_pos_tags(context, edu):
-    "demonstrator for use of basket features"
-    tokens = context.ptb_tokens[edu]
-    return Counter(t.tag for t in tokens)
-
 # ---------------------------------------------------------------------
 # pair EDU features
 # ---------------------------------------------------------------------
@@ -377,6 +372,12 @@ def ptb_pos_tag_first_pairs(_, cache, edu):
     "pair of the first POS in the two EDUs"
     # FIXME: should be POS tag of first non-nil ptb word
     return cache[edu]["ptb_pos_tag_first"] # or ["pos_first2"]
+
+
+def ptb_pos_tags_in_first(current, edu1, _):
+    "demonstrator for use of basket features"
+    tokens = current.ptb_tokens[edu1]
+    return Counter(t.tag for t in tokens)
 
 
 # ---------------------------------------------------------------------
@@ -466,18 +467,6 @@ class SingleEduSubgroup_Ptb(SingleEduSubgroup):
         super(SingleEduSubgroup_Ptb, self).__init__(desc, self._features)
 
 
-class SingleEduSubgroup_Basket(SingleEduSubgroup):
-    """
-    Sparse features
-    """
-    _features =\
-        [MagicKey.basket_fn(ptb_pos_tags)]
-
-    def __init__(self):
-        desc = self.__doc__.strip()
-        super(SingleEduSubgroup_Basket, self).__init__(desc, self._features)
-
-
 class SingleEduKeys(MergedKeyGroup):
     """
     single EDU features
@@ -485,12 +474,7 @@ class SingleEduKeys(MergedKeyGroup):
     def __init__(self, inputs):
         groups = [SingleEduSubgroup_Meta(),
                   SingleEduSubgroup_Text(),
-                  SingleEduSubgroup_Ptb(),
-                  # TODO: for performance reasons, basket features should
-                  # really be at the very end of the collected features
-                  # the pair code would need to be a bit more clever about
-                  # this
-                  SingleEduSubgroup_Basket()]
+                  SingleEduSubgroup_Ptb()]
         #if inputs.debug:
         #    groups.append(SingleEduSubgroup_Debug())
         desc = self.__doc__.strip()
@@ -590,6 +574,18 @@ class PairSubgroup_Tuple(PairSubgroup):
             vec[key.name] = key.function(current, self.sf_cache, edu1, edu2)
 
 
+class PairSubgroup_Basket(PairSubgroup):
+    """
+    Sparse features
+    """
+    _features =\
+        [MagicKey.basket_fn(ptb_pos_tags_in_first)]
+
+    def __init__(self):
+        desc = self.__doc__.strip()
+        super(PairSubgroup_Basket, self).__init__(desc, self._features)
+
+
 class PairKeys(MergedKeyGroup):
     """
     pair features
@@ -603,7 +599,8 @@ class PairKeys(MergedKeyGroup):
         self.sf_cache = sf_cache
         groups = [PairSubGroup_Core(),
                   PairSubgroup_Gap(),
-                  PairSubgroup_Tuple(inputs, sf_cache)]
+                  PairSubgroup_Tuple(inputs, sf_cache),
+                  PairSubgroup_Basket()]
         #if inputs.debug:
         #    groups.append(PairSubgroup_Debug())
 
