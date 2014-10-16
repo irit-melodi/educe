@@ -27,6 +27,7 @@ class Substance(object):
     CONTINUOUS = 1
     DISCRETE = 2
     STRING = 3
+    BASKET = 4
 
     @classmethod
     def to_orange(cls, substance):
@@ -39,6 +40,8 @@ class Substance(object):
             return "d"
         elif substance is cls.STRING:
             return "s"
+        elif substance is cls.BASKET:
+            return "basket"
         else:
             raise ValueError("Unknown substance " + substance)
 
@@ -124,6 +127,8 @@ class Key(object):
                 return "C"
             elif self.substance is Substance.DISCRETE:
                 return "d"
+            elif self.substance is Substance.BASKET:
+                return "basket"
             else:
                 oops = "Unknown substance {0} in key {1}".format(self.substance,
                                                                  self.name)
@@ -159,6 +164,17 @@ class Key(object):
         "A key for fields that have a finite set of possible values"
         purpose = purpose or Purpose.FEATURE
         return cls(Substance.DISCRETE, purpose, name, description)
+
+    @classmethod
+    def basket(cls, name, description, purpose=None):
+        """
+        A key for fields that represent a multiset of possible values.
+        Baskets should be dictionaries from string to int
+        (collections.Counter would be a good bet for collecting these)
+        """
+        purpose = purpose or Purpose.FEATURE
+        return cls(Substance.BASKET, purpose, name, description)
+
 
 
 class MagicKey(Key):
@@ -196,6 +212,16 @@ class MagicKey(Key):
         "A key for fields that have a finite set of possible values"
         purpose = purpose or Purpose.FEATURE
         return cls(Substance.DISCRETE, purpose, function)
+
+    @classmethod
+    def basket_fn(cls, function, purpose=None):
+        """
+        A key for fields that represent a multiset of possible values.
+        Baskets should be dictionaries from string to int
+        (collections.Counter would be a good bet for collecting these)
+        """
+        purpose = purpose or Purpose.FEATURE
+        return cls(Substance.BASKET, purpose, function)
 
 
 class KeyGroup(dict):
@@ -236,6 +262,15 @@ class KeyGroup(dict):
         else:
             raise ValueError("Unknown header type " + htype)
 
+    def csv_value(self, key):
+        """
+        Value corresponding to a single key.
+        """
+        value = self[key.name]
+        if key.substance is Substance.BASKET:
+            return " ".join("{0}={1}".format(k,v) for k,v in value.items())
+        else:
+            return value
 
     def csv_values(self):
         """
@@ -244,7 +279,7 @@ class KeyGroup(dict):
         item in the same position of `csv_headers()` and
         vice-versa
         """
-        return [self[k.name] for k in self.keys]
+        return [self.csv_value(k) for k in self.keys]
 
     def help_text(self):
         """
