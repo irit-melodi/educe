@@ -320,12 +320,12 @@ def move_portion(renames, src_doc, tgt_doc,
         raise StacDocException(oops)
 
     snipped, new_src_doc = split_doc(src_doc, src_split)
-
     prefix_text = tgt_text[:tgt_split]
     middle_text = snipped.text()
     suffix_text = tgt_text[tgt_split:]
 
-    middle = shift_annotations(snipped, len(prefix_text))
+    middle = rename_ids(renames,
+                        shift_annotations(snipped, len(prefix_text)))
 
     new_tgt_doc = shift_annotations(tgt_doc, len(middle_text),
                                     point=tgt_split)
