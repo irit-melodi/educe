@@ -217,7 +217,7 @@ def relaxed_nuclearity_from_deptree(dtree, multinuclear):
         The target of a dep tree link is normally the satellite
         unless the relation is marked multinuclear
         """
-        return _N if rel.lower() in multinuclear else _S
+        return _N if rel in multinuclear else _S
 
     def mk_leaf(dnode):
         """
