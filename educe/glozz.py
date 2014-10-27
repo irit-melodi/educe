@@ -10,6 +10,8 @@ You're likely most interested in
 .. _Glozz: http://www.glozz.org/
 """
 
+from __future__ import print_function
+from xml.dom import minidom
 import codecs
 import xml.etree.ElementTree as ET
 import sys
@@ -17,8 +19,13 @@ import sys
 from educe.annotation import *
 from educe.internalutil import on_single_element, linebreak_xml
 
+
 if sys.version > '3':
     long = int
+
+
+_MINIDOM_ZERO = len(minidom.Document().toxml(encoding='utf-8')) + 1
+_GLOZZ_DECL = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>'
 
 class GlozzOutputSettings:
     """
@@ -259,5 +266,15 @@ def write_annotation_file(anno_filename, doc, settings=default_output_settings):
     """
 
     elem = doc.to_xml(settings=settings)
-    linebreak_xml(elem) # ugh, imperative
-    ET.ElementTree(elem).write(anno_filename, encoding='utf-8', xml_declaration=True)
+    string1 = ET.tostring(elem, 'utf-8')
+    # contortion 1: write, then read and print from minidom to match
+    # whitespace on closing tags (we're trying to match glozz output
+    # as much as possible so as to avoid introducing spurious
+    # differences when automatically rewriting glozz data files)
+    reparsed = minidom.parseString(string1.replace('\n', ''))
+    string2 = reparsed.toprettyxml(indent="", encoding='utf-8')
+    # contortion 2: chop off XML declaration and use one which more
+    # closely matches Glozz
+    with codecs.open(anno_filename, 'wb', 'utf-8') as fout:
+        print(_GLOZZ_DECL, file=fout)
+        fout.write(string2[_MINIDOM_ZERO:])
