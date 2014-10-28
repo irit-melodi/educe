@@ -37,20 +37,20 @@ class SpanTest(unittest.TestCase):
             msg = msg or "{0} != {1}".format(a, b)
             raise self.failureException(msg)
 
-    def assertOverlap(self, expected, pair1, pair2):
+    def assertOverlap(self, expected, pair1, pair2, **kwargs):
         "true if `pair1.overlaps(pair2) == expected` (modulo boxing)"
         (x1, y1) = pair1
         (x2, y2) = pair2
         (rx, ry) = expected
-        o = Span(x1, y1).overlaps(Span(x2, y2))
+        o = Span(x1, y1).overlaps(Span(x2, y2), **kwargs)
         self.assertTrue(o)
         self.assertEqual(Span(rx, ry), o)
 
-    def assertNotOverlap(self, pair1, pair2):
+    def assertNotOverlap(self, pair1, pair2, **kwargs):
         "true if `pair1.overlaps(pair2) == expected` (modulo boxing)"
         (x1, y1) = pair1
         (x2, y2) = pair2
-        self.assertFalse(Span(x1, y1).overlaps(Span(x2, y2)))
+        self.assertFalse(Span(x1, y1).overlaps(Span(x2, y2), **kwargs))
 
     def test_overlap(self):
         "Span.overlaps() function"
@@ -60,6 +60,7 @@ class SpanTest(unittest.TestCase):
 
         # should not overlap at edges
         self.assertNotOverlap((5, 10), (10, 15))
+        self.assertOverlap((10, 10), (5, 10), (10, 15), inclusive=True)
 
         self.assertOverlap((6, 9), (5, 10), (6, 9))
         self.assertOverlap((6, 9), (6, 9), (5, 10))
@@ -72,6 +73,11 @@ class SpanTest(unittest.TestCase):
         self.assertOverlap((5, 5), (5, 5), (4, 6))
         self.assertOverlap((5, 5), (5, 5), (4, 5))
         self.assertOverlap((5, 5), (5, 5), (5, 6))
+
+        self.assertOverlap((5, 5), (5, 5), (4, 6), inclusive=True)
+        self.assertOverlap((5, 5), (5, 5), (4, 5), inclusive=True)
+        self.assertOverlap((5, 5), (5, 5), (5, 6), inclusive=True)
+
 
 
 class NullAnno(Span, Annotation):

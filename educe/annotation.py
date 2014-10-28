@@ -118,10 +118,20 @@ class Span(object):
                 self.char_start <= other.char_start and\
                 self.char_end >= other.char_end
 
-    def overlaps(self, other):
+    def overlaps(self, other, inclusive=False):
         """
         Return the overlapping region if two spans have regions
-        in common, or else None
+        in common, or else None. ::
+
+            Span(5, 10).overlaps(Span(8, 12)) == Span(8, 10)
+            Span(5, 10).overlaps(Span(11, 12)) == None
+
+        If `inclusive == True`, spans with touching edges are
+        considered to overlap ::
+
+            Span(5, 10).overlaps(Span(10, 12)) == None
+            Span(5, 10).overlaps(Span(10, 12), inclusive=True) == Span(10, 10)
+
         """
         if other is None:
             return None
@@ -132,6 +142,8 @@ class Span(object):
         else:
             common_start = max(self.char_start, other.char_start)
             common_end = min(self.char_end, other.char_end)
+            if inclusive and common_start <= common_end:
+                return Span(common_start, common_end)
             if common_start < common_end:
                 return Span(common_start, common_end)
             else:
