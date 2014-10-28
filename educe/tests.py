@@ -2,20 +2,20 @@
 #
 # Author: Eric Kow
 # License: BSD3
+# pylint: disable=too-many-public-methods, invalid-name
 
 """
 Tests for educe
 """
 
-import copy
-import pygraph.classes.hypergraph as gr
+import unittest
+
+from educe.annotation import\
+    Span, RelSpan,\
+    Annotation,\
+    Unit, Relation, Schema, Document
 import educe.graph as educe
 from   educe.graph import EnclosureGraph
-
-import sys
-from pygraph.algorithms import accessibility, traversal, searching
-from educe.annotation import *
-import unittest
 
 # ---------------------------------------------------------------------
 # spans
