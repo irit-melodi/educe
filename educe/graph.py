@@ -941,7 +941,7 @@ class EnclosureGraph(dgr.digraph, AttrsMixin):
             self.add_node(node)
             for x in attrs.items():
                 self.add_node_attribute(node,x)
-            of_width[spans[anno].len()].append(anno)
+            of_width[spans[anno].length()].append(anno)
 
         narrow = []
         for width in sorted(of_width):

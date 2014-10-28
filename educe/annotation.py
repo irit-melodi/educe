@@ -69,7 +69,7 @@ class Span(object):
     def __hash__(self):
         return (self.char_start, self.char_end).__hash__()
 
-    def len(self):
+    def length(self):
         """
         Return the length of this span
         """
