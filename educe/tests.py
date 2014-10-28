@@ -21,20 +21,48 @@ from   educe.graph import EnclosureGraph
 # spans
 # ---------------------------------------------------------------------
 
-def test_span():
-    assert not Span(5,10).overlaps(Span(11,12))
-    assert not Span(11,12).overlaps(Span(5,10))
-    def matches(pair1, pair2, rpair):
+
+class SpanTest(unittest.TestCase):
+    "tests for educe.annotation.Span"
+
+    def __init__(self, *args, **kwargs):
+        super(SpanTest, self).__init__(*args, **kwargs)
+        self.addTypeEqualityFunc(Span, self.assertEqualStrFail)
+
+    def assertEqualStrFail(self, a, b, msg):
+        """
+        just like assertEqual but display both sides with str on failure
+        """
+        if a != b:
+            msg = msg or "{0} != {1}".format(a, b)
+            raise self.failureException(msg)
+
+    def assertOverlap(self, expected, pair1, pair2):
+        "true if `pair1.overlaps(pair2) == expected` (modulo boxing)"
         (x1, y1) = pair1
         (x2, y2) = pair2
-        (rx, ry) = rpair
-        o = Span(x1,y1).overlaps(Span(x2,y2))
-        assert o
-        assert o == Span(rx,ry)
-    matches((5,10),(6,9),(6,9))
-    matches((6,9),(5,10),(6,9))
-    matches((5,10),(7,12),(7,10))
-    matches((7,12),(5,10),(7,10))
+        (rx, ry) = expected
+        o = Span(x1, y1).overlaps(Span(x2, y2))
+        self.assertTrue(o)
+        self.assertEqual(Span(rx, ry), o)
+
+    def assertNotOverlap(self, pair1, pair2):
+        "true if `pair1.overlaps(pair2) == expected` (modulo boxing)"
+        (x1, y1) = pair1
+        (x2, y2) = pair2
+        self.assertFalse(Span(x1, y1).overlaps(Span(x2, y2)))
+
+    def test_overlap(self):
+        "Span.overlaps() function"
+
+        self.assertNotOverlap((5, 10), (11, 12))
+        self.assertNotOverlap((11, 12), (5, 10))
+
+        self.assertOverlap((6, 9), (5, 10), (6, 9))
+        self.assertOverlap((6, 9), (6, 9), (5, 10))
+        self.assertOverlap((7, 10), (5, 10), (7, 12))
+        self.assertOverlap((7, 10), (7, 12), (5, 10))
+
 
 class NullAnno(Span, Annotation):
     def __init__(self, start, end, type="null"):
