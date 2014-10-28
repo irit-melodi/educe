@@ -125,6 +125,10 @@ class Span(object):
         """
         if other is None:
             return None
+        elif self.encloses(other):
+            return other
+        elif other.encloses(self):
+            return self
         else:
             common_start = max(self.char_start, other.char_start)
             common_end = min(self.char_end, other.char_end)

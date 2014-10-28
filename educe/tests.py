@@ -58,10 +58,20 @@ class SpanTest(unittest.TestCase):
         self.assertNotOverlap((5, 10), (11, 12))
         self.assertNotOverlap((11, 12), (5, 10))
 
+        # should not overlap at edges
+        self.assertNotOverlap((5, 10), (10, 15))
+
         self.assertOverlap((6, 9), (5, 10), (6, 9))
         self.assertOverlap((6, 9), (6, 9), (5, 10))
         self.assertOverlap((7, 10), (5, 10), (7, 12))
         self.assertOverlap((7, 10), (7, 12), (5, 10))
+
+    def test_overlap_empty(self):
+        "Span.overlaps() on empty spans"
+
+        self.assertOverlap((5, 5), (5, 5), (4, 6))
+        self.assertOverlap((5, 5), (5, 5), (4, 5))
+        self.assertOverlap((5, 5), (5, 5), (5, 6))
 
 
 class NullAnno(Span, Annotation):
