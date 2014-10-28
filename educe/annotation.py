@@ -24,6 +24,18 @@ class Span(object):
     """
     What portion of text an annotation corresponds to.
     Assumed to be in terms of character offsets
+
+    The way we interpret spans in educe amounts to how Python
+    interprets array slice indices.
+
+    One way to understand them is to think of offsets as
+    sitting in between individual characters ::
+
+          h   o   w   d   y
+        0   1   2   3   4   5
+
+    So `(0,5)` covers the whole word above, and `(1,2)`
+    picks out the letter "o"
     """
     def __init__(self, start, end):
         self.char_start = start
