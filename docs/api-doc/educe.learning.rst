@@ -20,6 +20,14 @@ educe.learning.keys module
     :undoc-members:
     :show-inheritance:
 
+educe.learning.util module
+--------------------------
+
+.. automodule:: educe.learning.util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Module contents
 ---------------
