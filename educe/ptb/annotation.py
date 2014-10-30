@@ -97,3 +97,64 @@ class TweakedToken(RawToken):
             res += " (%d)" % self.offset
         return res
 #pylint: enable=too-few-public-methods
+
+
+#
+# TreebankLanguagePack (after edu.stanford.nlp.trees)
+#
+_gf_character = '-'  # (default) grammatical function character
+# label annotation introducing characters
+_laic = ['-',  # function tags, identity index, reference index
+         '=',  # gap co-indexing
+]
+
+
+def post_basic_category_index(label):
+    """Get the index of the first char after the basic label.
+
+    This should never match the first char of the label ;
+    if the first char is such a char, then a matched char is also
+    not used iff there is something in between, e.g.
+    (-LRB- => -LRB-) but (--PU => -).
+    """
+    first_char = ''
+    for i, c in enumerate(label):
+        if c in _laic:
+            if i == 0:
+                first_char = c
+            elif first_char and (i > 1) and (c == first_char):
+                first_char = ''
+            else:
+                break
+    else:
+        i += 1
+    return i
+
+
+def basic_category(label):
+    """Get the basic syntactic category of a label.
+
+    This is done by truncating whatever comes after a
+    (non-word-initial) occurrence of one of the
+    label_annotation_introducing_characters().
+    """
+    return label[0:post_basic_category_index(label)] if label else label
+
+
+# Reimplementation of most of the most standard parser parameters for the PTB
+# ref: edu.stanford.nlp.parser.lexparser.EnglishTreebankParserParams
+def strip_subcategory(tree,
+                      retain_TMP_subcategories=False,
+                      retain_NPTMP_subcategories=False):
+    """ """
+    label = treenode(tree)
+    if isinstance(tree, ConstituencyTree):
+        if retain_TMP_subcategories and ('-TMP' in label):
+            label = '{bc}-TMP'.format(bc=basic_category(label))
+        elif retain_NPTMP_subcategories and label.startswith('NP-TMP'):
+            label = 'NP-TMP'
+        else:
+            label = basic_category(label)
+    # TODO: replace label in tree
+    return tree
+    
