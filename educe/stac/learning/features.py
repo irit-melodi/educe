@@ -1400,7 +1400,7 @@ def _get_unit_key(inputs, key, live):
         return twin if twin in inputs.corpus else None
 
 
-def _mk_env(inputs, people, key, live):
+def mk_env(inputs, people, key, live):
     """
     Pre-process and bundle up a representation of the current document
     """
@@ -1415,7 +1415,7 @@ def _mk_env(inputs, people, key, live):
     current =\
         DocumentPlus(key=key,
                      doc=doc,
-                     unitdoc=inputs.corpus[unit_key],
+                     unitdoc=inputs.corpus[unit_key] if unit_key else None,
                      contexts=Context.for_edus(doc, inputs.postags[key]),
                      players=people[key.doc],
                      parses=inputs.parses[key] if inputs.parses else None)
@@ -1426,7 +1426,7 @@ def _mk_env(inputs, people, key, live):
                   live=live)
 
 
-def _get_players(inputs):
+def get_players(inputs):
     """
     Return a dictionary mapping each document to the set of
     players in that document
@@ -1502,11 +1502,11 @@ def extract_pair_features(inputs, window,
                   mode, you likely want 'unannotated'
     """
     stage = 'unannotated' if live else 'discourse'
-    people = _get_players(inputs)
+    people = get_players(inputs)
     for k in inputs.corpus:
         if stage is not None and k.stage != stage:
             continue
-        env = _mk_env(inputs, people, k, live)
+        env = mk_env(inputs, people, k, live)
         for res in _extract_doc_pairs(env, window):
             yield res
 
@@ -1544,11 +1544,11 @@ def extract_single_features(inputs, live=False):
     """
     Return a dictionary for each EDU
     """
-    people = _get_players(inputs)
+    people = get_players(inputs)
     for k in inputs.corpus:
         if k.stage != 'units':
             continue
-        env = _mk_env(inputs, people, k, live)
+        env = mk_env(inputs, people, k, live)
         for res in _extract_doc_singles(env):
             yield res
 
