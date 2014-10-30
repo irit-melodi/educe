@@ -231,7 +231,7 @@ def read_corenlp_result(doc, corenlp_doc, tid=None):
     for turn, sent in zip(turns, sentences):
         sid         = sent['id']
         tokens      = educe_tokens[sid]
-        tree        = nltk.tree.Tree(sent['parse'])
+        tree = nltk.tree.Tree.fromstring(sent['parse'])
         educe_tree  = ConstituencyTree.build(tree, tokens.values())
 
         deps   = collections.defaultdict(list)
