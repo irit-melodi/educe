@@ -345,7 +345,7 @@ class DotGraph(educe.graph.DotGraph):
                          key.subdoc,
                          key.stage,
                          key.annotator])
-        return re.sub(r'[-\[\]\r\n]', "_", name)
+        return re.sub(r'[-\[\]\r\n\.]', "_", name)
 
     def _get_turn_info(self, u):
         enclosing_turns = [ t for t in self.turns if t.span.encloses(u.span) ]
