@@ -102,6 +102,9 @@ class TweakedToken(RawToken):
 #
 # TreebankLanguagePack (after edu.stanford.nlp.trees)
 #
+from nltk.tree import Tree
+
+
 _gf_character = '-'  # (default) grammatical function character
 # label annotation introducing characters
 _laic = ['-',  # function tags, identity index, reference index
@@ -146,15 +149,86 @@ def basic_category(label):
 def strip_subcategory(tree,
                       retain_TMP_subcategories=False,
                       retain_NPTMP_subcategories=False):
-    """ """
-    label = treenode(tree)
-    if isinstance(tree, ConstituencyTree):
-        if retain_TMP_subcategories and ('-TMP' in label):
-            label = '{bc}-TMP'.format(bc=basic_category(label))
-        elif retain_NPTMP_subcategories and label.startswith('NP-TMP'):
-            label = 'NP-TMP'
-        else:
-            label = basic_category(label)
-    # TODO: replace label in tree
+    """Transform tree to strip additional label annotation at each node"""
+    if not isinstance(tree, Tree):
+        return tree
+
+    label = tree.label()
+    if retain_TMP_subcategories and ('-TMP' in label):
+        label = '{bc}-TMP'.format(bc=basic_category(label))
+    elif retain_NPTMP_subcategories and label.startswith('NP-TMP'):
+        label = 'NP-TMP'
+    else:
+        label = basic_category(label)
+    tree.set_label(label)
     return tree
+
+
+# ref: edu.stanford.nlp.trees.BobChrisTreeNormalizer
+def empty_filter(tree):
+    """Filter (return False for) nodes that cover a totally empty span.
+
+    Empty nodes are recognized by their "-NONE-" pre-terminal.
+    """
+    # always keep leaves
+    if not isinstance(tree, Tree):
+        return True
     
+    label = tree.label()
+    if label == '-NONE-':
+        # check this is a pre-terminal ; probably superfluous
+        assert ((len(tree) == 1) and
+                (not isinstance(tree[0], Tree)))
+        return False
+    else:
+        return True
+
+
+def prune_tree(tree, filter_func):
+    """Prune a tree by applying filter_func recursively.
+    
+    All children of filtered nodes are pruned as well.
+    Nodes whose children have all been pruned are pruned too.
+    """
+    # prune node if filter returns False
+    if not filter_func(tree):
+        return None
+
+    if isinstance(tree, Tree):
+        # recurse
+        new_kids = []
+        for kid in tree:
+            new_kid = prune_tree(kid, filter_func)
+            if new_kid is not None:
+                new_kids.append(new_kid)
+        # prune node if it had children and lost them all
+        if tree and not new_kids:
+            return None
+        # return new node, pruned
+        return Tree(tree.label(), new_kids)
+    else:
+        # return leaf unchanged
+        return tree
+
+
+#TODO: see if we can partly use nltk.treetransforms
+def transform_tree(tree, transformer):
+    """Transform a tree by applying a transformer at each level.
+
+    The tree is traversed depth-first, left-to-right, and the
+    transformer is applied at each node.
+    """
+    # recurse
+    if isinstance(tree, Tree):
+        new_kids = []
+        for kid in tree:
+            new_kid = transform_tree(kid, transformer)
+            if new_kid is not None:
+                new_kids.append(new_kid)
+        else:
+            new_tree = (Tree(tree.label(), new_kids)
+                        if new_kids else None)
+    else:
+        new_tree = tree
+    # apply to current node
+    return transformer(new_tree)
