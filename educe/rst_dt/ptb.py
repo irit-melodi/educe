@@ -24,7 +24,7 @@ from educe.external.postag import\
 from educe.internalutil import izip
 from educe.ptb.annotation import\
     PTB_TO_TEXT, is_nonword_token, TweakedToken,\
-    transform_tree, strip_subcategory, prune_tree, empty_filter
+    transform_tree, strip_subcategory, prune_tree, is_non_empty
 
 
 def _guess_ptb_name(k):
@@ -162,7 +162,7 @@ def parse_trees(corpus, k, ptb):
     for tree in ptb.parsed_sents(ptb_name):
         # apply standard cleaning to tree
         # strip function tags, remove empty nodes
-        tree_no_empty = prune_tree(tree, empty_filter)
+        tree_no_empty = prune_tree(tree, is_non_empty)
         tree_no_empty_no_gf = transform_tree(tree_no_empty,
                                              strip_subcategory)
         #

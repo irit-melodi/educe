@@ -165,7 +165,7 @@ def strip_subcategory(tree,
 
 
 # ref: edu.stanford.nlp.trees.BobChrisTreeNormalizer
-def empty_filter(tree):
+def is_non_empty(tree):
     """Filter (return False for) nodes that cover a totally empty span.
 
     Empty nodes are recognized by their "-NONE-" pre-terminal.
@@ -189,6 +189,9 @@ def prune_tree(tree, filter_func):
     
     All children of filtered nodes are pruned as well.
     Nodes whose children have all been pruned are pruned too.
+    
+    The filter function must be applicable to Tree but also non-Tree,
+    as are leaves in an NLTK Tree.
     """
     # prune node if filter returns False
     if not filter_func(tree):
@@ -196,11 +199,10 @@ def prune_tree(tree, filter_func):
 
     if isinstance(tree, Tree):
         # recurse
-        new_kids = []
-        for kid in tree:
-            new_kid = prune_tree(kid, filter_func)
-            if new_kid is not None:
-                new_kids.append(new_kid)
+        new_kids = [new_kid
+                    for new_kid in (prune_tree(kid, filter_func)
+                                    for kid in tree)
+                    if new_kid is not None]
         # prune node if it had children and lost them all
         if tree and not new_kids:
             return None
@@ -220,14 +222,12 @@ def transform_tree(tree, transformer):
     """
     # recurse
     if isinstance(tree, Tree):
-        new_kids = []
-        for kid in tree:
-            new_kid = transform_tree(kid, transformer)
-            if new_kid is not None:
-                new_kids.append(new_kid)
-        else:
-            new_tree = (Tree(tree.label(), new_kids)
-                        if new_kids else None)
+        new_kids = [new_kid
+                    for new_kid in (transform_tree(kid, transformer)
+                                    for kid in tree)
+                    if new_kid is not None]
+        new_tree = (Tree(tree.label(), new_kids)
+                    if new_kids else None)
     else:
         new_tree = tree
     # apply to current node
