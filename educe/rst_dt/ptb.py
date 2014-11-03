@@ -132,13 +132,12 @@ def align(corpus, k, ptb):
     if ptb_name is None:
         return None
     rst_text = corpus[k].text()
-    # filter empty nodes
-    tagged_tokens = [tok_tag
-                     for tok_tag in ptb.tagged_words(ptb_name)
-                     if not is_empty_category(tok_tag[1])]
+    tagged_tokens = ptb.tagged_words(ptb_name)
+    # tweak tokens THEN filter empty nodes
     tweaked1, tweaked2 =\
         itertools.tee(_tweak_token(ptb_name)(i, tok) for i, tok in
-                      enumerate(tagged_tokens))
+                      enumerate(tagged_tokens)
+                      if not is_empty_category(tok[1]))
     spans = generic_token_spans(rst_text, tweaked1,
                                 txtfn=lambda x: x.tweaked_word)
     return (_mk_token(t, s) for t, s in izip(tweaked2, spans))
