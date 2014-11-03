@@ -24,8 +24,10 @@ import tempfile
 import xml.etree.ElementTree as ET
 
 from educe import stac, annotation, graph
+from educe.annotation import Schema
 from educe.corpus import FileId
 from educe.stac.corpus import METAL_REVIEWERS, METAL_STR
+from educe.stac.util.annotate import schema_text
 from educe.stac.util.context import Context
 import educe.stac.corenlp as stac_corenlp
 import educe.stac.graph as egr
@@ -799,7 +801,12 @@ def summarise_anno_html(doc, contexts):
 
         if not stac.is_relation_instance(t):
             t_span = t.text_span()
-            t_text = doc.text(t_span) if t_span is not None else "(NO CONTENT?)"
+            if t_span is None:
+                t_text = "(NO CONTENT?)"
+            elif isinstance(t, Schema):
+                t_text = schema_text(doc, t)
+            else:
+                t_text = doc.text(t_span)
             if stac.is_cdu(t):
                 tids = [x for x in map(tid, t.terminals()) if x]
                 if tids:
