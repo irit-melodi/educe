@@ -15,6 +15,7 @@ import copy
 import itertools
 import textwrap
 
+from educe.annotation import Schema
 import educe.stac
 from .context import sorted_first_widest
 
@@ -91,6 +92,19 @@ def annotate(txt, annotations, inserts=None):
 
     _, buf = add_endpoints(endpoints, buf, len(txt))
     return buf
+
+
+def schema_text(doc, anno):
+    """
+    (recursive) text preview of a schema and its contents.
+    Members are enclosed in square brackets.
+    """
+    if isinstance(anno, Schema):
+        snippets = ["[{}]".format(schema_text(doc, x)) for x in
+                    sorted_first_widest(anno.members)]
+        return "...".join(snippets)
+    else:
+        return doc.text(anno.text_span())
 
 
 # ---------------------------------------------------------------------
