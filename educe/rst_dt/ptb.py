@@ -24,7 +24,8 @@ from educe.external.postag import\
 from educe.internalutil import izip
 from educe.ptb.annotation import\
     PTB_TO_TEXT, is_nonword_token, TweakedToken,\
-    transform_tree, strip_subcategory, prune_tree, is_non_empty
+    transform_tree, strip_subcategory, prune_tree, is_non_empty,\
+    is_empty_category
 
 
 def _guess_ptb_name(k):
@@ -96,7 +97,7 @@ def _tweak_token(ptb_name):
         if (ptb_name, toknum) in _PTB_SUBSTS:
             prefix, tweak = _PTB_SUBSTS[(ptb_name, toknum)]
             return TweakedToken(word, tag, tweak, prefix)
-        elif tag == "-NONE-" and is_nonword_token(word):
+        elif is_empty_category(tag) and is_nonword_token(word):
             return TweakedToken(word, tag, "")
 
         tweak = PTB_TO_TEXT.get(word, word)
@@ -134,7 +135,7 @@ def align(corpus, k, ptb):
     # filter empty nodes
     tagged_tokens = [tok_tag
                      for tok_tag in ptb.tagged_words(ptb_name)
-                     if tok_tag[1] != '-NONE-']
+                     if not is_empty_category(tok_tag[1])]
     tweaked1, tweaked2 =\
         itertools.tee(_tweak_token(ptb_name)(i, tok) for i, tok in
                       enumerate(tagged_tokens))

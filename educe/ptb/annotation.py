@@ -46,6 +46,11 @@ def is_nonword_token(text):
     return bool(_SKIP_RE.match(text))
 
 
+def is_empty_category(postag):
+    """True if postag is the empty category, i.e. `-NONE-` in the PTB."""
+    return postag == '-NONE-'
+
+
 #pylint: disable=too-few-public-methods
 class TweakedToken(RawToken):
     """
@@ -166,16 +171,13 @@ def strip_subcategory(tree,
 
 # ref: edu.stanford.nlp.trees.BobChrisTreeNormalizer
 def is_non_empty(tree):
-    """Filter (return False for) nodes that cover a totally empty span.
-
-    Empty nodes are recognized by their "-NONE-" pre-terminal.
-    """
+    """Filter (return False for) nodes that cover a totally empty span."""
     # always keep leaves
     if not isinstance(tree, Tree):
         return True
     
     label = tree.label()
-    if label == '-NONE-':
+    if is_empty_category(label):
         # check this is a pre-terminal ; probably superfluous
         assert ((len(tree) == 1) and
                 (not isinstance(tree[0], Tree)))
