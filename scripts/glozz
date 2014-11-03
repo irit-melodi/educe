@@ -21,6 +21,7 @@ import xml.etree.ElementTree as ET
 from   educe import glozz, corpus, stac, util, graph
 from   educe.annotation import Span, Unit
 from   educe.internalutil import linebreak_xml
+from educe.stac.util.annotate import schema_text
 
 # ---------------------------------------------------------------------
 # utility functions
@@ -51,11 +52,18 @@ def dump(filename, doc):
     show_unit = lambda u:\
         "{anno} | {text}".format(anno=u,
                                  text=doc.text(u.text_span()))
+    show_schema = lambda x:\
+        "{anno} | {text}".format(anno=x,
+                                 text=schema_text(doc, x))
     lines = ['############### %s units' % filename]\
           + list(map(show_unit, doc.units))\
           + ['############### %s relations' % filename]\
-          + list(map(str, doc.relations))
+          + list(map(str, doc.relations))\
+          + ['############### %s schema' % filename]\
+          + list(map(show_schema, doc.schemas))
+
     return "\n".join(lines)
+
 
 def main_dump(args):
     for file in args.files:
