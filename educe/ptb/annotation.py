@@ -51,7 +51,7 @@ def is_empty_category(postag):
     return postag == '-NONE-'
 
 
-#pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods
 class TweakedToken(RawToken):
     """
     A token with word, part of speech, plus "tweaked word" (what the
@@ -101,7 +101,7 @@ class TweakedToken(RawToken):
         if self.offset != 0:
             res += " (%d)" % self.offset
         return res
-#pylint: enable=too-few-public-methods
+# pylint: enable=too-few-public-methods
 
 
 #
@@ -110,13 +110,14 @@ class TweakedToken(RawToken):
 from nltk.tree import Tree
 
 
-_gf_character = '-'  # (default) grammatical function character
 # label annotation introducing characters
-_laic = ['-',  # function tags, identity index, reference index
-         '=',  # gap co-indexing
+_LAIC = [
+    '-',  # function tags, identity index, reference index
+    '=',  # gap co-indexing
 ]
 
 
+# pylint: disable=invalid-name
 def post_basic_category_index(label):
     """Get the index of the first char after the basic label.
 
@@ -127,7 +128,7 @@ def post_basic_category_index(label):
     """
     first_char = ''
     for i, c in enumerate(label):
-        if c in _laic:
+        if c in _LAIC:
             if i == 0:
                 first_char = c
             elif first_char and (i > 1) and (c == first_char):
@@ -137,6 +138,7 @@ def post_basic_category_index(label):
     else:
         i += 1
     return i
+# pylint: enable=invalid-name
 
 
 def basic_category(label):
@@ -151,6 +153,8 @@ def basic_category(label):
 
 # Reimplementation of most of the most standard parser parameters for the PTB
 # ref: edu.stanford.nlp.parser.lexparser.EnglishTreebankParserParams
+
+# pylint: disable=invalid-name
 def strip_subcategory(tree,
                       retain_TMP_subcategories=False,
                       retain_NPTMP_subcategories=False):
@@ -167,6 +171,7 @@ def strip_subcategory(tree,
         label = basic_category(label)
     tree.set_label(label)
     return tree
+# pylint: enable=invalid-name
 
 
 # ref: edu.stanford.nlp.trees.BobChrisTreeNormalizer
@@ -175,7 +180,7 @@ def is_non_empty(tree):
     # always keep leaves
     if not isinstance(tree, Tree):
         return True
-    
+
     label = tree.label()
     if is_empty_category(label):
         # check this is a pre-terminal ; probably superfluous
@@ -188,10 +193,10 @@ def is_non_empty(tree):
 
 def prune_tree(tree, filter_func):
     """Prune a tree by applying filter_func recursively.
-    
+
     All children of filtered nodes are pruned as well.
     Nodes whose children have all been pruned are pruned too.
-    
+
     The filter function must be applicable to Tree but also non-Tree,
     as are leaves in an NLTK Tree.
     """
@@ -215,7 +220,7 @@ def prune_tree(tree, filter_func):
         return tree
 
 
-#TODO: see if we can partly use nltk.treetransforms
+# TODO: see if we can partly use nltk.treetransforms
 def transform_tree(tree, transformer):
     """Transform a tree by applying a transformer at each level.
 
