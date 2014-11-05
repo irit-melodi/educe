@@ -267,7 +267,7 @@ class KeyGroup(dict):
         Value corresponding to a single key.
         """
         value = self[key.name]
-        if key.substance is Substance.BASKET:
+        if (key.substance is Substance.BASKET) and (value is not None):
             return " ".join("{0}={1}".format(k,v) for k,v in value.items())
         else:
             return value

@@ -377,7 +377,7 @@ def ptb_pos_tag_first_pairs(_, cache, edu):
 def ptb_pos_tags_in_first(current, edu1, _):
     "demonstrator for use of basket features"
     tokens = current.ptb_tokens[edu1]
-    return Counter(t.tag for t in tokens)
+    return Counter(t.tag for t in tokens) if tokens is not None else None
 
 
 # ---------------------------------------------------------------------
