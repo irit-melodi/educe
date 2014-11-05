@@ -37,7 +37,7 @@ class Reader(educe.corpus.Reader):
             prefix = os.path.splitext(anno_file)[0]
             subdoc = os.path.basename(prefix)
             if "_" in subdoc:
-                subdoc = subdoc.split("_", 1)[1]
+                subdoc = subdoc.rsplit("_", 1)[1]
                 file_id = FileId(doc, subdoc, stage, annotator)
                 ac_file_id = FileId(doc, subdoc, 'unannotated', None)
                 text_file = os.path.join(self.rootdir,
