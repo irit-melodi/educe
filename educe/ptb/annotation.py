@@ -46,7 +46,12 @@ def is_nonword_token(text):
     return bool(_SKIP_RE.match(text))
 
 
-#pylint: disable=too-few-public-methods
+def is_empty_category(postag):
+    """True if postag is the empty category, i.e. `-NONE-` in the PTB."""
+    return postag == '-NONE-'
+
+
+# pylint: disable=too-few-public-methods
 class TweakedToken(RawToken):
     """
     A token with word, part of speech, plus "tweaked word" (what the
@@ -96,4 +101,141 @@ class TweakedToken(RawToken):
         if self.offset != 0:
             res += " (%d)" % self.offset
         return res
-#pylint: enable=too-few-public-methods
+# pylint: enable=too-few-public-methods
+
+
+#
+# TreebankLanguagePack (after edu.stanford.nlp.trees)
+#
+from nltk.tree import Tree
+
+
+# label annotation introducing characters
+_LAIC = [
+    '-',  # function tags, identity index, reference index
+    '=',  # gap co-indexing
+]
+
+
+# pylint: disable=invalid-name
+def post_basic_category_index(label):
+    """Get the index of the first char after the basic label.
+
+    This should never match the first char of the label ;
+    if the first char is such a char, then a matched char is also
+    not used iff there is something in between, e.g.
+    (-LRB- => -LRB-) but (--PU => -).
+    """
+    first_char = ''
+    for i, c in enumerate(label):
+        if c in _LAIC:
+            if i == 0:
+                first_char = c
+            elif first_char and (i > 1) and (c == first_char):
+                first_char = ''
+            else:
+                break
+    else:
+        i += 1
+    return i
+# pylint: enable=invalid-name
+
+
+def basic_category(label):
+    """Get the basic syntactic category of a label.
+
+    This is done by truncating whatever comes after a
+    (non-word-initial) occurrence of one of the
+    label_annotation_introducing_characters().
+    """
+    return label[0:post_basic_category_index(label)] if label else label
+
+
+# Reimplementation of most of the most standard parser parameters for the PTB
+# ref: edu.stanford.nlp.parser.lexparser.EnglishTreebankParserParams
+
+# pylint: disable=invalid-name
+def strip_subcategory(tree,
+                      retain_TMP_subcategories=False,
+                      retain_NPTMP_subcategories=False):
+    """Transform tree to strip additional label annotation at each node"""
+    if not isinstance(tree, Tree):
+        return tree
+
+    label = tree.label()
+    if retain_TMP_subcategories and ('-TMP' in label):
+        label = '{bc}-TMP'.format(bc=basic_category(label))
+    elif retain_NPTMP_subcategories and label.startswith('NP-TMP'):
+        label = 'NP-TMP'
+    else:
+        label = basic_category(label)
+    tree.set_label(label)
+    return tree
+# pylint: enable=invalid-name
+
+
+# ref: edu.stanford.nlp.trees.BobChrisTreeNormalizer
+def is_non_empty(tree):
+    """Filter (return False for) nodes that cover a totally empty span."""
+    # always keep leaves
+    if not isinstance(tree, Tree):
+        return True
+
+    label = tree.label()
+    if is_empty_category(label):
+        # check this is a pre-terminal ; probably superfluous
+        assert ((len(tree) == 1) and
+                (not isinstance(tree[0], Tree)))
+        return False
+    else:
+        return True
+
+
+def prune_tree(tree, filter_func):
+    """Prune a tree by applying filter_func recursively.
+
+    All children of filtered nodes are pruned as well.
+    Nodes whose children have all been pruned are pruned too.
+
+    The filter function must be applicable to Tree but also non-Tree,
+    as are leaves in an NLTK Tree.
+    """
+    # prune node if filter returns False
+    if not filter_func(tree):
+        return None
+
+    if isinstance(tree, Tree):
+        # recurse
+        new_kids = [new_kid
+                    for new_kid in (prune_tree(kid, filter_func)
+                                    for kid in tree)
+                    if new_kid is not None]
+        # prune node if it had children and lost them all
+        if tree and not new_kids:
+            return None
+        # return new node, pruned
+        return Tree(tree.label(), new_kids)
+    else:
+        # return leaf unchanged
+        return tree
+
+
+# TODO: see if we can partly use nltk.treetransforms
+def transform_tree(tree, transformer):
+    """Transform a tree by applying a transformer at each level.
+
+    The tree is traversed depth-first, left-to-right, and the
+    transformer is applied at each node.
+    """
+    # recurse
+    if isinstance(tree, Tree):
+        new_kids = [new_kid
+                    for new_kid in (transform_tree(kid, transformer)
+                                    for kid in tree)
+                    if new_kid is not None]
+        new_tree = (Tree(tree.label(), new_kids)
+                    if new_kids else None)
+    else:
+        new_tree = tree
+    # apply to current node
+    return transformer(new_tree)

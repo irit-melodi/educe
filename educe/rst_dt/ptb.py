@@ -23,7 +23,9 @@ from educe.external.postag import\
     generic_token_spans, Token
 from educe.internalutil import izip
 from educe.ptb.annotation import\
-    PTB_TO_TEXT, is_nonword_token, TweakedToken
+    PTB_TO_TEXT, is_nonword_token, TweakedToken,\
+    transform_tree, strip_subcategory, prune_tree, is_non_empty,\
+    is_empty_category
 
 
 def _guess_ptb_name(k):
@@ -95,7 +97,7 @@ def _tweak_token(ptb_name):
         if (ptb_name, toknum) in _PTB_SUBSTS:
             prefix, tweak = _PTB_SUBSTS[(ptb_name, toknum)]
             return TweakedToken(word, tag, tweak, prefix)
-        elif tag == "-NONE-" and is_nonword_token(word):
+        elif is_empty_category(tag) and is_nonword_token(word):
             return TweakedToken(word, tag, "")
 
         tweak = PTB_TO_TEXT.get(word, word)
@@ -131,9 +133,11 @@ def align(corpus, k, ptb):
         return None
     rst_text = corpus[k].text()
     tagged_tokens = ptb.tagged_words(ptb_name)
+    # tweak tokens THEN filter empty nodes
     tweaked1, tweaked2 =\
         itertools.tee(_tweak_token(ptb_name)(i, tok) for i, tok in
-                      enumerate(tagged_tokens))
+                      enumerate(tagged_tokens)
+                      if not is_empty_category(tok[1]))
     spans = generic_token_spans(rst_text, tweaked1,
                                 txtfn=lambda x: x.tweaked_word)
     return (_mk_token(t, s) for t, s in izip(tweaked2, spans))
@@ -156,9 +160,16 @@ def parse_trees(corpus, k, ptb):
 
     results = []
     for tree in ptb.parsed_sents(ptb_name):
-        leaves = tree.leaves()
+        # apply standard cleaning to tree
+        # strip function tags, remove empty nodes
+        tree_no_empty = prune_tree(tree, is_non_empty)
+        tree_no_empty_no_gf = transform_tree(tree_no_empty,
+                                             strip_subcategory)
+        #
+        leaves = tree_no_empty_no_gf.leaves()
         tslice = itertools.islice(tokens_iter, len(leaves))
-        results.append(ConstituencyTree.build(tree, tslice))
+        results.append(ConstituencyTree.build(tree_no_empty_no_gf,
+                                              tslice))
     return results
 
 
