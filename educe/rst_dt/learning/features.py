@@ -654,11 +654,15 @@ def simplify_deptree(dtree):
     Boil a dependency tree down into a dictionary from (edu, edu) to rel
     """
     relations = {}
-    for subtree in dtree:
-        src = treenode(subtree).edu
-        for child in subtree:
-            cnode = treenode(child)
-            relations[(src, cnode.edu)] = cnode.rel
+    # recursive inner function
+    def _simplify_deptree(tree):
+        src = treenode(tree)
+        for kid in tree:
+            tgt = treenode(kid)
+            relations[(src.edu, tgt.edu)] = tgt.rel
+            _simplify_deptree(kid)
+    #
+    _simplify_deptree(dtree)
     return relations
 
 
