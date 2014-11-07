@@ -8,8 +8,10 @@ stac-learning subcommands
 from . import\
     extract,\
     features,\
+    res_nps,\
     weave
 
 SUBCOMMANDS = [extract,
                features,
+               res_nps,
                weave]
