@@ -99,7 +99,9 @@ def schema_text(doc, anno):
     (recursive) text preview of a schema and its contents.
     Members are enclosed in square brackets.
     """
-    if isinstance(anno, Schema):
+    if anno is None:
+        return ""
+    elif isinstance(anno, Schema):
         snippets = ["[{}]".format(schema_text(doc, x)) for x in
                     sorted_first_widest(anno.members)]
         return "...".join(snippets)
