@@ -23,6 +23,11 @@ import nltk.tree
 from educe.annotation import Span, Standoff
 
 
+def _concat(xs):
+    "[[x]] -> [x]"
+    return chain.from_iterable(xs)
+
+
 class SearchableTree(nltk.Tree):
     """
     A tree with helper search functions
@@ -42,8 +47,34 @@ class SearchableTree(nltk.Tree):
         elif prunable and prunable(self):
             return []
         else:
-            return chain.from_iterable(x.topdown(pred) for x in self
-                                       if isinstance(x, SearchableTree))
+            return _concat(x.topdown(pred, prunable) for x in self
+                           if isinstance(x, SearchableTree))
+
+
+    def topdown_smallest(self, pred, prunable=None):
+        """
+        Searching from the top down, return the smallest
+        subtrees for which the predicate is True.
+
+        This is almost the same as `topdown`, except that
+        if a subtree matches, we check for smaller
+        matches in its subtrees.
+
+        Note that leaf nodes are ignored.
+        """
+        def matching_kids():
+            "recursively apply on self"
+            return _concat(x.topdown_smallest(pred, prunable)
+                           for x in self
+                           if isinstance(x, SearchableTree))
+
+        if pred(self):
+            return list(matching_kids()) or [self]
+        elif prunable and prunable(self):
+            return []
+        else:
+            return matching_kids()
+
 
     def depth_first_iterator(self):
         """
