@@ -230,17 +230,18 @@ def read_corenlp_result(doc, corenlp_doc, tid=None):
     all_dtrees = []
     for turn, sent in zip(turns, sentences):
         sid         = sent['id']
-        tokens      = educe_tokens[sid]
+        tokens_dict = educe_tokens[sid]
+        sorted_tokens = [tokens_dict[x] for x in sorted(tokens_dict.keys())]
         tree = nltk.tree.Tree.fromstring(sent['parse'])
-        educe_tree  = ConstituencyTree.build(tree, tokens.values())
+        educe_tree = ConstituencyTree.build(tree, sorted_tokens)
 
         deps   = collections.defaultdict(list)
         for ty, gov_id, dep_id in sent['dependencies']:
             deps[gov_id].append((ty,dep_id))
 
-        educe_dtree = DependencyTree.build(deps, tokens, sid + '-0')
+        educe_dtree = DependencyTree.build(deps, tokens_dict, sid + '-0')
 
-        all_tokens.extend(tokens.values())
+        all_tokens.extend(sorted_tokens)
         all_trees.append(educe_tree)
         all_dtrees.append(educe_dtree)
 
