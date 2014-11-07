@@ -546,13 +546,14 @@ def lemma_subject(current, edu):
     return subjects[0] if subjects else None
 
 
+def is_nplike(anno):
+    "is some sort of NP annotation from a parser"
+    return isinstance(anno, ConstituencyTree)\
+        and anno.label() in ['NP', 'WHNP', 'NNP', 'NNPS']
+
+
 def has_FOR_np(current, edu):
     "if the EDU has the pattern IN(for).. NP"
-
-    def is_nplike(anno):
-        "is some sort of NP annotation from a parser"
-        return isinstance(anno, ConstituencyTree)\
-            and anno.label() in ['NP', 'WHNP', 'NNP', 'NNPS']
 
     def is_prep_for(anno):
         "is a node representing for as the prep in a PP"
