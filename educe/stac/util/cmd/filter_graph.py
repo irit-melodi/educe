@@ -72,7 +72,7 @@ def config_argparser(parser):
     """
     # note: not the usual input args
     parser.add_argument('corpus', metavar='DIR', help='corpus dir')
-    parser.add_argument('rel_types', metavar='REL LABEL', nargs='+',
+    parser.add_argument('rel_types', metavar='REL_LABEL', nargs='+',
                         help='relation labels to keep')
     parser.add_argument('--output', metavar='DIR', required=True,
                         help='output  dir')
