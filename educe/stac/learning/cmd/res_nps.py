@@ -17,6 +17,7 @@ import sys
 from educe.stac import postag, corenlp
 from educe.stac.annotation import is_edu
 from educe.stac.learning import features
+from educe.util import concat, concat_l
 import educe.corpus
 import educe.glozz
 import educe.learning.keys
@@ -34,21 +35,12 @@ NAME = 'resource-nps'
 LEXICONS = [features.Lexicon('domain', 'stac_domain.txt', True)]
 
 
-def _concat(items):
-    "iter(iter(a)) -> iter(a)"
-    return chain.from_iterable(items)
-
-def _concat_l(items):
-    "[[a]] -> [a]"
-    return list(chain.from_iterable(items))
-
-
 def nplike_trees(current, edu):
     "any trees within an EDU that look like nps (smallest match)"
     trees = enclosed_trees(edu.text_span(),
                            current.parses.trees)
-    return _concat_l(t.topdown_smallest(is_nplike)
-                     for t in trees)
+    return concat_l(t.topdown_smallest(is_nplike)
+                    for t in trees)
 
 
 def _mk_lexlookup(lexicons):
@@ -181,8 +173,8 @@ def main(args):
     inputs = _read_corpus_inputs(args)
     lexinfo = _mk_lexlookup(inputs.lexicons)
     players = get_players(inputs)
-    rows = _concat(_on_doc(inputs, lexinfo, players, key, False)
-                   for key in inputs.corpus)
+    rows = concat(_on_doc(inputs, lexinfo, players, key, False)
+                  for key in inputs.corpus)
 
     writer = _conll_writer(args)
     for row in rows:

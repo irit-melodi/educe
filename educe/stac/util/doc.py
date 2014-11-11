@@ -13,6 +13,7 @@ from itertools import chain
 import copy
 
 from educe.annotation import Unit, Span
+from educe.util import concat_l
 import educe.stac
 
 from .glozz import\
@@ -29,13 +30,6 @@ class StacDocException(Exception):
         super(StacDocException, self).__init__(msg)
 
 
-def _concat(lists):
-    """
-    Append all elements of a list of lists
-    """
-    return list(chain.from_iterable(lists))
-
-
 def _set_doc_parts(doc, parts):
     """
     Update a document so that it has annotations from all
@@ -44,9 +38,9 @@ def _set_doc_parts(doc, parts):
     Note that no attention is paid to annotation ids, spans,
     etc. It's up to you to ensure that everything is kosher.
     """
-    doc.units = _concat(x.units for x in parts)
-    doc.relations = _concat(x.relations for x in parts)
-    doc.schemas = _concat(x.schemas for x in parts)
+    doc.units = concat_l(x.units for x in parts)
+    doc.relations = concat_l(x.relations for x in parts)
+    doc.schemas = concat_l(x.schemas for x in parts)
 
 
 def evil_set_id(anno, author, date):

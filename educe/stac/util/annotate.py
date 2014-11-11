@@ -16,6 +16,7 @@ import itertools
 import textwrap
 
 from educe.annotation import Schema
+from educe.util import concat_l
 import educe.stac
 from .context import sorted_first_widest
 
@@ -114,13 +115,6 @@ def schema_text(doc, anno):
 # ---------------------------------------------------------------------
 
 
-def _concat(iters):
-    """
-    Flatten a list of lists into a list.
-    """
-    return list(itertools.chain.from_iterable(iters))
-
-
 def reflow(text, width=40):
     """
     Wrap some text, at the same time ensuring that all original
@@ -134,7 +128,7 @@ def reflow(text, width=40):
         """
         return textwrap.wrap(line, width) or ['']
 
-    return _concat(wrap(t) for t in text.split("\n"))
+    return concat_l(wrap(t) for t in text.split("\n"))
 
 
 def annotate_doc(doc, span=None):

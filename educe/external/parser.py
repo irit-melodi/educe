@@ -21,11 +21,7 @@ from itertools import chain
 import nltk.tree
 
 from educe.annotation import Span, Standoff
-
-
-def _concat(xs):
-    "[[x]] -> [x]"
-    return chain.from_iterable(xs)
+from educe.util import concat
 
 
 class SearchableTree(nltk.Tree):
@@ -47,7 +43,7 @@ class SearchableTree(nltk.Tree):
         elif prunable and prunable(self):
             return []
         else:
-            return _concat(x.topdown(pred, prunable) for x in self
+            return concat(x.topdown(pred, prunable) for x in self
                            if isinstance(x, SearchableTree))
 
 
@@ -64,9 +60,9 @@ class SearchableTree(nltk.Tree):
         """
         def matching_kids():
             "recursively apply on self"
-            return _concat(x.topdown_smallest(pred, prunable)
-                           for x in self
-                           if isinstance(x, SearchableTree))
+            return concat(x.topdown_smallest(pred, prunable)
+                          for x in self
+                          if isinstance(x, SearchableTree))
 
         if pred(self):
             return list(matching_kids()) or [self]
