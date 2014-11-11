@@ -5,13 +5,23 @@
 Miscellaneous utility functions
 """
 
-import argparse
+from itertools import chain
 import re
 
 fileid_fields = [ 'stage', 'doc', 'subdoc', 'annotator' ]
 """
 String representation of fields recognised in an educe.corpus.FileId
 """
+
+def concat(items):
+    ":: iter(iter(a)) -> iter(a)"
+    return chain.from_iterable(items)
+
+
+def concat_l(items):
+    ":: [[a]] -> [a]"
+    return list(chain.from_iterable(items))
+
 
 def add_corpus_filters(arg_parser, fields=fileid_fields):
     """
