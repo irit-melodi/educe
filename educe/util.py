@@ -83,6 +83,7 @@ def mk_is_interesting(args,
 
     Meant to be used in conjunction with `add_corpus_filters`
     """
+    preselected = preselected or {}
 
     def mk_checker_generic(attr, pred):
         "generalised helper for mk_checker"
