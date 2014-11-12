@@ -10,6 +10,7 @@ import collections
 import copy
 
 import educe.stac
+from educe.util import add_corpus_filters, fields_without
 from educe.stac.graph import EnclosureGraph
 
 from ..annotate import show_diff
@@ -37,8 +38,7 @@ def config_argparser(parser):
     """
     parser.add_argument('corpus', metavar='DIR', help='corpus dir')
     # don't allow stage control
-    educe.util.add_corpus_filters(parser,
-                                  fields=['doc', 'subdoc', 'annotator'])
+    add_corpus_filters(parser, fields=fields_without(["stage"]))
     add_usual_output_args(parser)
     parser.set_defaults(func=main)
 

@@ -17,11 +17,14 @@ import educe.stac
 import educe.util
 
 
-def read_corpus(args, verbose=True):
+def read_corpus(args,
+                preselected=None,
+                verbose=True):
     """
     Read the section of the corpus specified in the command line arguments.
     """
-    is_interesting = educe.util.mk_is_interesting(args)
+    is_interesting = educe.util.mk_is_interesting(args,
+                                                  preselected=preselected)
     reader = educe.stac.Reader(args.corpus)
     anno_files = reader.filter(reader.files(), is_interesting)
     return reader.slurp(anno_files, verbose)

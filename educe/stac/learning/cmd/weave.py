@@ -26,17 +26,6 @@ import educe.util
 NAME = 'weave'
 
 
-def _read_units_corpus(args):
-    """
-    Read only the discourse parts of a corpus
-    """
-    args.stage = 'units'
-    is_interesting = educe.util.mk_is_interesting(args)
-    reader = educe.stac.Reader(args.corpus)
-    anno_files = reader.filter(reader.files(), is_interesting)
-    return reader.slurp(anno_files)
-
-
 def _unannotated_key(key):
     """
     Given a corpus key, return a copy of that equivalent key
@@ -128,7 +117,8 @@ def config_argparser(parser):
 def main(args):
     "main"
 
-    corpus = _read_units_corpus(args)
+    corpus = read_corpus(args,
+                         preselected={"stage": ["units"]})
     dialogues = _dialogue_map(corpus)
     conll = _read_conll(args.input)
     revised = (_tweak_row(dialogues, r) for r in conll)

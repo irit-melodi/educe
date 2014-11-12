@@ -6,6 +6,8 @@ Experimental sandbox (ignore)
 """
 
 from __future__ import print_function
+
+from educe.util import add_corpus_filters, fields_without
 import educe.stac
 import educe.stac.annotation
 
@@ -25,25 +27,12 @@ def config_argparser(parser):
     are to be added.
     """
     parser.add_argument('corpus', metavar='DIR', help='corpus dir')
-    # don't allow stage control; must be units
-    educe.util.add_corpus_filters(parser,
-                                  fields=['doc', 'subdoc', 'annotator'])
+    add_corpus_filters(parser, fields=fields_without(["stage"]))
     add_usual_output_args(parser)
     parser.set_defaults(func=main)
 
 # not the same as educe.stac.annotation
 RENAMES = {'Strategic_comment': 'Other'}
-
-
-def read_corpus_at_stage(args, stage, verbose=True):
-    """
-    Read the section of the corpus specified in the command line arguments.
-    """
-    is_interesting0 = educe.util.mk_is_interesting(args)
-    is_interesting = lambda k: is_interesting0(k) and k.stage == stage
-    reader = educe.stac.Reader(args.corpus)
-    anno_files = reader.filter(reader.files(), is_interesting)
-    return reader.slurp(anno_files, verbose)
 
 
 def main(args):
@@ -54,7 +43,8 @@ def main(args):
     `config_argparser`
     """
 
-    corpus = read_corpus_at_stage(args, 'units')
+    corpus = read_corpus(args,
+                         preselected={"stage": ["units"]})
     output_dir = get_output_dir(args)
     for k in corpus:
         doc = corpus[k]

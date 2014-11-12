@@ -9,6 +9,7 @@ from __future__ import print_function
 import sys
 
 from educe import graph
+from educe.util import add_corpus_filters, fields_without
 import educe.corpus
 import educe.stac
 import educe.stac.graph as stacgraph
@@ -83,8 +84,7 @@ def config_argparser(parser):
 
     educe_group = parser.add_argument_group('corpus filtering arguments')
     # doesn't make sense to filter on stage for graphs
-    educe.util.add_corpus_filters(educe_group,
-                                  fields=['doc', 'subdoc', 'annotator'])
+    add_corpus_filters(educe_group, fields=fields_without(["stage"]))
     parser.set_defaults(func=main)
 
 

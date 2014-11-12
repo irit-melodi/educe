@@ -17,12 +17,13 @@ import sys
 from educe.stac import postag, corenlp
 from educe.stac.annotation import is_edu
 from educe.stac.learning import features
-from educe.util import concat, concat_l
+from educe.util import\
+     add_corpus_filters, fields_without, mk_is_interesting,\
+     concat, concat_l
 import educe.corpus
 import educe.glozz
 import educe.learning.keys
 import educe.stac
-import educe.util
 from educe.stac.lexicon.wordclass import class_dict
 
 from ..features import\
@@ -128,9 +129,7 @@ def config_argparser(parser):
     parser.add_argument('--output', metavar='FILE',
                         help='Output file')
     # add flags --doc, --subdoc, etc to allow user to filter on these things
-    educe.util.add_corpus_filters(parser,
-                                  fields=['doc', 'subdoc', 'annotator'])
-
+    add_corpus_filters(parser, fields=fields_without(["stage"]))
     parser.set_defaults(func=main)
 
 # ---------------------------------------------------------------------
@@ -141,8 +140,8 @@ def _read_corpus_inputs(args):
     """
     Read and filter the part of the corpus we want features for
     """
-    args.stage = 'units'
-    is_interesting = educe.util.mk_is_interesting(args)
+    is_interesting = mk_is_interesting(args,
+                                       preselected={"stage": ["units"]})
     reader = educe.stac.Reader(args.corpus)
     anno_files = reader.filter(reader.files(), is_interesting)
     corpus = reader.slurp(anno_files, verbose=True)

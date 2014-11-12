@@ -10,6 +10,7 @@ in a STAC corpus
 """
 
 from educe import glozz, corpus, stac, util, graph
+from educe.util import add_corpus_filters, fields_without
 import educe.corpus
 import educe.stac.graph as stacgraph
 
@@ -25,6 +26,9 @@ import codecs
 from pygraph.readwrite import dot
 from pygraph.algorithms import accessibility
 import pydot
+
+
+PRESELECTED_STAGE = ["discourse", "units"]
 
 # ---------------------------------------------------------------------
 # main
@@ -47,7 +51,7 @@ def write_dot_graph(doc_file, dot_graph, part=None):
         os.system('dot -T png -o %s %s' % (png_file, dot_file))
 
 def main_rel_graph(args):
-    is_interesting=util.mk_is_interesting(args)
+    is_interesting=util.mk_is_interesting(args, preselected=PRESELECTED_STAGE)
 
     if args.live:
         reader     = stac.LiveInputReader(args.idir)
@@ -86,7 +90,7 @@ def main_rel_graph(args):
             print >> sys.stderr, warning
 
 def main_enclosure_graph(args):
-    is_interesting=util.mk_is_interesting(args)
+    is_interesting=util.mk_is_interesting(args, preselected=PRESELECTED_STAGE)
 
     if args.live:
         reader     = stac.LiveInputReader(args.idir)
@@ -142,9 +146,8 @@ arg_parser_enc.add_argument('--reduce', action='store_true',
                             help='Reduce enclosure graphs [requires --enclosure]')
 
 educe_group = arg_parser.add_argument_group('corpus filtering arguments')
-util.add_corpus_filters(educe_group, fields=[ 'doc', 'subdoc', 'annotator' ])
+add_corpus_filters(educe_group, fields=fields_without(["stage"]))
 args=arg_parser.parse_args()
-args.stage = 'discourse|units'
 
 if args.enclosure:
     main_enclosure_graph(args)
