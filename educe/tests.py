@@ -34,7 +34,7 @@ class SpanTest(unittest.TestCase):
         just like assertEqual but display both sides with str on failure
         """
         if a != b:
-            msg = msg or "{0} != {1}".format(a, b)
+            msg = msg or u"{0} != {1}".format(a, b)
             raise self.failureException(msg)
 
     def assertOverlap(self, expected, pair1, pair2, **kwargs):

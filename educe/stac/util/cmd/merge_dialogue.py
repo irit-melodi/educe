@@ -157,7 +157,7 @@ def commit_msg(args, corpus, k, sought):
     dstr = ", ".join(map(anno_id_from_tuple, sought))
     dialogues = [_get_annotation_with_id(d, doc.units) for d in sought]
     if dialogues:
-        title_fmt = "{doc}_{subdoc}: merge dialogues{hint}"
+        title_fmt = u"{doc}_{subdoc}: merge dialogues{hint}"
         title_hint = " (turns %d-%d)" % tuple(args.turns) if args.turns else ""
         dspan = _merge_spans(dialogues)
         lines = [title_fmt.format(doc=k.doc,

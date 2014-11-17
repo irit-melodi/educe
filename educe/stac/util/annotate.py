@@ -103,7 +103,7 @@ def schema_text(doc, anno):
     if anno is None:
         return ""
     elif isinstance(anno, Schema):
-        snippets = ["[{}]".format(schema_text(doc, x)) for x in
+        snippets = [u"[{}]".format(schema_text(doc, x)) for x in
                     sorted_first_widest(anno.members)]
         return "...".join(snippets)
     else:

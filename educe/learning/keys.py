@@ -268,7 +268,7 @@ class KeyGroup(dict):
         """
         value = self[key.name]
         if (key.substance is Substance.BASKET) and (value is not None):
-            return " ".join("{0}={1}".format(k,v) for k,v in value.items())
+            return " ".join(u"{0}={1}".format(k,v) for k,v in value.items())
         else:
             return value
 

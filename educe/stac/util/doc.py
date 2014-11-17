@@ -292,18 +292,18 @@ def move_portion(renames, src_doc, tgt_doc,
     def snippet(txt, point, width=30):
         "text fragment with highlight"
         if point > 0:
-            return "[{0}]{1}...".format(txt[point],
-                                        txt[point+1:point+width])
+            return u"[{0}]{1}...".format(txt[point],
+                                         txt[point+1:point+width])
         else:
-            return "...{0}[{1}]".format(txt[point-width:point-1],
-                                        txt[point])
+            return u"...{0}[{1}]".format(txt[point-width:point-1],
+                                         txt[point])
 
     tgt_text = tgt_doc.text()
     src_text = src_doc.text()
 
     if not tgt_text[tgt_split] == ' ':
-        oops = "Target text does not start with a space at the " + \
-               "insertion point:\n{}...".format(snippet(tgt_text, tgt_split))
+        oops = u"Target text does not start with a space at the " + \
+               u"insertion point:\n{}...".format(snippet(tgt_text, tgt_split))
         raise StacDocException(oops)
     if not src_text[0] == ' ':
         oops = "Source text does not start with a space\n" +\
