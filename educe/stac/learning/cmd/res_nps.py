@@ -24,7 +24,6 @@ import educe.corpus
 import educe.glozz
 import educe.learning.keys
 import educe.stac
-from educe.stac.lexicon.wordclass import class_dict
 
 from ..features import\
     mk_env, get_players, enclosed_trees, is_nplike,\
@@ -33,7 +32,7 @@ from ..features import\
 
 NAME = 'resource-nps'
 
-LEXICONS = [features.Lexicon('domain', 'stac_domain.txt', True)]
+LEXICON = features.LexWrapper('domain', 'stac_domain.txt', True)
 
 
 def nplike_trees(current, edu):
@@ -46,7 +45,7 @@ def nplike_trees(current, edu):
 
 def _mk_lexlookup(lexicons):
     """
-    [lexicon] -> ([Class], tree -> set(Class)
+    [LexWrapper] -> ([Class], tree -> set(Class)
 
     return
 
@@ -54,12 +53,11 @@ def _mk_lexlookup(lexicons):
     2. a function that given a tree,
        returns a frozenset of classes found
     """
-    # for each subclass, words that belong in that subclass
     subclass_words = defaultdict(list)
     for lex in lexicons:
-        for section in lex.entries.values():
-            for word, cl in section.items():
-                subclass_words[cl].append(word)
+        for cname, lclass in lex.lexicon.entries.items():
+            for cl, words in lclass.subclass_to_words.items():
+                subclass_words[cl].extend(words)
 
     def inner(tree):
         twords = [t.word.lower() for t in tree.leaves()]
@@ -148,10 +146,9 @@ def _read_corpus_inputs(args):
 
     postags = postag.read_tags(corpus, args.corpus)
     parses = corenlp.read_results(corpus, args.corpus)
-    for lex in LEXICONS:
-        lex.read(args.resources)
+    LEXICON.read(args.resources)
     return FeatureInput(corpus, postags, parses,
-                        LEXICONS, None, None, None,
+                        [LEXICON], None, None, None,
                         True, True, True)
 
 

@@ -39,7 +39,7 @@ import educe.util
 
 from ..util.context import Context, enclosed, edus_in_span
 from ..annotation import turn_id
-from ..lexicon.wordclass import WordClass
+from ..lexicon.wordclass import LexEntry, Lexicon
 
 
 class CorpusConsistencyException(Exception):
@@ -59,7 +59,7 @@ class CorpusConsistencyException(Exception):
 # ---------------------------------------------------------------------
 
 
-class Lexicon(object):
+class LexWrapper(object):
     """
     Configuration options for a given lexicon: where to find it,
     what to call it, what sorts of results to return
@@ -73,8 +73,8 @@ class Lexicon(object):
         self.key = key
         self.filename = filename
         self.classes = classes
-        self.entries = {}
-        self.subclasses = {}
+        self.lexicon = None
+
 
     def read(self, lexdir):
         """
@@ -82,29 +82,20 @@ class Lexicon(object):
         classes
         """
         path = os.path.join(lexdir, self.filename)
-        entries = defaultdict(dict)
-        subclasses = defaultdict(set)
-        for entry in WordClass.read_lexicon(path):
-            word = entry.word.lower()
-            entries[entry.lex_class][word] = entry.subclass
-            subclasses[entry.lex_class].add(entry.subclass)
-        self.entries = entries
-        if self.classes:
-            self.subclasses = {k: frozenset(subcl) for k, subcl
-                               in subclasses.items()}
+        self.lexicon = Lexicon.read_file(path)
 
 
-LEXICONS = [Lexicon('domain', 'stac_domain.txt', True),
-            Lexicon('robber', 'stac_domain2.txt', False),
-            Lexicon('trade', 'trade.txt', True),
-            Lexicon('dialog', 'dialog.txt', False),
-            Lexicon('opinion', 'opinion.txt', False),
-            Lexicon('modifier', 'modifiers.txt', False),
+LEXICONS = [LexWrapper('domain', 'stac_domain.txt', True),
+            LexWrapper('robber', 'stac_domain2.txt', False),
+            LexWrapper('trade', 'trade.txt', True),
+            LexWrapper('dialog', 'dialog.txt', False),
+            LexWrapper('opinion', 'opinion.txt', False),
+            LexWrapper('modifier', 'modifiers.txt', False),
             # hand-extracted from trade prediction code, could
             # perhaps be merged with one of the other lexicons
             # fr.irit.stac.features.CalculsTraitsTache3
-            Lexicon('pronoun', 'pronouns.txt', True),
-            Lexicon('ref', 'stac_referential.txt', False)]
+            LexWrapper('pronoun', 'pronouns.txt', True),
+            LexWrapper('ref', 'stac_referential.txt', False)]
 
 PDTB_MARKERS_BASENAME = 'pdtb_markers.txt'
 
@@ -245,7 +236,7 @@ def has_pdtb_markers(markers, tokens):
     return pdtb_markers.Marker.any_appears_in(markers, words)
 
 
-def lexical_markers(sublex, tokens):
+def lexical_markers(lclass, tokens):
     """
     Given a dictionary (words to categories) and a text span, return all the
     categories of words that appear in that set.
@@ -253,9 +244,9 @@ def lexical_markers(sublex, tokens):
     Note that for now we are doing our own white-space based tokenisation,
     but it could make sense to use a different source of tokens instead
     """
-    sought = frozenset(sublex.keys())
+    sought = lclass.just_words()
     present = frozenset(t.word.lower() for t in tokens)
-    return frozenset(sublex[x] for x in sought & present)
+    return frozenset(lclass.word_to_subclass[x] for x in sought & present)
 
 
 def real_dialogue_act(anno, unitdoc=None):
@@ -742,30 +733,32 @@ class LexKeyGroup(KeyGroup):
     lexicon entry
     """
     def __init__(self, lexicon):
-        self.lexicon = lexicon
+        self.key = lexicon.key
+        self.has_subclasses = lexicon.classes
+        self.lexicon = lexicon.lexicon
         description = "%s (lexical features)" % self.key_prefix()
         super(LexKeyGroup, self).__init__(description,
                                           self.mk_fields())
 
-    def mk_field(self, entry, subclass=None):
+    def mk_field(self, cname, subclass=None):
         """
         For a given lexical class, return the name of its feature in the
         CSV file
         """
         subclass_elems = [subclass] if subclass else []
-        name = "_".join([self.key_prefix(), entry] + subclass_elems)
-        helptxt = "boolean (subclass of %s)" % entry if subclass else "boolean"
+        name = "_".join([self.key_prefix(), cname] + subclass_elems)
+        helptxt = "boolean (subclass of %s)" % cname if subclass else "boolean"
         return Key.discrete(name, helptxt)
 
     def mk_fields(self):
         """
         CSV field names for each entry/class in the lexicon
         """
-        if self.lexicon.classes:
+        if self.has_subclasses:
             headers = []
-            for entry in self.lexicon.entries:
-                headers.extend(self.mk_field(entry, subclass=subcl)
-                               for subcl in self.lexicon.subclasses[entry])
+            for cname, lclass in self.lexicon.entries.items():
+                headers.extend(self.mk_field(cname, subclass=x)
+                               for x in lclass.just_subclasses())
             return headers
         else:
             return [self.mk_field(e) for e in self.lexicon.entries]
@@ -775,7 +768,7 @@ class LexKeyGroup(KeyGroup):
         Common CSV header name prefix to all columns based on this particular
         lexicon
         """
-        return "lex_" + self.lexicon.key
+        return "lex_" + self.key
 
     def help_text(self):
         """
@@ -784,11 +777,11 @@ class LexKeyGroup(KeyGroup):
         header_name = (self.key_prefix() + "_...").ljust(KeyGroup.NAME_WIDTH)
         header = "[D] %s %s" % (header_name, "")
         lines = [header]
-        for entry in self.lexicon.entries:
-            keyname = entry
-            if self.lexicon.classes:
-                subkeys = ", ".join(self.lexicon.subclasses.get(entry, []))
-                keyname = keyname + "_{%s}" % subkeys
+        for cname, lclass in self.lexicon.entries.items():
+            keyname = cname
+            if self.has_subclasses:
+                subkeys = ", ".join(lclass.just_subclasses())
+                keyname += "_{%s}" % subkeys
             lines.append("       %s" % keyname.ljust(KeyGroup.NAME_WIDTH))
         return "\n".join(lines)
 
@@ -799,16 +792,14 @@ class LexKeyGroup(KeyGroup):
         vec = self if target is None else target
         ctx = current.contexts[edu]
         tokens = ctx.tokens
-        lex = self.lexicon
-        for subkey in lex.entries:
-            sublex = lex.entries[subkey]
-            markers = lexical_markers(sublex, tokens)
-            if lex.classes:
-                for subclass in lex.subclasses[subkey]:
-                    field = self.mk_field(subkey, subclass)
+        for cname, lclass in self.lexicon.entries.items():
+            markers = lexical_markers(lclass, tokens)
+            if self.has_subclasses:
+                for subclass in lclass.just_subclasses():
+                    field = self.mk_field(cname, subclass)
                     vec[field.name] = subclass in markers
             else:
-                field = self.mk_field(subkey)
+                field = self.mk_field(cname)
                 vec[field.name] = bool(markers)
 
 

@@ -15,6 +15,7 @@ REQS = \
      'pydot' if PY3 else 'pydot == 1.0.28',
      'python-graph-core',
      'python-graph-dot',
+     'frozendict',
      'sh',
      'nltk == 3.0.0',
      'soundex']
