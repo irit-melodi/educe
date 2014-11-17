@@ -16,9 +16,8 @@ import os
 import re
 import sys
 
-if not sys.version > '3':
-    import fuzzy  # fuzzy 1.0 does not build w/ Python 3
 from nltk.corpus import verbnet as vnet
+from soundex import Soundex
 
 from educe.annotation import Span
 from educe.external.parser import\
@@ -504,7 +503,8 @@ def has_player_name_exact(current, edu):
 def has_player_name_fuzzy(current, edu):
     "if the EDU has a word that sounds like a player name"
     tokens = current.contexts[edu].tokens
-    return has_one_of_words(current.players, tokens, norm=fuzzy.nysiis)
+    soundex = lambda w: Soundex().soundex(w)
+    return has_one_of_words(current.players, tokens, norm=soundex)
 
 
 @context_feature

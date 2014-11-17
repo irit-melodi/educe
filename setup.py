@@ -16,8 +16,8 @@ REQS = \
      'python-graph-core',
      'python-graph-dot',
      'sh',
-     'nltk == 3.0.0'] +\
-    (['fuzzy == 1.0'] if not PY3 else [])
+     'nltk == 3.0.0',
+     'soundex']
 
 
 setup(name='educe',
