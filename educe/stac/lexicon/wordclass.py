@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# Author: Eric Kow
+# License: CeCILL-B (French BSD3)
+
 """
 Cheap and cheerful lexicon format used in the STAC project.
 One entry per line, blanks ignored.  Each entry associates
@@ -23,39 +26,45 @@ and one without the notion of subclass
 """
 
 from __future__ import print_function
+from collections import defaultdict, namedtuple
 import codecs
-from collections import defaultdict
 import sys
 
-class WordClass():
+
+class WordClass(namedtuple("WordClass",
+                           "word lex_class pos subclass")):
+    "a single entry in the lexicon"
+
     def __init__(self, word, lex_class, pos, subclass):
-        self.word      = word
-        self.lex_class = lex_class
-        self.pos       = pos      if pos !=     '??' else None
-        self.subclass  = subclass if subclass != ''  else None
+        pos = pos if pos != '??' else None
+        subclass = subclass if subclass != '' else None
+        super(WordClass, self).__init__(word, lex_class, pos, subclass)
 
     @classmethod
-    def read_entry(cls, s):
+    def read_entry(cls, line):
         """
         Return a WordClass given the string corresponding to an entry,
         or raise an exception if we can't parse it
         """
-        fields = s.split(':')
+        fields = line.split(':')
         if len(fields) == 4:
-            return cls(*fields)
+            [word, lex_class, pos, subclass] = fields
+            return cls(word, lex_class, pos, subclass)
         elif len(fields) == 3:
-            fields.append(None)
-            return cls(*fields)
+            [word, lex_class, pos] = fields
+            return cls(word, lex_class, pos, None)
         else:
-            raise Exception("Sorry, I didn't understand this lexicon entry: %s" % s)
+            oops = "Sorry, I didn't understand this lexicon entry: %s" % line
+            raise Exception(oops)
 
     @classmethod
-    def read_entries(cls, xs):
+    def read_entries(cls, items):
         """
         Return a list of WordClass given an iterable of entry strings, eg. the
         stream for the lines in a file. Blank entries are ignored
         """
-        return [ cls.read_entry(x.strip()) for x in xs if len(x.strip()) > 0 ]
+        return [cls.read_entry(x.strip()) for x in items
+                if len(x.strip()) > 0]
 
     @classmethod
     def read_lexicon(cls, filename):
@@ -63,22 +72,33 @@ class WordClass():
         Return a list of WordClass given a filename corresponding to a lexicon
         we want to read
         """
-        with codecs.open(filename, 'r', 'utf-8') as f:
-            return cls.read_entries(f)
+        with codecs.open(filename, 'r', 'utf-8') as stream:
+            return cls.read_entries(stream)
 
-def class_dict(xs):
+
+def class_dict(items):
     """
     Given a list of WordClass, return a dictionary mapping lexical classes
     to words that belong in that class
     """
-    d = defaultdict(dict)
-    for x in xs:
-        d[x.lex_class][x.word] = x.subclass
-    return d
+    res = defaultdict(dict)
+    for item in items:
+        res[item.lex_class][item.word] = item.subclass
+    return res
 
-if __name__=="__main__":
-    infile = sys.argv[1]
-    d = class_dict(WordClass.read_lexicon(infile))
-    for k in d:
-        print("===== ", k, "=====")
-        print(d[k])
+
+def dump_lexicon(infile):
+    """
+    Given a filename, read it as lexicon and print its contents
+    """
+    lex = WordClass.read_lexicon(infile)
+    for key, entry in class_dict(lex).items():
+        print("===== ", key, "=====")
+        print(entry)
+        for word, subclass in entry.items():
+            print(u"{word}\t[{subclass}]".format(word=word,
+                                                 subclass=subclass))
+
+
+if __name__ == "__main__":
+    dump_lexicon(sys.argv[1])
