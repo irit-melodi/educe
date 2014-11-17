@@ -1623,7 +1623,7 @@ def read_corpus_inputs(args, stage=None):
     """
     Read and filter the part of the corpus we want features for
     """
-    preslected = {"stage": stage or ["discourse", "units"]}
+    preselected = {"stage": stage or ["discourse", "units"]}
     is_interesting = educe.util.mk_is_interesting(args,
                                                   preselected=preselected)
     reader = educe.stac.Reader(args.corpus)
