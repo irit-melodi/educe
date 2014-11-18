@@ -22,6 +22,8 @@ import educe.glozz
 import educe.stac
 import educe.util
 
+from educe.stac.util.args import read_corpus
+
 
 NAME = 'weave'
 
