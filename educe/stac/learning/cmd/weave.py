@@ -86,7 +86,7 @@ def _tweak_row(dialogues, row):
                if ukey.mk_global_id(x.local_id()) == anno_id]
     anno = matches[0] if matches else None
     prefix2 = [anno_id,
-               #group_id,
+               # group_id,
                anno.type if anno else "UNKNOWN",
                doc.text(span).encode('utf-8'),
                span.char_start,
