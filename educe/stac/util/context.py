@@ -5,6 +5,7 @@ information about it
 
 import warnings
 from ..annotation import is_edu, is_turn
+from ..annotation import speaker as anno_speaker
 from ..graph import WrappedToken, EnclosureGraph
 
 
@@ -61,6 +62,12 @@ class Context(object):
         self.doc_turns = doc_turns
         self.tokens = tokens
     # pylint: enable=too-many-arguments
+
+    def speaker(self):
+        """
+        the speaker associated with the turn surrounding an edu
+        """
+        return anno_speaker(self.turn)
 
     @classmethod
     def _the(cls, edu, surrounders, typ):
