@@ -27,6 +27,7 @@ from educe.learning.keys import\
     HeaderType,\
     MagicKey, Key, KeyGroup, MergedKeyGroup, ClassKeyGroup
 from educe.stac import postag, corenlp
+from educe.stac.annotation import speaker
 from educe.learning.csv import tune_for_csv
 from educe.learning.util import tuple_feature, underscore
 import educe.corpus
@@ -140,13 +141,6 @@ def is_just_emoticon(tokens):
     if not isinstance(tokens, collections.Sequence):
         raise TypeError("tokens must form a sequence")
     return bool(emoticons(tokens)) and len(tokens) == 1
-
-
-def speaker(turn):
-    """
-    The speaker for a given turn annotation
-    """
-    return turn.features['Emitter']
 
 
 def player_addresees(edu):

@@ -24,6 +24,7 @@ from educe.annotation import Annotation
 from .. import corpus, stac, annotation
 from ..graph import *
 import educe.graph
+import educe.stac.annotation as stac_anno
 
 # ---------------------------------------------------------------------
 #
@@ -351,7 +352,7 @@ class DotGraph(educe.graph.DotGraph):
         enclosing_turns = [ t for t in self.turns if t.span.encloses(u.span) ]
         if len(enclosing_turns) > 0:
             turn      = enclosing_turns[0]
-            speaker   = turn.features['Emitter']
+            speaker = stac_anno.speaker(turn)
             turn_text = stac.split_turn_text(self.doc.text(turn.span))[0]
             turn_id   = turn_text.split(':')[0].strip()
             return speaker, turn_id

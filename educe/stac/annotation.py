@@ -302,6 +302,15 @@ def twin_from(doc, anno):
              if u.local_id() == anno_local_id]
     return twins[0] if twins else None
 
+
+def speaker(anno):
+    """
+    Return the speaker associated with a turn annotation.
+    NB: crashes if there is none
+    """
+    return anno.features['Emitter']
+
+
 # ---------------------------------------------------------------------
 # Adding annotations
 # ---------------------------------------------------------------------
