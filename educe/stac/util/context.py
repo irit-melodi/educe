@@ -120,6 +120,26 @@ class Context(object):
             contexts[edu] = cls._for_edu(egraph, doc_turns, edu)
         return contexts
 
+    @classmethod
+    def for_corpus(cls, corpus):
+        """
+        Return a dictionary of context objects for each EDU in all the
+        documents of the corpus.
+
+        Does not include the possibility of including postags in the
+        context
+
+        :rtype dict(educe.glozz.Unit, Context)
+        """
+        contexts = {}
+        for key in corpus:
+            doc = corpus[key]
+            egraph = EnclosureGraph(doc)
+            doc_turns = list(filter(is_turn, doc.units))
+            for edu in filter(is_edu, doc.units):
+                contexts[edu] = cls._for_edu(egraph, doc_turns, edu)
+        return contexts
+
 
 def enclosed(span, annos):
     """
