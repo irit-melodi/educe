@@ -12,6 +12,7 @@ import educe.stac
 import educe.stac.annotation
 
 from ..args import\
+    read_corpus,\
     add_usual_output_args,\
     get_output_dir, announce_output_dir
 from ..output import save_document
@@ -55,4 +56,3 @@ def main(args):
                 edu.type = "/".join(sorted(etypes2))
         save_document(output_dir, k, doc)
     announce_output_dir(output_dir)
-
