@@ -1026,7 +1026,7 @@ def check_graph_errors(inputs, k):
     squawk('EDU in more than one CDU',
            search_cdu_overlap(inputs, k, graph))
 
-    squawk('Speaker Acknowledgement to themself',
+    squawk('Speaker Acknowledgement to self',
            search_relations(inputs, k, graph, is_weird_ack))
 
     quibble('weird QAP (non "? -> .")',
