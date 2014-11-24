@@ -27,7 +27,7 @@ from educe.learning.keys import\
     HeaderType,\
     MagicKey, Key, KeyGroup, MergedKeyGroup, ClassKeyGroup
 from educe.stac import postag, corenlp
-from educe.stac.annotation import speaker
+from educe.stac.annotation import speaker, addressees
 from educe.learning.csv import tune_for_csv
 from educe.learning.util import tuple_feature, underscore
 import educe.corpus
@@ -148,13 +148,8 @@ def player_addresees(edu):
     The set of people spoken to during an edu annotation.
     This excludes known non-players, like 'All', or '?', or 'Please choose...',
     """
-    k = 'Addressee'
-    blacklist = frozenset(['Please choose...', 'All', '?'])
-    if k in edu.features:
-        addressee = edu.features[k]
-        if addressee not in blacklist:
-            return frozenset(name.strip() for name in addressee.split(','))
-    return frozenset()
+    addr1 = addressees(edu) or frozenset()
+    return frozenset(x for x in addr1 if x not in ['All', '?'])
 
 
 def position_of_speaker_first_turn(ctx):
@@ -171,15 +166,19 @@ def position_of_speaker_first_turn(ctx):
     raise CorpusConsistencyException(oops)
 
 
-def players(docs):
+def players_for_doc(corpus, kdoc):
     """
-    Return the set of speakers/addressees within a set of (sub)documents. In
-    STAC, documents are semi-arbitrarily cut into sub-documents for technical
-    and possibly ergonomic reasons, ie. meaningless as far as we are concerned.
-    So to find all speakers, we would have to search all the subdocuments of a
-    single document.
+    Return the set of speakers/addressees associated with a document.
+
+    In STAC, documents are semi-arbitrarily cut into sub-documents for
+    technical and possibly ergonomic reasons, ie. meaningless as far as we are
+    concerned.  So to find all speakers, we would have to search all the
+    subdocuments of a single document. ::
+
+        (Corpus, String) -> Set String
     """
     speakers = set()
+    docs = [corpus[k] for k in corpus if k.doc == kdoc]
     for doc in docs:
         for anno in doc.units:
             if educe.stac.is_turn(anno):
@@ -1417,11 +1416,9 @@ def get_players(inputs):
     Return a dictionary mapping each document to the set of
     players in that document
     """
-    people = {}
-    for doc in frozenset(k.doc for k in inputs.corpus):
-        people[doc] = players(inputs.corpus[k] for k in inputs.corpus
-                              if k.doc == doc)
-    return people
+    kdocs = frozenset(k.doc for k in inputs.corpus)
+    return {x: players_for_doc(inputs.corpus, x)
+            for x in kdocs}
 
 
 def _extract_pair(env, edu1, edu2):
