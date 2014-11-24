@@ -14,7 +14,7 @@ Educe-style representation for RST discourse treebank trees
 import copy
 import functools
 
-from educe.annotation import Standoff
+from educe.annotation import Standoff, Span
 from educe.external.parser import SearchableTree
 from ..internalutil import treenode
 
@@ -128,6 +128,14 @@ class EDU(Standoff):
             return self.context.text(self.span)
         else:
             return self.raw_text
+
+    @classmethod
+    def fake_root(cls, context=None, origin=None):
+        """
+        Return a fake root EDU: num=0, span=(0,0), text=''
+        """
+        return cls(0, Span(0,0), '', context, origin)
+        
 # pylint: enable=R0913
 
 

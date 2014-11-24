@@ -396,12 +396,23 @@ def _ptb_stuff(doc_ptb_trees, edu):
     """
     if doc_ptb_trees is None:
         return None, None
-    ptb_trees = [t for t in doc_ptb_trees
-                 if t.text_span().overlaps(edu.text_span())]
-    all_tokens = itertools.chain.from_iterable(t.leaves()
-                                               for t in ptb_trees)
-    ptb_tokens = [tok for tok in all_tokens
-                  if tok.text_span().overlaps(edu.text_span())]
+    if edu.num == 0:  # special case: fake root EDU
+        assert edu.span == Span(0,0)  # safety net
+        # filler tokens
+        start_token = Token(RawToken('__START__', '__START__'),
+                            Span(0,0))
+        end_token = Token(RawToken('__END__', '__END__'),
+                          Span(0,0))
+        # 3 of each should suffice to cover common ngram features
+        ptb_tokens = [start_token * 3] + [end_token * 3]
+        ptb_trees = []  # TODO
+    else:
+        ptb_trees = [t for t in doc_ptb_trees
+                     if t.text_span().overlaps(edu.text_span())]
+        all_tokens = itertools.chain.from_iterable(t.leaves()
+                                                   for t in ptb_trees)
+        ptb_tokens = [tok for tok in all_tokens
+                      if tok.text_span().overlaps(edu.text_span())]
     return ptb_trees, ptb_tokens
 
 

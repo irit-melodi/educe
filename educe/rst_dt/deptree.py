@@ -13,7 +13,7 @@ import itertools
 
 from nltk import Tree
 
-from educe.rst_dt.annotation import SimpleRSTTree, Node
+from educe.rst_dt.annotation import SimpleRSTTree, Node, EDU
 from ..internalutil import treenode
 
 _N = "Nucleus"
@@ -216,7 +216,12 @@ def relaxed_nuclearity_to_deptree(rst_tree):
         return Tree(rnode, kids)
 
     head = walk(rst_tree)  # build dlinks
-    return mk_tree((None, head))
+    # add fake root
+    fake_root_edu = EDU.fake_root()  # TODO context, origin ?
+    fake_root = DepNode(fake_root_edu, fake_root_edu.num)
+    dlinks[fake_root].append(('ROOT', head))
+
+    return mk_tree((None, fake_root))
 
 
 # pylint: disable=R0903, W0232
