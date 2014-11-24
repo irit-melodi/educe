@@ -19,7 +19,9 @@ import educe.learning.keys
 import educe.glozz
 import educe.stac
 import educe.util
-from .. import features
+from .. import (features as features_eyk,
+                features_li2014 as features_li2014)
+from ..base import read_corpus_inputs, extract_pair_features
 
 NAME = 'extract'
 
@@ -89,6 +91,7 @@ def main_parsing_pairs(args):
         header = features.PairKeys(inputs)
         writer = mk_csv_writer(header, ofile)
         feats = features.extract_pair_features(inputs,
+                                               feature_set=features_li2014,
                                                live=True)
         for row, _ in feats:
             writer.writerow(row)
@@ -121,7 +124,7 @@ def main_corpus_pairs(args):
     """
     The usual main. Extract feature vectors from the corpus
     """
-    inputs = features.read_corpus_inputs(args)
+    inputs = read_corpus_inputs(args)
     of_bn = os.path.join(args.output, os.path.basename(args.corpus))
     of_ext = '.tab'
     if not os.path.exists(args.output):
@@ -131,7 +134,7 @@ def main_corpus_pairs(args):
     edu_pairs_file = of_bn + '.edu-pairs' + of_ext
     with codecs.open(relations_file, 'wb') as r_ofile:
         with codecs.open(edu_pairs_file, 'wb') as p_ofile:
-            gen = features.extract_pair_features(inputs)
+            gen = extract_pair_features(inputs, feature_set=features_li2014)
             try:
                 _write_pairs(gen, r_ofile, p_ofile)
             except StopIteration:

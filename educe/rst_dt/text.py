@@ -23,9 +23,12 @@ class Paragraph(Standoff):
     A paragraph is a sequence of `Sentence`s (also standoff
     annotations).
     """
-    def __init__(self, sentences):
+    def __init__(self, num, sentences):
         self.sentences = sentences
         "sentence-level annotations"
+
+        self.num = num
+        "paragraph ID in document"
 
         super(Paragraph, self).__init__()
 
@@ -37,9 +40,12 @@ class Sentence(Standoff):
     """
     Just a text span really
     """
-    def __init__(self, span):
+    def __init__(self, num, span):
         super(Sentence, self).__init__()
         self.span = span
+
+        self.num = num
+        "sentence ID in document"
 
     def text_span(self):
         return self.span
@@ -59,14 +65,16 @@ def parse_text(text):
     approximation, it may be helpful.
     """
     start = 0
+    sent_id = 0
     output_paras = []
-    for paragraph in text.split("\n\n"):
+    for para_id, paragraph in enumerate(text.split("\n\n")):
         output_sentences = []
         for sentence in paragraph.split("\n"):
             end = start + len(sentence)
             if end > start:
-                output_sentences.append(Sentence(Span(start, end)))
+                output_sentences.append(Sentence(sent_id, Span(start, end)))
+                sent_id += 1
             start = end + 1  # newline
-        output_paras.append(Paragraph(output_sentences))
+        output_paras.append(Paragraph(para_id, output_sentences))
         start += 1  # second newline
     return output_paras
