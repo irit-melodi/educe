@@ -91,6 +91,8 @@ COORDINATING_RELATIONS = \
      'Conditional',
      'Alternation']
 
+_F_ADDRESSEE = 'Addressee'
+
 
 def split_turn_text(text):
     """
@@ -123,6 +125,39 @@ def turn_id(anno):
     """
     tid_str = anno.features.get('Identifier')
     return int(tid_str) if tid_str else None
+
+
+def addressees(anno):
+    """
+    The set of people spoken to during an edu annotation ::
+
+        Annotation -> Set String
+
+    Note: this returns `None` if the value is the default
+    'Please choose...'; but otherwise, it preserves values
+    like 'All' or '?'.
+    """
+    addr = anno.features.get(_F_ADDRESSEE)
+    if addr is None or addr == 'Please choose...':
+        return None
+    else:
+        return frozenset(name.strip() for name in addr.split(','))
+
+
+def set_addressees(anno, addr):
+    """
+    Set the addresee list for an annotation.  If the value
+    `None` is provided, the addressee list is deleted (if
+    present) ::
+
+        (Iterable String, Annotation) -> IO ()
+    """
+    feats = anno.features
+    if addr is not None:
+        feats[_F_ADDRESSEE] = ', '.join(sorted(addr))
+    elif _F_ADDRESSEE in feats:
+        del feats[_F_ADDRESSEE]
+
 
 # ---------------------------------------------------------------------
 # Document
