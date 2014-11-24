@@ -171,15 +171,19 @@ def position_of_speaker_first_turn(ctx):
     raise CorpusConsistencyException(oops)
 
 
-def players(docs):
+def players_for_doc(corpus, kdoc):
     """
-    Return the set of speakers/addressees within a set of (sub)documents. In
-    STAC, documents are semi-arbitrarily cut into sub-documents for technical
-    and possibly ergonomic reasons, ie. meaningless as far as we are concerned.
-    So to find all speakers, we would have to search all the subdocuments of a
-    single document.
+    Return the set of speakers/addressees associated with a document.
+
+    In STAC, documents are semi-arbitrarily cut into sub-documents for
+    technical and possibly ergonomic reasons, ie. meaningless as far as we are
+    concerned.  So to find all speakers, we would have to search all the
+    subdocuments of a single document. ::
+
+        (Corpus, String) -> Set String
     """
     speakers = set()
+    docs = [corpus[k] for k in corpus if k.doc == kdoc]
     for doc in docs:
         for anno in doc.units:
             if educe.stac.is_turn(anno):
@@ -1417,11 +1421,9 @@ def get_players(inputs):
     Return a dictionary mapping each document to the set of
     players in that document
     """
-    people = {}
-    for doc in frozenset(k.doc for k in inputs.corpus):
-        people[doc] = players(inputs.corpus[k] for k in inputs.corpus
-                              if k.doc == doc)
-    return people
+    kdocs = frozenset(k.doc for k in inputs.corpus)
+    return {x: players_for_doc(inputs.corpus, x)
+            for x in kdocs}
 
 
 def _extract_pair(env, edu1, edu2):

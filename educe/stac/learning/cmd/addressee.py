@@ -14,6 +14,7 @@ from educe.stac import postag, corenlp
 from educe.stac.annotation import is_edu
 from educe.util import\
     add_corpus_filters, fields_without, mk_is_interesting
+from educe.stac.util.context import sorted_first_widest
 import educe.corpus
 import educe.glozz
 import educe.learning.keys
@@ -21,25 +22,26 @@ import educe.stac
 import educe.util
 
 from ..features import\
-    mk_env, get_players,\
+    players_for_doc,\
     FeatureInput
 from ..addressee import guess_addressees
 
 NAME = 'addressee'
 
 
-def _on_doc(inputs, people, key, live):
+def _on_doc(inputs, key):
     "compute all EDU addresees for a document"
-    env = mk_env(inputs, people, key, live)
-    doc = inputs.corpus[key]
-    print()
     print(key)
     print("=" * len(str(key)))
-    print("Players", list(env.current.players))
     print()
-    for edu in filter(is_edu, doc.units):
+    doc = inputs.corpus[key]
+    players = players_for_doc(inputs.corpus, key.doc)
+    print("Players", list(players))
+    doc_addressees = guess_addressees(inputs, key)
+    edus = sorted_first_widest(filter(is_edu, doc.units))
+    for edu in edus:
         txt = doc.text(edu.text_span())
-        addressees = guess_addressees(env.current, edu)
+        addressees = doc_addressees[edu]
         addressees_str = "unknown" if addressees is None\
             else ";".join(addressees)
         msg = u'{addr:14} {txt}'.format(addr=addressees_str,
@@ -91,6 +93,5 @@ def main(args):
     (single edus only)
     """
     inputs = _read_corpus_inputs(args)
-    players = get_players(inputs)
     for key in inputs.corpus:
-        _on_doc(inputs, players, key, False)
+        _on_doc(inputs, key)
