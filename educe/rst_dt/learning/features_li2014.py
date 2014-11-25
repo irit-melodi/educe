@@ -154,7 +154,7 @@ def num_edus_to_sent_end(current, edu):
     edus = current.rsttree.leaves()
     edus_same_sent = [e for e in edus
                       if current.surrounders[e][1] == sent]
-    result = edus_same_sent[::-1].index(edu)
+    result = list(reversed(edus_same_sent)).index(edu)
     return result
 
 def num_edus_from_para_start(current, edu):
@@ -174,7 +174,7 @@ def num_edus_to_para_end(current, edu):
     edus = current.rsttree.leaves()
     edus_same_para = [e for e in edus
                       if current.surrounders[e][0] == para]
-    result = edus_same_para[::-1].index(edu)
+    result = list(reversed(edus_same_para)).index(edu)
     return result
 
 # this is lineID in (Li et al. 2014)
@@ -186,7 +186,7 @@ def num_edus_from_doc_start(edu):
 def num_edus_to_doc_end(current, edu):
     "distance of edu in EDUs to document end"
     edus = current.rsttree.leaves()
-    result = edus[::-1].index(edu)
+    result = list(reversed(edus)).index(edu)
     return result
 
 
@@ -580,29 +580,30 @@ class SingleEduSubgroup_Para(SingleEduSubgroup):
 class PairSubgroup_Core(PairSubgroup):
     "core features"
 
+    _features = [
+        MagicKey.meta_fn(feat_grouping)
+    ]
+
     def __init__(self):
         desc = self.__doc__.strip()
-        keys = [
-            MagicKey.meta_fn(feat_grouping)
-        ]
-        super(PairSubgroup_Core, self).__init__(desc, keys)
+        super(PairSubgroup_Core, self).__init__(desc, self._features)
 
 
-# largely c/c'ed from educe.stac.learning.features
 class PairSubgroup_Word(PairSubgroup):
     "word tuple features"
 
+    _features = [
+        MagicKey.discrete_fn(ptb_word_first_pairs),
+        MagicKey.discrete_fn(ptb_word_last_pairs),
+        MagicKey.discrete_fn(ptb_word_first2_pairs),
+        MagicKey.discrete_fn(ptb_word_last2_pairs)
+    ]
+
     def __init__(self, inputs, sf_cache):
         self.corpus = inputs.corpus
         self.sf_cache = sf_cache
         desc = self.__doc__.strip()
-        keys = [
-            MagicKey.discrete_fn(ptb_word_first_pairs),
-            MagicKey.discrete_fn(ptb_word_last_pairs),
-            MagicKey.discrete_fn(ptb_word_first2_pairs),
-            MagicKey.discrete_fn(ptb_word_last2_pairs)
-        ]
-        super(PairSubgroup_Word, self).__init__(desc, keys)
+        super(PairSubgroup_Word, self).__init__(desc, self._features)
 
     def fill(self, current, edu1, edu2, target=None):
         vec = self if target is None else target
@@ -610,18 +611,18 @@ class PairSubgroup_Word(PairSubgroup):
             vec[key.name] = key.function(current, self.sf_cache, edu1, edu2)
 
 
-# largely c/c'ed from educe.stac.learning.features
 class PairSubgroup_Pos(PairSubgroup):
     "POS tuple features"
 
+    _features = [
+        MagicKey.discrete_fn(ptb_pos_tag_first_pairs)
+    ]
+
     def __init__(self, inputs, sf_cache):
         self.corpus = inputs.corpus
         self.sf_cache = sf_cache
         desc = self.__doc__.strip()
-        keys = [
-            MagicKey.discrete_fn(ptb_pos_tag_first_pairs)
-        ]
-        super(PairSubgroup_Pos, self).__init__(desc, keys)
+        super(PairSubgroup_Pos, self).__init__(desc, self._features)
 
     def fill(self, current, edu1, edu2, target=None):
         vec = self if target is None else target
@@ -629,20 +630,20 @@ class PairSubgroup_Pos(PairSubgroup):
             vec[key.name] = key.function(current, self.sf_cache, edu1, edu2)
 
 
-# largely c/c'ed from educe.stac.learning.features
 class PairSubgroup_Para(PairSubgroup):
     "Paragraph tuple features"
 
+    _features = [
+        MagicKey.discrete_fn(first_paragraph),
+        MagicKey.discrete_fn(num_paragraphs_between),
+        MagicKey.discrete_fn(num_paragraphs_between_div3)
+    ]
+
     def __init__(self, inputs, sf_cache):
         self.corpus = inputs.corpus
         self.sf_cache = sf_cache
         desc = self.__doc__.strip()
-        keys = [
-            MagicKey.discrete_fn(first_paragraph),
-            MagicKey.discrete_fn(num_paragraphs_between),
-            MagicKey.discrete_fn(num_paragraphs_between_div3)
-        ]
-        super(PairSubgroup_Para, self).__init__(desc, keys)
+        super(PairSubgroup_Para, self).__init__(desc, self._features)
 
     def fill(self, current, edu1, edu2, target=None):
         vec = self if target is None else target
@@ -650,31 +651,31 @@ class PairSubgroup_Para(PairSubgroup):
             vec[key.name] = key.function(current, self.sf_cache, edu1, edu2)
 
 
-# largely c/c'ed from educe.stac.learning.features
 class PairSubgroup_Sent(PairSubgroup):
     "Sentence tuple features"
 
+    _features = [
+        MagicKey.discrete_fn(num_edus_between),  # offset dif
+        MagicKey.discrete_fn(rev_offset_dif),
+        MagicKey.discrete_fn(offset_dif_div3),
+        MagicKey.discrete_fn(rev_offset_dif_div3),
+        MagicKey.discrete_fn(offset_pair),
+        MagicKey.discrete_fn(rev_offset_pair),
+        MagicKey.discrete_fn(offset_div3_pair),
+        MagicKey.discrete_fn(rev_offset_div3_pair),
+        MagicKey.discrete_fn(line_id_dif),  # !?! what's this?
+        MagicKey.discrete_fn(same_bad_sentence),
+        MagicKey.discrete_fn(sentence_id_dif),
+        MagicKey.discrete_fn(sentence_id_dif_div3),
+        MagicKey.discrete_fn(rev_sentence_id_dif),
+        MagicKey.discrete_fn(rev_sentence_id_dif_div3),
+    ]
+
     def __init__(self, inputs, sf_cache):
         self.corpus = inputs.corpus
         self.sf_cache = sf_cache
         desc = self.__doc__.strip()
-        keys = [
-            MagicKey.discrete_fn(num_edus_between),  # offset dif
-            MagicKey.discrete_fn(rev_offset_dif),
-            MagicKey.discrete_fn(offset_dif_div3),
-            MagicKey.discrete_fn(rev_offset_dif_div3),
-            MagicKey.discrete_fn(offset_pair),
-            MagicKey.discrete_fn(rev_offset_pair),
-            MagicKey.discrete_fn(offset_div3_pair),
-            MagicKey.discrete_fn(rev_offset_div3_pair),
-            MagicKey.discrete_fn(line_id_dif),  # !?! what's this?
-            MagicKey.discrete_fn(same_bad_sentence),
-            MagicKey.discrete_fn(sentence_id_dif),
-            MagicKey.discrete_fn(sentence_id_dif_div3),
-            MagicKey.discrete_fn(rev_sentence_id_dif),
-            MagicKey.discrete_fn(rev_sentence_id_dif_div3),
-        ]
-        super(PairSubgroup_Sent, self).__init__(desc, keys)
+        super(PairSubgroup_Sent, self).__init__(desc, self._features)
 
     def fill(self, current, edu1, edu2, target=None):
         vec = self if target is None else target
@@ -682,19 +683,19 @@ class PairSubgroup_Sent(PairSubgroup):
             vec[key.name] = key.function(current, self.sf_cache, edu1, edu2)
 
 
-# largely c/c'ed from educe.stac.learning.features
 class PairSubgroup_Length(PairSubgroup):
     "Sentence tuple features"
+
+    _features = [
+        MagicKey.discrete_fn(num_tokens_div5_pair),
+        MagicKey.discrete_fn(num_tokens_diff_div5)
+    ]
 
     def __init__(self, inputs, sf_cache):
         self.corpus = inputs.corpus
         self.sf_cache = sf_cache
         desc = self.__doc__.strip()
-        keys = [
-            MagicKey.discrete_fn(num_tokens_div5_pair),
-            MagicKey.discrete_fn(num_tokens_diff_div5)
-        ]
-        super(PairSubgroup_Length, self).__init__(desc, keys)
+        super(PairSubgroup_Length, self).__init__(desc, self._features)
 
     def fill(self, current, edu1, edu2, target=None):
         vec = self if target is None else target
