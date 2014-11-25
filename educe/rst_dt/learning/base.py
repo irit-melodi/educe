@@ -190,18 +190,15 @@ class SingleEduSubgroup(KeyGroup):
             vec[key.name] = key.function(current, edu)
 
 
-class SingleEduKeys(MergedKeyGroup):
+class BaseSingleEduKeys(MergedKeyGroup):
+    """Base class for single EDU features.
+
+    Warning: This class should not be used directly. Use derived classes
+    instead.
     """
-    single EDU features
-    """
-    def __init__(self, inputs, feature_set):
-        sf_cache = None  # CHECKME
-        single_edu_feat_groups = feature_set.single_edu_features(inputs,
-                                                                 sf_cache)
-        #if inputs.debug:
-        #    groups.append(SingleEduSubgroup_Debug())
-        desc = self.__doc__.strip()
-        super(SingleEduKeys, self).__init__(desc, single_edu_feat_groups)
+    def __init__(self, inputs, feature_groups):
+        desc = "Single EDU features"
+        super(BaseSingleEduKeys, self).__init__(desc, feature_groups)
 
     def fill(self, current, edu, target=None):
         """
@@ -248,49 +245,51 @@ class PairSubgroup(KeyGroup):
             vec[key.name] = key.function(current, edu1, edu2)
 
 
-class PairKeys(MergedKeyGroup):
-    """
-    pair features
+class BasePairKeys(MergedKeyGroup):
+    """Base class for EDU pair features.
 
-    sf_cache should only be None if you're just using this
-    to generate help text
+    Parameters
+    ----------
+
+    sf_cache :  dict(EDU, SingleEduKeys), optional (default=None)
+        Should only be None if you're just using this to generate help text.
     """
-    def __init__(self, inputs, feature_set, sf_cache=None):
-        """
-        """
+
+    def __init__(self, inputs, pair_feature_groups, sf_cache=None):
         self.sf_cache = sf_cache
-        #if inputs.debug:
-        #    groups.append(PairSubgroup_Debug())
 
         if sf_cache is None:
-            self.edu1 = SingleEduKeys(inputs, feature_set)
-            self.edu2 = SingleEduKeys(inputs, feature_set)
+            self.edu1 = self.init_single_features(inputs)
+            self.edu2 = self.init_single_features(inputs)
         else:
             self.edu1 = None  # will be filled out later
             self.edu2 = None  # from the feature cache
 
         desc = "pair features"
-        pair_edu_feat_groups = feature_set.pair_edu_features(inputs, sf_cache)
-        super(PairKeys, self).__init__(desc, pair_edu_feat_groups)
+        super(BasePairKeys, self).__init__(desc, pair_feature_groups)
+
+    def init_single_features(self, inputs):
+        """Init features defined on single EDUs"""
+        raise NotImplemented()
 
     def csv_headers(self, htype=False):
         if htype in [HeaderType.OLD_CSV, HeaderType.NAME]:
-            return super(PairKeys, self).csv_headers(htype) +\
+            return super(BasePairKeys, self).csv_headers(htype) +\
                     [h + "_EDU1" for h in self.edu1.csv_headers(htype)] +\
                     [h + "_EDU2" for h in self.edu2.csv_headers(htype)]
         else:
-            return super(PairKeys, self).csv_headers(htype) +\
+            return super(BasePairKeys, self).csv_headers(htype) +\
                     self.edu1.csv_headers(htype) +\
                     self.edu2.csv_headers(htype)
 
 
     def csv_values(self):
-        return super(PairKeys, self).csv_values() +\
+        return super(BasePairKeys, self).csv_values() +\
             self.edu1.csv_values() +\
             self.edu2.csv_values()
 
     def help_text(self):
-        lines = [super(PairKeys, self).help_text(),
+        lines = [super(BasePairKeys, self).help_text(),
                  "",
                  self.edu1.help_text()]
         return "\n".join(lines)
@@ -440,14 +439,14 @@ def extract_pair_features(inputs, feature_set, live=False):
         # single edu features
         sf_cache = {}
         for edu in edus:
-            sf_cache[edu] = SingleEduKeys(inputs, feature_set)
+            sf_cache[edu] = feature_set.SingleEduKeys(inputs)
             sf_cache[edu].fill(current, edu)
 
         for epair in itertools.product(edus, edus):
             edu1, edu2 = epair
             if edu1 == edu2:
                 continue
-            vec = PairKeys(inputs, feature_set, sf_cache=sf_cache)
+            vec = feature_set.PairKeys(inputs, sf_cache=sf_cache)
             vec.fill(current, edu1, edu2)
 
             if live:

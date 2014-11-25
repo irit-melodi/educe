@@ -12,9 +12,8 @@ from educe.learning.keys import\
     MergedKeyGroup, HeaderType,\
     MagicKey
 from educe.learning.util import tuple_feature, underscore
-from educe.rst_dt.learning.base import FeatureExtractionException,\
-    FeatureInput, DocumentPlus,\
-    SingleEduSubgroup, PairSubgroup,\
+from .base import SingleEduSubgroup, PairSubgroup,\
+    BaseSingleEduKeys, BasePairKeys,\
     edu_feature, edu_pair_feature,\
     on_first_unigram, on_last_unigram, on_first_bigram, on_last_bigram,\
     feat_grouping, feat_id, feat_start, feat_end
@@ -717,39 +716,50 @@ class PairSubgroup_Basket(PairSubgroup):
 
 
 # export feat groups
+class SingleEduKeys(BaseSingleEduKeys):
+    """Single EDU features"""
 
-def single_edu_features(inputs, sf_cache):
-    "Features on a single EDU"
-    groups = [
-        SingleEduSubgroup_Meta(),
-        SingleEduSubgroup_Word(),
-        SingleEduSubgroup_Pos(),
-        # SingleEduSubgroup_Syntax(),  # basket feature
-        SingleEduSubgroup_Length(),
-        SingleEduSubgroup_Para(),
-        SingleEduSubgroup_Sentence()
-    ]
-    return groups
+    def __init__(self, inputs):
+        groups = [
+            SingleEduSubgroup_Meta(),
+            SingleEduSubgroup_Word(),
+            SingleEduSubgroup_Pos(),
+            # SingleEduSubgroup_Syntax(),  # basket feature
+            SingleEduSubgroup_Length(),
+            SingleEduSubgroup_Para(),
+            SingleEduSubgroup_Sentence()
+        ]
+        #if inputs.debug:
+        #    groups.append(SingleEduSubgroup_Debug())
+        super(SingleEduKeys, self).__init__(inputs, groups)
 
 
-def pair_edu_features(inputs, sf_cache):
-    "Features on a pair of EDUs"
-    groups = [
-        # meta
-        PairSubgroup_Core(),
-        # feature type: 1
-        PairSubgroup_Word(inputs, sf_cache),
-        # 2
-        PairSubgroup_Pos(inputs, sf_cache),
-        # 3
-        PairSubgroup_Para(inputs, sf_cache),
-        PairSubgroup_Sent(inputs, sf_cache),
-        # 4
-        PairSubgroup_Length(inputs, sf_cache),
-        # 5
-        # PairSubgroup_Syntax(),  # cf. basket
-        # 6
-        # PairSubgroup_Semantics(),
-        PairSubgroup_Basket()  # basket feats for POS and syntax
-    ]
-    return groups
+class PairKeys(BasePairKeys):
+    """Features on a pair of EDUs"""
+
+    def __init__(self, inputs, sf_cache=None):
+        groups = [
+            # meta
+            PairSubgroup_Core(),
+            # feature type: 1
+            PairSubgroup_Word(inputs, sf_cache),
+            # 2
+            PairSubgroup_Pos(inputs, sf_cache),
+            # 3
+            PairSubgroup_Para(inputs, sf_cache),
+            PairSubgroup_Sent(inputs, sf_cache),
+            # 4
+            PairSubgroup_Length(inputs, sf_cache),
+            # 5
+            # PairSubgroup_Syntax(),  # cf. basket
+            # 6
+            # PairSubgroup_Semantics(),
+            PairSubgroup_Basket()  # basket feats for POS and syntax
+        ]    
+        #if inputs.debug:
+        #    groups.append(PairSubgroup_Debug())
+        super(PairKeys, self).__init__(inputs, groups, sf_cache)
+
+    def init_single_features(self, inputs):
+        """Init features defined on single EDUs"""
+        return SingleEduKeys(inputs)

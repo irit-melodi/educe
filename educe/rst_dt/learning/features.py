@@ -10,6 +10,7 @@ from educe.learning.csv import tune_for_csv
 from educe.learning.keys import MagicKey
 from educe.learning.util import tuple_feature, underscore
 from .base import SingleEduSubgroup, PairSubgroup,\
+    BaseSingleEduKeys, BasePairKeys,\
     on_first_unigram, on_last_unigram, on_first_bigram, on_last_bigram,\
     edu_feature, edu_pair_feature,\
     feat_id, feat_start, feat_end,\
@@ -361,23 +362,34 @@ class PairSubgroup_Basket(PairSubgroup):
 
 
 # export groups
+class SingleEduKeys(BaseSingleEduKeys):
+    """Single EDU features"""
 
-def single_edu_features(inputs, sf_cache):
-    "Features on a single EDU"
-    groups = [
-        SingleEduSubgroup_Meta(),
-        SingleEduSubgroup_Text(),
-        SingleEduSubgroup_Ptb()
-    ]
-    return groups
+    def __init__(self, inputs):
+        groups = [
+            SingleEduSubgroup_Meta(),
+            SingleEduSubgroup_Text(),
+            SingleEduSubgroup_Ptb()
+        ]
+        #if inputs.debug:
+        #    groups.append(SingleEduSubgroup_Debug())
+        super(SingleEduKeys, self).__init__(inputs, groups)
 
 
-def pair_edu_features(inputs, sf_cache):
-    "Features on a pair of EDUs"
-    groups = [
-        PairSubGroup_Core(),
-        PairSubgroup_Gap(),
-        PairSubgroup_Tuple(inputs, sf_cache),
-        PairSubgroup_Basket()
-    ]
-    return groups
+class PairKeys(BasePairKeys):
+    """Features on a pair of EDUs"""
+
+    def __init__(self, inputs, sf_cache=None):
+        groups = [
+            PairSubGroup_Core(),
+            PairSubgroup_Gap(),
+            PairSubgroup_Tuple(inputs, sf_cache),
+            PairSubgroup_Basket()
+        ]    
+        #if inputs.debug:
+        #    groups.append(PairSubgroup_Debug())
+        super(PairKeys, self).__init__(inputs, groups, sf_cache)
+
+    def init_single_features(self, inputs):
+        """Init features defined on single EDUs"""
+        return SingleEduKeys(inputs)
