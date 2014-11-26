@@ -9,12 +9,14 @@ import re
 from educe.learning.csv import tune_for_csv
 from educe.learning.keys import MagicKey
 from educe.learning.util import tuple_feature, underscore
-from .base import SingleEduSubgroup, PairSubgroup,\
-    BaseSingleEduKeys, BasePairKeys,\
-    on_first_unigram, on_last_unigram, on_first_bigram, on_last_bigram,\
-    edu_feature, edu_pair_feature,\
-    feat_id, feat_start, feat_end,\
-    feat_grouping
+from .base import (SingleEduSubgroup, PairSubgroup,
+                   BaseSingleEduKeys, BasePairKeys,
+                   on_first_unigram, on_last_unigram,
+                   on_first_bigram, on_last_bigram,
+                   edu_feature, edu_pair_feature,
+                   feat_id, feat_start, feat_end,
+                   feat_grouping,
+                   get_sentence, get_paragraph)
 
 
 # ---------------------------------------------------------------------
@@ -182,16 +184,16 @@ def num_edus_between(edu1, edu2):
 
 def same_paragraph(current, edu1, edu2):
     "if in the same paragraph"
-    para1 = current.surrounders[edu1][0]
-    para2 = current.surrounders[edu2][0]
+    para1 = get_paragraph(current, edu1)
+    para2 = get_paragraph(current, edu2)
     return para1 is not None and para2 is not None and\
         para1 == para2
 
 
 def same_bad_sentence(current, edu1, edu2):
     "if in the same sentence (bad segmentation)"
-    sent1 = current.surrounders[edu1][1]
-    sent2 = current.surrounders[edu2][1]
+    sent1 = get_sentence(current, edu1)
+    sent2 = get_sentence(current, edu2)
     return sent1 is not None and sent2 is not None and\
         sent1 == sent2
 
@@ -385,7 +387,7 @@ class PairKeys(BasePairKeys):
             PairSubgroup_Gap(),
             PairSubgroup_Tuple(inputs, sf_cache),
             PairSubgroup_Basket()
-        ]    
+        ]
         #if inputs.debug:
         #    groups.append(PairSubgroup_Debug())
         super(PairKeys, self).__init__(inputs, groups, sf_cache)

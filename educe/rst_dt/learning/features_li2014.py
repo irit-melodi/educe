@@ -1,22 +1,28 @@
-"""
-Feature extraction library functions for RST_DT corpus, following (Li et al. 2014)
+"""Partial re-implementation of the feature extraction procedure used in
+[li2014text]_ for discourse dependency parsing on the RST-DT corpus.
+
+.. [li2014text] Li, S., Wang, L., Cao, Z., & Li, W. (2014).
+Text-level discourse dependency parsing.
+In Proceedings of the 52nd Annual Meeting of the Association for
+Computational Linguistics (Vol. 1, pp. 25-35).
+http://www.aclweb.org/anthology/P/P14/P14-1003.pdf
 """
 
 from collections import Counter
 from functools import wraps
-import itertools
 import re
 
 from educe.internalutil import treenode
-from educe.learning.keys import\
-    MergedKeyGroup, HeaderType,\
-    MagicKey
+from educe.learning.keys import MagicKey
 from educe.learning.util import tuple_feature, underscore
-from .base import SingleEduSubgroup, PairSubgroup,\
-    BaseSingleEduKeys, BasePairKeys,\
-    edu_feature, edu_pair_feature,\
-    on_first_unigram, on_last_unigram, on_first_bigram, on_last_bigram,\
-    feat_grouping, feat_id, feat_start, feat_end
+from .base import (SingleEduSubgroup, PairSubgroup,
+                   BaseSingleEduKeys, BasePairKeys,
+                   edu_feature,
+                   on_first_unigram, on_last_unigram,
+                   on_first_bigram, on_last_bigram,
+                   feat_grouping, feat_id, feat_start, feat_end,
+                   get_sentence, get_paragraph,
+                   lowest_common_parent)
 
 
 # ---------------------------------------------------------------------
@@ -24,8 +30,8 @@ from .base import SingleEduSubgroup, PairSubgroup,\
 # ---------------------------------------------------------------------
 
 # filter tags and tokens as in Li et al.'s parser
-tt_pattern = r'.*[a-zA-Z_0-9].*'
-tt_filter = re.compile(tt_pattern) 
+TT_PATTERN = r'.*[a-zA-Z_0-9].*'
+TT_FILTER = re.compile(TT_PATTERN)
 
 
 def ptb_tokens_feature(wrapped):
@@ -41,8 +47,8 @@ def ptb_tokens_feature(wrapped):
             return None
         # filter tags and tokens as in Li et al.'s parser
         tokens = [tt for tt in tokens
-                  if (tt_filter.match(tt.word) is not None and
-                      tt_filter.match(tt.tag) is not None)]
+                  if (TT_FILTER.match(tt.word) is not None and
+                      TT_FILTER.match(tt.tag) is not None)]
         return wrapped(tokens)
     return inner
 
@@ -57,7 +63,6 @@ def ptb_tokens_feature(wrapped):
 @on_first_unigram
 def ptb_pos_tag_first(token):
     "POS tag for first PTB token in the EDU"
-    # note: PTB tokens may not necessarily correspond to words
     return token.tag
 
 
@@ -65,12 +70,10 @@ def ptb_pos_tag_first(token):
 @on_last_unigram
 def ptb_pos_tag_last(token):
     "POS tag for last PTB token in the EDU"
-    # note: PTB tokens may not necessarily correspond to words
     return token.tag
 
 
-# 
-
+# length
 @ptb_tokens_feature
 def num_tokens(tokens):
     "number of distinct tokens in EDU text"
@@ -133,54 +136,60 @@ def ptb_word_last2(token):
 
 def sentence_id(current, edu):
     "id of sentence that contains edu"
-    sent = current.surrounders[edu][1]
+    sent = get_sentence(current, edu)
     return sent.num if sent else None
+
 
 def num_edus_from_sent_start(current, edu):
     "distance of edu in EDUs from sentence start"
-    sent = current.surrounders[edu][1]
+    sent = get_sentence(current, edu)
     # find all EDUs that are in the same sentence as edu
     edus = current.rsttree.leaves()
     edus_same_sent = [e for e in edus
-                      if current.surrounders[e][1] == sent]
+                      if get_sentence(current, e) == sent]
     result = edus_same_sent.index(edu)
     return result
 
+
 def num_edus_to_sent_end(current, edu):
     "distance of edu in EDUs to sentence end"
-    sent = current.surrounders[edu][1]
+    sent = get_sentence(current, edu)
     # find all EDUs that are in the same sentence as edu
     edus = current.rsttree.leaves()
     edus_same_sent = [e for e in edus
-                      if current.surrounders[e][1] == sent]
+                      if get_sentence(current, e) == sent]
     result = list(reversed(edus_same_sent)).index(edu)
     return result
 
+
 def num_edus_from_para_start(current, edu):
     "distance of edu in EDUs from paragraph start"
-    para = current.surrounders[edu][0]
+    para = get_paragraph(current, edu)
     # find all EDUs that are in the same paragraph as edu
     edus = current.rsttree.leaves()
     edus_same_para = [e for e in edus
-                      if current.surrounders[e][0] == para]
+                      if get_paragraph(current, e) == para]
     result = edus_same_para.index(edu)
     return result
 
+
 def num_edus_to_para_end(current, edu):
     "distance of edu in EDUs to paragraph end"
-    para = current.surrounders[edu][0]
+    para = get_paragraph(current, edu)
     # find all EDUs that are in the same paragraph as edu
     edus = current.rsttree.leaves()
     edus_same_para = [e for e in edus
-                      if current.surrounders[e][0] == para]
+                      if get_paragraph(current, e) == para]
     result = list(reversed(edus_same_para)).index(edu)
     return result
+
 
 # this is lineID in (Li et al. 2014)
 @edu_feature
 def num_edus_from_doc_start(edu):
     "distance of edu in EDUs from document start"
     return edu.num
+
 
 def num_edus_to_doc_end(current, edu):
     "distance of edu in EDUs to document end"
@@ -190,15 +199,15 @@ def num_edus_to_doc_end(current, edu):
 
 
 # paragraph features
-
 def paragraph_id(current, edu):
     "id of paragraph that contains edu"
-    para = current.surrounders[edu][0]
+    para = get_paragraph(current, edu)
     return para.num if para is not None else None
+
 
 def paragraph_id_div5(current, edu):
     "id of paragraph that contains edu, div5"
-    para = current.surrounders[edu][0]
+    para = get_paragraph(current, edu)
     return para.num / 5 if para is not None else None
 
 # TODO: semantic similarity features
@@ -215,28 +224,19 @@ def ptb_pos_tags_in_edu(tokens):
 def get_syntactic_labels(current, edu):
     "Syntactic labels for this EDU"
     result = []
-    edu_txt_span = edu.text_span()
-    # tree positions of leaves of the syntactic trees, that are in the EDU
+
     ptrees = current.ptb_trees[edu]
     if ptrees is None:
         return None
-    tpos_leaves = [ptree.treepositions('leaves') for ptree in ptrees]
-    tpos_leaves_edu = [[tpos_leaf
-                        for tpos_leaf in ptree.treepositions('leaves')
-                        if ptree[tpos_leaf].text_span().overlaps(edu_txt_span)]
-                       for ptree in ptrees]
+    # for each PTB tree, get the tree position of its leaves that are in the
+    # EDU
+    tpos_leaves_edu = ((ptree, [tpos_leaf
+                                for tpos_leaf in ptree.treepositions('leaves')
+                                if ptree[tpos_leaf].overlaps(edu)])
+                       for ptree in ptrees)
     # for each span of syntactic leaves in this EDU
-    for ptree, leaves in itertools.izip(ptrees, tpos_leaves_edu):
-        leftmost_leaf = leaves[0]
-        rightmost_leaf = leaves[-1]
-        # find lowest common parent
-        for i in range(len(leftmost_leaf)):
-            if (i == len(rightmost_leaf) or
-                leftmost_leaf[i] != rightmost_leaf[i]):
-                tpos_parent = leftmost_leaf[:i]
-                break
-        else:
-            tpos_parent = leftmost_leaf
+    for ptree, leaves in tpos_leaves_edu:
+        tpos_parent = lowest_common_parent(leaves)
         # for each leaf between leftmost and rightmost, add its ancestors
         # up to the lowest common parent
         for leaf in leaves:
@@ -325,7 +325,9 @@ def num_tokens_div5_pair(_, cache, edu):
 
 
 def _minus_div5(nb1, nb2):
+    "(nb1-nb2)/5"
     return (nb1-nb2)/5 if (nb1 is not None) and (nb2 is not None) else None
+
 
 @tuple_feature(_minus_div5)
 def num_tokens_diff_div5(_, cache, edu):
@@ -336,12 +338,14 @@ def num_tokens_diff_div5(_, cache, edu):
 # sentence
 
 def _same_or_not(x1, x2):
+    "returns whether x1 and x2 are the same or different"
     if (x1 is None) or (x2 is None):
         return None
     elif x1 == x2:
         return 'same'
     else:
         return 'different'
+
 
 @tuple_feature(_same_or_not)
 def same_bad_sentence(_, cache, edu):
@@ -352,6 +356,7 @@ def same_bad_sentence(_, cache, edu):
 # paragraph
 
 def _who_s_first(x1, x2):
+    "first if x1<x2, second if x2<x1, same if x1==x2"
     if (x1 is None) or (x2 is None):
         return None
     elif x1 == x2:
@@ -369,7 +374,9 @@ def first_paragraph(_, cache, edu):
 
 
 def _minus(nb1, nb2):
+    "nb1-nb2"
     return (nb1 - nb2) if (nb1 is not None) and (nb2 is not None) else None
+
 
 @tuple_feature(_minus)
 def num_paragraphs_between(_, cache, edu):
@@ -378,8 +385,10 @@ def num_paragraphs_between(_, cache, edu):
 
 
 def _minus_div3(nb1, nb2):
+    "(nb1-nb2)/3"
     return ((nb1 - nb2) / 3 if (nb1 is not None) and (nb2 is not None)
             else None)
+
 
 @tuple_feature(_minus_div3)
 def num_paragraphs_between_div3(_, cache, edu):
@@ -394,30 +403,36 @@ def num_edus_between(_, cache, edu):
     "Num of EDUs between the two EDUs"
     return cache[edu]["num_edus_from_sent_start"]
 
+
 @tuple_feature(_minus)
 def rev_offset_dif(_, cache, edu):
     "difference between the two EDUs' revOffset"
     return cache[edu]["num_edus_to_sent_end"]
+
 
 @tuple_feature(_minus_div3)
 def offset_dif_div3(_, cache, edu):
     "difference between the two EDUs' offset, div3"
     return cache[edu]["num_edus_from_sent_start"]
 
+
 @tuple_feature(_minus_div3)
 def rev_offset_dif_div3(_, cache, edu):
     "difference between the two EDUs' offset, div3"
     return cache[edu]["num_edus_to_sent_end"]
+
 
 @tuple_feature(underscore)
 def offset_pair(_, cache, edu):
     "offset pair"
     return cache[edu]["num_edus_from_sent_start"]
 
+
 @tuple_feature(underscore)
 def rev_offset_pair(_, cache, edu):
     "revOffset pair"
     return cache[edu]["num_edus_to_sent_end"]
+
 
 def offset_div3_pair(current, cache, edu1, edu2):
     "offset div 3 pair"
@@ -427,6 +442,7 @@ def offset_div3_pair(current, cache, edu1, edu2):
     offset2_div3 = offset2 / 3
     return '{0}_{1}'.format(offset1_div3, offset2_div3)
 
+
 def rev_offset_div3_pair(current, cache, edu1, edu2):
     "revOffset div 3 pair"
     rev_offset1 = cache[edu1]["num_edus_to_sent_end"]
@@ -435,26 +451,31 @@ def rev_offset_div3_pair(current, cache, edu1, edu2):
     rev_offset2_div3 = rev_offset2 / 3
     return '{0}_{1}'.format(rev_offset1_div3, rev_offset2_div3)
 
+
 def line_id_dif(current, cache, edu1, edu2):
     "difference between lineIDs"
     line_id1 = num_edus_from_doc_start(current, edu1)
     line_id2 = num_edus_from_doc_start(current, edu2)
     return line_id1 - line_id2
 
+
 @tuple_feature(_minus)
 def sentence_id_dif(_, cache, edu):
     "Number of sentences between the two EDUs"
     return cache[edu]["sentence_id"]
+
 
 @tuple_feature(_minus_div3)
 def sentence_id_dif_div3(_, cache, edu):
     "Number of sentences between the two EDUs div3"
     return cache[edu]["sentence_id"]
 
+
 @tuple_feature(_minus)
 def rev_sentence_id_dif(_, cache, edu):
     "Difference of rev_sentence_id of the two EDUs"
     return cache[edu]["num_edus_to_para_end"]
+
 
 @tuple_feature(_minus_div3)
 def rev_sentence_id_dif_div3(_, cache, edu):
@@ -509,7 +530,6 @@ class SingleEduSubgroup_Pos(SingleEduSubgroup):
     def __init__(self):
         desc = self.__doc__.strip()
         super(SingleEduSubgroup_Pos, self).__init__(desc, self._features)
-
 
 
 class SingleEduSubgroup_Sentence(SingleEduSubgroup):
@@ -729,8 +749,8 @@ class SingleEduKeys(BaseSingleEduKeys):
             SingleEduSubgroup_Para(),
             SingleEduSubgroup_Sentence()
         ]
-        #if inputs.debug:
-        #    groups.append(SingleEduSubgroup_Debug())
+        # if inputs.debug:
+        #     groups.append(SingleEduSubgroup_Debug())
         super(SingleEduKeys, self).__init__(inputs, groups)
 
 
@@ -755,9 +775,9 @@ class PairKeys(BasePairKeys):
             # 6
             # PairSubgroup_Semantics(),
             PairSubgroup_Basket()  # basket feats for POS and syntax
-        ]    
-        #if inputs.debug:
-        #    groups.append(PairSubgroup_Debug())
+        ]
+        # if inputs.debug:
+        #     groups.append(PairSubgroup_Debug())
         super(PairKeys, self).__init__(inputs, groups, sf_cache)
 
     def init_single_features(self, inputs):

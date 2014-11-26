@@ -270,7 +270,7 @@ class BasePairKeys(MergedKeyGroup):
 
     def init_single_features(self, inputs):
         """Init features defined on single EDUs"""
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def csv_headers(self, htype=False):
         if htype in [HeaderType.OLD_CSV, HeaderType.NAME]:
@@ -307,6 +307,18 @@ class BasePairKeys(MergedKeyGroup):
 # extraction generators
 # ---------------------------------------------------------------------
 
+def get_sentence(current, edu):
+    "get sentence surrounding this EDU"
+    # TODO do we need bounds-checking or lookup failure handling?
+    return current.surrounders[edu][1]
+
+
+def get_paragraph(current, edu):
+    "get paragraph surrounding this EDU"
+    # TODO do we need bounds-checking or lookup failure handling?
+    return current.surrounders[edu][0]
+
+
 def simplify_deptree(dtree):
     """
     Boil a dependency tree down into a dictionary from (edu, edu) to rel
@@ -322,6 +334,25 @@ def simplify_deptree(dtree):
     #
     _simplify_deptree(dtree)
     return relations
+
+
+def lowest_common_parent(treepositions):
+    """Find tree position of the lowest common parent of a list of nodes."""
+    if not treepositions:
+        return None
+
+    leftmost_tpos = treepositions[0]
+    rightmost_tpos = treepositions[-1]
+
+    for i in range(len(leftmost_tpos)):
+        if ((i == len(rightmost_tpos) or
+             leftmost_tpos[i] != rightmost_tpos[i])):
+            tpos_parent = leftmost_tpos[:i]
+            break
+    else:
+        tpos_parent = leftmost_tpos
+
+    return tpos_parent
 
 
 def containing(span):
@@ -393,12 +424,10 @@ def _ptb_stuff(doc_ptb_trees, edu):
     """
     if doc_ptb_trees is None:
         return None, None
-    ptb_trees = [t for t in doc_ptb_trees
-                 if t.text_span().overlaps(edu.text_span())]
+    ptb_trees = [t for t in doc_ptb_trees if t.overlaps(edu)]
     all_tokens = itertools.chain.from_iterable(t.leaves()
                                                for t in ptb_trees)
-    ptb_tokens = [tok for tok in all_tokens
-                  if tok.text_span().overlaps(edu.text_span())]
+    ptb_tokens = [tok for tok in all_tokens if tok.overlaps(edu)]
     return ptb_trees, ptb_tokens
 
 
