@@ -19,8 +19,7 @@ import educe.learning.keys
 import educe.glozz
 import educe.stac
 import educe.util
-from .. import (features as features_eyk,
-                features_li2014 as feature_set)  # TODO see features.py
+from ..args import add_usual_input_args
 from ..base import read_corpus_inputs, extract_pair_features
 
 NAME = 'extract'
@@ -47,6 +46,7 @@ def config_argparser(parser):
     """
     Subcommand flags.
     """
+    add_usual_input_args(parser)
     parser.add_argument('corpus', metavar='DIR',
                         help='Corpus dir (eg. data/pilot)')
     parser.add_argument('ptb', metavar='DIR',
@@ -85,6 +85,7 @@ def main_parsing_pairs(args):
     (given with --live), but as of 2014-03-24, we are experimenting with
     have hierarchical live data
     """
+    feature_set = args.feature_set
     inputs = read_corpus_inputs(args)
     features_file = os.path.join(args.output, 'extracted-features.tab')
     with codecs.open(features_file, 'wb') as ofile:
@@ -124,6 +125,7 @@ def main_corpus_pairs(args):
     """
     The usual main. Extract feature vectors from the corpus
     """
+    feature_set = args.feature_set
     inputs = read_corpus_inputs(args)
     of_bn = os.path.join(args.output, os.path.basename(args.corpus))
     of_ext = '.tab'
