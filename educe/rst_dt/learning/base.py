@@ -424,15 +424,15 @@ def _ptb_stuff(doc_ptb_trees, edu):
     """
     if doc_ptb_trees is None:
         return None, None
-    if edu.num == 0:  # special case: fake root EDU
+    # padding EDU at the beginning of the document
+    # here this EDU is also used as the fake root
+    if edu.num == 0:
         assert edu.span == Span(0,0)  # safety net
-        # filler tokens
+        # special tokens
         start_token = Token(RawToken('__START__', '__START__'),
                             Span(0,0))
-        end_token = Token(RawToken('__END__', '__END__'),
-                          Span(0,0))
-        # 3 of each should suffice to cover common ngram features
-        ptb_tokens = [start_token * 3] + [end_token * 3]
+        ptb_tokens = [start_token]
+        # special trees (?)
         ptb_trees = []  # TODO
     else:
         ptb_trees = [t for t in doc_ptb_trees if t.overlaps(edu)]
