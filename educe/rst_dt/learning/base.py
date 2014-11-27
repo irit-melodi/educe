@@ -190,18 +190,15 @@ class SingleEduSubgroup(KeyGroup):
             vec[key.name] = key.function(current, edu)
 
 
-class SingleEduKeys(MergedKeyGroup):
+class BaseSingleEduKeys(MergedKeyGroup):
+    """Base class for single EDU features.
+
+    Warning: This class should not be used directly. Use derived classes
+    instead.
     """
-    single EDU features
-    """
-    def __init__(self, inputs, feature_set):
-        sf_cache = None  # CHECKME
-        single_edu_feat_groups = feature_set.single_edu_features(inputs,
-                                                                 sf_cache)
-        #if inputs.debug:
-        #    groups.append(SingleEduSubgroup_Debug())
-        desc = self.__doc__.strip()
-        super(SingleEduKeys, self).__init__(desc, single_edu_feat_groups)
+    def __init__(self, inputs, feature_groups):
+        desc = "Single EDU features"
+        super(BaseSingleEduKeys, self).__init__(desc, feature_groups)
 
     def fill(self, current, edu, target=None):
         """
@@ -210,8 +207,6 @@ class SingleEduKeys(MergedKeyGroup):
         vec = self if target is None else target
         for group in self.groups:
             group.fill(current, edu, vec)
-
-
 
 
 # ---------------------------------------------------------------------
@@ -250,49 +245,51 @@ class PairSubgroup(KeyGroup):
             vec[key.name] = key.function(current, edu1, edu2)
 
 
-class PairKeys(MergedKeyGroup):
-    """
-    pair features
+class BasePairKeys(MergedKeyGroup):
+    """Base class for EDU pair features.
 
-    sf_cache should only be None if you're just using this
-    to generate help text
+    Parameters
+    ----------
+
+    sf_cache :  dict(EDU, SingleEduKeys), optional (default=None)
+        Should only be None if you're just using this to generate help text.
     """
-    def __init__(self, inputs, feature_set, sf_cache=None):
-        """
-        """
+
+    def __init__(self, inputs, pair_feature_groups, sf_cache=None):
         self.sf_cache = sf_cache
-        #if inputs.debug:
-        #    groups.append(PairSubgroup_Debug())
 
         if sf_cache is None:
-            self.edu1 = SingleEduKeys(inputs, feature_set)
-            self.edu2 = SingleEduKeys(inputs, feature_set)
+            self.edu1 = self.init_single_features(inputs)
+            self.edu2 = self.init_single_features(inputs)
         else:
             self.edu1 = None  # will be filled out later
             self.edu2 = None  # from the feature cache
 
         desc = "pair features"
-        pair_edu_feat_groups = feature_set.pair_edu_features(inputs, sf_cache)
-        super(PairKeys, self).__init__(desc, pair_edu_feat_groups)
+        super(BasePairKeys, self).__init__(desc, pair_feature_groups)
+
+    def init_single_features(self, inputs):
+        """Init features defined on single EDUs"""
+        raise NotImplementedError()
 
     def csv_headers(self, htype=False):
         if htype in [HeaderType.OLD_CSV, HeaderType.NAME]:
-            return super(PairKeys, self).csv_headers(htype) +\
+            return super(BasePairKeys, self).csv_headers(htype) +\
                     [h + "_EDU1" for h in self.edu1.csv_headers(htype)] +\
                     [h + "_EDU2" for h in self.edu2.csv_headers(htype)]
         else:
-            return super(PairKeys, self).csv_headers(htype) +\
+            return super(BasePairKeys, self).csv_headers(htype) +\
                     self.edu1.csv_headers(htype) +\
                     self.edu2.csv_headers(htype)
 
 
     def csv_values(self):
-        return super(PairKeys, self).csv_values() +\
+        return super(BasePairKeys, self).csv_values() +\
             self.edu1.csv_values() +\
             self.edu2.csv_values()
 
     def help_text(self):
-        lines = [super(PairKeys, self).help_text(),
+        lines = [super(BasePairKeys, self).help_text(),
                  "",
                  self.edu1.help_text()]
         return "\n".join(lines)
@@ -310,6 +307,18 @@ class PairKeys(MergedKeyGroup):
 # extraction generators
 # ---------------------------------------------------------------------
 
+def get_sentence(current, edu):
+    "get sentence surrounding this EDU"
+    # TODO do we need bounds-checking or lookup failure handling?
+    return current.surrounders[edu][1]
+
+
+def get_paragraph(current, edu):
+    "get paragraph surrounding this EDU"
+    # TODO do we need bounds-checking or lookup failure handling?
+    return current.surrounders[edu][0]
+
+
 def simplify_deptree(dtree):
     """
     Boil a dependency tree down into a dictionary from (edu, edu) to rel
@@ -325,6 +334,25 @@ def simplify_deptree(dtree):
     #
     _simplify_deptree(dtree)
     return relations
+
+
+def lowest_common_parent(treepositions):
+    """Find tree position of the lowest common parent of a list of nodes."""
+    if not treepositions:
+        return None
+
+    leftmost_tpos = treepositions[0]
+    rightmost_tpos = treepositions[-1]
+
+    for i in range(len(leftmost_tpos)):
+        if ((i == len(rightmost_tpos) or
+             leftmost_tpos[i] != rightmost_tpos[i])):
+            tpos_parent = leftmost_tpos[:i]
+            break
+    else:
+        tpos_parent = leftmost_tpos
+
+    return tpos_parent
 
 
 def containing(span):
@@ -407,12 +435,10 @@ def _ptb_stuff(doc_ptb_trees, edu):
         ptb_tokens = [start_token * 3] + [end_token * 3]
         ptb_trees = []  # TODO
     else:
-        ptb_trees = [t for t in doc_ptb_trees
-                     if t.text_span().overlaps(edu.text_span())]
+        ptb_trees = [t for t in doc_ptb_trees if t.overlaps(edu)]
         all_tokens = itertools.chain.from_iterable(t.leaves()
                                                    for t in ptb_trees)
-        ptb_tokens = [tok for tok in all_tokens
-                      if tok.text_span().overlaps(edu.text_span())]
+        ptb_tokens = [tok for tok in all_tokens if tok.overlaps(edu)]
     return ptb_trees, ptb_tokens
 
 
@@ -453,14 +479,14 @@ def extract_pair_features(inputs, feature_set, live=False):
         # single edu features
         sf_cache = {}
         for edu in edus:
-            sf_cache[edu] = SingleEduKeys(inputs, feature_set)
+            sf_cache[edu] = feature_set.SingleEduKeys(inputs)
             sf_cache[edu].fill(current, edu)
 
         for epair in itertools.product(edus, edus):
             edu1, edu2 = epair
             if edu1 == edu2:
                 continue
-            vec = PairKeys(inputs, feature_set, sf_cache=sf_cache)
+            vec = feature_set.PairKeys(inputs, sf_cache=sf_cache)
             vec.fill(current, edu1, edu2)
 
             if live:
