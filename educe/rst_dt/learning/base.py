@@ -396,6 +396,12 @@ def _surrounding_text(edu):
 
     Reuben Mark, chief executive of Colgate-Palmolive, said...
     """
+    # padding EDU at the beginning of the document
+    # here this EDU is also used as the fake root
+    if edu.num == 0:
+        assert edu.span == Span(0,0)  # safety net
+        return None, None
+    # normal case
     espan = edu.text_span()
     para = _filter0(containing(espan), edu.context.paragraphs)
     # sloppy EDUs happen; try shaving off some characters
