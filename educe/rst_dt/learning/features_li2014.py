@@ -137,14 +137,18 @@ def ptb_word_last2(token):
 def sentence_id(current, edu):
     "id of sentence that contains edu"
     sent = get_sentence(current, edu)
-    return sent.num if sent else None
+    if sent is None:
+        return None
+    return sent.num
 
 
 def num_edus_from_sent_start(current, edu):
     "distance of edu in EDUs from sentence start"
     sent = get_sentence(current, edu)
+    if sent is None:
+        return None
     # find all EDUs that are in the same sentence as edu
-    edus = current.rsttree.leaves()
+    edus = current.edus
     edus_same_sent = [e for e in edus
                       if get_sentence(current, e) == sent]
     result = edus_same_sent.index(edu)
@@ -154,8 +158,10 @@ def num_edus_from_sent_start(current, edu):
 def num_edus_to_sent_end(current, edu):
     "distance of edu in EDUs to sentence end"
     sent = get_sentence(current, edu)
+    if sent is None:
+        return None
     # find all EDUs that are in the same sentence as edu
-    edus = current.rsttree.leaves()
+    edus = current.edus
     edus_same_sent = [e for e in edus
                       if get_sentence(current, e) == sent]
     result = list(reversed(edus_same_sent)).index(edu)
@@ -165,8 +171,10 @@ def num_edus_to_sent_end(current, edu):
 def num_edus_from_para_start(current, edu):
     "distance of edu in EDUs from paragraph start"
     para = get_paragraph(current, edu)
+    if para is None:
+        return None
     # find all EDUs that are in the same paragraph as edu
-    edus = current.rsttree.leaves()
+    edus = current.edus
     edus_same_para = [e for e in edus
                       if get_paragraph(current, e) == para]
     result = edus_same_para.index(edu)
@@ -176,8 +184,10 @@ def num_edus_from_para_start(current, edu):
 def num_edus_to_para_end(current, edu):
     "distance of edu in EDUs to paragraph end"
     para = get_paragraph(current, edu)
+    if para is None:
+        return None
     # find all EDUs that are in the same paragraph as edu
-    edus = current.rsttree.leaves()
+    edus = current.edus
     edus_same_para = [e for e in edus
                       if get_paragraph(current, e) == para]
     result = list(reversed(edus_same_para)).index(edu)
@@ -188,12 +198,12 @@ def num_edus_to_para_end(current, edu):
 @edu_feature
 def num_edus_from_doc_start(edu):
     "distance of edu in EDUs from document start"
-    return edu.num
+    return edu.num - 1  # EDU numbers are in [1..]
 
 
 def num_edus_to_doc_end(current, edu):
     "distance of edu in EDUs to document end"
-    edus = current.rsttree.leaves()
+    edus = current.edus
     result = list(reversed(edus)).index(edu)
     return result
 
@@ -202,13 +212,17 @@ def num_edus_to_doc_end(current, edu):
 def paragraph_id(current, edu):
     "id of paragraph that contains edu"
     para = get_paragraph(current, edu)
-    return para.num if para is not None else None
+    if para is None:
+        return None
+    return para.num
 
 
 def paragraph_id_div5(current, edu):
     "id of paragraph that contains edu, div5"
     para = get_paragraph(current, edu)
-    return para.num / 5 if para is not None else None
+    if para is None:
+        return None
+    return para.num / 5
 
 # TODO: semantic similarity features
 
@@ -399,8 +413,8 @@ def num_paragraphs_between_div3(_, cache, edu):
 # paragraph feats
 
 @tuple_feature(_minus)
-def num_edus_between(_, cache, edu):
-    "Num of EDUs between the two EDUs"
+def offset_dif(_, cache, edu):
+    "difference between the two EDUs' offset"
     return cache[edu]["num_edus_from_sent_start"]
 
 
@@ -438,8 +452,8 @@ def offset_div3_pair(current, cache, edu1, edu2):
     "offset div 3 pair"
     offset1 = cache[edu1]["num_edus_from_sent_start"]
     offset2 = cache[edu2]["num_edus_from_sent_start"]
-    offset1_div3 = offset1 / 3
-    offset2_div3 = offset2 / 3
+    offset1_div3 = offset1 / 3 if offset1 is not None else None
+    offset2_div3 = offset2 / 3 if offset2 is not None else None
     return '{0}_{1}'.format(offset1_div3, offset2_div3)
 
 
@@ -447,8 +461,8 @@ def rev_offset_div3_pair(current, cache, edu1, edu2):
     "revOffset div 3 pair"
     rev_offset1 = cache[edu1]["num_edus_to_sent_end"]
     rev_offset2 = cache[edu2]["num_edus_to_sent_end"]
-    rev_offset1_div3 = rev_offset1 / 3
-    rev_offset2_div3 = rev_offset2 / 3
+    rev_offset1_div3 = rev_offset1 / 3 if rev_offset1 is not None else None
+    rev_offset2_div3 = rev_offset2 / 3 if rev_offset2 is not None else None
     return '{0}_{1}'.format(rev_offset1_div3, rev_offset2_div3)
 
 
@@ -674,7 +688,7 @@ class PairSubgroup_Sent(PairSubgroup):
     "Sentence tuple features"
 
     _features = [
-        MagicKey.discrete_fn(num_edus_between),  # offset dif
+        MagicKey.discrete_fn(offset_dif),
         MagicKey.discrete_fn(rev_offset_dif),
         MagicKey.discrete_fn(offset_dif_div3),
         MagicKey.discrete_fn(rev_offset_dif_div3),

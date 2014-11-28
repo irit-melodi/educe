@@ -167,7 +167,7 @@ def sort_inside_out(head, targets, strategy='id'):
     return result
 
 
-def relaxed_nuclearity_to_deptree(rst_tree):
+def relaxed_nuclearity_to_deptree(rst_tree, fake_root=None):
     """
     Converts a `SimpleRSTTree` to a dependency tree
     """
@@ -216,12 +216,13 @@ def relaxed_nuclearity_to_deptree(rst_tree):
         return Tree(rnode, kids)
 
     head = walk(rst_tree)  # build dlinks
-    # add fake root
-    fake_root_edu = EDU.fake_root()  # TODO context, origin ?
-    fake_root = DepNode(fake_root_edu, fake_root_edu.num)
-    dlinks[fake_root].append(('ROOT', head))
 
-    return mk_tree((None, fake_root))
+    if fake_root is not None:
+        fake_root_node = DepNode(fake_root, fake_root.num)
+        dlinks[fake_root_node].append(('ROOT', head))
+        head = fake_root_node
+
+    return mk_tree((None, head))
 
 
 # pylint: disable=R0903, W0232

@@ -15,6 +15,8 @@ from educe.rst_dt import (SimpleRSTTree, deptree, id_to_path,
                           ptb as r_ptb)
 from educe.learning.keys import KeyGroup, MergedKeyGroup, HeaderType,\
     ClassKeyGroup
+from educe.annotation import Span
+from educe.external.postag import RawToken, Token
 
 
 class FeatureExtractionException(Exception):
@@ -36,6 +38,7 @@ FeatureInput = namedtuple('FeatureInput',
 # A document and relevant contextual information
 DocumentPlus = namedtuple('DocumentPlus',
                           ['key',
+                           'edus',
                            'rsttree',
                            'deptree',
                            'ptb_trees',  # only those that overlap
@@ -319,6 +322,8 @@ def get_paragraph(current, edu):
     return current.surrounders[edu][0]
 
 
+# tree utils
+# TODO move to a more appropriate place
 def simplify_deptree(dtree):
     """
     Boil a dependency tree down into a dictionary from (edu, edu) to rel
@@ -353,6 +358,7 @@ def lowest_common_parent(treepositions):
         tpos_parent = leftmost_tpos
 
     return tpos_parent
+# end of tree utils
 
 
 def containing(span):
@@ -448,21 +454,39 @@ def _ptb_stuff(doc_ptb_trees, edu):
     return ptb_trees, ptb_tokens
 
 
-def preprocess(inputs, k):
+def preprocess(inputs, k, enable_fake_root=False):
     """
     Pre-process and bundle up a representation of the current document
     """
+    # pad beginning of document with EDU
+    if enable_fake_root:
+        start_edu = EDU(0, Span(0,0), '')  # TODO context, origin?
+        edus = [start_edu]
+    else:
+        start_edu = None
+        edus = []
+    # read and store SimpleRSTTree, store EDUs
     rtree = SimpleRSTTree.from_rst_tree(inputs.corpus[k])
-    dtree = deptree.relaxed_nuclearity_to_deptree(rtree)
-    surrounders = {edu: _surrounding_text(edu)
-                   for edu in rtree.leaves()}
+    edus.extend(rtree.leaves())
+    # pad end of document
+    if False:  # not necessary at the moment
+        char_end = edus[-1].span.char_end
+        end_edu = EDU(len(edus), Span(char_end, char_end), '')  # TODO ibid
+        edus.append(end_edu)
+
+    # convert to deptree
+    dtree = deptree.relaxed_nuclearity_to_deptree(rtree, fake_root=start_edu)
+    # align with document structure
+    surrounders = {edu: _surrounding_text(edu) for edu in edus}
+    # align with syntactic structure
     doc_ptb_trees = r_ptb.parse_trees(inputs.corpus, k, inputs.ptb)
     ptb_trees = {}
     ptb_tokens = {}
-    for edu in rtree.leaves():
+    for edu in edus:
         ptb_trees[edu], ptb_tokens[edu] = _ptb_stuff(doc_ptb_trees, edu)
 
     return DocumentPlus(key=k,
+                        edus=edus,
                         rsttree=rtree,
                         deptree=dtree,
                         ptb_trees=ptb_trees,
@@ -478,7 +502,8 @@ def extract_pair_features(inputs, feature_set, live=False):
 
     for k in inputs.corpus:
         current = preprocess(inputs, k)
-        edus = current.rsttree.leaves()
+        # edus = current.rsttree.leaves()
+        edus = current.edus
         # reduced dependency graph as dictionary (edu to [edu])
         relations = simplify_deptree(current.deptree) if not live else {}
 
