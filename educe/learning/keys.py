@@ -420,7 +420,7 @@ class KeyGroupWriter(object):
                 return unicode(val).encode('utf-8')
             else:
                 return val
-        self.writer.writerow(map(bytestr, row.csv_values()))
+        self.writer.writerow([bytestr(cv) for cv in row.csv_values()])
 
     def writerows(self, rows):
         """
