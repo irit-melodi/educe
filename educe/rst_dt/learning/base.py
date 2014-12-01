@@ -11,12 +11,13 @@ import os
 
 import educe.util
 from educe.internalutil import treenode, ifilter
-from educe.rst_dt import (SimpleRSTTree, deptree, id_to_path,
-                          ptb as r_ptb)
 from educe.learning.keys import KeyGroup, MergedKeyGroup, HeaderType,\
     ClassKeyGroup
 from educe.annotation import Span
 from educe.external.postag import RawToken, Token
+from educe.rst_dt import (SimpleRSTTree, deptree, id_to_path,
+                          ptb as r_ptb)
+from educe.rst_dt.annotation import EDU
 
 
 class FeatureExtractionException(Exception):
@@ -454,13 +455,13 @@ def _ptb_stuff(doc_ptb_trees, edu):
     return ptb_trees, ptb_tokens
 
 
-def preprocess(inputs, k, enable_fake_root=False):
+def preprocess(inputs, k, enable_fake_root=True):
     """
     Pre-process and bundle up a representation of the current document
     """
     # pad beginning of document with EDU
     if enable_fake_root:
-        start_edu = EDU(0, Span(0,0), '')  # TODO context, origin?
+        start_edu = EDU(0, Span(0,0), '')
         edus = [start_edu]
     else:
         start_edu = None
@@ -468,10 +469,18 @@ def preprocess(inputs, k, enable_fake_root=False):
     # read and store SimpleRSTTree, store EDUs
     rtree = SimpleRSTTree.from_rst_tree(inputs.corpus[k])
     edus.extend(rtree.leaves())
+    # update context and origin of fake root
+    if enable_fake_root:
+        edus[0].set_context(edus[1].context)
+        edus[0].set_origin(edus[1].origin)
     # pad end of document
     if False:  # not necessary at the moment
         char_end = edus[-1].span.char_end
-        end_edu = EDU(len(edus), Span(char_end, char_end), '')  # TODO ibid
+        end_edu = EDU(edus[-1].num + 1,
+                      Span(char_end, char_end),
+                      '',
+                      edus[-1].context,
+                      edus[-1].origin)
         edus.append(end_edu)
 
     # convert to deptree
@@ -494,14 +503,15 @@ def preprocess(inputs, k, enable_fake_root=False):
                         surrounders=surrounders)
 
 
-def extract_pair_features(inputs, feature_set, live=False):
+def extract_pair_features(inputs, feature_set, enable_fake_root=True,
+                          live=False):
     """
     Return a pair of dictionaries, one for attachments
     and one for relations
     """
 
     for k in inputs.corpus:
-        current = preprocess(inputs, k)
+        current = preprocess(inputs, k, enable_fake_root)
         # edus = current.rsttree.leaves()
         edus = current.edus
         # reduced dependency graph as dictionary (edu to [edu])
@@ -513,7 +523,10 @@ def extract_pair_features(inputs, feature_set, live=False):
             sf_cache[edu] = feature_set.SingleEduKeys(inputs)
             sf_cache[edu].fill(current, edu)
 
-        for epair in itertools.product(edus, edus):
+        # pairs
+        edus_src = edus
+        edus_tgt = edus[1:] if enable_fake_root else edus
+        for epair in itertools.product(edus_src, edus_tgt):
             edu1, edu2 = epair
             if edu1 == edu2:
                 continue
@@ -524,10 +537,10 @@ def extract_pair_features(inputs, feature_set, live=False):
                 yield vec, vec
             else:
                 pairs_vec = ClassKeyGroup(vec)
+                pairs_vec.set_class(epair in relations)
                 rels_vec = ClassKeyGroup(vec)
                 rels_vec.set_class(relations[epair] if epair in relations
                                    else 'UNRELATED')
-                pairs_vec.set_class(epair in relations)
 
                 yield pairs_vec, rels_vec
 
