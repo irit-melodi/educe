@@ -13,7 +13,7 @@ import itertools
 
 from nltk import Tree
 
-from educe.rst_dt.annotation import SimpleRSTTree, Node, EDU
+from educe.rst_dt.annotation import SimpleRSTTree, Node
 from ..internalutil import treenode
 
 _N = "Nucleus"

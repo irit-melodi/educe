@@ -43,7 +43,7 @@ DocumentPlus = namedtuple('DocumentPlus',
                            'rsttree',
                            'deptree',
                            'ptb_trees',  # only those that overlap
-                           'ptb_tokens', # only those that overlap
+                           'ptb_tokens',  # only those that overlap
                            'surrounders'])
 
 
@@ -278,19 +278,18 @@ class BasePairKeys(MergedKeyGroup):
 
     def csv_headers(self, htype=False):
         if htype in [HeaderType.OLD_CSV, HeaderType.NAME]:
-            return super(BasePairKeys, self).csv_headers(htype) +\
-                    [h + "_EDU1" for h in self.edu1.csv_headers(htype)] +\
-                    [h + "_EDU2" for h in self.edu2.csv_headers(htype)]
+            return (super(BasePairKeys, self).csv_headers(htype) +
+                    [h + "_EDU1" for h in self.edu1.csv_headers(htype)] +
+                    [h + "_EDU2" for h in self.edu2.csv_headers(htype)])
         else:
-            return super(BasePairKeys, self).csv_headers(htype) +\
-                    self.edu1.csv_headers(htype) +\
-                    self.edu2.csv_headers(htype)
-
+            return (super(BasePairKeys, self).csv_headers(htype) +
+                    self.edu1.csv_headers(htype) +
+                    self.edu2.csv_headers(htype))
 
     def csv_values(self):
-        return super(BasePairKeys, self).csv_values() +\
-            self.edu1.csv_values() +\
-            self.edu2.csv_values()
+        return (super(BasePairKeys, self).csv_values() +
+                self.edu1.csv_values() +
+                self.edu2.csv_values())
 
     def help_text(self):
         lines = [super(BasePairKeys, self).help_text(),
@@ -330,14 +329,15 @@ def simplify_deptree(dtree):
     Boil a dependency tree down into a dictionary from (edu, edu) to rel
     """
     relations = {}
-    # recursive inner function
+
     def _simplify_deptree(tree):
+        "recursively fill the relations dict"
         src = treenode(tree)
         for kid in tree:
             tgt = treenode(kid)
             relations[(src.edu, tgt.edu)] = tgt.rel
             _simplify_deptree(kid)
-    #
+
     _simplify_deptree(dtree)
     return relations
 
@@ -406,7 +406,7 @@ def _surrounding_text(edu):
     # padding EDU at the beginning of the document
     # here this EDU is also used as the fake root
     if edu.num == 0:
-        assert edu.span == Span(0,0)  # safety net
+        assert edu.span == Span(0, 0)  # safety net
         return None, None
     # normal case
     espan = edu.text_span()
@@ -440,10 +440,10 @@ def _ptb_stuff(doc_ptb_trees, edu):
     # padding EDU at the beginning of the document
     # here this EDU is also used as the fake root
     if edu.num == 0:
-        assert edu.span == Span(0,0)  # safety net
+        assert edu.span == Span(0, 0)  # safety net
         # special tokens
         start_token = Token(RawToken('__START__', '__START__'),
-                            Span(0,0))
+                            Span(0, 0))
         ptb_tokens = [start_token]
         # special trees (?)
         ptb_trees = []  # TODO
@@ -461,7 +461,7 @@ def preprocess(inputs, k, enable_fake_root=True):
     """
     # pad beginning of document with EDU
     if enable_fake_root:
-        start_edu = EDU(0, Span(0,0), '')
+        start_edu = EDU(0, Span(0, 0), '')
         edus = [start_edu]
     else:
         start_edu = None

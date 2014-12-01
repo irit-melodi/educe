@@ -48,7 +48,7 @@ class Substance(object):
 
 class Purpose(object):
     """
-    A key can have one of there purposes:
+    A key can have one of three purposes:
 
         * feature: feature for learning tasks
         * meta: some sort of indexing feature (eg. id)
@@ -63,19 +63,20 @@ class Purpose(object):
     CLASS = 3
 
     @classmethod
-    def to_orange(cls, substance):
+    def to_orange(cls, purpose):
         """
         Orange-compatible string representation
         """
-        if substance is cls.FEATURE:
+        if purpose is cls.FEATURE:
             return ""
-        elif substance is cls.META:
+        elif purpose is cls.META:
             return "m"
-        elif substance is cls.CLASS:
+        elif purpose is cls.CLASS:
             return "class"
         else:
-            raise IllegalArgumentException("Unknown purpose" + substance)
+            raise ValueError("Unknown purpose" + purpose)
 # pylint: enable=too-few-public-methods
+
 
 class HeaderType(object):
     """
@@ -139,6 +140,7 @@ class Key(object):
             raise Exception(oops)
 
     def to_csv(self):
+        "CSV-compatible string representation of this key"
         return self.keycode() + "#" + self.name
 
     @classmethod
@@ -174,7 +176,6 @@ class Key(object):
         """
         purpose = purpose or Purpose.FEATURE
         return cls(Substance.BASKET, purpose, name, description)
-
 
 
 class MagicKey(Key):
@@ -268,7 +269,7 @@ class KeyGroup(dict):
         """
         value = self[key.name]
         if (key.substance is Substance.BASKET) and (value is not None):
-            return " ".join(u"{0}={1}".format(k,v) for k,v in value.items())
+            return " ".join(u"{0}={1}".format(k, v) for k, v in value.items())
         else:
             return value
 

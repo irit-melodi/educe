@@ -14,7 +14,7 @@ Educe-style representation for RST discourse treebank trees
 import copy
 import functools
 
-from educe.annotation import Standoff, Span
+from educe.annotation import Standoff
 from educe.external.parser import SearchableTree
 from ..internalutil import treenode
 
