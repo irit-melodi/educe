@@ -14,7 +14,7 @@ import re
 
 from educe.internalutil import treenode
 from educe.learning.keys import MagicKey
-from educe.learning.util import tuple_feature, underscore
+from educe.learning.util import tuple_feature, space_join
 from .base import (SingleEduSubgroup, PairSubgroup,
                    BaseSingleEduKeys, BasePairKeys,
                    edu_feature,
@@ -298,7 +298,7 @@ def gather_sparse_features(current, edu1, edu2):
 
 # ngrams: POS
 
-@tuple_feature(underscore)
+@tuple_feature(space_join)
 def ptb_pos_tag_first_pairs(_, cache, edu):
     "pair of the first POS in the two EDUs"
     return cache[edu]["ptb_pos_tag_first"]
@@ -306,25 +306,25 @@ def ptb_pos_tag_first_pairs(_, cache, edu):
 
 # ngrams: words
 
-@tuple_feature(underscore)
+@tuple_feature(space_join)
 def ptb_word_first_pairs(_, cache, edu):
     "pair of the first words in the two EDUs"
     return cache[edu]["ptb_word_first"]
 
 
-@tuple_feature(underscore)
+@tuple_feature(space_join)
 def ptb_word_last_pairs(_, cache, edu):
     "pair of the last words in the two EDUs"
     return cache[edu]["ptb_word_last"]
 
 
-@tuple_feature(underscore)
+@tuple_feature(space_join)
 def ptb_word_first2_pairs(_, cache, edu):
     "pair of the first bigrams in the two EDUs"
     return cache[edu]["ptb_word_first2"]
 
 
-@tuple_feature(underscore)
+@tuple_feature(space_join)
 def ptb_word_last2_pairs(_, cache, edu):
     "pair of the last bigrams in the two EDUs"
     return cache[edu]["ptb_word_last2"]
@@ -332,7 +332,7 @@ def ptb_word_last2_pairs(_, cache, edu):
 
 # length
 
-@tuple_feature(underscore)
+@tuple_feature(space_join)
 def num_tokens_div5_pair(_, cache, edu):
     "pair of the length div 5 of the two EDUs"
     return cache[edu]["num_tokens_div5"]
@@ -436,13 +436,13 @@ def rev_offset_dif_div3(_, cache, edu):
     return cache[edu]["num_edus_to_sent_end"]
 
 
-@tuple_feature(underscore)
+@tuple_feature(space_join)
 def offset_pair(_, cache, edu):
     "offset pair"
     return cache[edu]["num_edus_from_sent_start"]
 
 
-@tuple_feature(underscore)
+@tuple_feature(space_join)
 def rev_offset_pair(_, cache, edu):
     "revOffset pair"
     return cache[edu]["num_edus_to_sent_end"]
