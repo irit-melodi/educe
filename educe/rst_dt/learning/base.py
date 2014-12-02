@@ -11,10 +11,12 @@ import os
 
 import educe.util
 from educe.internalutil import treenode, ifilter
-from educe.rst_dt import (SimpleRSTTree, deptree, id_to_path,
-                          ptb as r_ptb)
 from educe.learning.keys import KeyGroup, MergedKeyGroup, HeaderType,\
     ClassKeyGroup
+from educe.external.postag import Token
+from educe.rst_dt import (SimpleRSTTree, deptree, id_to_path,
+                          ptb as r_ptb)
+from educe.rst_dt.annotation import EDU
 
 
 class FeatureExtractionException(Exception):
@@ -36,10 +38,11 @@ FeatureInput = namedtuple('FeatureInput',
 # A document and relevant contextual information
 DocumentPlus = namedtuple('DocumentPlus',
                           ['key',
+                           'edus',
                            'rsttree',
                            'deptree',
                            'ptb_trees',  # only those that overlap
-                           'ptb_tokens', # only those that overlap
+                           'ptb_tokens',  # only those that overlap
                            'surrounders'])
 
 
@@ -274,19 +277,18 @@ class BasePairKeys(MergedKeyGroup):
 
     def csv_headers(self, htype=False):
         if htype in [HeaderType.OLD_CSV, HeaderType.NAME]:
-            return super(BasePairKeys, self).csv_headers(htype) +\
-                    [h + "_EDU1" for h in self.edu1.csv_headers(htype)] +\
-                    [h + "_EDU2" for h in self.edu2.csv_headers(htype)]
+            return (super(BasePairKeys, self).csv_headers(htype) +
+                    [h + "_EDU1" for h in self.edu1.csv_headers(htype)] +
+                    [h + "_EDU2" for h in self.edu2.csv_headers(htype)])
         else:
-            return super(BasePairKeys, self).csv_headers(htype) +\
-                    self.edu1.csv_headers(htype) +\
-                    self.edu2.csv_headers(htype)
-
+            return (super(BasePairKeys, self).csv_headers(htype) +
+                    self.edu1.csv_headers(htype) +
+                    self.edu2.csv_headers(htype))
 
     def csv_values(self):
-        return super(BasePairKeys, self).csv_values() +\
-            self.edu1.csv_values() +\
-            self.edu2.csv_values()
+        return (super(BasePairKeys, self).csv_values() +
+                self.edu1.csv_values() +
+                self.edu2.csv_values())
 
     def help_text(self):
         lines = [super(BasePairKeys, self).help_text(),
@@ -319,19 +321,22 @@ def get_paragraph(current, edu):
     return current.surrounders[edu][0]
 
 
+# tree utils
+# TODO move to a more appropriate place
 def simplify_deptree(dtree):
     """
     Boil a dependency tree down into a dictionary from (edu, edu) to rel
     """
     relations = {}
-    # recursive inner function
+
     def _simplify_deptree(tree):
+        "recursively fill the relations dict"
         src = treenode(tree)
         for kid in tree:
             tgt = treenode(kid)
             relations[(src.edu, tgt.edu)] = tgt.rel
             _simplify_deptree(kid)
-    #
+
     _simplify_deptree(dtree)
     return relations
 
@@ -353,6 +358,7 @@ def lowest_common_parent(treepositions):
         tpos_parent = leftmost_tpos
 
     return tpos_parent
+# end of tree utils
 
 
 def containing(span):
@@ -396,6 +402,9 @@ def _surrounding_text(edu):
 
     Reuben Mark, chief executive of Colgate-Palmolive, said...
     """
+    if edu.is_left_padding():
+        return None, None
+    # normal case
     espan = edu.text_span()
     para = _filter0(containing(espan), edu.context.paragraphs)
     # sloppy EDUs happen; try shaving off some characters
@@ -424,10 +433,15 @@ def _ptb_stuff(doc_ptb_trees, edu):
     """
     if doc_ptb_trees is None:
         return None, None
-    ptb_trees = [t for t in doc_ptb_trees if t.overlaps(edu)]
-    all_tokens = itertools.chain.from_iterable(t.leaves()
-                                               for t in ptb_trees)
-    ptb_tokens = [tok for tok in all_tokens if tok.overlaps(edu)]
+    if edu.is_left_padding():
+        start_token = Token.left_padding()
+        ptb_tokens = [start_token]
+        ptb_trees = []
+    else:
+        ptb_trees = [t for t in doc_ptb_trees if t.overlaps(edu)]
+        all_tokens = itertools.chain.from_iterable(t.leaves()
+                                                   for t in ptb_trees)
+        ptb_tokens = [tok for tok in all_tokens if tok.overlaps(edu)]
     return ptb_trees, ptb_tokens
 
 
@@ -436,16 +450,27 @@ def preprocess(inputs, k):
     Pre-process and bundle up a representation of the current document
     """
     rtree = SimpleRSTTree.from_rst_tree(inputs.corpus[k])
-    dtree = deptree.relaxed_nuclearity_to_deptree(rtree)
-    surrounders = {edu: _surrounding_text(edu)
-                   for edu in rtree.leaves()}
+
+    lpad = EDU.left_padding()
+    edus = [lpad]
+    edus.extend(rtree.leaves())
+    # update origin and context of left padding EDU (ugly)
+    lpad.set_context(edus[1].context)
+    lpad.set_origin(edus[1].origin)
+
+    # convert to deptree
+    dtree = deptree.relaxed_nuclearity_to_deptree(rtree, lpad)
+    # align with document structure
+    surrounders = {edu: _surrounding_text(edu) for edu in edus}
+    # align with syntactic structure
     doc_ptb_trees = r_ptb.parse_trees(inputs.corpus, k, inputs.ptb)
     ptb_trees = {}
     ptb_tokens = {}
-    for edu in rtree.leaves():
+    for edu in edus:
         ptb_trees[edu], ptb_tokens[edu] = _ptb_stuff(doc_ptb_trees, edu)
 
     return DocumentPlus(key=k,
+                        edus=edus,
                         rsttree=rtree,
                         deptree=dtree,
                         ptb_trees=ptb_trees,
@@ -461,7 +486,7 @@ def extract_pair_features(inputs, feature_set, live=False):
 
     for k in inputs.corpus:
         current = preprocess(inputs, k)
-        edus = current.rsttree.leaves()
+        edus = current.edus
         # reduced dependency graph as dictionary (edu to [edu])
         relations = simplify_deptree(current.deptree) if not live else {}
 
@@ -471,7 +496,9 @@ def extract_pair_features(inputs, feature_set, live=False):
             sf_cache[edu] = feature_set.SingleEduKeys(inputs)
             sf_cache[edu].fill(current, edu)
 
-        for epair in itertools.product(edus, edus):
+        # pairs
+        # the fake root cannot have any incoming edge
+        for epair in itertools.product(edus, edus[1:]):
             edu1, edu2 = epair
             if edu1 == edu2:
                 continue
@@ -482,10 +509,10 @@ def extract_pair_features(inputs, feature_set, live=False):
                 yield vec, vec
             else:
                 pairs_vec = ClassKeyGroup(vec)
+                pairs_vec.set_class(epair in relations)
                 rels_vec = ClassKeyGroup(vec)
                 rels_vec.set_class(relations[epair] if epair in relations
                                    else 'UNRELATED')
-                pairs_vec.set_class(epair in relations)
 
                 yield pairs_vec, rels_vec
 

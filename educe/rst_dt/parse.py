@@ -135,7 +135,7 @@ def _tree_span(tree):
         else tree.span
 
 
-def _postprocess(tree, start=0, edu_start=0):
+def _postprocess(tree, start=0, edu_start=1):
     """
     Helper function: Convert the NLTK-parsed representation of an RST tree
     to one using educe-style Standoff objects

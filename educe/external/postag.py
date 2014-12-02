@@ -73,6 +73,16 @@ class Token(RawToken, Standoff):
     def __unicode__(self):
         return '%s\t%s' % (RawToken.__unicode__(self), self.span)
 
+    # left padding Token
+    _lpad_word = '__START__'
+    _lpad_tag = '__START__'
+    _lpad_span = Span(0, 0)
+
+    @classmethod
+    def left_padding(cls):
+        "Return a special Token for left padding"
+        return Token(RawToken(cls._lpad_word, cls._lpad_tag), cls._lpad_span)
+
 
 def read_token_file(fname):
     """
