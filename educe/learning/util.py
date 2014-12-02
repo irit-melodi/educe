@@ -39,6 +39,6 @@ def underscore(str1, str2):
 
 def space_join(str1, str2):
     """
-    join two strings with an underscore
+    join two strings with a space
     """
     return '%s %s' % (str1, str2)
