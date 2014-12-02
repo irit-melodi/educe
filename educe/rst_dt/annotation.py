@@ -14,7 +14,7 @@ Educe-style representation for RST discourse treebank trees
 import copy
 import functools
 
-from educe.annotation import Standoff
+from educe.annotation import Standoff, Span
 from educe.external.parser import SearchableTree
 from ..internalutil import treenode
 
@@ -128,6 +128,22 @@ class EDU(Standoff):
             return self.context.text(self.span)
         else:
             return self.raw_text
+
+    # left padding EDUs
+    _lpad_num = 0
+    _lpad_span = Span(0, 0)
+    _lpad_txt = ''
+
+    @classmethod
+    def left_padding(cls, context=None, origin=None):
+        """Return a left padding EDU"""
+        return cls(cls._lpad_num, cls._lpad_span, cls._lpad_txt,
+                   context, origin)
+
+    def is_left_padding(self):
+        """Returns True for left padding EDUs"""
+        return (self.num == self._lpad_num and
+                self.span == self._lpad_span)
 # pylint: enable=R0913
 
 
