@@ -413,25 +413,25 @@ def num_paragraphs_between_div3(_, cache, edu):
 # paragraph feats
 
 @tuple_feature(_minus)
-def offset_dif(_, cache, edu):
+def offset_diff(_, cache, edu):
     "difference between the two EDUs' offset"
     return cache[edu]["num_edus_from_sent_start"]
 
 
 @tuple_feature(_minus)
-def rev_offset_dif(_, cache, edu):
+def rev_offset_diff(_, cache, edu):
     "difference between the two EDUs' revOffset"
     return cache[edu]["num_edus_to_sent_end"]
 
 
 @tuple_feature(_minus_div3)
-def offset_dif_div3(_, cache, edu):
+def offset_diff_div3(_, cache, edu):
     "difference between the two EDUs' offset, div3"
     return cache[edu]["num_edus_from_sent_start"]
 
 
 @tuple_feature(_minus_div3)
-def rev_offset_dif_div3(_, cache, edu):
+def rev_offset_diff_div3(_, cache, edu):
     "difference between the two EDUs' offset, div3"
     return cache[edu]["num_edus_to_sent_end"]
 
@@ -466,7 +466,7 @@ def rev_offset_div3_pair(current, cache, edu1, edu2):
     return '{0}_{1}'.format(rev_offset1_div3, rev_offset2_div3)
 
 
-def line_id_dif(current, cache, edu1, edu2):
+def line_id_diff(current, cache, edu1, edu2):
     "difference between lineIDs"
     line_id1 = num_edus_from_doc_start(current, edu1)
     line_id2 = num_edus_from_doc_start(current, edu2)
@@ -474,25 +474,25 @@ def line_id_dif(current, cache, edu1, edu2):
 
 
 @tuple_feature(_minus)
-def sentence_id_dif(_, cache, edu):
+def sentence_id_diff(_, cache, edu):
     "Number of sentences between the two EDUs"
     return cache[edu]["sentence_id"]
 
 
 @tuple_feature(_minus_div3)
-def sentence_id_dif_div3(_, cache, edu):
+def sentence_id_diff_div3(_, cache, edu):
     "Number of sentences between the two EDUs div3"
     return cache[edu]["sentence_id"]
 
 
 @tuple_feature(_minus)
-def rev_sentence_id_dif(_, cache, edu):
+def rev_sentence_id_diff(_, cache, edu):
     "Difference of rev_sentence_id of the two EDUs"
     return cache[edu]["num_edus_to_para_end"]
 
 
 @tuple_feature(_minus_div3)
-def rev_sentence_id_dif_div3(_, cache, edu):
+def rev_sentence_id_diff_div3(_, cache, edu):
     "Difference of rev_sentence_id of the two EDUs div3"
     return cache[edu]["num_edus_to_para_end"]
 
@@ -688,20 +688,20 @@ class PairSubgroup_Sent(PairSubgroup):
     "Sentence tuple features"
 
     _features = [
-        MagicKey.discrete_fn(offset_dif),
-        MagicKey.discrete_fn(rev_offset_dif),
-        MagicKey.discrete_fn(offset_dif_div3),
-        MagicKey.discrete_fn(rev_offset_dif_div3),
+        MagicKey.discrete_fn(offset_diff),
+        MagicKey.discrete_fn(rev_offset_diff),
+        MagicKey.discrete_fn(offset_diff_div3),
+        MagicKey.discrete_fn(rev_offset_diff_div3),
         MagicKey.discrete_fn(offset_pair),
         MagicKey.discrete_fn(rev_offset_pair),
         MagicKey.discrete_fn(offset_div3_pair),
         MagicKey.discrete_fn(rev_offset_div3_pair),
-        MagicKey.discrete_fn(line_id_dif),  # !?! what's this?
+        MagicKey.discrete_fn(line_id_diff),  # !?! what's this?
         MagicKey.discrete_fn(same_bad_sentence),
-        MagicKey.discrete_fn(sentence_id_dif),
-        MagicKey.discrete_fn(sentence_id_dif_div3),
-        MagicKey.discrete_fn(rev_sentence_id_dif),
-        MagicKey.discrete_fn(rev_sentence_id_dif_div3),
+        MagicKey.discrete_fn(sentence_id_diff),
+        MagicKey.discrete_fn(sentence_id_diff_div3),
+        MagicKey.discrete_fn(rev_sentence_id_diff),
+        MagicKey.discrete_fn(rev_sentence_id_diff_div3),
     ]
 
     def __init__(self, inputs, sf_cache):
