@@ -404,7 +404,9 @@ def _surrounding_text(edu):
     Reuben Mark, chief executive of Colgate-Palmolive, said...
     """
     if edu.is_left_padding():
-        return Paragraph.left_padding(), Sentence.left_padding()
+        sent = Sentence.left_padding()
+        para = Paragraph.left_padding([sent])
+        return para, sent
     # normal case
     espan = edu.text_span()
     para = _filter0(containing(espan), edu.context.paragraphs)
