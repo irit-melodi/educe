@@ -35,6 +35,14 @@ class Paragraph(Standoff):
     def _members(self):
         return self.sentences
 
+    # left padding
+    _lpad_num = -1
+
+    @classmethod
+    def left_padding(cls, sentences):
+        """Return a left padding Paragraph"""
+        return cls(cls._lpad_num, sentences)
+
 
 class Sentence(Standoff):
     """
@@ -49,6 +57,15 @@ class Sentence(Standoff):
 
     def text_span(self):
         return self.span
+
+    # left padding
+    _lpad_num = -1
+    _lpad_span = Span(0, 0)
+
+    @classmethod
+    def left_padding(cls):
+        """Return a left padding Sentence"""
+        return cls(cls._lpad_num, cls._lpad_span)
 
 
 def parse_text(text):
