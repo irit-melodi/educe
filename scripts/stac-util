@@ -16,6 +16,7 @@ STAC project Swiss-Army knife
 from argparse import ArgumentParser
 
 from educe.stac.util.cmd import SUBCOMMANDS
+from educe.util import add_subcommand
 
 
 def main():
@@ -25,17 +26,7 @@ def main():
     subparsers = psr.add_subparsers(help='sub-command help')
 
     for module in SUBCOMMANDS:
-        module_help_parts = [x for x in module.__doc__.strip().split('\n', 1)
-                             if x]
-        if len(module_help_parts) > 1:
-            module_help = module_help_parts[0]
-            module_epilog = '\n'.join(module_help_parts[1:]).strip()
-        else:
-            module_help = module.__doc__
-            module_epilog = None
-        subparser = subparsers.add_parser(module.NAME,
-                                          help=module_help,
-                                          epilog=module_epilog)
+        subparser = add_subcommand(subparsers, module)
         module.config_argparser(subparser)
 
     psr.add_argument('--verbose', '-v',
