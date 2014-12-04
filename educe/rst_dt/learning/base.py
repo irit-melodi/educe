@@ -17,6 +17,7 @@ from educe.external.postag import Token
 from educe.rst_dt import (SimpleRSTTree, deptree, id_to_path,
                           ptb as r_ptb)
 from educe.rst_dt.annotation import EDU
+from educe.rst_dt.text import Sentence, Paragraph
 
 
 class FeatureExtractionException(Exception):
@@ -403,7 +404,7 @@ def _surrounding_text(edu):
     Reuben Mark, chief executive of Colgate-Palmolive, said...
     """
     if edu.is_left_padding():
-        return None, None
+        return Paragraph.left_padding(), Sentence.left_padding()
     # normal case
     espan = edu.text_span()
     para = _filter0(containing(espan), edu.context.paragraphs)

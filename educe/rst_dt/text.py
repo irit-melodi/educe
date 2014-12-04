@@ -18,6 +18,30 @@ objects (paragraphs and sentences)
 from educe.annotation import Standoff, Span
 
 
+class Sentence(Standoff):
+    """
+    Just a text span really
+    """
+    def __init__(self, num, span):
+        super(Sentence, self).__init__()
+        self.span = span
+
+        self.num = num
+        "sentence ID in document"
+
+    def text_span(self):
+        return self.span
+
+    # left padding
+    _lpad_num = -1
+    _lpad_span = Span(0, 0)
+
+    @classmethod
+    def left_padding(cls):
+        """Return a left padding Paragraph"""
+        return cls(cls._lpad_num, cls._lpad_span)
+
+
 class Paragraph(Standoff):
     """
     A paragraph is a sequence of `Sentence`s (also standoff
@@ -35,20 +59,14 @@ class Paragraph(Standoff):
     def _members(self):
         return self.sentences
 
+    # left padding
+    _lpad_num = -1
+    _lpad_sentences = [Sentence.left_padding()]
 
-class Sentence(Standoff):
-    """
-    Just a text span really
-    """
-    def __init__(self, num, span):
-        super(Sentence, self).__init__()
-        self.span = span
-
-        self.num = num
-        "sentence ID in document"
-
-    def text_span(self):
-        return self.span
+    @classmethod
+    def left_padding(cls):
+        """Return a left padding Paragraph"""
+        return cls(cls._lpad_num, cls._lpad_sentences)
 
 
 def parse_text(text):
