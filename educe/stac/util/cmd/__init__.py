@@ -5,23 +5,12 @@ stac-util subcommands
 # Author: Eric Kow
 # License: CeCILL-B (French BSD3)
 
-from . import\
-    clean_emoticons,\
-    count,\
-    filter,\
-    filter_graph,\
-    graph,\
-    insert,\
-    merge_dialogue,\
-    merge_edus,\
-    move,\
-    nudge,\
-    nudge_dialogue,\
-    rename,\
-    rewrite,\
-    split_edu,\
-    text,\
-    tmp
+# pylint: disable=redefined-builtin
+# (we have a command called filter)
+from . import (clean_emoticons, count, filter, filter_graph, graph, insert,
+               merge_dialogue, merge_edus, move, nudge, nudge_dialogue, rename,
+               rewrite, split_edu, text, tmp)
+
 
 SUBCOMMANDS = [clean_emoticons,
                text,
