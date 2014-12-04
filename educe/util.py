@@ -10,7 +10,7 @@ import re
 
 
 def concat(items):
-    ":: iter(iter(a)) -> iter(a)"
+    ":: Iterable (Iterable a) -> Iterable a"
     return chain.from_iterable(items)
 
 
@@ -42,13 +42,10 @@ def add_corpus_filters(parser,
     the various attributes in a 'educe.corpus.FileId'
     (eg, document, annotator).
 
-    :param fields: which flag names to include (defaults
-    to `FILEID_FIELDS`)
+    :param fields: which flag names to include (defaults to `FILEID_FIELDS`)
     :type fields: [String]
-
-    :param choice_fields: fields which accept a limited range
-    of answers
-    :type fields: Dict String [String]
+    :param choice_fields: fields which accept a limited range of answers
+    :type choice_fields: Dict String [String]
 
     Meant to be used in conjunction with `mk_is_interesting`
     """
@@ -78,8 +75,8 @@ def mk_is_interesting(args,
     the arguments passed in.
 
     :param preselected: fields for which we already know what
-    matches we want
-    :type fields: Dict String [String]
+                        matches we want
+    :type preselected: Dict String [String]
 
     Meant to be used in conjunction with `add_corpus_filters`
     """
