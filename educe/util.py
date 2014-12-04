@@ -108,3 +108,34 @@ def mk_is_interesting(args,
 
     doc_checkers = [mk_checker(attr) for attr in FILEID_FIELDS]
     return lambda k: all(check(k) for check in doc_checkers)
+
+
+def add_subcommand(subparsers, module):
+    '''
+    Add a subcommand to an argparser following some conventions:
+
+        - the module can have an optional NAME constant
+          (giving the name of the command); otherwise we
+          assume it's the unqualified module name
+        - the first line of its docstring is its help text
+        - subsequent lines (if any) form its epilog
+
+    Returns the resulting subparser for the module
+    '''
+
+    if 'NAME' in module.__dict__:
+        module_name = module.NAME
+    else:
+        module_name = module.__name__.split('.')[-1]
+
+    module_help_parts = [x for x in module.__doc__.strip().split('\n', 1)
+                         if x]
+    if len(module_help_parts) > 1:
+        module_help = module_help_parts[0]
+        module_epilog = '\n'.join(module_help_parts[1:]).strip()
+    else:
+        module_help = module.__doc__
+        module_epilog = None
+    return subparsers.add_parser(module_name,
+                                 help=module_help,
+                                 epilog=module_epilog)
