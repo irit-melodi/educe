@@ -10,6 +10,7 @@ useful outside of that particular context
 """
 
 from __future__ import absolute_import
+from collections import namedtuple
 import csv
 
 _CSV_ID = 'ID'
@@ -32,6 +33,33 @@ CSV_HEADERS = [_CSV_ID,
                _CSV_COMMENT]
 
 csv.register_dialect('stac', csv.excel_tab)
+
+
+class Turn(namedtuple('Turn',
+                      ['number',
+                       'timestamp',
+                       'emitter',
+                       'res',
+                       'builds',
+                       'rawtext',
+                       'annot',
+                       'comment'])):
+    """
+    High-level representation of a turn as used in the STAC
+    internal CSV files during intake)
+    """
+    def to_dict(self):
+        "csv representation of this turn"
+
+        return {_CSV_ID: self.number,
+                _CSV_TIMESTAMP: self.timestamp,
+                _CSV_EMITTER: self.emitter,
+                _CSV_RESOURCES: self.res,
+                _CSV_BUILDUPS: self.builds,
+                _CSV_TEXT: self.rawtext,
+                _CSV_ANNOTATION: self.annot,
+                _CSV_COMMENT: self.comment}
+
 
 def mk_plain_csv_writer(outfile):
     """
