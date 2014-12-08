@@ -12,18 +12,24 @@ useful outside of that particular context
 from __future__ import absolute_import
 import csv
 
-csv_headers = [ 'ID'
-              , 'Timestamp'
-              , 'Emitter'
-              , 'Resources'
-              , 'Buildups'
-              , 'Text'
-              , 'Annotation'
-              , 'Comment'
-              ]
-"""
-Fields used in intermediary CSV format for preprocessing
-"""
+_CSV_ID = 'ID'
+_CSV_TIMESTAMP = 'Timestamp'
+_CSV_EMITTER = 'Emitter'
+_CSV_RESOURCES = 'Resources'
+_CSV_BUILDUPS = 'Buildups'
+_CSV_TEXT = 'Text'
+_CSV_ANNOTATION = 'Annotation'
+_CSV_COMMENT = 'Comment'
+
+
+CSV_HEADERS = [_CSV_ID,
+               _CSV_TIMESTAMP,
+               _CSV_EMITTER,
+               _CSV_RESOURCES,
+               _CSV_BUILDUPS,
+               _CSV_TEXT,
+               _CSV_ANNOTATION,
+               _CSV_COMMENT]
 
 csv.register_dialect('stac', csv.excel_tab)
 
@@ -109,9 +115,9 @@ class SparseDictReader(csv.DictReader):
 def mk_csv_writer(ofile):
     """
     Writes dictionaries.
-    See `csv_headers` for details
+    See `CSV_HEADERS` for details
     """
-    return Utf8DictWriter(ofile, csv_headers, dialect='stac')
+    return Utf8DictWriter(ofile, CSV_HEADERS, dialect='stac')
 
 def mk_csv_reader(infile):
     """
