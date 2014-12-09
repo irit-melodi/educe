@@ -10,13 +10,12 @@ import itertools
 import os
 
 import educe.util
-from educe.internalutil import treenode, ifilter
+from educe.internalutil import ifilter
 from educe.learning.keys import KeyGroup, MergedKeyGroup, HeaderType,\
     ClassKeyGroup
 from educe.external.postag import Token
 from educe.rst_dt import (SimpleRSTTree, id_to_path,
                           ptb as r_ptb)
-from educe.rst_dt.annotation import EDU
 from educe.rst_dt.text import Sentence, Paragraph
 from educe.rst_dt.deptree import RstDepTree
 
@@ -448,9 +447,6 @@ def preprocess(inputs, k):
     # convert to deptree
     dtree = RstDepTree.from_simple_rst_tree(rtree)
     edus = dtree.edus
-    # update origin and context of left padding EDU (ugly)
-    edus[0].set_context(edus[1].context)
-    edus[0].set_origin(edus[1].origin)
 
     # align with document structure
     surrounders = {edu: _surrounding_text(edu) for edu in edus}

@@ -1,20 +1,15 @@
 from __future__ import print_function
-import codecs
 import glob
 import os
 import random
-import sys
 import unittest
 import copy
 
-from nltk import Tree
-
-from educe.rst_dt import annotation, parse, deptree, SimpleRSTTree, EDU
+from educe.rst_dt import annotation, parse, SimpleRSTTree
 from educe.rst_dt.deptree import RstDepTree
 from educe.rst_dt.parse import (parse_lightweight_tree,
                                 parse_rst_dt_tree,
                                 read_annotation_file)
-from educe import rst_dt
 from ..internalutil import treenode
 
 # ---------------------------------------------------------------------
@@ -63,26 +58,25 @@ TSTR1 = """
 """
 
 TEXT1 = " ".join(
-        [" ORGANIZING YOUR MATERIALS ",
-         " Once you've decided on the kind of paneling you want to install "
-         "--- and the pattern ---",
+    [" ORGANIZING YOUR MATERIALS ",
+     (" Once you've decided on the kind of paneling you want to install "
+      "--- and the pattern ---"),
 
-         "some preliminary steps remain",
-         "before you climb into your working clothes. ",
-         " You'll need to measure the wall or room to be paneled,",
-         "estimate the amount of paneling you'll need,",
-         "buy the paneling,",
-         "gather the necessary tools and equipment (see illustration "
-         "on page 87),",
+     "some preliminary steps remain",
+     "before you climb into your working clothes. ",
+     " You'll need to measure the wall or room to be paneled,",
+     "estimate the amount of paneling you'll need,",
+     "buy the paneling,",
+     ("gather the necessary tools and equipment (see illustration "
+      "on page 87),"),
 
-         "and even condition certain types of paneling before installation. "
-         ])
+     "and even condition certain types of paneling before installation. "
+ ])
 
 
 # ---------------------------------------------------------------------
 #
 # ---------------------------------------------------------------------
-
 
 
 class RSTTest(unittest.TestCase):
@@ -117,7 +111,7 @@ class RSTTest(unittest.TestCase):
         return self._trees
 
     def test_binarize(self):
-        for name, tree in self._test_trees().items():
+        for _, tree in self._test_trees().items():
             bin_tree = annotation._binarize(tree)
             self.assertTrue(annotation.is_binary(bin_tree))
 
@@ -136,7 +130,7 @@ class RSTTest(unittest.TestCase):
                         (N:r (N:r (S t1) (N h))
                              (S t2)))
                     """
-                    ]
+        ]
 
         for lstr in lw_trees:
             rst1 = parse_lightweight_tree(lstr)
@@ -177,7 +171,7 @@ class RSTTest(unittest.TestCase):
                              (S r1)))
                       (S r2))
                     """,  # (l2 <- ((l1 <- h) -> r1)) -> r2
-                    ]
+        ]
 
         for lstr in lw_trees:
             rst1 = parse_lightweight_tree(lstr)
@@ -233,4 +227,4 @@ class RSTTest(unittest.TestCase):
         # now the real test
         dep1 = RstDepTree.from_simple_rst_tree(rst1)
         rev1 = dep1.to_simple_rst_tree(['r'])
-        #self.assertEqual(rst0, rev1, "same structure " + tricky)
+        # self.assertEqual(rst0, rev1, "same structure " + tricky)
