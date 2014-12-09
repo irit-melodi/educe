@@ -14,10 +14,11 @@ from educe.internalutil import treenode, ifilter
 from educe.learning.keys import KeyGroup, MergedKeyGroup, HeaderType,\
     ClassKeyGroup
 from educe.external.postag import Token
-from educe.rst_dt import (SimpleRSTTree, deptree, id_to_path,
+from educe.rst_dt import (SimpleRSTTree, id_to_path,
                           ptb as r_ptb)
 from educe.rst_dt.annotation import EDU
 from educe.rst_dt.text import Sentence, Paragraph
+from educe.rst_dt.deptree import RstDepTree
 
 
 class FeatureExtractionException(Exception):
@@ -328,17 +329,8 @@ def simplify_deptree(dtree):
     """
     Boil a dependency tree down into a dictionary from (edu, edu) to rel
     """
-    relations = {}
-
-    def _simplify_deptree(tree):
-        "recursively fill the relations dict"
-        src = treenode(tree)
-        for kid in tree:
-            tgt = treenode(kid)
-            relations[(src.edu, tgt.edu)] = tgt.rel
-            _simplify_deptree(kid)
-
-    _simplify_deptree(dtree)
+    relations = {(src, tgt): rel
+                 for src, tgt, rel in dtree.get_dependencies()}
     return relations
 
 
@@ -453,16 +445,13 @@ def preprocess(inputs, k):
     Pre-process and bundle up a representation of the current document
     """
     rtree = SimpleRSTTree.from_rst_tree(inputs.corpus[k])
-
-    lpad = EDU.left_padding()
-    edus = [lpad]
-    edus.extend(rtree.leaves())
-    # update origin and context of left padding EDU (ugly)
-    lpad.set_context(edus[1].context)
-    lpad.set_origin(edus[1].origin)
-
     # convert to deptree
-    dtree = deptree.relaxed_nuclearity_to_deptree(rtree, lpad)
+    dtree = RstDepTree.from_simple_rst_tree(rtree)
+    edus = dtree.edus
+    # update origin and context of left padding EDU (ugly)
+    edus[0].set_context(edus[1].context)
+    edus[0].set_origin(edus[1].origin)
+
     # align with document structure
     surrounders = {edu: _surrounding_text(edu) for edu in edus}
     # align with syntactic structure

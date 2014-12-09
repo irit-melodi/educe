@@ -5,17 +5,15 @@ import os
 import random
 import sys
 import unittest
+import copy
 
 from nltk import Tree
 
 from educe.rst_dt import annotation, parse, deptree, SimpleRSTTree, EDU
-from educe.rst_dt.deptree import\
-    relaxed_nuclearity_from_deptree,\
-    relaxed_nuclearity_to_deptree
-from educe.rst_dt.parse import\
-    parse_lightweight_tree,\
-    parse_rst_dt_tree,\
-    read_annotation_file
+from educe.rst_dt.deptree import RstDepTree
+from educe.rst_dt.parse import (parse_lightweight_tree,
+                                parse_rst_dt_tree,
+                                read_annotation_file)
 from educe import rst_dt
 from ..internalutil import treenode
 
@@ -142,14 +140,14 @@ class RSTTest(unittest.TestCase):
 
         for lstr in lw_trees:
             rst1 = parse_lightweight_tree(lstr)
-            dep = relaxed_nuclearity_to_deptree(rst1)
-            rst2 = relaxed_nuclearity_from_deptree(dep, [])
+            dep = RstDepTree.from_simple_rst_tree(rst1)
+            rst2 = dep.to_simple_rst_tree([])
             self.assertEqual(rst1, rst2, "round-trip on " + lstr)
 
         for name, tree in self._test_trees().items():
             rst1 = SimpleRSTTree.from_rst_tree(tree)
-            dep = relaxed_nuclearity_to_deptree(rst1)
-            rst2 = relaxed_nuclearity_from_deptree(dep, [])
+            dep = RstDepTree.from_simple_rst_tree(rst1)
+            rst2 = dep.to_simple_rst_tree([])
             self.assertEqual(treenode(rst1).span,
                              treenode(rst2).span,
                              "span equality on " + name)
@@ -183,18 +181,19 @@ class RSTTest(unittest.TestCase):
 
         for lstr in lw_trees:
             rst1 = parse_lightweight_tree(lstr)
-            dep = relaxed_nuclearity_to_deptree(rst1)
+            dep = RstDepTree.from_simple_rst_tree(rst1)
+
             dep_a = dep
-            rst2a = relaxed_nuclearity_from_deptree(dep_a, [])
+            rst2a = dep_a.to_simple_rst_tree([])
             self.assertEqual(rst1, rst2a, "round-trip on " + lstr)
 
-            dep_b = Tree(treenode(dep), dep[::-1])
-            rst2b = relaxed_nuclearity_from_deptree(dep_b, [])
+            dep_b = copy.deepcopy(dep)
+            dep_b.deps[0].reverse()
+            rst2b = dep_b.to_simple_rst_tree([])
 
-            dep_c_kids = list(dep)
-            random.shuffle(dep_c_kids)
-            dep_c = Tree(treenode(dep), dep_c_kids)
-            rst2c = relaxed_nuclearity_from_deptree(dep_c, [])
+            dep_c = copy.deepcopy(dep)
+            random.shuffle(dep_c.deps[0])
+            rst2c = dep_c.to_simple_rst_tree([])
 
     def test_rst_to_dt_nuclearity_loss(self):
         """
@@ -227,11 +226,11 @@ class RSTTest(unittest.TestCase):
         rst1 = parse_lightweight_tree(tricky)
 
         # a little sanity check first
-        dep0 = relaxed_nuclearity_to_deptree(rst0)
-        rev0 = relaxed_nuclearity_from_deptree(dep0, ['r'])
+        dep0 = RstDepTree.from_simple_rst_tree(rst0)
+        rev0 = dep0.to_simple_rst_tree(['r'])
         self.assertEqual(rst0, rev0, "same structure " + nuked)  # sanity
 
         # now the real test
-        dep1 = relaxed_nuclearity_to_deptree(rst1)
-        rev1 = relaxed_nuclearity_from_deptree(dep1, ['r'])
+        dep1 = RstDepTree.from_simple_rst_tree(rst1)
+        rev1 = dep1.to_simple_rst_tree(['r'])
         #self.assertEqual(rst0, rev1, "same structure " + tricky)
