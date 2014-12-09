@@ -10,17 +10,20 @@
 # License: CeCILL (French BSD3-like)
 
 """
-STAC project Swiss-Army knife
+STAC project one-off operations
+
+One time conversions or corrections which we don't think
+have a long-term use
 """
 
 from argparse import ArgumentParser
 
-from educe.stac.util.cmd import SUBCOMMANDS
+from educe.stac.oneoff.cmd import SUBCOMMANDS
 from educe.util import add_subcommand
 
 
 def main():
-    "stac-util main"
+    "stac-oneoff main"
 
     psr = ArgumentParser(description='STAC Swiss Army Knife')
     subparsers = psr.add_subparsers(help='sub-command help')

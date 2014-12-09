@@ -11,6 +11,7 @@ STAC project tools for learning on our data
 import argparse
 
 from educe.stac.learning.cmd import SUBCOMMANDS
+from educe.util import add_subcommand
 
 
 def main():
@@ -20,8 +21,7 @@ def main():
     subparsers = arg_parser.add_subparsers(help='sub-command help')
 
     for module in SUBCOMMANDS:
-        subparser = subparsers.add_parser(module.NAME,
-                                          help=module.__doc__)
+        subparser = add_subcommand(subparsers, module)
         module.config_argparser(subparser)
 
     arg_parser.add_argument('--verbose', '-v',

@@ -345,3 +345,15 @@ def strip_fixme(act):
     pref = "FIXME:"
     # pylint: enable=fixme
     return act[len(pref):] if act.startswith(pref) else act
+
+
+def unannotated_key(key):
+    """
+    Given a corpus key, return a copy of that equivalent key
+    in the unannotated portion of the corpus (the parser
+    outputs objects that are based in unannotated)
+    """
+    ukey = copy.copy(key)
+    ukey.stage = 'unannotated'
+    ukey.annotator = None
+    return ukey

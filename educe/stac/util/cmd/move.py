@@ -2,7 +2,9 @@
 # License: CeCILL-B (French BSD3-like)
 
 """
-Put subcommand help text here
+Move a block of text from one doc to another
+
+The typical use case here would in reportioning a document
 """
 
 from __future__ import print_function
