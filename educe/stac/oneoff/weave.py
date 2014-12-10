@@ -221,5 +221,9 @@ def shift_span(span, updates):
 
     See `shift_char` for details on how this works
     '''
-    return Span(shift_char(span.char_start, updates),
-                shift_char(span.char_end, updates))
+    start = shift_char(span.char_start, updates)
+    # this is to avoid spurious overstretching of the right
+    # boundary of an annotation that buts up against the
+    # left of a new annotation
+    end = 1 + shift_char(span.char_end - 1, updates)
+    return Span(start, end)
