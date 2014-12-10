@@ -11,7 +11,6 @@ Convert RST trees to dependency trees and back.
 from collections import namedtuple
 import itertools
 
-from educe.annotation import Standoff
 from educe.rst_dt.annotation import SimpleRSTTree, Node, EDU
 from ..internalutil import treenode
 
@@ -31,7 +30,7 @@ class RstDtException(Exception):
         super(RstDtException, self).__init__(msg)
 
 
-class RstDepTree(Standoff):
+class RstDepTree(object):
     """RST dependency tree"""
 
     _ROOT_HEAD = 0
@@ -42,29 +41,29 @@ class RstDepTree(Standoff):
 
     def __init__(self, edus=[], origin=None):
         _lpad = EDU.left_padding()
-        self.edus = list(itertools.chain([_lpad], edus))
+        self.edus = [_lpad] + edus
         # mapping from EDU num to idx
         self.idx = {e.num: i for i, e in enumerate(edus, start=1)}
         # init tree structure
         nb_edus = len(self.edus)
         _dft_head = self.DEFAULT_HEAD
         _dft_lbl = self.DEFAULT_LABEL
-        self.heads = [_dft_head for _ in range(nb_edus)]
-        self.labels = [_dft_lbl for _ in range(nb_edus)]
-        self.deps = [[] for _ in range(nb_edus)]
+        self.heads = list(itertools.repeat(_dft_head, nb_edus))
+        self.labels = list(itertools.repeat(_dft_lbl, nb_edus))
+        self.deps = list(itertools.repeat([], nb_edus))
         # set special values for fake root
         self.heads[0] = -1
         self.labels[0] = None
 
-        # standoff stuff
-        # use edus' origin and context
+        # set fake root's origin and context to be the same as the first
+        # real EDU's
         context = edus[0].context if edus else None
         origin = edus[0].origin if (origin is None and edus) else origin
         # update origin and context for fake root
         self.edus[0].set_context(context)
         self.edus[0].set_origin(origin)
-        # update origin for dep tree
-        Standoff.__init__(self, origin)
+        # update the dep tree's origin
+        self.set_origin(origin)
 
     def append_edu(self, edu):
         """Append an EDU to the list of EDUs"""
@@ -112,9 +111,6 @@ class RstDepTree(Standoff):
     def real_roots_idx(self):
         """Get the list of the indices of the real roots"""
         return self.deps[self._ROOT_HEAD]
-
-    def _members(self):
-        return self.edus
 
     def set_origin(self, origin):
         """Update the origin of this annotation"""
