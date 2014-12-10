@@ -145,9 +145,9 @@ def shift_annotations(doc, offset, point=None):
 
 def compute_renames(avoid, incoming):
     """
-    Given two sets of documents, return a dictionary which would
-    allow us to rename ids in `incoming` so that they do not
-    overlap with those in `avoid`.
+    Given two sets of documents (i.e. corpora), return a dictionary
+    which would allow us to rename ids in `incoming` so that
+    they do not overlap with those in `avoid`.
 
     :rtype `author -> date -> date`
     """
