@@ -7,7 +7,9 @@ stac-oneoff subcommands
 
 # pylint: disable=redefined-builtin
 # (we have a command called filter)
-from . import (clean_emoticons, clean_dialogue_acts)
+from . import\
+    (clean_emoticons, clean_dialogue_acts,
+     weave)
 
 # at the time of this writing argparse doesn't support a way to group
 # subcommands into sections, but maybe we can wait for it to grow such
@@ -16,7 +18,10 @@ from . import (clean_emoticons, clean_dialogue_acts)
 SUBCOMMAND_SECTIONS =\
     [('Cleanups',
       [clean_emoticons,
-       clean_dialogue_acts])]
+       clean_dialogue_acts]),
+     ('Invasive',
+      [weave])]
+
 
 SUBCOMMANDS = []
 for descr, section in SUBCOMMAND_SECTIONS:
