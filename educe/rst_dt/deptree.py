@@ -411,11 +411,6 @@ class RstDepTree(object):
             real_root = roots[0][1]  # roots is a list of (label, num)
             rparts = walk(None, real_root, strategy)
         else:
-            print('edus: {}'.format(self.edus))
-            print('heads: {}'.format(self.heads))
-            print('labels: {}'.format(self.labels))
-            print('deps: {}'.format(', '.join(str(d)
-                                              for d in self.deps)))
             msg = ('Cannot convert RstDepTree to SimpleRSTTree, ',
                    'multiple roots: {}'.format(roots))
             raise RstDtException(msg)
