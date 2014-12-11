@@ -48,9 +48,9 @@ class RstDepTree(object):
         nb_edus = len(self.edus)
         _dft_head = self.DEFAULT_HEAD
         _dft_lbl = self.DEFAULT_LABEL
-        self.heads = list(itertools.repeat(_dft_head, nb_edus))
-        self.labels = list(itertools.repeat(_dft_lbl, nb_edus))
-        self.deps = list(itertools.repeat([], nb_edus))
+        self.heads = [_dft_head for _ in range(nb_edus)]
+        self.labels = [_dft_lbl for _ in range(nb_edus)]
+        self.deps = [[] for _ in range(nb_edus)]
         # set special values for fake root
         self.heads[0] = -1
         self.labels[0] = None
