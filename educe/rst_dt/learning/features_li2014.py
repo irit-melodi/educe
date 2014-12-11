@@ -597,8 +597,8 @@ class SingleEduSubgroup_Para(SingleEduSubgroup):
     paragraph features for the EDU
     """
     _features = [
-        MagicKey.discrete_fn(paragraph_id),
-        MagicKey.discrete_fn(paragraph_id_div5)
+        MagicKey.continuous_fn(paragraph_id),
+        MagicKey.continuous_fn(paragraph_id_div5)
     ]
 
     def __init__(self):
@@ -668,8 +668,8 @@ class PairSubgroup_Para(PairSubgroup):
 
     _features = [
         MagicKey.discrete_fn(first_paragraph),
-        MagicKey.discrete_fn(num_paragraphs_between),
-        MagicKey.discrete_fn(num_paragraphs_between_div3)
+        MagicKey.continuous_fn(num_paragraphs_between),
+        MagicKey.continuous_fn(num_paragraphs_between_div3)
     ]
 
     def __init__(self, inputs, sf_cache):
@@ -688,20 +688,20 @@ class PairSubgroup_Sent(PairSubgroup):
     "Sentence tuple features"
 
     _features = [
-        MagicKey.discrete_fn(offset_diff),
-        MagicKey.discrete_fn(rev_offset_diff),
-        MagicKey.discrete_fn(offset_diff_div3),
-        MagicKey.discrete_fn(rev_offset_diff_div3),
+        MagicKey.continuous_fn(offset_diff),
+        MagicKey.continuous_fn(rev_offset_diff),
+        MagicKey.continuous_fn(offset_diff_div3),
+        MagicKey.continuous_fn(rev_offset_diff_div3),
         MagicKey.discrete_fn(offset_pair),
         MagicKey.discrete_fn(rev_offset_pair),
         MagicKey.discrete_fn(offset_div3_pair),
         MagicKey.discrete_fn(rev_offset_div3_pair),
-        MagicKey.discrete_fn(line_id_diff),  # !?! what's this?
+        MagicKey.continuous_fn(line_id_diff),  # !?! what's this?
         MagicKey.discrete_fn(same_bad_sentence),
-        MagicKey.discrete_fn(sentence_id_diff),
-        MagicKey.discrete_fn(sentence_id_diff_div3),
-        MagicKey.discrete_fn(rev_sentence_id_diff),
-        MagicKey.discrete_fn(rev_sentence_id_diff_div3),
+        MagicKey.continuous_fn(sentence_id_diff),
+        MagicKey.continuous_fn(sentence_id_diff_div3),
+        MagicKey.continuous_fn(rev_sentence_id_diff),
+        MagicKey.continuous_fn(rev_sentence_id_diff_div3),
     ]
 
     def __init__(self, inputs, sf_cache):
@@ -721,7 +721,7 @@ class PairSubgroup_Length(PairSubgroup):
 
     _features = [
         MagicKey.discrete_fn(num_tokens_div5_pair),
-        MagicKey.discrete_fn(num_tokens_diff_div5)
+        MagicKey.continuous_fn(num_tokens_diff_div5)
     ]
 
     def __init__(self, inputs, sf_cache):
