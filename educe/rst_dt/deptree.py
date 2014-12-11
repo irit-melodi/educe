@@ -48,9 +48,9 @@ class RstDepTree(object):
         nb_edus = len(self.edus)
         _dft_head = self.DEFAULT_HEAD
         _dft_lbl = self.DEFAULT_LABEL
-        self.heads = list(itertools.repeat(_dft_head, nb_edus))
-        self.labels = list(itertools.repeat(_dft_lbl, nb_edus))
-        self.deps = list(itertools.repeat([], nb_edus))
+        self.heads = [_dft_head for _ in range(nb_edus)]
+        self.labels = [_dft_lbl for _ in range(nb_edus)]
+        self.deps = [[] for _ in range(nb_edus)]
         # set special values for fake root
         self.heads[0] = -1
         self.labels[0] = None
@@ -411,6 +411,11 @@ class RstDepTree(object):
             real_root = roots[0][1]  # roots is a list of (label, num)
             rparts = walk(None, real_root, strategy)
         else:
+            print('edus: {}'.format(self.edus))
+            print('heads: {}'.format(self.heads))
+            print('labels: {}'.format(self.labels))
+            print('deps: {}'.format(', '.join(str(d)
+                                              for d in self.deps)))
             msg = ('Cannot convert RstDepTree to SimpleRSTTree, ',
                    'multiple roots: {}'.format(roots))
             raise RstDtException(msg)
