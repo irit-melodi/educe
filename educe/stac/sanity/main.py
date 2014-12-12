@@ -1036,9 +1036,9 @@ def check_graph_errors(inputs, k):
             search_relations(inputs, k, graph, is_arrow_inversion),
             noisy=True)
 
-    #quibble('possible Right Frontier Constraint violation',
-    #       rfc_violations(inputs, k, graph),
-    #       noisy=True)
+    quibble('possible Right Frontier Constraint violation',
+           rfc_violations(inputs, k, graph),
+           noisy=True)
 
     simplified_doc = copy.deepcopy(doc)
     simplified_inputs = copy.copy(inputs)
