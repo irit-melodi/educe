@@ -87,7 +87,7 @@ def _hollow_out_nonplayer_text(src_doc):
     last = 0
     for span in merged:
         res += orig[last:span.char_start]
-        res += ' ' * (span.char_end - span.char_start)
+        res += '\t' * (span.char_end - span.char_start)
         last = span.char_end
     res += orig[last:]
     return res
