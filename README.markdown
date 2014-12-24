@@ -1,4 +1,6 @@
 [![Build Status](https://secure.travis-ci.org/kowey/educe.png)](http://travis-ci.org/kowey/educe)
+[![Documentation
+Status](https://readthedocs.org/projects/educe/badge/?version=latest)](https://readthedocs.org/projects/educe/?badge=latest)
 
 ## About
 
