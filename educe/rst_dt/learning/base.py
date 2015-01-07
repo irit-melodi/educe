@@ -468,8 +468,7 @@ def preprocess(inputs, k):
 
 def extract_pair_features(inputs, feature_set, live=False):
     """
-    Return a pair of dictionaries, one for attachments
-    and one for relations
+    Return relations between pairs of EDUs as a dictionary
     """
 
     for k in inputs.corpus:
@@ -494,15 +493,12 @@ def extract_pair_features(inputs, feature_set, live=False):
             vec.fill(current, edu1, edu2)
 
             if live:
-                yield vec, vec
+                yield vec
             else:
-                pairs_vec = ClassKeyGroup(vec)
-                pairs_vec.set_class(epair in relations)
-                rels_vec = ClassKeyGroup(vec)
-                rels_vec.set_class(relations[epair] if epair in relations
+                vec_rel = ClassKeyGroup(vec)
+                vec_rel.set_class(relations[epair] if epair in relations
                                    else 'UNRELATED')
-
-                yield pairs_vec, rels_vec
+                yield vec_rel
 
 
 # ---------------------------------------------------------------------
