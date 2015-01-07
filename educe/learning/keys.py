@@ -8,7 +8,7 @@ keys into sections
 """
 
 from __future__ import absolute_import
-import csv
+
 import re
 
 
@@ -131,12 +131,12 @@ class Key(object):
             elif self.substance is Substance.BASKET:
                 return "basket"
             else:
-                oops = "Unknown substance {0} in key {1}".format(self.substance,
-                                                                 self.name)
+                oops = "Unknown substance {} in key {}".format(self.substance,
+                                                               self.name)
                 raise Exception(oops)
         else:
-            oops = "Unknown purpose {0} in key {1}".format(self.purpose,
-                                                           self.name)
+            oops = "Unknown purpose {} in key {}".format(self.purpose,
+                                                         self.name)
             raise Exception(oops)
 
     def to_csv(self):

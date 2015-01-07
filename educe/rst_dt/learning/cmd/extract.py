@@ -16,9 +16,9 @@ import educe.corpus
 import educe.glozz
 import educe.stac
 import educe.util
+from educe.learning.orange_format import dump_orange_tab_file
 from ..args import add_usual_input_args
 from ..base import read_corpus_inputs, extract_pair_features
-from ....learning.orange_format import dump_orange_tab_file
 
 
 NAME = 'extract'
@@ -70,7 +70,7 @@ def main(args):
 
     # extract instances
     X = extract_pair_features(inputs, feature_set=feature_set, live=live)
-    
+
     # dump instances to file
     if not os.path.exists(args.output):
         os.makedirs(args.output)
@@ -80,4 +80,11 @@ def main(args):
         of_bn = os.path.join(args.output, os.path.basename(args.corpus))
         of_ext = '.tab'
         out_file = '{}.relations{}'.format(of_bn, of_ext)
-    dump_orange_tab_file(X, [], out_file)
+    try:
+        dump_orange_tab_file(X, [], out_file)
+    except ValueError as e:
+        # FIXME: I have a nagging feeling that we should properly
+        # support this by just printing a CSV header and nothing
+        # else, but I'm trying to minimise code paths and for now
+        # failing in this corner case feels like a lesser evil :-/
+        sys.exit(str(e))

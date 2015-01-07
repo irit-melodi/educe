@@ -497,7 +497,7 @@ def extract_pair_features(inputs, feature_set, live=False):
             else:
                 vec_rel = ClassKeyGroup(vec)
                 vec_rel.set_class(relations[epair] if epair in relations
-                                   else 'UNRELATED')
+                                  else 'UNRELATED')
                 yield vec_rel
 
 

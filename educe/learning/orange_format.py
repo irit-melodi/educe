@@ -51,7 +51,7 @@ def _dump_orange_tab_file(X, y, f):
     # now the rest of them
     for row in X:
         writer.writerow(row)
-    
+
 
 def dump_orange_tab_file(X, y, f):
     """Dump the dataset in orange tab format.
@@ -65,8 +65,4 @@ def dump_orange_tab_file(X, y, f):
         try:
             _dump_orange_tab_file(X, y, f)
         except StopIteration:
-            # FIXME: I have a nagging feeling that we should properly
-            # support this by just printing a CSV header and nothing
-            # else, but I'm trying to minimise code paths and for now
-            # failing in this corner case feels like a lesser evil :-/
-            sys.exit("No features to extract!")
+            raise ValueError('No instance to extract')

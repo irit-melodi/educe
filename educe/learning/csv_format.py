@@ -3,8 +3,9 @@
 
 from __future__ import absolute_import
 
-import codecs
 import csv
+
+from .keys import HeaderType
 
 
 def mk_csv_writer(keys, fstream):
