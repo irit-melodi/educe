@@ -26,7 +26,9 @@ def config_argparser(parser):
     You should create and pass in the subparser to which the flags
     are to be added.
     """
-    parser.add_argument('corpus', metavar='DIR', help='corpus dir')
+    parser.add_argument('corpus', metavar='DIR',
+                        nargs='?',
+                        help='corpus dir')
     add_corpus_filters(parser, fields=fields_without(["stage"]))
     add_usual_output_args(parser)
     parser.set_defaults(func=main)
