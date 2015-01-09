@@ -27,6 +27,7 @@ from educe import stac, annotation, graph
 from educe.annotation import Schema
 from educe.corpus import FileId
 from educe.stac.corpus import METAL_REVIEWERS, METAL_STR
+from educe.stac.util.args import STAC_GLOBS
 from educe.stac.util.annotate import schema_text
 from educe.stac.util.context import Context
 import educe.stac.corenlp as stac_corenlp
@@ -37,10 +38,6 @@ from .report import *
 from .checks import *
 
 
-STAC_REVIEWERS = METAL_REVIEWERS
-STAC_GLOBS = {"data/pilot": "pilot*",
-              "data/socl-season1": "s1-league*-game*",
-              "data/socl-season2": "s2-*"}
 
 
 def first_or_none(xs):

@@ -8,6 +8,7 @@ Command line options
 from __future__ import print_function
 import argparse
 import copy
+import glob
 import os
 import sys
 import tempfile
@@ -15,6 +16,34 @@ import tempfile
 import educe.annotation
 import educe.stac
 import educe.util
+
+STAC_GLOBS = {"data/pilot": "pilot*",
+              "data/socl-season1": "s1-league*-game*",
+              "data/socl-season2": "s2-*"}
+
+
+def check_easy_settings(args):
+    """
+    Modify args to reflect user-friendly defaults.
+    (args.doc must be set, everything else expected to be empty)
+    """
+    if not args.doc:
+        raise Exception("no document specified for easy mode")
+
+    # figure out where this thing lives
+    for sdir in STAC_GLOBS:
+        if glob.glob(os.path.join(sdir, args.doc)):
+            args.corpus = sdir
+    if not args.corpus:
+        if not any(os.path.isdir(x) for x in STAC_GLOBS):
+            sys.exit("You don't appear in to be in the STAC root dir")
+        else:
+            sys.exit("I don't know about any document called " + args.doc)
+
+    guess_report = "{corpus} --doc \"{doc}\""
+
+    print("Guessing convenience settings:", file=sys.stderr)
+    print(guess_report.format(**args.__dict__), file=sys.stderr)
 
 
 def read_corpus(args,
@@ -111,7 +140,9 @@ def add_usual_input_args(parser,
     :param help_suffix appended to --doc/--subdoc help strings
     :type help_suffix string
     """
-    parser.add_argument('corpus', metavar='DIR', help='corpus dir')
+    parser.add_argument('corpus', metavar='DIR',
+                        nargs='?',
+                        help='corpus dir')
     if doc_subdoc_required:
         doc_help = 'document'
         subdoc_help = 'subdocument'
