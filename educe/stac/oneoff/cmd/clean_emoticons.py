@@ -10,6 +10,7 @@ import collections
 import copy
 
 import educe.stac
+import educe.stac.postag
 from educe.util import add_corpus_filters, fields_without
 from educe.stac.graph import EnclosureGraph
 
