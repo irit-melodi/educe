@@ -185,7 +185,7 @@ def comma_span(string):
     """
     Split a comma delimited pair of integers into an educe span
     """
-    parts = list(map(int, string.split(',')))
+    parts = [int(x) for x in string.split(',')]
     if len(parts) != 2:
         msg = "%r is not of form n,m" % string
         raise argparse.ArgumentTypeError(msg)
