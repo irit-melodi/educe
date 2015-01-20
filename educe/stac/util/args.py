@@ -27,7 +27,7 @@ def check_easy_settings(args):
     Modify args to reflect user-friendly defaults.
     (args.doc must be set, everything else expected to be empty)
     """
-    if not args.doc:
+    if not args.corpus and not args.doc:
         raise Exception("no document specified for easy mode")
 
     # figure out where this thing lives
