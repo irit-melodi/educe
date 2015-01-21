@@ -9,7 +9,6 @@ import copy
 import itertools
 import os
 
-import educe.util
 from educe.internalutil import ifilter
 from educe.learning.keys import KeyGroup, MergedKeyGroup, HeaderType,\
     ClassKeyGroup
@@ -31,10 +30,6 @@ class FeatureExtractionException(Exception):
 
 # The comments on these named tuples can be docstrings in Python3,
 # or we can wrap the class, but eh...
-
-# Global resources and settings used to extract feature vectors
-FeatureInput = namedtuple('FeatureInput',
-                          ['corpus', 'ptb', 'debug'])
 
 # A document and relevant contextual information
 DocumentPlus = namedtuple('DocumentPlus',
@@ -200,7 +195,7 @@ class BaseSingleEduKeys(MergedKeyGroup):
     Warning: This class should not be used directly. Use derived classes
     instead.
     """
-    def __init__(self, inputs, feature_groups):
+    def __init__(self, feature_groups):
         desc = "Single EDU features"
         super(BaseSingleEduKeys, self).__init__(desc, feature_groups)
 
@@ -259,12 +254,12 @@ class BasePairKeys(MergedKeyGroup):
         Should only be None if you're just using this to generate help text.
     """
 
-    def __init__(self, inputs, pair_feature_groups, sf_cache=None):
+    def __init__(self, pair_feature_groups, sf_cache=None):
         self.sf_cache = sf_cache
 
         if sf_cache is None:
-            self.edu1 = self.init_single_features(inputs)
-            self.edu2 = self.init_single_features(inputs)
+            self.edu1 = self.init_single_features()
+            self.edu2 = self.init_single_features()
         else:
             self.edu1 = None  # will be filled out later
             self.edu2 = None  # from the feature cache
@@ -272,7 +267,7 @@ class BasePairKeys(MergedKeyGroup):
         desc = "pair features"
         super(BasePairKeys, self).__init__(desc, pair_feature_groups)
 
-    def init_single_features(self, inputs):
+    def init_single_features(self):
         """Init features defined on single EDUs"""
         raise NotImplementedError()
 
@@ -439,11 +434,11 @@ def _ptb_stuff(doc_ptb_trees, edu):
     return ptb_trees, ptb_tokens
 
 
-def preprocess(inputs, k):
+def preprocess(rst_corpus, k, ptb_corpus):
     """
     Pre-process and bundle up a representation of the current document
     """
-    rtree = SimpleRSTTree.from_rst_tree(inputs.corpus[k])
+    rtree = SimpleRSTTree.from_rst_tree(rst_corpus[k])
     # convert to deptree
     dtree = RstDepTree.from_simple_rst_tree(rtree)
     edus = dtree.edus
@@ -451,7 +446,7 @@ def preprocess(inputs, k):
     # align with document structure
     surrounders = {edu: _surrounding_text(edu) for edu in edus}
     # align with syntactic structure
-    doc_ptb_trees = r_ptb.parse_trees(inputs.corpus, k, inputs.ptb)
+    doc_ptb_trees = r_ptb.parse_trees(rst_corpus, k, ptb_corpus)
     ptb_trees = {}
     ptb_tokens = {}
     for edu in edus:
@@ -466,13 +461,13 @@ def preprocess(inputs, k):
                         surrounders=surrounders)
 
 
-def extract_pair_features(inputs, feature_set, live=False):
+def extract_pair_features(feature_set, rst_corpus, ptb_corpus, live=False):
     """
     Return relations between pairs of EDUs as a dictionary
     """
 
-    for k in inputs.corpus:
-        current = preprocess(inputs, k)
+    for k in rst_corpus:
+        current = preprocess(rst_corpus, k, ptb_corpus)
         edus = current.edus
         # reduced dependency graph as dictionary (edu to [edu])
         relations = simplify_deptree(current.deptree) if not live else {}
@@ -480,7 +475,7 @@ def extract_pair_features(inputs, feature_set, live=False):
         # single edu features
         sf_cache = {}
         for edu in edus:
-            sf_cache[edu] = feature_set.SingleEduKeys(inputs)
+            sf_cache[edu] = feature_set.SingleEduKeys()
             sf_cache[edu].fill(current, edu)
 
         # pairs
@@ -489,7 +484,7 @@ def extract_pair_features(inputs, feature_set, live=False):
             edu1, edu2 = epair
             if edu1 == edu2:
                 continue
-            vec = feature_set.PairKeys(inputs, sf_cache=sf_cache)
+            vec = feature_set.PairKeys(sf_cache=sf_cache)
             vec.fill(current, edu1, edu2)
 
             if live:
@@ -499,36 +494,3 @@ def extract_pair_features(inputs, feature_set, live=False):
                 vec_rel.set_class(relations[epair] if epair in relations
                                   else 'UNRELATED')
                 yield vec_rel
-
-
-# ---------------------------------------------------------------------
-# input readers
-# ---------------------------------------------------------------------
-
-
-def read_common_inputs(args, corpus, ptb):
-    """
-    Read the data that is common to live/corpus mode.
-    """
-    return FeatureInput(corpus, ptb, args.debug)
-
-
-def read_help_inputs(_):
-    """
-    Read the data (if any) that is needed just to produce
-    the help text
-    """
-    return FeatureInput(None, None, True)
-
-
-def read_corpus_inputs(args):
-    """
-    Read the data (if any) that is needed just to produce
-    training data
-    """
-    is_interesting = educe.util.mk_is_interesting(args)
-    reader = educe.rst_dt.Reader(args.corpus)
-    anno_files = reader.filter(reader.files(), is_interesting)
-    corpus = reader.slurp(anno_files, verbose=True)
-    ptb = r_ptb.reader(args.ptb)
-    return read_common_inputs(args, corpus, ptb)

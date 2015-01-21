@@ -10,7 +10,6 @@ Emit a list of known features
 
 from __future__ import print_function
 
-from ..base import read_help_inputs
 from ..args import add_usual_input_args
 
 NAME = 'features'
@@ -34,5 +33,4 @@ def config_argparser(parser):
 
 def main(args):
     "main for feature listing mode"
-    inputs = read_help_inputs(args)
-    print(args.feature_set.PairKeys(inputs).help_text())
+    print(args.feature_set.PairKeys().help_text())
