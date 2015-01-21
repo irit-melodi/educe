@@ -298,13 +298,12 @@ class SingleEduSubgroup_Ptb(SingleEduSubgroup):
         super(SingleEduSubgroup_Ptb, self).__init__(desc, self._features)
 
 
-
 # ---------------------------------------------------------------------
 # EDU pairs
 # ---------------------------------------------------------------------
 
 class PairSubGroup_Core(PairSubgroup):
-    "core features"
+    """core features"""
 
     def __init__(self):
         desc = self.__doc__.strip()
@@ -333,8 +332,7 @@ class PairSubgroup_Gap(PairSubgroup):
 class PairSubgroup_Tuple(PairSubgroup):
     "artificial tuple features"
 
-    def __init__(self, inputs, sf_cache):
-        self.corpus = inputs.corpus
+    def __init__(self, sf_cache):
         self.sf_cache = sf_cache
         desc = self.__doc__.strip()
         keys =\
@@ -367,31 +365,27 @@ class PairSubgroup_Basket(PairSubgroup):
 class SingleEduKeys(BaseSingleEduKeys):
     """Single EDU features"""
 
-    def __init__(self, inputs):
+    def __init__(self):
         groups = [
             SingleEduSubgroup_Meta(),
             SingleEduSubgroup_Text(),
             SingleEduSubgroup_Ptb()
         ]
-        #if inputs.debug:
-        #    groups.append(SingleEduSubgroup_Debug())
-        super(SingleEduKeys, self).__init__(inputs, groups)
+        super(SingleEduKeys, self).__init__(groups)
 
 
 class PairKeys(BasePairKeys):
     """Features on a pair of EDUs"""
 
-    def __init__(self, inputs, sf_cache=None):
+    def __init__(self, sf_cache=None):
         groups = [
             PairSubGroup_Core(),
             PairSubgroup_Gap(),
-            PairSubgroup_Tuple(inputs, sf_cache),
+            PairSubgroup_Tuple(sf_cache),
             PairSubgroup_Basket()
         ]
-        #if inputs.debug:
-        #    groups.append(PairSubgroup_Debug())
-        super(PairKeys, self).__init__(inputs, groups, sf_cache)
+        super(PairKeys, self).__init__(groups, sf_cache)
 
-    def init_single_features(self, inputs):
+    def init_single_features(self):
         """Init features defined on single EDUs"""
-        return SingleEduKeys(inputs)
+        return SingleEduKeys()

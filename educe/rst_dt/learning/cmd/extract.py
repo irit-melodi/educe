@@ -16,9 +16,11 @@ import educe.corpus
 import educe.glozz
 import educe.stac
 import educe.util
+
+from educe.rst_dt import ptb as r_ptb
 from educe.learning.orange_format import dump_orange_tab_file
 from ..args import add_usual_input_args
-from ..base import read_corpus_inputs, extract_pair_features
+from ..base import extract_pair_features
 
 
 NAME = 'extract'
@@ -64,12 +66,18 @@ def config_argparser(parser):
 def main(args):
     "main for feature extraction mode"
     # retrieve parameters
-    inputs = read_corpus_inputs(args)
     feature_set = args.feature_set
     live = args.parsing
 
+    # load corpora
+    is_interesting = educe.util.mk_is_interesting(args)
+    reader = educe.rst_dt.Reader(args.corpus)
+    anno_files = reader.filter(reader.files(), is_interesting)
+    corpus = reader.slurp(anno_files, verbose=True)
+    ptb = r_ptb.reader(args.ptb)
+
     # extract instances
-    X = extract_pair_features(inputs, feature_set=feature_set, live=live)
+    X = extract_pair_features(feature_set, corpus, ptb, live=live)
 
     # dump instances to file
     if not os.path.exists(args.output):

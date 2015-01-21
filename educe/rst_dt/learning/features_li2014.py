@@ -632,8 +632,7 @@ class PairSubgroup_Word(PairSubgroup):
         MagicKey.discrete_fn(ptb_word_last2_pairs)
     ]
 
-    def __init__(self, inputs, sf_cache):
-        self.corpus = inputs.corpus
+    def __init__(self, sf_cache):
         self.sf_cache = sf_cache
         desc = self.__doc__.strip()
         super(PairSubgroup_Word, self).__init__(desc, self._features)
@@ -651,8 +650,7 @@ class PairSubgroup_Pos(PairSubgroup):
         MagicKey.discrete_fn(ptb_pos_tag_first_pairs)
     ]
 
-    def __init__(self, inputs, sf_cache):
-        self.corpus = inputs.corpus
+    def __init__(self, sf_cache):
         self.sf_cache = sf_cache
         desc = self.__doc__.strip()
         super(PairSubgroup_Pos, self).__init__(desc, self._features)
@@ -672,8 +670,7 @@ class PairSubgroup_Para(PairSubgroup):
         MagicKey.continuous_fn(num_paragraphs_between_div3)
     ]
 
-    def __init__(self, inputs, sf_cache):
-        self.corpus = inputs.corpus
+    def __init__(self, sf_cache):
         self.sf_cache = sf_cache
         desc = self.__doc__.strip()
         super(PairSubgroup_Para, self).__init__(desc, self._features)
@@ -704,8 +701,7 @@ class PairSubgroup_Sent(PairSubgroup):
         MagicKey.continuous_fn(rev_sentence_id_diff_div3),
     ]
 
-    def __init__(self, inputs, sf_cache):
-        self.corpus = inputs.corpus
+    def __init__(self, sf_cache):
         self.sf_cache = sf_cache
         desc = self.__doc__.strip()
         super(PairSubgroup_Sent, self).__init__(desc, self._features)
@@ -724,8 +720,7 @@ class PairSubgroup_Length(PairSubgroup):
         MagicKey.continuous_fn(num_tokens_diff_div5)
     ]
 
-    def __init__(self, inputs, sf_cache):
-        self.corpus = inputs.corpus
+    def __init__(self, sf_cache):
         self.sf_cache = sf_cache
         desc = self.__doc__.strip()
         super(PairSubgroup_Length, self).__init__(desc, self._features)
@@ -753,7 +748,7 @@ class PairSubgroup_Basket(PairSubgroup):
 class SingleEduKeys(BaseSingleEduKeys):
     """Single EDU features"""
 
-    def __init__(self, inputs):
+    def __init__(self):
         groups = [
             SingleEduSubgroup_Meta(),
             SingleEduSubgroup_Word(),
@@ -763,37 +758,33 @@ class SingleEduKeys(BaseSingleEduKeys):
             SingleEduSubgroup_Para(),
             SingleEduSubgroup_Sentence()
         ]
-        # if inputs.debug:
-        #     groups.append(SingleEduSubgroup_Debug())
-        super(SingleEduKeys, self).__init__(inputs, groups)
+        super(SingleEduKeys, self).__init__(groups)
 
 
 class PairKeys(BasePairKeys):
     """Features on a pair of EDUs"""
 
-    def __init__(self, inputs, sf_cache=None):
+    def __init__(self, sf_cache=None):
         groups = [
             # meta
             PairSubgroup_Core(),
             # feature type: 1
-            PairSubgroup_Word(inputs, sf_cache),
+            PairSubgroup_Word(sf_cache),
             # 2
-            PairSubgroup_Pos(inputs, sf_cache),
+            PairSubgroup_Pos(sf_cache),
             # 3
-            PairSubgroup_Para(inputs, sf_cache),
-            PairSubgroup_Sent(inputs, sf_cache),
+            PairSubgroup_Para(sf_cache),
+            PairSubgroup_Sent(sf_cache),
             # 4
-            PairSubgroup_Length(inputs, sf_cache),
+            PairSubgroup_Length(sf_cache),
             # 5
             # PairSubgroup_Syntax(),  # cf. basket
             # 6
             # PairSubgroup_Semantics(),
             PairSubgroup_Basket()  # basket feats for POS and syntax
         ]
-        # if inputs.debug:
-        #     groups.append(PairSubgroup_Debug())
-        super(PairKeys, self).__init__(inputs, groups, sf_cache)
+        super(PairKeys, self).__init__(groups, sf_cache)
 
-    def init_single_features(self, inputs):
+    def init_single_features(self):
         """Init features defined on single EDUs"""
-        return SingleEduKeys(inputs)
+        return SingleEduKeys()
