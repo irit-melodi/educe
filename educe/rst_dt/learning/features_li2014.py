@@ -8,21 +8,11 @@ Computational Linguistics (Vol. 1, pp. 25-35).
 http://www.aclweb.org/anthology/P/P14/P14-1003.pdf
 """
 
-from collections import Counter
-from functools import wraps
 import re
-import itertools
 
 from educe.internalutil import treenode
-from educe.learning.keys import MagicKey, Substance, Purpose
-from educe.learning.util import tuple_feature, space_join
-from .base import (SingleEduSubgroup, PairSubgroup,
-                   BaseSingleEduKeys, BasePairKeys,
-                   edu_feature,
-                   on_first_unigram, on_last_unigram,
-                   on_first_bigram, on_last_bigram,
-                   feat_grouping, feat_id, feat_start, feat_end,
-                   get_sentence, get_paragraph,
+from educe.learning.keys import Substance
+from .base import (feat_grouping, get_sentence, get_paragraph,
                    lowest_common_parent)
 
 
@@ -84,7 +74,7 @@ def extract_single_word(doc, edu):
         tokens = [tt for tt in tokens
                   if (TT_FILTER.match(tt.word) is not None and
                       TT_FILTER.match(tt.tag) is not None)]
-        
+
         yield ('ptb_word_first', tokens[0].word)
         yield ('ptb_word_last', tokens[-1].word)
         try:
@@ -110,7 +100,7 @@ def extract_single_pos(doc, edu):
         tokens = [tt for tt in tokens
                   if (TT_FILTER.match(tt.word) is not None and
                       TT_FILTER.match(tt.tag) is not None)]
-        
+
         yield ('ptb_pos_tag_first', tokens[0].tag)
         yield ('ptb_pos_tag_last', tokens[-1].tag)
         yield ('POS', [t.tag for t in tokens])
@@ -129,7 +119,7 @@ def extract_single_length(doc, edu):
         tokens = [tt for tt in tokens
                   if (TT_FILTER.match(tt.word) is not None and
                       TT_FILTER.match(tt.tag) is not None)]
-        
+
         yield ('num_tokens', len(tokens))
         yield ('num_tokens_div5', len(tokens) / 5)
 
@@ -180,8 +170,8 @@ def extract_single_para(doc, edu):
     """paragraph features for the EDU"""
     para = get_paragraph(doc, edu)
     if para is not None:
-           yield ('paragraph_id', para.num)
-           yield ('paragraph_id_div5', para.num / 5)
+        yield ('paragraph_id', para.num)
+        yield ('paragraph_id_div5', para.num / 5)
 
 
 # features on syntax
@@ -221,6 +211,7 @@ def get_syntactic_labels(current, edu):
 _single_syntax = [
     ('SYN', Substance.BASKET)
 ]
+
 
 def extract_single_syntax(doc, edu):
     """syntactic features for the EDU"""
@@ -284,6 +275,7 @@ _pair_meta = [
     ('grouping', Substance.STRING)
 ]
 
+
 def extract_pair_meta(doc, sf_cache, edu1, edu2):
     """core features"""
     yield ('grouping', feat_grouping(doc, edu1, edu2))
@@ -297,6 +289,7 @@ _pair_word = [
     ('ptb_word_first2_pairs', Substance.DISCRETE),
     ('ptb_word_last2_pairs', Substance.DISCRETE),
 ]
+
 
 def extract_pair_word(doc, sf_cache, edu1, edu2):
     """word tuple features"""
@@ -322,6 +315,7 @@ _pair_pos = [
     ('POSF', Substance.BASKET),
     ('POSS', Substance.BASKET)
 ]
+
 
 def extract_pair_pos(doc, sf_cache, edu1, edu2):
     """POS tuple features"""
@@ -350,6 +344,7 @@ _pair_length = [
     ('num_tokens_diff_div5', Substance.CONTINUOUS)
 ]
 
+
 def extract_pair_length(doc, sf_cache, edu1, edu2):
     """Sentence tuple features"""
 
@@ -370,6 +365,7 @@ _pair_para = [
     ('num_paragraphs_between', Substance.CONTINUOUS),
     ('num_paragraphs_between_div3', Substance.CONTINUOUS)
 ]
+
 
 def extract_pair_para(doc, sf_cache, edu1, edu2):
     """Paragraph tuple features"""
@@ -410,6 +406,7 @@ _pair_sent = [
     ('rev_sentence_id_diff', Substance.CONTINUOUS),
     ('rev_sentence_id_diff_div3', Substance.CONTINUOUS)
 ]
+
 
 def extract_pair_sent(doc, sf_cache, edu1, edu2):
     """Sentence tuple features"""
@@ -471,6 +468,7 @@ _pair_syntax = [
     ('SYNS', Substance.BASKET)
 ]
 
+
 def extract_pair_syntax(doc, sf_cache, edu1, edu2):
     """Syntax pair features"""
     feats_edu1 = sf_cache[edu1]
@@ -489,8 +487,8 @@ def extract_pair_syntax(doc, sf_cache, edu1, edu2):
         pass
     else:
         yield ('SYNS', syn_labs2)
-    
-        
+
+
 def build_pair_feature_extractor():
     """Build the feature extractor for pairs of EDUs
 
