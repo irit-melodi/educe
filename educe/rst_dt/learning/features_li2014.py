@@ -105,6 +105,7 @@ def extract_single_pos(doc, edu):
         yield ('ptb_pos_tag_last', tokens[-1].tag)
         yield ('POS', [t.tag for t in tokens])
 
+
 _single_length = [
     ('num_tokens', Substance.CONTINUOUS),
     ('num_tokens_div5', Substance.CONTINUOUS)
