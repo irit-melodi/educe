@@ -11,7 +11,12 @@ import sys
 
 from educe.corpus import FileId
 from educe.rst_dt import parse
+import educe.util
 import educe.corpus
+from .document_plus import DocumentPlus
+from .annotation import SimpleRSTTree
+from .deptree import RstDepTree
+
 
 # ---------------------------------------------------------------------
 # Corpus
@@ -66,6 +71,7 @@ def mk_key(doc):
                   stage='discourse',
                   annotator='unknown')
 
+
 def id_to_path(k):
     """
     Given a fleshed out FileId (none of the fields are None),
@@ -76,3 +82,44 @@ def id_to_path(k):
     this path
     """
     return k.doc
+
+
+class RstDtParser(object):
+    """Fake parser that gets annotation from the RST-DT.
+    """
+
+    def __init__(self, corpus_dir, args):
+        # TODO: kill `args`
+        self.reader = Reader(corpus_dir)
+        # pre-load corpus
+        is_interesting = educe.util.mk_is_interesting(args)
+        anno_files = self.reader.filter(self.reader.files(), is_interesting)
+        self.corpus = self.reader.slurp(anno_files, verbose=True)
+
+    def decode(self, doc_key):
+        """Decode a document from the RST-DT (gold)"""
+        grouping = os.path.basename(id_to_path(doc_key))
+        doc = DocumentPlus(doc_key, grouping)
+
+        doc.orig_rsttree = self.corpus[doc_key]
+        # get EDUs
+        doc.edus.append(doc.orig_rsttree.leaves())
+        # convert to binary tree
+        doc.rsttree = SimpleRSTTree.from_rst_tree(doc.orig_rsttree)
+        # convert to dep tree
+        doc.deptree = RstDepTree.from_simple_rst_tree(doc.rsttree)
+        # get EDUs
+        # TODO: get EDUs from orig_rsttree.leaves(),
+        # let document_plus do the left padding
+        doc.edus = doc.deptree.edus
+        return doc
+
+    def segment(self, doc):
+        """Segment the document into EDUs using the RST-DT (gold).
+        """
+        return doc
+
+    def parse(self, doc):
+        """Parse the document using the RST-DT (gold).
+        """
+        return doc

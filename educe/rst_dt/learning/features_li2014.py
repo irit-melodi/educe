@@ -9,6 +9,7 @@ http://www.aclweb.org/anthology/P/P14/P14-1003.pdf
 """
 
 import re
+from collections import Counter
 
 from educe.internalutil import treenode
 from educe.learning.keys import Substance
@@ -330,14 +331,16 @@ def extract_pair_pos(doc, sf_cache, edu1, edu2):
     except KeyError:
         pass
     else:
-        yield ('POSF', pos_tags1)
+        for tag in pos_tags1:
+            yield ('POSF', tag)
 
     try:
         pos_tags2 = feats_edu2['POS']
     except KeyError:
         pass
     else:
-        yield ('POSS', pos_tags2)
+        for tag in pos_tags2:
+            yield ('POSS', tag)
 
 
 _pair_length = [
@@ -480,14 +483,16 @@ def extract_pair_syntax(doc, sf_cache, edu1, edu2):
     except KeyError:
         pass
     else:
-        yield ('SYNF', syn_labs1)
+        for lab in syn_labs1:
+            yield ('SYNF', lab)
 
     try:
         syn_labs2 = feats_edu2['SYN']
     except KeyError:
         pass
     else:
-        yield ('SYNS', syn_labs2)
+        for lab in syn_labs2:
+            yield ('SYNS', lab)
 
 
 def build_pair_feature_extractor():

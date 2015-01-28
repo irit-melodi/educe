@@ -119,68 +119,76 @@ def _mk_token(ttoken, span):
     return Token(ttoken, span)
 
 
-def align(corpus, k, ptb):
-    """
-    Align PTB annotations to the corpus raw text.
-    Return a generator of `Token` objects
+class PtbParser(object):
+    """Gold parser that gets annotations from the PTB.
 
-    Note: returns None if there is no associated PTB corpus entry.
-
-    See also `parse_tree` (which calls this function internall)
-    """
-    ptb_name = _guess_ptb_name(k)
-    if ptb_name is None:
-        return None
-    rst_text = corpus[k].text()
-    tagged_tokens = ptb.tagged_words(ptb_name)
-    # tweak tokens THEN filter empty nodes
-    tweaked1, tweaked2 =\
-        itertools.tee(_tweak_token(ptb_name)(i, tok) for i, tok in
-                      enumerate(tagged_tokens)
-                      if not is_empty_category(tok[1]))
-    spans = generic_token_spans(rst_text, tweaked1,
-                                txtfn=lambda x: x.tweaked_word)
-    return (_mk_token(t, s) for t, s in izip(tweaked2, spans))
-
-
-def parse_trees(corpus, k, ptb):
-    """
-    Given an RST DT tree and an NLTK PTB reader, return a list of
-    educified PTB parse trees (one per sentence). These are
-    almost the same as the trees that would be returned by the
-    `parsed_sents` method, except that each leaf/node is
-    associated with a span within the RST DT text.
-
-    Note: returns None if there is no associated PTB corpus entry.
-    """
-    ptb_name = _guess_ptb_name(k)
-    if ptb_name is None:
-        return None
-    tokens_iter = align(corpus, k, ptb)
-
-    results = []
-    for tree in ptb.parsed_sents(ptb_name):
-        # apply standard cleaning to tree
-        # strip function tags, remove empty nodes
-        tree_no_empty = prune_tree(tree, is_non_empty)
-        tree_no_empty_no_gf = transform_tree(tree_no_empty,
-                                             strip_subcategory)
-        #
-        leaves = tree_no_empty_no_gf.leaves()
-        tslice = itertools.islice(tokens_iter, len(leaves))
-        results.append(ConstituencyTree.build(tree_no_empty_no_gf,
-                                              tslice))
-    return results
-
-
-def reader(corpus_dir):
-    """
-    An instantiated NLTK BracketedParseCorpusReader for the PTB
-    section relevant to the RST DT corpus.
+    It uses an instantiated NLTK BracketedParseCorpusReader
+    for the PTB section relevant to the RST DT corpus.
 
     Note that the path you give to this will probably end with
     something like `parsed/mrg/wsj`
     """
-    return BracketParseCorpusReader(corpus_dir,
-                                    r'../wsj_.*\.mrg',
-                                    encoding='ascii')
+
+    def __init__(self, corpus_dir):
+        """ """
+        self.reader = BracketParseCorpusReader(corpus_dir,
+                                               r'../wsj_.*\.mrg',
+                                               encoding='ascii')
+
+    def tokenize(self, doc):
+        """Tokenize the document text using the PTB gold annotation.
+
+        Return a tokenized document.
+        """
+        # get doc text
+        # here we cheat and get it from the RST-DT tree
+        rst_text = doc.orig_rsttree.text()
+        # get tokens from PTB
+        ptb_name = _guess_ptb_name(doc.key)
+        if ptb_name is None:
+            return doc
+        tagged_tokens = self.reader.tagged_words(ptb_name)
+        # tweak tokens THEN filter empty nodes
+        tweaked1, tweaked2 =\
+            itertools.tee(_tweak_token(ptb_name)(i, tok) for i, tok in
+                          enumerate(tagged_tokens)
+                          if not is_empty_category(tok[1]))
+        spans = generic_token_spans(rst_text, tweaked1,
+                                    txtfn=lambda x: x.tweaked_word)
+        result = [_mk_token(t, s) for t, s in izip(tweaked2, spans)]
+        # store in doc
+        doc.tkd_tokens = result
+        return doc
+
+    def parse(self, doc):
+        """
+        Given a document, return a list of educified PTB parse trees
+        (one per sentence).
+
+        These are almost the same as the trees that would be returned by the
+        `parsed_sents` method, except that each leaf/node is
+        associated with a span within the RST DT text.
+
+        Note: does nothing if there is no associated PTB corpus entry.
+        """
+        # get tokens from tokenized document
+        tokens_iter = iter(doc.tkd_tokens)
+        # get PTB trees
+        ptb_name = _guess_ptb_name(doc.key)
+        if ptb_name is None:
+            return doc
+        results = []
+        for tree in self.reader.parsed_sents(ptb_name):
+            # apply standard cleaning to tree
+            # strip function tags, remove empty nodes
+            tree_no_empty = prune_tree(tree, is_non_empty)
+            tree_no_empty_no_gf = transform_tree(tree_no_empty,
+                                                 strip_subcategory)
+            #
+            leaves = tree_no_empty_no_gf.leaves()
+            tslice = itertools.islice(tokens_iter, len(leaves))
+            results.append(ConstituencyTree.build(tree_no_empty_no_gf,
+                                                  tslice))
+        # store trees in doc
+        doc.tkd_trees = results
+        return doc
