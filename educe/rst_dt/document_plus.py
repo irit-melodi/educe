@@ -167,6 +167,13 @@ class DocumentPlus(object):
                      if epair[0] != epair[1]]
         return all_pairs
 
+    def sorted_all_inv_edu_pairs(self):
+        """Get a sorted list of all the inverted EDU pairs of a document"""
+        epairs = self.all_edu_pairs()
+        # sort EDU pairs by target EDU, then source EDU
+        inv_pairs = sorted((tgt, src) for src, tgt in epairs)
+        return inv_pairs
+
     def relations(self, edu_pairs):
         """Get the relation that holds in each of the edu_pairs"""
         if not self.deptree:
@@ -176,4 +183,10 @@ class DocumentPlus(object):
                 for src, tgt, rel in self.deptree.get_dependencies()}
         erels = [rels.get(epair, 'UNRELATED')
                  for epair in edu_pairs]
+        return erels
+
+    def inv_relations(self, inv_edu_pairs):
+        """Get the relation that holds in each of the inv_edu_pairs"""
+        epairs = [(src, tgt) for tgt, src in inv_edu_pairs]
+        erels = self.relations(epairs)
         return erels

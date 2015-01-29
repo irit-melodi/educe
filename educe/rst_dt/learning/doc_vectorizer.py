@@ -25,10 +25,16 @@ class DocumentLabelExtractor(object):
         self.labelset = labelset
 
     def _extract_labels(self, doc):
-        """Extract a label for each EDU pair extracted from doc"""
+        """Extract a label for each EDU pair extracted from doc
+
+        Returns ([edu_pairs], [labels])
+        """
         edu_pairs = self.instance_generator(doc)
         # extract one label per EDU pair
-        labels = doc.relations(edu_pairs)
+        # FIXME: inv_relations() is a very dirty hack that only works
+        # if we have called sorted_all_inv_edu_pairs() as instance generator
+        labels = doc.inv_relations(edu_pairs)
+        # was: labels = doc.relations(edu_pairs)
         return labels
 
     def _instance_labels(self, raw_documents):
@@ -221,6 +227,7 @@ class DocumentCountVectorizer(object):
         # separator for one-hot-encoding
         self.separator = separator
 
+    # document-level method
     def _extract_feature_vectors(self, doc):
         """Extract feature vectors for all EDU pairs of a document"""
         # EXPERIMENTAL
@@ -230,6 +237,7 @@ class DocumentCountVectorizer(object):
         pair_extract = self.pair_extract
         separator = self.separator
         # end EXPERIMENTAL
+        doc_grouping = doc.grouping
         feat_vecs = []
         # extract one feature vector per EDU pair
         edu_pairs = self.instance_generator(doc)
@@ -252,19 +260,22 @@ class DocumentCountVectorizer(object):
             # sum values of entries with same feature name
             feat_vec = Counter(oh_feats).items()
             feat_vecs.append(feat_vec)
-        return feat_vecs
 
+        return feat_vecs, edu_pairs, doc_grouping
+
+    # corpus level methods
     def _instances(self, raw_documents):
         """Extract instances, with only features that are in vocabulary"""
         vocabulary = self.vocabulary_
 
         analyze = self.build_analyzer()
         for doc in raw_documents:
-            for feat_vec in analyze(doc):
+            feat_vecs, edu_pairs, doc_grouping = analyze(doc)
+            for feat_vec, edu_pair in itertools.izip(feat_vecs, edu_pairs):
                 row = [(vocabulary[fn], fv)
                        for fn, fv in feat_vec
                        if fn in vocabulary]
-                yield row
+                yield row, edu_pair, doc_grouping
 
     def _vocab_df(self, raw_documents, fixed_vocab):
         """Gather vocabulary (if fixed_vocab=False) and doc frequency
@@ -280,9 +291,9 @@ class DocumentCountVectorizer(object):
 
         analyze = self.build_analyzer()
         for doc in raw_documents:
-            doc_features = [fn
-                            for feat_vec in analyze(doc)
-                            for fn, _ in feat_vec]
+            feat_vecs, edu_pairs, doc_grouping = analyze(doc)
+            doc_features = [fn for feat_vec in feat_vecs
+                            for fn, fv in feat_vec]
             for feature in doc_features:
                 try:
                     feat_id = vocabulary[feature]
@@ -428,7 +439,8 @@ class DocumentCountVectorizer(object):
         return self
 
     def fit_transform(self, raw_documents, y=None):
-        """Learn the vocabulary dictionary and return a feature matrix"""
+        """Learn the vocabulary dictionary and generate (row, (tgt, src))
+        """
         self._validate_vocabulary()
         max_df = self.max_df
         min_df = self.min_df
@@ -456,15 +468,18 @@ class DocumentCountVectorizer(object):
                                                           limit=max_features)
             self.vocabulary_ = vocabulary
         # re-run through documents to generate X
-        for row in self._instances(raw_documents):
-            yield row
+        for row, inv_epair in self._instances(raw_documents):
+            yield (row, inv_epair)
 
     def transform(self, raw_documents):
-        """Transform documents to a feature matrix"""
+        """Transform documents to a feature matrix
+
+        Note: generator of (row, (tgt, src))
+        """
         if not hasattr(self, 'vocabulary_'):
             self._validate_vocabulary()
         if not self.vocabulary_:
             raise ValueError('Empty vocabulary')
 
-        for row in self._instances(raw_documents):
-            yield row
+        for row, inv_epair in self._instances(raw_documents):
+            yield (row, inv_epair)
