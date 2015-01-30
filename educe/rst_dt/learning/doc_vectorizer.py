@@ -253,12 +253,18 @@ class DocumentCountVectorizer(object):
             # apply one hot encoding for all string values
             oh_feats = []
             for f, v in feats:
-                if isinstance(v, str):
+                if isinstance(v, tuple):
+                    f = '{}{}{}'.format(f, separator, str(v))
+                    v = 1
+                elif isinstance(v, (str, unicode)):
                     f = '{}{}{}'.format(f, separator, v)
                     v = 1
                 oh_feats.append((f, v))
             # sum values of entries with same feature name
-            feat_vec = Counter(oh_feats).items()
+            feat_cnt = Counter()
+            for fn, fv in oh_feats:
+                feat_cnt[fn] += fv
+            feat_vec = feat_cnt.items()
             feat_vecs.append(feat_vec)
 
         return feat_vecs, edu_pairs, doc_grouping
@@ -469,8 +475,8 @@ class DocumentCountVectorizer(object):
                                                           limit=max_features)
             self.vocabulary_ = vocabulary
         # re-run through documents to generate X
-        for row, inv_epair in self._instances(raw_documents):
-            yield (row, inv_epair)
+        for row, inv_epair, doc_grouping in self._instances(raw_documents):
+            yield (row, inv_epair, doc_grouping)
 
     def transform(self, raw_documents):
         """Transform documents to a feature matrix
@@ -482,5 +488,5 @@ class DocumentCountVectorizer(object):
         if not self.vocabulary_:
             raise ValueError('Empty vocabulary')
 
-        for row, inv_epair in self._instances(raw_documents):
-            yield (row, inv_epair)
+        for row, inv_epair, doc_grouping in self._instances(raw_documents):
+            yield (row, inv_epair, doc_grouping)
