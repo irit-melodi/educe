@@ -119,29 +119,19 @@ class DocumentPlus(object):
         """Compute for each EDU the overlapping tokens"""
         if self.tkd_tokens is None:
             self.ptb_tokens = None
-            self.eduptr = None
             return self
 
+        # TODO replace this with a greedy procedure that assigns each token
+        # to exactly one EDU
         self.ptb_tokens = dict()  # overlapping PTB tokens
-        self.eduptr = [0]  # EDU i is made of tokens [eduptr[i]:eduptr[i+1]]
-
-        # greedily add tokens to each EDU in turn
-        tokens = iter(self.tkd_tokens)
-        tok = tokens.next()
         for edu in self.edus:
-            ptb_toks = []
-            while tok.overlaps(edu):
-                ptb_toks.append(tok)
-                tok = tokens.next()
+            if edu.is_left_padding():
+                start_token = Token.left_padding()
+                ptb_toks = [start_token]
+            else:
+                ptb_toks = [tok for tok in self.tkd_tokens
+                            if tok.overlaps(edu)]
             self.ptb_tokens[edu] = ptb_toks
-            self.eduptr.append(len(ptb_toks))
-        # DEBUG
-        for edu in self.edus:
-            print('EDU: ', edu)
-            print('===> ', self.ptb_tokens[edu])
-        import sys
-        sys.exit()
-        # end DEBUG
         return self
 
     def align_with_trees(self):
