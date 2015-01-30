@@ -75,15 +75,15 @@ def extract_single_word(doc, edu):
         tokens = [tt for tt in tokens
                   if (TT_FILTER.match(tt.word) is not None and
                       TT_FILTER.match(tt.tag) is not None)]
-
-        yield ('ptb_word_first', tokens[0].word)
-        yield ('ptb_word_last', tokens[-1].word)
-        try:
-            yield ('ptb_word_first2', (tokens[0].word, tokens[1].word))
-            yield ('ptb_word_last2', (tokens[-2].word, tokens[-1].word))
-        except IndexError:
-            # if there is only one token, just pass
-            pass
+        if tokens:
+            yield ('ptb_word_first', tokens[0].word)
+            yield ('ptb_word_last', tokens[-1].word)
+            try:
+                yield ('ptb_word_first2', (tokens[0].word, tokens[1].word))
+                yield ('ptb_word_last2', (tokens[-2].word, tokens[-1].word))
+            except IndexError:
+                # if there is only one token, just pass
+                pass
 
 
 _single_pos = [
@@ -101,10 +101,10 @@ def extract_single_pos(doc, edu):
         tokens = [tt for tt in tokens
                   if (TT_FILTER.match(tt.word) is not None and
                       TT_FILTER.match(tt.tag) is not None)]
-
-        yield ('ptb_pos_tag_first', tokens[0].tag)
-        yield ('ptb_pos_tag_last', tokens[-1].tag)
-        yield ('POS', [t.tag for t in tokens])
+        if tokens:
+            yield ('ptb_pos_tag_first', tokens[0].tag)
+            yield ('ptb_pos_tag_last', tokens[-1].tag)
+            yield ('POS', [t.tag for t in tokens])
 
 
 _single_length = [
@@ -297,17 +297,16 @@ def extract_pair_word(doc, sf_cache, edu1, edu2):
     """word tuple features"""
     feats_edu1 = sf_cache[edu1]
     feats_edu2 = sf_cache[edu2]
-    yield ('ptb_word_first_pairs', (feats_edu1['ptb_word_first'],
-                                    feats_edu2['ptb_word_first']))
-    yield ('ptb_word_last_pairs', (feats_edu1['ptb_word_last'],
-                                   feats_edu2['ptb_word_last']))
     try:
+        yield ('ptb_word_first_pairs', (feats_edu1['ptb_word_first'],
+                                        feats_edu2['ptb_word_first']))
+        yield ('ptb_word_last_pairs', (feats_edu1['ptb_word_last'],
+                                       feats_edu2['ptb_word_last']))
         yield ('ptb_word_first2_pairs', (feats_edu1['ptb_word_first2'],
                                          feats_edu2['ptb_word_first2']))
         yield ('ptb_word_last2_pairs', (feats_edu1['ptb_word_last2'],
                                         feats_edu2['ptb_word_last2']))
     except KeyError:
-        # ignore when there are less than 2 tokens in either EDU
         pass
 
 
@@ -323,8 +322,11 @@ def extract_pair_pos(doc, sf_cache, edu1, edu2):
     """POS tuple features"""
     feats_edu1 = sf_cache[edu1]
     feats_edu2 = sf_cache[edu2]
-    yield ('ptb_pos_tag_first_pairs', (feats_edu1['ptb_pos_tag_first'],
-                                       feats_edu2['ptb_pos_tag_first']))
+    try:
+        yield ('ptb_pos_tag_first_pairs', (feats_edu1['ptb_pos_tag_first'],
+                                           feats_edu2['ptb_pos_tag_first']))
+    except KeyError:
+        pass
 
     try:
         pos_tags1 = feats_edu1['POS']
