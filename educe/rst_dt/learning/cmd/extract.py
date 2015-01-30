@@ -90,6 +90,7 @@ def main(args):
                                    feature_set,
                                    min_df=1)
     X_gen = vzer.fit_transform(rst_corpus)
+
     # extract class label for each instance
     if live:
         y_gen = itertools.repeat(0)
@@ -110,13 +111,14 @@ def main(args):
         of_bn = os.path.join(args.output, os.path.basename(args.corpus))
         out_file = '{}.relations{}'.format(of_bn, of_ext)
 
-    # TODO: pass X_gen, y_gen to edu_input_format.dump_all()
-    # that in turn calls dump_svmlight_file
-    dump_all(X_gen, y_gen, out_file)
-
     # dump
-    dump_svmlight_file(X_gen, y_gen, out_file)
+    # edu_input_format.dump_all() in turn calls dump_svmlight_file
+    # this is a poor man's solution but it is good enough for the time being
+    dump_all(X_gen, y_gen, out_file)
+    # TODO: dump label encoding, e.g. comment line heading the svmlight file
+    # dump_svmlight_file(X_gen, y_gen, out_file)
+
     # dump vocabulary
     vocab_file = out_file + '.vocab'
     dump_vocabulary(vzer.vocabulary_, vocab_file)
-    # TODO: dump label encoding, e.g. comment line heading the svmlight file
+
