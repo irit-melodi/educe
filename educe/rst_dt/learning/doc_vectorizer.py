@@ -397,22 +397,23 @@ class DocumentCountVectorizer(object):
 
     def build_analyzer(self):
         """Return a callable that extracts feature vectors from a doc"""
+        tokenize = self.build_tokenizer()
+        parse = self.build_synt_parser()
+        disc_segment = self.build_discourse_segmenter()
+        disc_parse = self.build_discourse_parser()
+
         def _open_plus(doc):
             """Open and fully load a document"""
             # create a DocumentPlus
             doc = self.decode(doc)
             # populate it with layers of info
             # tokens
-            tokenize = self.build_tokenizer()
             doc = tokenize(doc)
             # syn parses
-            parse = self.build_synt_parser()
             doc = parse(doc)
             # disc segments
-            disc_segment = self.build_discourse_segmenter()
             doc = disc_segment(doc)
             # disc parse
-            disc_parse = self.build_discourse_parser()
             doc = disc_parse(doc)
             # pre-compute the relevant info for each EDU
             doc = doc.align_with_doc_structure()
