@@ -230,8 +230,8 @@ def build_edu_feature_extractor():
     funcs = []
 
     # meta
-    feats.extend(_single_meta)
-    funcs.append(extract_single_meta)
+    # feats.extend(_single_meta)
+    # funcs.append(extract_single_meta)
 
     # concrete features
     # word
@@ -506,8 +506,8 @@ def build_pair_feature_extractor():
     funcs = []
 
     # meta
-    feats.extend(_pair_meta)
-    funcs.append(extract_pair_meta)
+    # feats.extend(_pair_meta)
+    # funcs.append(extract_pair_meta)
 
     # concrete features
     # feature type: 1
