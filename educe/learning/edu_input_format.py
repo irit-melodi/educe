@@ -5,6 +5,7 @@ See `https://github.com/kowey/attelo/blob/scikit/doc/input.rst`
 
 from __future__ import absolute_import, print_function
 
+import csv
 import itertools
 
 from .svmlight_format import dump_svmlight_file
@@ -49,12 +50,8 @@ def dump_edu_input_file_filter(X_gen, f):
     """
     edu_input_file = f + '.edu_input'
     with open(edu_input_file, 'wb') as g:
-        # EDU: global id, text, grouping, span start, span end
-        line_pattern = '{gid}\t{txt}\t{grp}\t{start}\t{end}'
-        # possible parents: [0|gid]*
-        line_pattern += '\t{parents}'
-        line_pattern += '\n'
-
+        writer = csv.writer(g, dialect=csv.excel_tab)
+        # EDU: global id, text, grouping, span start, span end, poss. parents
         for tgt, triples in itertools.groupby(X_gen, key=lambda t: t[1][0]):
             triples = list(triples)
             tgt_gid = tgt.identifier()
@@ -67,12 +64,12 @@ def dump_edu_input_file_filter(X_gen, f):
             # possible parents
             srcs = [t[1][1].identifier() for t in triples]
             # write to file
-            g.write(line_pattern.format(gid=tgt_gid,
-                                        txt=tgt_txt,
-                                        grp=tgt_grp,
-                                        start=tgt_start,
-                                        end=tgt_end,
-                                        parents=' '.join(srcs)))
+            writer.writerow([tgt_gid,
+                             tgt_txt,
+                             tgt_grp,
+                             tgt_start,
+                             tgt_end,
+                             ' '.join(srcs)])
             feat_vecs = [t[0] for t in triples]
             for feat_vec in feat_vecs:
                 yield feat_vec
