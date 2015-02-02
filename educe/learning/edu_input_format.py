@@ -58,7 +58,8 @@ def dump_edu_input_file_filter(X_gen, f):
         for tgt, triples in itertools.groupby(X_gen, key=lambda t: t[1][0]):
             triples = list(triples)
             tgt_gid = tgt.identifier()
-            tgt_txt = tgt.text()
+            # some EDUs have newlines in their text (...): convert to spaces
+            tgt_txt = tgt.text().replace('\n', ' ')
             # TODO find a cleaner way to get grouping
             tgt_grp = [t[2] for t in triples][0]  # should be unique value
             tgt_start = tgt.span.char_start
