@@ -107,6 +107,10 @@ class EDU(Standoff):
         A global identifier (assuming the origin can be used to
         uniquely identify an RST tree)
         """
+        # idiosyncratic
+        if self.is_left_padding():
+            return 'ROOT'
+        # end idiosyncratic
         if self.origin:
             return self.origin.mk_global_id(str(self.num))
         else:
