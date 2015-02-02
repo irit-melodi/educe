@@ -161,7 +161,8 @@ class DocumentPlus(object):
         """Get a sorted list of all the inverted EDU pairs of a document"""
         epairs = self.all_edu_pairs()
         # sort EDU pairs by target EDU, then source EDU
-        inv_pairs = sorted((tgt, src) for src, tgt in epairs)
+        inv_pairs = sorted(((tgt, src) for src, tgt in epairs),
+                           key=lambda x: (x[0].num, x[1].num))
         return inv_pairs
 
     def relations(self, edu_pairs):
