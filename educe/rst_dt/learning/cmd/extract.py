@@ -88,7 +88,7 @@ def main(args):
                                    rst_reader.segment, rst_reader.parse,
                                    ptb_parser.tokenize, ptb_parser.parse,
                                    feature_set,
-                                   min_df=1)
+                                   min_df=5)
     X_gen = vzer.fit_transform(rst_corpus)
 
     # extract class label for each instance
