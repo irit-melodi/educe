@@ -347,7 +347,7 @@ def extract_pair_pos(doc, sf_cache, edu1, edu2):
 
 _pair_length = [
     ('num_tokens_div5_pair', Substance.DISCRETE),
-    ('num_tokens_diff_div5', Substance.CONTINUOUS)
+    ('num_tokens_diff_div5', Substance.DISCRETE)
 ]
 
 
@@ -363,13 +363,13 @@ def extract_pair_length(doc, sf_cache, edu1, edu2):
     num_toks2_div5 = feats_edu2['num_tokens_div5']
 
     yield ('num_tokens_div5_pair', (num_toks1_div5, num_toks2_div5))
-    yield ('num_tokens_diff_div5', (num_toks1 - num_toks2) / 5)
+    yield ('num_tokens_diff_div5', str((num_toks1 - num_toks2) / 5))
 
 
 _pair_para = [
     ('first_paragraph', Substance.DISCRETE),
-    ('num_paragraphs_between', Substance.CONTINUOUS),
-    ('num_paragraphs_between_div3', Substance.CONTINUOUS)
+    ('num_paragraphs_between', Substance.DISCRETE),
+    ('num_paragraphs_between_div3', Substance.DISCRETE)
 ]
 
 
@@ -392,25 +392,25 @@ def extract_pair_para(doc, sf_cache, edu1, edu2):
             first_para = 'same'
         yield ('first_paragraph', first_para)
 
-        yield ('num_paragraphs_between', para_id1 - para_id2)
-        yield ('num_paragraphs_between_div3', (para_id1 - para_id2) / 3)
+        yield ('num_paragraphs_between', str(para_id1 - para_id2))
+        yield ('num_paragraphs_between_div3', str((para_id1 - para_id2) / 3))
 
 
 _pair_sent = [
-    ('offset_diff', Substance.CONTINUOUS),
-    ('rev_offset_diff', Substance.CONTINUOUS),
-    ('offset_diff_div3', Substance.CONTINUOUS),
-    ('rev_offset_diff_div3', Substance.CONTINUOUS),
+    ('offset_diff', Substance.DISCRETE),
+    ('rev_offset_diff', Substance.DISCRETE),
+    ('offset_diff_div3', Substance.DISCRETE),
+    ('rev_offset_diff_div3', Substance.DISCRETE),
     ('offset_pair', Substance.DISCRETE),
     ('rev_offset_pair', Substance.DISCRETE),
     ('offset_div3_pair', Substance.DISCRETE),
     ('rev_offset_div3_pair', Substance.DISCRETE),
-    ('line_id_diff', Substance.CONTINUOUS),
+    ('line_id_diff', Substance.DISCRETE),
     ('same_bad_sentence', Substance.DISCRETE),
-    ('sentence_id_diff', Substance.CONTINUOUS),
-    ('sentence_id_diff_div3', Substance.CONTINUOUS),
-    ('rev_sentence_id_diff', Substance.CONTINUOUS),
-    ('rev_sentence_id_diff_div3', Substance.CONTINUOUS)
+    ('sentence_id_diff', Substance.DISCRETE),
+    ('sentence_id_diff_div3', Substance.DISCRETE),
+    ('rev_sentence_id_diff', Substance.DISCRETE),
+    ('rev_sentence_id_diff_div3', Substance.DISCRETE)
 ]
 
 
@@ -426,8 +426,8 @@ def extract_pair_sent(doc, sf_cache, edu1, edu2):
     except KeyError:
         pass
     else:
-        yield ('offset_diff', offset1 - offset2)
-        yield ('offset_diff_div3', (offset1 - offset2) / 3)
+        yield ('offset_diff', str(offset1 - offset2))
+        yield ('offset_diff_div3', str((offset1 - offset2) / 3))
         yield ('offset_pair', (offset1, offset2))
         yield ('offset_div3_pair', (offset1 / 3, offset2 / 3))
     # rev_offset features
@@ -437,15 +437,15 @@ def extract_pair_sent(doc, sf_cache, edu1, edu2):
     except KeyError:
         pass
     else:
-        yield ('rev_offset_diff', rev_offset1 - rev_offset2)
-        yield ('rev_offset_diff_div3', (rev_offset1 - rev_offset2) / 3)
+        yield ('rev_offset_diff', str(rev_offset1 - rev_offset2))
+        yield ('rev_offset_diff_div3', str((rev_offset1 - rev_offset2) / 3))
         yield ('rev_offset_pair', (rev_offset1, rev_offset2))
         yield ('rev_offset_div3_pair', (rev_offset1 / 3, rev_offset2 / 3))
 
     # lineID: distance of edu in EDUs from document start
     line_id1 = edu1.num - 1  # real EDU numbers are in [1..]
     line_id2 = edu2.num - 1
-    yield ('line_id_diff', line_id1 - line_id2)
+    yield ('line_id_diff', str(line_id1 - line_id2))
 
     # sentenceID
     try:
@@ -456,8 +456,8 @@ def extract_pair_sent(doc, sf_cache, edu1, edu2):
     else:
         yield ('same_bad_sentence',
                'same' if sent_id1 == sent_id2 else 'different')
-        yield ('sentence_id_diff', sent_id1 - sent_id2)
-        yield ('sentence_id_diff_div3', (sent_id1 - sent_id2) / 3)
+        yield ('sentence_id_diff', str(sent_id1 - sent_id2))
+        yield ('sentence_id_diff_div3', str((sent_id1 - sent_id2) / 3))
     # revSentenceID
     try:
         rev_sent_id1 = feats_edu1['num_edus_to_para_end']
@@ -465,8 +465,9 @@ def extract_pair_sent(doc, sf_cache, edu1, edu2):
     except KeyError:
         pass
     else:
-        yield ('rev_sentence_id_diff', rev_sent_id1 - rev_sent_id2)
-        yield ('rev_sentence_id_diff_div3', (rev_sent_id1 - rev_sent_id2) / 3)
+        yield ('rev_sentence_id_diff', str(rev_sent_id1 - rev_sent_id2))
+        yield ('rev_sentence_id_diff_div3',
+               str((rev_sent_id1 - rev_sent_id2) / 3))
 
 
 _pair_syntax = [
