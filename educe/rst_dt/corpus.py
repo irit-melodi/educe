@@ -8,8 +8,13 @@ Corpus management (re-exported by educe.rst_dt)
 from glob import glob
 import os
 import sys
+from os.path import dirname
+from os.path import join
+
+from nltk import Tree
 
 from educe.corpus import FileId
+from educe.internalutil import treenode
 from educe.rst_dt import parse
 import educe.util
 import educe.corpus
@@ -88,20 +93,31 @@ class RstDtParser(object):
     """Fake parser that gets annotation from the RST-DT.
     """
 
-    def __init__(self, corpus_dir, args):
+    def __init__(self, corpus_dir, args, coarse_rels=False):
         # TODO: kill `args`
         self.reader = Reader(corpus_dir)
         # pre-load corpus
         is_interesting = educe.util.mk_is_interesting(args)
         anno_files = self.reader.filter(self.reader.files(), is_interesting)
         self.corpus = self.reader.slurp(anno_files, verbose=True)
+        # setup label converter for the desired granularity
+        # 'fine' means we don't change anything
+        if coarse_rels:
+            relmap_file = join(dirname(__file__), 'rst_112to18.txt')
+            self.rel_conv = RstRelationConverter(relmap_file).convert_tree
+        else:
+            self.rel_conv = None
 
     def decode(self, doc_key):
         """Decode a document from the RST-DT (gold)"""
         grouping = os.path.basename(id_to_path(doc_key))
         doc = DocumentPlus(doc_key, grouping)
 
-        doc.orig_rsttree = self.corpus[doc_key]
+        # convert relation labels if a converter is provided
+        if self.rel_conv is not None:
+            doc.orig_rsttree = self.rel_conv(self.corpus[doc_key])
+        else:
+            doc.orig_rsttree = self.corpus[doc_key]
         # get EDUs
         doc.edus.append(doc.orig_rsttree.leaves())
         # convert to binary tree
@@ -123,3 +139,35 @@ class RstDtParser(object):
         """Parse the document using the RST-DT (gold).
         """
         return doc
+
+
+class RstRelationConverter(object):
+    """Converter for RST relations (labels)
+
+    Known to work on RstTree, possibly SimpleRstTree (untested).
+    """
+
+    def __init__(self, relmap_file):
+        """relmap_file is a path to a file containing the mapping"""
+        self.relmap = self._read_relmap(relmap_file)
+
+    def _read_relmap(self, relmap_file):
+        """read the relmap from file"""
+        relmap = dict()
+        with open(relmap_file) as f:
+            for line in f:
+                old_rel, new_rel = line.strip().split()
+                relmap[old_rel] = new_rel
+        return relmap
+
+    def convert_tree(self, rst_tree):
+        """Change relation labels in rst_tree using the mapping"""
+        relmap = self.relmap
+        for pos in rst_tree.treepositions():
+            t = rst_tree[pos]
+            if isinstance(t, Tree):
+                node = treenode(t)
+                # replace old rel with new rel
+                old_rel = node.rel.lower()
+                node.rel = relmap.get(old_rel, old_rel)
+        return rst_tree
