@@ -72,7 +72,7 @@ def main(args):
     feature_set = args.feature_set
     live = args.parsing
     # RST data
-    rst_reader = RstDtParser(args.corpus, args)
+    rst_reader = RstDtParser(args.corpus, args, coarse_rels=True)
     rst_corpus = rst_reader.corpus
     # PTB data
     ptb_parser = PtbParser(args.ptb)
