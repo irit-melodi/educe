@@ -121,4 +121,3 @@ def main(args):
     # dump vocabulary
     vocab_file = out_file + '.vocab'
     dump_vocabulary(vzer.vocabulary_, vocab_file)
-
