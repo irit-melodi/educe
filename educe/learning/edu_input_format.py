@@ -75,11 +75,27 @@ def dump_edu_input_file_filter(X_gen, f):
                 yield feat_vec
 
 
-def dump_all(X_gen, y_gen, f):
-    """Dump a whole dataset: features (in svmlight) and EDU pairs"""
+def dump_all(X_gen, y_gen, f, class_mapping):
+    """Dump a whole dataset: features (in svmlight) and EDU pairs
+
+    class_mapping is a mapping from label to int
+    """
     # TODO reimplement properly, I guess it will require coroutines
+
+    # TODO this function should absolutely NOT get the LabelExtractor
+    # list labels in a comment written at the beginning of the svmlight file
+    classes_ = [lbl for lbl, idx in sorted(class_mapping.items(),
+                                           key=lambda x: x[1])]
+    # first item should be reserved for unknown labels
+    # we don't want to output this
+    classes_ = classes_[1:]
+
+    if classes_:
+        comment = 'labels: {}'.format(' '.join(classes_))
+    else:
+        comment = None
 
     # produce EDU input file, re-emit feature vectors
     Xp_gen = dump_edu_input_file_filter(X_gen, f)
     # dump features to svmlight file
-    dump_svmlight_file(Xp_gen, y_gen, f)
+    dump_svmlight_file(Xp_gen, y_gen, f, comment=comment)

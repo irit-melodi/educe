@@ -137,7 +137,13 @@ class DocumentLabelExtractor(object):
 
     def fit(self, raw_documents):
         """Learn a labelset from the documents"""
-        self.fit_transform(raw_documents)
+        self._validate_labelset()
+
+        labelset = self._learn_labelset(raw_documents,
+                                        self.fixed_labelset_)
+        if not self.fixed_labelset_:
+            self.labelset_ = labelset
+
         return self
 
     def fit_transform(self, raw_documents):

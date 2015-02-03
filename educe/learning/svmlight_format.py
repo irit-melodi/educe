@@ -8,8 +8,11 @@ from __future__ import absolute_import
 import itertools
 
 
-def _dump_svmlight(X_gen, y_gen, f):
+def _dump_svmlight(X_gen, y_gen, f, comment):
     """Actually do dump"""
+    if comment:
+        f.write('# {}\n'.format(comment))
+
     # define string formatting patterns for values and lines
     value_pattern = '{fid}:{fv}'
 
@@ -33,4 +36,4 @@ def dump_svmlight_file(X_gen, y_gen, f, zero_based=True, comment=None,
     """Dump the dataset in svmlight file format.
     """
     with open(f, 'wb') as f:
-        _dump_svmlight(X_gen, y_gen, f)
+        _dump_svmlight(X_gen, y_gen, f, comment)

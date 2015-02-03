@@ -98,7 +98,10 @@ def main(args):
         labtor = DocumentLabelExtractor(rst_reader.decode,
                                         instance_generator,
                                         rst_reader.segment, rst_reader.parse)
-        y_gen = labtor.fit_transform(rst_corpus)
+        # y_gen = labtor.fit_transform(rst_corpus)
+        # fit then transform enables to get classes_ for the dump
+        labtor.fit(rst_corpus)
+        y_gen = labtor.transform(rst_corpus)
 
     # dump instances to files
     if not os.path.exists(args.output):
@@ -114,8 +117,7 @@ def main(args):
     # dump
     # edu_input_format.dump_all() in turn calls dump_svmlight_file
     # this is a poor man's solution but it is good enough for the time being
-    dump_all(X_gen, y_gen, out_file)
-    # TODO: dump label encoding, e.g. comment line heading the svmlight file
+    dump_all(X_gen, y_gen, out_file, labtor.labelset_)
     # dump_svmlight_file(X_gen, y_gen, out_file)
 
     # dump vocabulary
