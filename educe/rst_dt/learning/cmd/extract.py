@@ -77,7 +77,7 @@ def main(args):
     # PTB data
     ptb_parser = PtbParser(args.ptb)
     # instance generator
-    instance_generator = lambda doc: doc.sorted_all_inv_edu_pairs()
+    instance_generator = lambda doc: doc.all_edu_pairs()
     # TODO: change rst_corpus, e.g. to return an OrderedDict,
     # so that the order in which docs are enumerated is guaranteed
     # to be always the same

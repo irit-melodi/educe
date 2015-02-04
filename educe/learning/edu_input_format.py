@@ -11,65 +11,104 @@ import itertools
 from .svmlight_format import dump_svmlight_file
 
 
-def _dump_edu_input_file(inv_epair_gen, f):
+# EDUs
+def _dump_edu_input_file(docs, f):
     """Actually do dump"""
-    # EDU: global id, text, grouping, span start, span end
-    line_pattern = '{gid}\t{txt}\t{grp}\t{start}\t{end}'
-    # possible parents: [0|gid]*
-    line_pattern += '\t{parents}'
-    line_pattern += '\n'
+    writer = csv.writer(g, dialect=csv.excel_tab)
 
-    # group entries by target EDU
-    for tgt, epairs in itertools.groupby(inv_epair_gen, key=lambda x: x[0][0]):
-        tgt_gid = tgt.identifier()
-        tgt_txt = tgt.text()
-        # TODO find a cleaner way to get grouping
-        tgt_grp = [doc_grouping for _, doc_grouping in epairs][0]
-        tgt_start = tgt.span.char_start
-        tgt_end = tgt.span.char_end
-        # possible parents
-        srcs = [inv_edge[1].identifier() for inv_edge, _ in epairs]
-        f.write(line_pattern.format(gid=tgt_gid,
-                                    txt=tgt_txt,
-                                    grp=tgt_grp,
-                                    start=tgt_start,
-                                    end=tgt_end,
-                                    parents=' '.join(srcs)))
+    for doc in docs:
+        edus = doc.edus
+        grouping = doc.grouping
+        for edu in edus[1:]:  # skip the fake root
+            edu_gid = edu.identifier()
+            edu_txt = edu.text()
+            sent_id = edu_gid  # TODO get the real sentence id
+            edu_start = edu.span.char_start
+            edu_end = edu.span.char_end
+            f.write([edu_gid,
+                     edu_txt,
+                     grouping,
+                     sent_id,
+                     edu_start,
+                     edu_end])
 
 
-def dump_edu_input_file(inv_epair_gen, f):
+def dump_edu_input_file(docs, f):
     """Dump a dataset in the EDU input format."""
     with open(f, 'wb') as f:
-        _dump_edu_input_file(inv_epair_gen, f)
+        _dump_edu_input_file(docs, f)
 
 
+# pairings
+def _dump_pairings_file(epairs, f):
+    """Actually do dump"""
+    writer = csv.writer(g, dialect=csv.excel_tab)
+
+    for src, tgt in epairs:
+        srg_gid = src.identifier()
+        tgt_gid = tgt.identifier()
+        f.write([src_gid, tgt_gid])
+
+
+def dump_pairings_file(epairs, f):
+    """Dump the EDU pairings"""
+    with open(f, 'wb') as f:
+        _dump_pairings_file(epairs, f)
+
+
+# mess
 def dump_edu_input_file_filter(X_gen, f):
     """Filter X_gen to dump EDU pairs in the EDU input format
 
     This generates feature vectors, filtered from X_gen.
     """
+    # write two files: EDU meta info and EDU pairs
     edu_input_file = f + '.edu_input'
-    with open(edu_input_file, 'wb') as g:
-        writer = csv.writer(g, dialect=csv.excel_tab)
-        # EDU: global id, text, grouping, span start, span end, poss. parents
-        for tgt, triples in itertools.groupby(X_gen, key=lambda t: t[1][0]):
+    pairings_file = f + '.pairings'
+
+    with open(edu_input_file, 'wb') as g, open(pairings_file, 'wb') as h:
+        writer_g = csv.writer(g, dialect=csv.excel_tab)
+        writer_h = csv.writer(h, dialect=csv.excel_tab)
+
+        key_doc = lambda x: x[2]
+        for doc_grouping, triples in itertools.groupby(X_gen, key=key_doc):
             triples = list(triples)
-            tgt_gid = tgt.identifier()
-            # some EDUs have newlines in their text (...): convert to spaces
-            tgt_txt = tgt.text().replace('\n', ' ')
-            # TODO find a cleaner way to get grouping
-            tgt_grp = [t[2] for t in triples][0]  # should be unique value
-            tgt_start = tgt.span.char_start
-            tgt_end = tgt.span.char_end
-            # possible parents
-            srcs = [t[1][1].identifier() for t in triples]
-            # write to file
-            writer.writerow([tgt_gid,
-                             tgt_txt,
-                             tgt_grp,
-                             tgt_start,
-                             tgt_end,
-                             ' '.join(srcs)])
+
+            epairs = [t[1] for t in triples]
+
+            # write EDUs
+            # DIRTY
+            edus = sorted(set(itertools.chain.from_iterable(epairs)),
+                          key=lambda e: e.num)
+            assert edus[0].is_left_padding()
+            edus = edus[1:]
+            for edu in edus:
+                # global id, text, grouping, subgrouping, span start, span end
+                edu_gid = edu.identifier()
+                # some EDUs have newlines in their text (...):
+                # convert to spaces
+                edu_txt = edu.text().replace('\n', ' ')
+                edu_sgrp = edu_gid  # TODO sentence ID
+                edu_start = edu.span.char_start
+                edu_end = edu.span.char_end
+                # write to file
+                writer_g.writerow([edu_gid,
+                                   edu_txt,
+                                   doc_grouping,
+                                   edu_sgrp,
+                                   edu_start,
+                                   edu_end]
+                )
+                # end DIRTY
+
+            # write pairings
+            for src, tgt in epairs:
+                # write pair to pairings_file
+                src_gid = src.identifier()
+                tgt_gid = tgt.identifier()
+                writer_h.writerow([src_gid, tgt_gid])
+
+            # re-emit feature vectors
             feat_vecs = [t[0] for t in triples]
             for feat_vec in feat_vecs:
                 yield feat_vec

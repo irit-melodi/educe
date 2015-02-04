@@ -31,10 +31,7 @@ class DocumentLabelExtractor(object):
         """
         edu_pairs = self.instance_generator(doc)
         # extract one label per EDU pair
-        # FIXME: inv_relations() is a very dirty hack that only works
-        # if we have called sorted_all_inv_edu_pairs() as instance generator
-        labels = doc.inv_relations(edu_pairs)
-        # was: labels = doc.relations(edu_pairs)
+        labels = doc.relations(edu_pairs)
         return labels
 
     def _instance_labels(self, raw_documents):
@@ -515,8 +512,8 @@ class DocumentCountVectorizer(object):
                                                           limit=max_features)
             self.vocabulary_ = vocabulary
         # re-run through documents to generate X
-        for row, inv_epair, doc_grouping in self._instances(raw_documents):
-            yield (row, inv_epair, doc_grouping)
+        for row, epair, doc_grouping in self._instances(raw_documents):
+            yield (row, epair, doc_grouping)
 
     def transform(self, raw_documents):
         """Transform documents to a feature matrix
@@ -528,5 +525,5 @@ class DocumentCountVectorizer(object):
         if not self.vocabulary_:
             raise ValueError('Empty vocabulary')
 
-        for row, inv_epair, doc_grouping in self._instances(raw_documents):
-            yield (row, inv_epair, doc_grouping)
+        for row, epair, doc_grouping in self._instances(raw_documents):
+            yield (row, epair, doc_grouping)
