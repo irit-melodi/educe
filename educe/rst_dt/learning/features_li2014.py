@@ -9,16 +9,15 @@ http://www.aclweb.org/anthology/P/P14/P14-1003.pdf
 """
 
 import re
-from collections import Counter
 
 from educe.internalutil import treenode
 from educe.learning.keys import Substance
-from .base import (feat_grouping, get_sentence, get_paragraph,
+from .base import (get_sentence, get_paragraph,
                    lowest_common_parent)
 
 
 # ---------------------------------------------------------------------
-# single EDU features
+# preprocess EDUs
 # ---------------------------------------------------------------------
 
 # filter tags and tokens as in Li et al.'s parser
@@ -26,39 +25,61 @@ TT_PATTERN = r'.*[a-zA-Z_0-9].*'
 TT_FILTER = re.compile(TT_PATTERN)
 
 
+def edu_preprocess(doc, edu):
+    """Gather and preprocess relevant info from edu"""
+    res = dict()
+
+    # store EDU
+    res['edu'] = edu
+
+    # tokens
+    tokens = doc.ptb_tokens[edu]
+    if tokens is not None:
+        # filter tags and tokens as in Li et al.'s parser
+        tokens = [tt for tt in tokens
+                  if (TT_FILTER.match(tt.word) is not None and
+                      TT_FILTER.match(tt.tag) is not None)]
+        res['tokens'] = tokens
+        res['tags'] = [tok.tag for tok in tokens]
+        res['words'] = [tok.word for tok in tokens]
+
+    # doc structure
+    edus = doc.edus
+
+    sent = get_sentence(doc, edu)
+    if sent is not None:
+        # position of EDU in sentence
+        edus_sent = [e for e in edus
+                     if get_sentence(doc, e) == sent]
+        # aka num_edus_from_sent_start aka offset
+        res['edu_idx_in_sent'] = edus_sent.index(edu)
+        # aka num_edus_to_sent_end aka revOffset
+        res['edu_rev_idx_in_sent'] = list(reversed(edus_sent)).index(edu)
+        # aka sentence_id
+        res['sent_idx'] = sent.num
+
+    para = get_paragraph(doc, edu)
+    if para is not None:
+        edus_para = [e for e in edus
+                     if get_paragraph(doc, e) == para]
+        # aka num_edus_to_para_end aka revSentenceID (?!)
+        # TODO: check for the 10th time if this is a bug in Li et al.'s parser
+        res['edu_rev_idx_in_para'] = list(reversed(edus_para)).index(edu)
+        # aka paragraphID
+        res['para_idx'] = para.num
+
+    # syntax
+    ptrees = doc.ptb_trees[edu]
+    if ptrees is not None:
+        res['ptrees'] = ptrees
+
+    return res
+
+
 # ---------------------------------------------------------------------
-# single EDU features: concrete features
+# single EDU features
 # ---------------------------------------------------------------------
 
-def num_edus_to_doc_end(current, edu):
-    "distance of edu in EDUs to document end"
-    edus = current.edus
-    result = list(reversed(edus)).index(edu)
-    return result
-
-
-# ---------------------------------------------------------------------
-# single EDU key groups
-# ---------------------------------------------------------------------
-
-# meta features
-# in Orange terms, they all implicitly have Purpose.META
-_single_meta = [
-    ('id', Substance.STRING),
-    ('start', Substance.STRING),
-    ('end', Substance.STRING)
-]
-
-
-def extract_single_meta(doc, edu):
-    """Basic EDU-identification features"""
-    yield ('id', edu.identifier())
-    yield ('start', edu.text_span().char_start)
-    yield ('end', edu.text_span().char_end)
-
-
-# concrete features
-# features on tokens
 _single_word = [
     ('ptb_word_first', Substance.DISCRETE),
     ('ptb_word_last', Substance.DISCRETE),
@@ -67,23 +88,20 @@ _single_word = [
 ]
 
 
-def extract_single_word(doc, edu):
+def extract_single_word(edu_info):
     """word features for the EDU"""
-    tokens = doc.ptb_tokens[edu]
-    if tokens is not None:
-        # filter tags and tokens as in Li et al.'s parser
-        tokens = [tt for tt in tokens
-                  if (TT_FILTER.match(tt.word) is not None and
-                      TT_FILTER.match(tt.tag) is not None)]
-        if tokens:
-            yield ('ptb_word_first', tokens[0].word)
-            yield ('ptb_word_last', tokens[-1].word)
-            try:
-                yield ('ptb_word_first2', (tokens[0].word, tokens[1].word))
-                yield ('ptb_word_last2', (tokens[-2].word, tokens[-1].word))
-            except IndexError:
-                # if there is only one token, just pass
-                pass
+    try:
+        words = edu_info['words']
+    except KeyError:
+        return
+
+    if words:
+        yield ('ptb_word_first', words[0])
+        yield ('ptb_word_last', words[-1])
+
+    if len(words) > 1:
+        yield ('ptb_word_first2', (words[0], words[1]))
+        yield ('ptb_word_last2', (words[-2], words[-1]))
 
 
 _single_pos = [
@@ -93,99 +111,97 @@ _single_pos = [
 ]
 
 
-def extract_single_pos(doc, edu):
+def extract_single_pos(edu_info):
     """POS features for the EDU"""
-    tokens = doc.ptb_tokens[edu]
-    if tokens is not None:
-        # filter tags and tokens as in Li et al.'s parser
-        tokens = [tt for tt in tokens
-                  if (TT_FILTER.match(tt.word) is not None and
-                      TT_FILTER.match(tt.tag) is not None)]
-        if tokens:
-            yield ('ptb_pos_tag_first', tokens[0].tag)
-            yield ('ptb_pos_tag_last', tokens[-1].tag)
-            yield ('POS', [t.tag for t in tokens])
+    try:
+        tags = edu_info['tags']
+    except KeyError:
+        return
+
+    if tags:
+        yield ('ptb_pos_tag_first', tags[0])
+        yield ('ptb_pos_tag_last', tags[-1])
+        for tag in tags:
+            yield ('POS', tag)
 
 
 _single_length = [
-    ('num_tokens', Substance.CONTINUOUS),
-    ('num_tokens_div5', Substance.CONTINUOUS)
+    ('num_tokens', Substance.DISCRETE),
+    ('num_tokens_div5', Substance.DISCRETE)
 ]
 
 
-def extract_single_length(doc, edu):
+def extract_single_length(edu_info):
     """Sentence features for the EDU"""
-    tokens = doc.ptb_tokens[edu]
-    if tokens is not None:
-        # filter tags and tokens as in Li et al.'s parser
-        tokens = [tt for tt in tokens
-                  if (TT_FILTER.match(tt.word) is not None and
-                      TT_FILTER.match(tt.tag) is not None)]
+    try:
+        words = edu_info['words']
+    except KeyError:
+        return
 
-        yield ('num_tokens', len(tokens))
-        yield ('num_tokens_div5', len(tokens) / 5)
+    yield ('num_tokens', str(len(words)))
+    yield ('num_tokens_div5', str(len(words) / 5))
 
 
 # features on document structure
 
 _single_sentence = [
     # offset
-    ('num_edus_from_sent_start', Substance.CONTINUOUS),
+    ('num_edus_from_sent_start', Substance.DISCRETE),
     # revOffset
-    ('num_edus_to_sent_end', Substance.CONTINUOUS),
+    ('num_edus_to_sent_end', Substance.DISCRETE),
     # sentenceID
-    ('sentence_id', Substance.CONTINUOUS),
+    ('sentence_id', Substance.DISCRETE),
     # revSentenceID
-    ('num_edus_to_para_end', Substance.CONTINUOUS)
+    ('num_edus_to_para_end', Substance.DISCRETE)
 ]
 
 
-def extract_single_sentence(doc, edu):
+def extract_single_sentence(edu_info):
     """Sentence features for the EDU"""
-    edus = doc.edus
-
-    sent = get_sentence(doc, edu)
-    if sent is not None:
-        # position of EDU in sentence
-        edus_sent = [e for e in edus
-                     if get_sentence(doc, e) == sent]
-        yield ('num_edus_from_sent_start', edus_sent.index(edu))
-        yield ('num_edus_to_sent_end', list(reversed(edus_sent)).index(edu))
+    try:
+        yield ('num_edus_from_sent_start', str(edu_info['edu_idx_in_sent']))
+        yield ('num_edus_to_sent_end', str(edu_info['edu_rev_idx_in_sent']))
         # position of sentence in doc
-        yield ('sentence_id', sent.num)
+        yield ('sentence_id', str(edu_info['sent_idx']))
+    except KeyError:
+        pass
 
-    # TODO: check for the 10th time if this is a bug in Li et al.'s parser
-    para = get_paragraph(doc, edu)
-    if para is not None:
-        edus_para = [e for e in edus
-                     if get_paragraph(doc, e) == para]
-        yield ('num_edus_to_para_end', list(reversed(edus_para)).index(edu))
+    try:
+        yield ('num_edus_to_para_end', str(edu_info['edu_rev_idx_in_para']))
+    except KeyError:
+        pass
 
 
 _single_para = [
-    ('paragraph_id', Substance.CONTINUOUS),
-    ('paragraph_id_div5', Substance.CONTINUOUS)
+    ('paragraph_id', Substance.DISCRETE),
+    ('paragraph_id_div5', Substance.DISCRETE)
 ]
 
 
-def extract_single_para(doc, edu):
+def extract_single_para(edu_info):
     """paragraph features for the EDU"""
-    para = get_paragraph(doc, edu)
-    if para is not None:
-        yield ('paragraph_id', para.num)
-        yield ('paragraph_id_div5', para.num / 5)
+    try:
+        para_idx = edu_info['para_idx']
+    except KeyError:
+        pass
+    else:
+        yield ('paragraph_id', str(para_idx))
+        yield ('paragraph_id_div5', str(para_idx / 5))
 
 
 # features on syntax
-
 # helper
-def get_syntactic_labels(current, edu):
+def get_syntactic_labels(edu_info):
     "Syntactic labels for this EDU"
     result = []
 
-    ptrees = current.ptb_trees[edu]
-    if ptrees is None:
+    try:
+        ptrees = edu_info['ptrees']
+    except KeyError:
         return None
+
+    edu = edu_info['edu']
+
     # for each PTB tree, get the tree position of its leaves that are in the
     # EDU
     tpos_leaves_edu = ((ptree, [tpos_leaf
@@ -215,9 +231,9 @@ _single_syntax = [
 ]
 
 
-def extract_single_syntax(doc, edu):
+def extract_single_syntax(edu_info):
     """syntactic features for the EDU"""
-    syn_labels = get_syntactic_labels(doc, edu)
+    syn_labels = get_syntactic_labels(edu_info)
     if syn_labels is not None:
         yield ('SYN', syn_labels)
 
@@ -229,11 +245,6 @@ def build_edu_feature_extractor():
     feats = []
     funcs = []
 
-    # meta
-    # feats.extend(_single_meta)
-    # funcs.append(extract_single_meta)
-
-    # concrete features
     # word
     feats.extend(_single_word)
     funcs.append(extract_single_word)
@@ -253,11 +264,11 @@ def build_edu_feature_extractor():
     # feats.extend(_single_syntax)
     # funcs.append(extract_single_syntax)
 
-    def _extract_all(doc, edu):
+    def _extract_all(edu_info):
         """inner helper because I am lost at sea here"""
         # TODO do this in a cleaner manner
         for fct in funcs:
-            for feat in fct(doc, edu):
+            for feat in fct(edu_info):
                 yield feat
 
     # header
@@ -272,19 +283,6 @@ def build_edu_feature_extractor():
 # EDU pairs
 # ---------------------------------------------------------------------
 
-# meta features
-_pair_meta = [
-    ('grouping', Substance.STRING)
-]
-
-
-def extract_pair_meta(doc, sf_cache, edu1, edu2):
-    """core features"""
-    yield ('grouping', feat_grouping(doc, edu1, edu2))
-
-
-# concrete features
-# word
 _pair_word = [
     ('ptb_word_first_pairs', Substance.DISCRETE),
     ('ptb_word_last_pairs', Substance.DISCRETE),
@@ -293,56 +291,43 @@ _pair_word = [
 ]
 
 
-def extract_pair_word(doc, sf_cache, edu1, edu2):
+def extract_pair_word(edu_info1, edu_info2):
     """word tuple features"""
-    feats_edu1 = sf_cache[edu1]
-    feats_edu2 = sf_cache[edu2]
     try:
-        yield ('ptb_word_first_pairs', (feats_edu1['ptb_word_first'],
-                                        feats_edu2['ptb_word_first']))
-        yield ('ptb_word_last_pairs', (feats_edu1['ptb_word_last'],
-                                       feats_edu2['ptb_word_last']))
-        yield ('ptb_word_first2_pairs', (feats_edu1['ptb_word_first2'],
-                                         feats_edu2['ptb_word_first2']))
-        yield ('ptb_word_last2_pairs', (feats_edu1['ptb_word_last2'],
-                                        feats_edu2['ptb_word_last2']))
+        words1 = edu_info1['words']
+        words2 = edu_info2['words']
     except KeyError:
-        pass
+        return
+
+    # pairs of unigrams
+    if words1 and words2:
+        yield ('ptb_word_first_pairs', (words1[0], words2[0]))
+        yield ('ptb_word_last_pairs', (words1[-1], words2[-1]))
+
+    # pairs of bigrams
+    if len(words1) > 1 and len(words2) > 1:
+        yield ('ptb_word_first2_pairs', (tuple(words1[:2]),
+                                         tuple(words2[:2])))
+        yield ('ptb_word_last2_pairs', (tuple(words1[-2:]),
+                                        tuple(words2[-2:])))
 
 
 # pos
 _pair_pos = [
     ('ptb_pos_tag_first_pairs', Substance.DISCRETE),
-    ('POSF', Substance.BASKET),
-    ('POSS', Substance.BASKET)
 ]
 
 
-def extract_pair_pos(doc, sf_cache, edu1, edu2):
+def extract_pair_pos(edu_info1, edu_info2):
     """POS tuple features"""
-    feats_edu1 = sf_cache[edu1]
-    feats_edu2 = sf_cache[edu2]
     try:
-        yield ('ptb_pos_tag_first_pairs', (feats_edu1['ptb_pos_tag_first'],
-                                           feats_edu2['ptb_pos_tag_first']))
+        tags1 = edu_info1['tags']
+        tags2 = edu_info2['tags']
     except KeyError:
-        pass
+        return
 
-    try:
-        pos_tags1 = feats_edu1['POS']
-    except KeyError:
-        pass
-    else:
-        for tag in pos_tags1:
-            yield ('POSF', tag)
-
-    try:
-        pos_tags2 = feats_edu2['POS']
-    except KeyError:
-        pass
-    else:
-        for tag in pos_tags2:
-            yield ('POSS', tag)
+    if tags1 and tags2:
+        yield ('ptb_pos_tag_first_pairs', (tags1[0], tags2[0]))
 
 
 _pair_length = [
@@ -351,18 +336,18 @@ _pair_length = [
 ]
 
 
-def extract_pair_length(doc, sf_cache, edu1, edu2):
+def extract_pair_length(edu_info1, edu_info2):
     """Sentence tuple features"""
+    try:
+        words1 = edu_info1['words']
+        words2 = edu_info2['words']
+    except KeyError:
+        return
 
-    feats_edu1 = sf_cache[edu1]
-    feats_edu2 = sf_cache[edu2]
+    num_toks1 = len(words1)
+    num_toks2 = len(words2)
 
-    num_toks1 = feats_edu1['num_tokens']
-    num_toks2 = feats_edu2['num_tokens']
-    num_toks1_div5 = feats_edu1['num_tokens_div5']
-    num_toks2_div5 = feats_edu2['num_tokens_div5']
-
-    yield ('num_tokens_div5_pair', (num_toks1_div5, num_toks2_div5))
+    yield ('num_tokens_div5_pair', (num_toks1 / 5, num_toks2 / 5))
     yield ('num_tokens_diff_div5', str((num_toks1 - num_toks2) / 5))
 
 
@@ -373,27 +358,24 @@ _pair_para = [
 ]
 
 
-def extract_pair_para(doc, sf_cache, edu1, edu2):
+def extract_pair_para(edu_info1, edu_info2):
     """Paragraph tuple features"""
-    feats_edu1 = sf_cache[edu1]
-    feats_edu2 = sf_cache[edu2]
-
     try:
-        para_id1 = feats_edu1['paragraph_id']
-        para_id2 = feats_edu2['paragraph_id']
+        para_id1 = edu_info1['para_idx']
+        para_id2 = edu_info2['para_idx']
     except KeyError:
-        pass
-    else:
-        if para_id1 < para_id2:
-            first_para = 'first'
-        elif para_id1 > para_id2:
-            first_para = 'second'
-        else:
-            first_para = 'same'
-        yield ('first_paragraph', first_para)
+        return
 
-        yield ('num_paragraphs_between', str(para_id1 - para_id2))
-        yield ('num_paragraphs_between_div3', str((para_id1 - para_id2) / 3))
+    if para_id1 < para_id2:
+        first_para = 'first'
+    elif para_id1 > para_id2:
+        first_para = 'second'
+    else:
+        first_para = 'same'
+    yield ('first_paragraph', first_para)
+
+    yield ('num_paragraphs_between', str(para_id1 - para_id2))
+    yield ('num_paragraphs_between_div3', str((para_id1 - para_id2) / 3))
 
 
 _pair_sent = [
@@ -414,15 +396,12 @@ _pair_sent = [
 ]
 
 
-def extract_pair_sent(doc, sf_cache, edu1, edu2):
+def extract_pair_sent(edu_info1, edu_info2):
     """Sentence tuple features"""
-    feats_edu1 = sf_cache[edu1]
-    feats_edu2 = sf_cache[edu2]
-
     # offset features
     try:
-        offset1 = feats_edu1['num_edus_from_sent_start']
-        offset2 = feats_edu2['num_edus_from_sent_start']
+        offset1 = edu_info1['edu_idx_in_sent']
+        offset2 = edu_info2['edu_idx_in_sent']
     except KeyError:
         pass
     else:
@@ -432,8 +411,8 @@ def extract_pair_sent(doc, sf_cache, edu1, edu2):
         yield ('offset_div3_pair', (offset1 / 3, offset2 / 3))
     # rev_offset features
     try:
-        rev_offset1 = feats_edu1['num_edus_to_sent_end']
-        rev_offset2 = feats_edu2['num_edus_to_sent_end']
+        rev_offset1 = edu_info1['edu_rev_idx_in_sent']
+        rev_offset2 = edu_info2['edu_rev_idx_in_sent']
     except KeyError:
         pass
     else:
@@ -443,14 +422,14 @@ def extract_pair_sent(doc, sf_cache, edu1, edu2):
         yield ('rev_offset_div3_pair', (rev_offset1 / 3, rev_offset2 / 3))
 
     # lineID: distance of edu in EDUs from document start
-    line_id1 = edu1.num - 1  # real EDU numbers are in [1..]
-    line_id2 = edu2.num - 1
+    line_id1 = edu_info1['edu'].num - 1  # real EDU numbers are in [1..]
+    line_id2 = edu_info2['edu'].num - 1
     yield ('line_id_diff', str(line_id1 - line_id2))
 
     # sentenceID
     try:
-        sent_id1 = feats_edu1['sentence_id']
-        sent_id2 = feats_edu2['sentence_id']
+        sent_id1 = edu_info1['sent_idx']
+        sent_id2 = edu_info2['sent_idx']
     except KeyError:
         pass
     else:
@@ -460,8 +439,8 @@ def extract_pair_sent(doc, sf_cache, edu1, edu2):
         yield ('sentence_id_diff_div3', str((sent_id1 - sent_id2) / 3))
     # revSentenceID
     try:
-        rev_sent_id1 = feats_edu1['num_edus_to_para_end']
-        rev_sent_id2 = feats_edu2['num_edus_to_para_end']
+        rev_sent_id1 = edu_info1['edu_rev_idx_in_para']
+        rev_sent_id2 = edu_info2['edu_rev_idx_in_para']
     except KeyError:
         pass
     else:
@@ -471,31 +450,12 @@ def extract_pair_sent(doc, sf_cache, edu1, edu2):
 
 
 _pair_syntax = [
-    ('SYNF', Substance.BASKET),
-    ('SYNS', Substance.BASKET)
 ]
 
 
-def extract_pair_syntax(doc, sf_cache, edu1, edu2):
+def extract_pair_syntax(edu_info1, edu_info2):
     """Syntax pair features"""
-    feats_edu1 = sf_cache[edu1]
-    feats_edu2 = sf_cache[edu2]
-
-    try:
-        syn_labs1 = feats_edu1['SYN']
-    except KeyError:
-        pass
-    else:
-        for lab in syn_labs1:
-            yield ('SYNF', lab)
-
-    try:
-        syn_labs2 = feats_edu2['SYN']
-    except KeyError:
-        pass
-    else:
-        for lab in syn_labs2:
-            yield ('SYNS', lab)
+    return
 
 
 def build_pair_feature_extractor():
@@ -508,11 +468,6 @@ def build_pair_feature_extractor():
     feats = []
     funcs = []
 
-    # meta
-    # feats.extend(_pair_meta)
-    # funcs.append(extract_pair_meta)
-
-    # concrete features
     # feature type: 1
     feats.extend(_pair_word)
     funcs.append(extract_pair_word)
@@ -534,11 +489,11 @@ def build_pair_feature_extractor():
     # feats.extend(_pair_semantics)  # NotImplemented
     # funcs.append(extract_pair_semantics)
 
-    def _extract_all(doc, sf_cache, edu1, edu2):
+    def _extract_all(edu_info1, edu_info2):
         """inner helper because I am lost at sea here, again"""
         # TODO do this in a cleaner manner
         for fct in funcs:
-            for feat in fct(doc, sf_cache, edu1, edu2):
+            for feat in fct(edu_info1, edu_info2):
                 yield feat
 
     # header

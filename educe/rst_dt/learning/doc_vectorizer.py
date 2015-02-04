@@ -172,6 +172,13 @@ class DocumentLabelExtractor(object):
             yield lab
 
 
+# helper function to re-emit features from single EDUs in pairs
+def re_emit(feats, suff):
+    """Re-emit feats with suff appended to each feature name"""
+    for fn, fv in feats:
+        yield (fn + suff, fv)
+
+
 class DocumentCountVectorizer(object):
     """Fancy vectorizer for the RST-DT treebank.
 
@@ -208,7 +215,9 @@ class DocumentCountVectorizer(object):
         # feature set
         self.feature_set = feature_set
         # EXPERIMENTAL
-        # preproc: feature extractor for single EDUs
+        # preprocessor for each EDU
+        self.edu_preprocess = feature_set.edu_preprocess
+        # feature extractor for single EDUs
         sing_header, sing_extract = feature_set.build_edu_feature_extractor()
         self.sing_header = sing_header
         self.sing_extract = sing_extract
@@ -236,26 +245,50 @@ class DocumentCountVectorizer(object):
     # document-level method
     def _extract_feature_vectors(self, doc):
         """Extract feature vectors for all EDU pairs of a document"""
-        # EXPERIMENTAL
+
+        edu_preprocess = self.edu_preprocess
         sing_header = self.sing_header
         sing_extract = self.sing_extract
         pair_header = self.pair_header
         pair_extract = self.pair_extract
         separator = self.separator
-        # end EXPERIMENTAL
+
+        # document info
         doc_grouping = doc.grouping
-        feat_vecs = []
+        # preprocess each EDU
+        edu_info = {edu: edu_preprocess(doc, edu) for edu in doc.edus}
+
         # extract one feature vector per EDU pair
+        feat_vecs = []
+        # generate EDU pairs
         edu_pairs = self.instance_generator(doc)
-        sf_cache = dict()  # feature cache
-        for epair in edu_pairs:
-            # compute single EDU features
-            for edu in epair:
-                if edu not in sf_cache:
-                    sf_cache[edu] = dict(sing_extract(doc, edu))
-            # EDU pair features
-            edu1, edu2 = epair
-            feats = list(pair_extract(doc, sf_cache, edu1, edu2))
+        # cache single EDU features
+        sf_cache = dict()
+
+        for edu1, edu2 in edu_pairs:
+            # retrieve info for each EDU
+            edu_info1 = edu_info[edu1]
+            edu_info2 = edu_info[edu2]
+
+            # extract and cache single features
+            try:
+                sf_cache1 = sf_cache[edu1]
+            except KeyError:
+                sf_cache[edu1] = list(sing_extract(edu_info1))
+                sf_cache1 = sf_cache[edu1]
+
+            try:
+                sf_cache2 = sf_cache[edu2]
+            except KeyError:
+                sf_cache[edu2] = list(sing_extract(edu_info2))
+                sf_cache2 = sf_cache[edu2]
+
+            # extract pair features
+            feats = list(pair_extract(edu_info1, edu_info2))
+            # re-emit single EDU features with a suffix
+            feats.extend(list(re_emit(sf_cache1, '_EDU1')))
+            feats.extend(list(re_emit(sf_cache2, '_EDU2')))
+
             # apply one hot encoding for all string values
             oh_feats = []
             for f, v in feats:
@@ -270,7 +303,8 @@ class DocumentCountVectorizer(object):
             feat_cnt = Counter()
             for fn, fv in oh_feats:
                 feat_cnt[fn] += fv
-            feat_vec = feat_cnt.items()
+            feat_vec = feat_cnt.items()  # non-deterministic order
+            # could be : feat_vec = sorted(feat_cnt.items())
             feat_vecs.append(feat_vec)
 
         return feat_vecs, edu_pairs, doc_grouping
