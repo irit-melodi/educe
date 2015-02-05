@@ -45,18 +45,26 @@ def edu_preprocess(doc, edu):
 
     # doc structure
     edus = doc.edus
+    edu2sent = doc.edu2sent
 
-    sent = get_sentence(doc, edu)
-    if sent is not None:
-        # position of EDU in sentence
-        edus_sent = [e for e in edus
-                     if get_sentence(doc, e) == sent]
-        # aka num_edus_from_sent_start aka offset
-        res['edu_idx_in_sent'] = edus_sent.index(edu)
-        # aka num_edus_to_sent_end aka revOffset
-        res['edu_rev_idx_in_sent'] = list(reversed(edus_sent)).index(edu)
-        # aka sentence_id
-        res['sent_idx'] = sent.num
+    if edu.is_left_padding():
+        res['edu_idx_in_sent'] = 0
+        res['edu_rev_idx_in_sent'] = 0
+        res['sent_idx'] = 0
+    else:
+        edu_idx = edus.index(edu)
+        sent_idx = edu2sent[edu_idx]
+        if sent_idx is not None:
+            # position of EDU in sentence
+            edus_sent = [e_idx for e_idx, e in enumerate(edus)
+                         if (edu2sent[e_idx] is not None and
+                             edu2sent[e_idx] == sent_idx)]
+            # aka num_edus_from_sent_start aka offset
+            res['edu_idx_in_sent'] = edus_sent.index(edu_idx)
+            # aka num_edus_to_sent_end aka revOffset
+            res['edu_rev_idx_in_sent'] = list(reversed(edus_sent)).index(edu_idx)
+            # aka sentence_id
+            res['sent_idx'] = sent_idx
 
     para = get_paragraph(doc, edu)
     if para is not None:

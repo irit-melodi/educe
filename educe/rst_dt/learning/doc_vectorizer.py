@@ -5,22 +5,19 @@ import numbers
 
 from collections import defaultdict, Counter
 
+from educe.rst_dt.document_plus import DocumentPlus
+
 
 class DocumentLabelExtractor(object):
     """Label extractor for the RST-DT treebank."""
 
-    def __init__(self, decoder, instance_generator,
-                 disc_segmenter, disc_parser,
+    def __init__(self, instance_generator,
                  unknown_label='__UNK__',
                  labelset=None):
         """
-        decoder is used to open the doc
         instance_generator to enumerate the instances from a doc
         """
-        self.decoder = decoder
         self.instance_generator = instance_generator
-        self.disc_segmenter = disc_segmenter
-        self.disc_parser = disc_parser
         self.unknown_label = unknown_label
         self.labelset = labelset
 
@@ -87,39 +84,14 @@ class DocumentLabelExtractor(object):
 
         doc is an educe.corpus.FileId
         """
-        doc = self.decoder(doc)
+        if not isinstance(doc, DocumentPlus):
+            # doc = self.decoder(doc)
+            raise ValueError('doc should be a DocumentPlus')
         return doc
-
-    def build_discourse_segmenter(self):
-        """Return a function that splits a document into a sequence of EDUs"""
-        if self.disc_segmenter is not None:
-            return self.disc_segmenter
-        else:
-            raise NotImplementedError('no discourse segmenter')
-
-    def build_discourse_parser(self):
-        """Return an RST parser for segmented documents"""
-        if self.disc_parser is not None:
-            return self.disc_parser
-        else:
-            raise NotImplementedError('no discourse parser')
 
     def build_analyzer(self):
         """Return a callable that extracts feature vectors from a doc"""
-        def _open_plus(doc):
-            """Open and fully load a document"""
-            # create a DocumentPlus
-            doc = self.decode(doc)
-            # populate it with layers of info
-            # disc segments
-            disc_segment = self.build_discourse_segmenter()
-            doc = disc_segment(doc)
-            # disc parse
-            disc_parse = self.build_discourse_parser()
-            doc = disc_parse(doc)
-            return doc
-
-        return lambda doc: self._extract_labels(_open_plus(doc))
+        return lambda doc: self._extract_labels(self.decode(doc))
 
     def _validate_labelset(self):
         """Validate labelset"""
@@ -182,33 +154,17 @@ class DocumentCountVectorizer(object):
     See `sklearn.feature_extraction.text.CountVectorizer` for reference.
     """
 
-    def __init__(self, decoder,
-                 instance_generator,
-                 disc_segmenter, disc_parser,
-                 tokenizer, synt_parser,
+    def __init__(self, instance_generator,
                  feature_set,
                  max_df=1.0, min_df=1, max_features=None,
                  vocabulary=None,
                  separator='='):
         """
-        decoder is used to open the doc
         instance_generator to enumerate the instances from a doc
-        disc_segmenter can be a corpus reader or discourse segmenter
-        disc_parser can be a corpus reader or discourse parser
-        tokenizer can be a corpus reader or tokenizer
-        synt_parser can be a corpus reader or syntactic parser
         feature_set is the feature set to use
         """
-        # decoder (to open the doc)
-        self.decoder = decoder
         # instance generator
         self.instance_generator = instance_generator
-        # discourse
-        self.disc_segmenter = disc_segmenter
-        self.disc_parser = disc_parser
-        # syntax
-        self.tokenizer = tokenizer
-        self.synt_parser = synt_parser
         # feature set
         self.feature_set = feature_set
         # EXPERIMENTAL
@@ -250,8 +206,6 @@ class DocumentCountVectorizer(object):
         pair_extract = self.pair_extract
         separator = self.separator
 
-        # document info
-        doc_grouping = doc.grouping
         # preprocess each EDU
         edu_info = {edu: edu_preprocess(doc, edu) for edu in doc.edus}
 
@@ -304,7 +258,7 @@ class DocumentCountVectorizer(object):
             # could be : feat_vec = sorted(feat_cnt.items())
             feat_vecs.append(feat_vec)
 
-        return feat_vecs, edu_pairs, doc_grouping
+        return feat_vecs
 
     # corpus level methods
     def _instances(self, raw_documents):
@@ -313,12 +267,12 @@ class DocumentCountVectorizer(object):
 
         analyze = self.build_analyzer()
         for doc in raw_documents:
-            feat_vecs, edu_pairs, doc_grouping = analyze(doc)
-            for feat_vec, edu_pair in itertools.izip(feat_vecs, edu_pairs):
+            feat_vecs = analyze(doc)
+            for feat_vec in feat_vecs:
                 row = [(vocabulary[fn], fv)
                        for fn, fv in feat_vec
                        if fn in vocabulary]
-                yield row, edu_pair, doc_grouping
+                yield row
 
     def _vocab_df(self, raw_documents, fixed_vocab):
         """Gather vocabulary (if fixed_vocab=False) and doc frequency
@@ -334,7 +288,7 @@ class DocumentCountVectorizer(object):
 
         analyze = self.build_analyzer()
         for doc in raw_documents:
-            feat_vecs, edu_pairs, doc_grouping = analyze(doc)
+            feat_vecs = analyze(doc)
             doc_features = [fn for feat_vec in feat_vecs
                             for fn, fv in feat_vec]
             for feature in doc_features:
@@ -405,66 +359,16 @@ class DocumentCountVectorizer(object):
     def decode(self, doc):
         """Decode the input into a DocumentPlus
 
-        doc is an educe.corpus.FileId
+        doc is an educe.rst_dt.document_plus.DocumentPlus
         """
-        doc = self.decoder(doc)
+        if not isinstance(doc, DocumentPlus):
+            # doc = self.decoder(doc)
+            raise ValueError('doc should be a DocumentPlus')
         return doc
-
-    def build_discourse_segmenter(self):
-        """Return a function that splits a document into a sequence of EDUs"""
-        if self.disc_segmenter is not None:
-            return self.disc_segmenter
-        else:
-            raise NotImplementedError('no discourse segmenter')
-
-    def build_discourse_parser(self):
-        """Return an RST parser for segmented documents"""
-        if self.disc_parser is not None:
-            return self.disc_parser
-        else:
-            raise NotImplementedError('no discourse parser')
-
-    def build_tokenizer(self):
-        """Return a function that splits a document into a seq of tokens"""
-        if self.tokenizer is not None:
-            return self.tokenizer
-        else:
-            raise NotImplementedError('no tokenizer')
-
-    def build_synt_parser(self):
-        """Return a function that builds trees over a tokenized document"""
-        if self.synt_parser is not None:
-            return self.synt_parser
-        else:
-            raise NotImplementedError('no parser')
 
     def build_analyzer(self):
         """Return a callable that extracts feature vectors from a doc"""
-        tokenize = self.build_tokenizer()
-        parse = self.build_synt_parser()
-        disc_segment = self.build_discourse_segmenter()
-        disc_parse = self.build_discourse_parser()
-
-        def _open_plus(doc):
-            """Open and fully load a document"""
-            # create a DocumentPlus
-            doc = self.decode(doc)
-            # populate it with layers of info
-            # tokens
-            doc = tokenize(doc)
-            # syn parses
-            doc = parse(doc)
-            # disc segments
-            doc = disc_segment(doc)
-            # disc parse
-            doc = disc_parse(doc)
-            # pre-compute the relevant info for each EDU
-            doc = doc.align_with_doc_structure()
-            doc = doc.align_with_tokens()
-            doc = doc.align_with_trees()
-            return doc
-
-        return lambda doc: self._extract_feature_vectors(_open_plus(doc))
+        return lambda doc: self._extract_feature_vectors(self.decode(doc))
 
     def _validate_vocabulary(self):
         """Validate vocabulary"""
@@ -512,8 +416,8 @@ class DocumentCountVectorizer(object):
                                                           limit=max_features)
             self.vocabulary_ = vocabulary
         # re-run through documents to generate X
-        for row, epair, doc_grouping in self._instances(raw_documents):
-            yield (row, epair, doc_grouping)
+        for row in self._instances(raw_documents):
+            yield row
 
     def transform(self, raw_documents):
         """Transform documents to a feature matrix
@@ -525,5 +429,5 @@ class DocumentCountVectorizer(object):
         if not self.vocabulary_:
             raise ValueError('Empty vocabulary')
 
-        for row, epair, doc_grouping in self._instances(raw_documents):
-            yield (row, epair, doc_grouping)
+        for row in self._instances(raw_documents):
+            yield row

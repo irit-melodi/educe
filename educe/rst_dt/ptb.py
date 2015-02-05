@@ -190,5 +190,5 @@ class PtbParser(object):
             results.append(ConstituencyTree.build(tree_no_empty_no_gf,
                                                   tslice))
         # store trees in doc
-        doc.tkd_trees = results
+        doc.tkd_trees.extend(results)
         return doc

@@ -71,37 +71,64 @@ def main(args):
     # retrieve parameters
     feature_set = args.feature_set
     live = args.parsing
+
     # RST data
     rst_reader = RstDtParser(args.corpus, args, coarse_rels=True)
     rst_corpus = rst_reader.corpus
-    # PTB data
-    ptb_parser = PtbParser(args.ptb)
-    # instance generator
-    instance_generator = lambda doc: doc.all_edu_pairs()
     # TODO: change rst_corpus, e.g. to return an OrderedDict,
     # so that the order in which docs are enumerated is guaranteed
     # to be always the same
 
-    # generate all instances
-    vzer = DocumentCountVectorizer(rst_reader.decode,
-                                   instance_generator,
-                                   rst_reader.segment, rst_reader.parse,
-                                   ptb_parser.tokenize, ptb_parser.parse,
+    # PTB data
+    ptb_parser = PtbParser(args.ptb)
+
+    # align EDUs with sentences, tokens and trees from PTB
+    def open_plus(doc):
+        """Open and fully load a document
+
+        doc is an educe.corpus.FileId
+        """
+        # create a DocumentPlus
+        doc = rst_reader.decode(doc)
+        # populate it with layers of info
+        # tokens
+        doc = ptb_parser.tokenize(doc)
+        # syn parses
+        doc = ptb_parser.parse(doc)
+        # disc segments
+        doc = rst_reader.segment(doc)
+        # disc parse
+        doc = rst_reader.parse(doc)
+        # pre-compute the relevant info for each EDU
+        doc = doc.align_with_doc_structure()
+        # logical order is align with tokens, then align with trees
+        # but aligning with trees first for the PTB enables
+        # to get proper sentence segmentation
+        doc = doc.align_with_trees()
+        doc = doc.align_with_tokens()
+
+        return doc
+
+    # generate DocumentPluses
+    docs = [open_plus(doc) for doc in rst_corpus]  # TODO sorted(rst_corpus) ?
+    # instance generator
+    instance_generator = lambda doc: doc.all_edu_pairs()
+
+    # extract vectorized samples
+    vzer = DocumentCountVectorizer(instance_generator,
                                    feature_set,
                                    min_df=5)
-    X_gen = vzer.fit_transform(rst_corpus)
+    X_gen = vzer.fit_transform(docs)
 
     # extract class label for each instance
     if live:
         y_gen = itertools.repeat(0)
     else:
-        labtor = DocumentLabelExtractor(rst_reader.decode,
-                                        instance_generator,
-                                        rst_reader.segment, rst_reader.parse)
+        labtor = DocumentLabelExtractor(instance_generator)
         # y_gen = labtor.fit_transform(rst_corpus)
         # fit then transform enables to get classes_ for the dump
-        labtor.fit(rst_corpus)
-        y_gen = labtor.transform(rst_corpus)
+        labtor.fit(docs)
+        y_gen = labtor.transform(docs)
 
     # dump instances to files
     if not os.path.exists(args.output):
@@ -115,10 +142,8 @@ def main(args):
         out_file = '{}.relations{}'.format(of_bn, of_ext)
 
     # dump
-    # edu_input_format.dump_all() in turn calls dump_svmlight_file
-    # this is a poor man's solution but it is good enough for the time being
-    dump_all(X_gen, y_gen, out_file, labtor.labelset_)
-    # dump_svmlight_file(X_gen, y_gen, out_file)
+    dump_all(X_gen, y_gen, out_file, labtor.labelset_, docs,
+             instance_generator)
 
     # dump vocabulary
     vocab_file = out_file + '.vocab'

@@ -5,9 +5,10 @@
 Corpus management (re-exported by educe.rst_dt)
 """
 
-from glob import glob
+import itertools
 import os
 import sys
+from glob import glob
 from os.path import dirname
 from os.path import join
 
@@ -113,21 +114,36 @@ class RstDtParser(object):
         grouping = os.path.basename(id_to_path(doc_key))
         doc = DocumentPlus(doc_key, grouping)
 
-        # convert relation labels if a converter is provided
+        # the RST tree is currently pivotal to get all the layers of info
+        orig_rsttree = self.corpus[doc_key]
+        # convert relation labels if needed
         if self.rel_conv is not None:
-            doc.orig_rsttree = self.rel_conv(self.corpus[doc_key])
-        else:
-            doc.orig_rsttree = self.corpus[doc_key]
-        # get EDUs
-        doc.edus.append(doc.orig_rsttree.leaves())
+            orig_rsttree = self.rel_conv(orig_rsttree)
+        doc.orig_rsttree = orig_rsttree
+        # TODO get EDUs here
+        # doc.edus.append(orig_rsttree.leaves())
+
+        # get text and doc structure
+        rst_context = treenode(orig_rsttree).context
+        doc.rst_context = rst_context
+        # directly store paragraphs and (badly segmented) sentences
+        paragraphs = rst_context.paragraphs
+        sentences_iter = (para.sentences for para in paragraphs)
+        sentences = list(itertools.chain.from_iterable(sentences_iter))
+        doc.paragraphs.extend(paragraphs)
+        doc.raw_sentences.extend(sentences)
+
         # convert to binary tree
-        doc.rsttree = SimpleRSTTree.from_rst_tree(doc.orig_rsttree)
+        rsttree = SimpleRSTTree.from_rst_tree(orig_rsttree)
+        doc.rsttree = rsttree
         # convert to dep tree
-        doc.deptree = RstDepTree.from_simple_rst_tree(doc.rsttree)
-        # get EDUs
+        deptree = RstDepTree.from_simple_rst_tree(rsttree)
+        doc.deptree = deptree
+        # get EDUs (bad)
         # TODO: get EDUs from orig_rsttree.leaves(),
         # let document_plus do the left padding
         doc.edus = doc.deptree.edus
+
         return doc
 
     def segment(self, doc):
