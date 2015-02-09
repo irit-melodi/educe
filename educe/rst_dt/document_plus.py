@@ -7,7 +7,6 @@ from __future__ import print_function
 import copy
 import itertools
 
-from educe.internalutil import ifilter
 from educe.external.postag import Token
 from .text import Sentence, Paragraph
 from .annotation import EDU
@@ -29,10 +28,10 @@ def _filter0(pred, iterable):
     First item that satisifies a predicate in a given
     iterable, otherwise None
     """
-    matches = ifilter(pred, iterable)
-    try:
-        return matches.next()
-    except StopIteration:
+    for item in iterable:
+        if pred(item):
+            return item
+    else:
         return None
 
 
