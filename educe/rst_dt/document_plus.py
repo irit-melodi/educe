@@ -9,7 +9,7 @@ import itertools
 
 from educe.internalutil import ifilter
 from educe.external.postag import Token
-from .text import Sentence, Paragraph
+from .text import Sentence, Paragraph, clean_edu_text
 from .annotation import EDU
 
 
@@ -39,35 +39,62 @@ def _filter0(pred, iterable):
 class DocumentPlus(object):
     """A document and relevant contextual information"""
 
-    def __init__(self, key, grouping):
+    def __init__(self, key, grouping, rst_context):
         """
         key is an educe.corpus.FileId
         grouping designates the corresponding file in the corpus
+        rst_context contains the document text and structure
+        (paragraphs, raw sentences)
         """
         # document identification
         self.key = key
         self.grouping = grouping
 
-        # document structure: sentences and paragraphs from the raw text
+        # document text and basic structure
+        self.rst_context = rst_context
+        # RSTContext provides paragraphs made of (raw) sentences
+        raw_sentences = []
+        paragraphs = []
+        # add left padding
         _lpad_sent = Sentence.left_padding()
-        self.raw_sentences = [_lpad_sent]
+        raw_sentences.append(_lpad_sent)
         _lpad_para = Paragraph.left_padding([_lpad_sent])
-        self.paragraphs = [_lpad_para]
+        paragraphs.append(_lpad_para)
+        # add real paragraphs and raw sentences
+        paras = rst_context.paragraphs
+        raw_sents_iter = (para.sentences for para in paras)
+        raw_sents = list(itertools.chain.from_iterable(raw_sents_iter))
+        raw_sentences.extend(raw_sents)
+        paragraphs.extend(paras)
+        self.raw_sentences = raw_sentences
+        self.paragraphs = paragraphs
+
+        # TODO
+        # self.words = []
+        # self.tags = []
+        # self.sentences = []
+        # self.syn_trees = []
+        # the basic building block should be words/tags,
+        # additional annotation being defined by its offset (in nb of words):
+        # sentences, paragraphs, EDUs...
 
         # RST annotation
+        self.edus = []
+        # left padding on EDUs
         _lpad_edu = EDU.left_padding()
-        self.edus = [_lpad_edu]
+        self.edus.append(_lpad_edu)
         # various flavours of RST trees
         self.orig_rsttree = None
         self.rsttree = None
         self.deptree = None
 
         # syntactic information
-        # * tokens
+        self.tkd_tokens = []
+        self.tkd_trees = []
+        # left padding on syntactic info
         _lpad_tok = Token.left_padding()
-        self.tkd_tokens = [_lpad_tok]
-        # * trees
-        self.tkd_trees = [None]
+        self.tkd_tokens.append(_lpad_tok)
+        self.tkd_trees.append(None)
 
     def align_with_doc_structure(self):
         """Align EDUs with the document structure (paragraph and sentence).
@@ -91,25 +118,33 @@ class DocumentPlus(object):
         Reuben Mark, chief executive of Colgate-Palmolive, said...
         """
         edus = self.edus
+        rst_context = self.rst_context
         paragraphs = self.paragraphs
         raw_sentences = self.raw_sentences
-        rst_context = self.rst_context
 
+        # mappings from EDU to raw_sentence and paragraph
         edu2raw_sent = []
         edu2para = []
-        surrounders = dict()
-        # align fake root EDU with fake paragraph and fake sentence
+        surrounders = dict()  # alternative storage (old)
+
+        # map left padding EDU to left padding paragraph and raw_sentence
         edu2raw_sent.append(0)
         edu2para.append(0)
         surrounders[edus[0]] = (paragraphs[0], raw_sentences[0])
 
-        # align the other EDUs 
+        # align the other EDUs
         for edu in edus[1:]:
             espan = edu.text_span()
+
+            # find enclosing paragraph
             para = _filter0(containing(espan), paragraphs)
             # sloppy EDUs happen; try shaving off some characters
             # if we can't find a paragraph
             if para is None:
+                # DEBUG
+                if False:
+                    print('WP ({}) : {}'.format(self.grouping, edu))
+                # end DEBUG
                 espan = copy.copy(espan)
                 espan.char_start += 1
                 espan.char_end -= 1
@@ -122,26 +157,77 @@ class DocumentPlus(object):
                 etext = etext.rstrip()
                 # try again
                 para = _filter0(containing(espan), paragraphs)
+                # DEBUG
+                if False:
+                    if para is None:
+                        print('EP ({}): {}'.format(self.grouping, edu))
+                # end DEBUG
 
-            sent = (_filter0(containing(espan), para.sentences)
-                    if para else None)
-            # update mapping
+            # update edu to paragraph mapping
             para_idx = (paragraphs.index(para) if para is not None
                         else None)  # TODO or -1 or ... ?
             edu2para.append(para_idx)
 
+            # find enclosing sentence, with raw sentence segmentation from
+            # the text file
+            # NB: this usually fails due to bad sentence segmentation, e.g.
+            # ... Prof.\nHarold ... in wsj_##.out files,
+            # or end of sentence missing in file## files.
+            sent = (_filter0(containing(espan), para.sentences)
+                    if para else None)
+            # DEBUG
+            if False:
+                if sent is None:
+                    print('WS ({}): {}'.format(self.grouping, edu))
+            # end DEBUG
+            # update mapping
             raw_sent_idx = (raw_sentences.index(sent) if sent is not None
                             else None)
             edu2raw_sent.append(raw_sent_idx)
+
             # update surrounders
             surrounders[edu] = (para, sent)
 
-        self.surrounders = surrounders
+        self.paragraphs = paragraphs
+        self.edu2para = edu2para
+        self.raw_sentences = raw_sentences
+        self.edu2raw_sent = edu2raw_sent
+
+        self.surrounders = surrounders  # mark for deprecation
+
+        return self
+
+    def align_with_raw_words(self):
+        """Compute for each EDU the raw tokens it contains
+
+        This is a dirty temporary hack to enable backwards compatibility.
+        There should be one clean text per document, one tokenization and
+        so on, but, well.
+        """
+        edus = self.edus
+        raw_words = dict()
+
+        for edu in edus:
+            if edu.is_left_padding():
+                _lpad_tok = self.tkd_tokens[0]
+                raw_wds = [_lpad_tok]
+            else:
+                # TODO move functionality to rst_wsj_corpus
+                cln_txt = clean_edu_text(edu.text())
+                # dummy tokenization on whitespaces
+                words = cln_txt.split()
+                # lowercase all words
+                raw_wds = [w.lower() for w in words]
+            raw_words[edu] = raw_wds
+
+        self.raw_words = raw_words
+
         return self
 
     def align_with_tokens(self):
         """Compute for each EDU the overlapping tokens"""
-        if self.tkd_tokens is None:
+        tokens = self.tkd_tokens
+        if len(tokens) == 1:  # only lpad
             self.ptb_tokens = None
             return self
 
@@ -150,15 +236,16 @@ class DocumentPlus(object):
 
         ptb_tokens = dict()  # overlapping PTB tokens
 
+        syn_trees = self.tkd_trees
         edus = self.edus
         edu2sent = self.edu2sent
-        syn_trees = self.tkd_trees
+
         for i, edu in enumerate(edus):
             if edu.is_left_padding():
-                start_token = Token.left_padding()
+                start_token = tokens[0]
                 ptb_toks = [start_token]
             else:
-                ptb_toks = [tok for tok in self.tkd_tokens
+                ptb_toks = [tok for tok in tokens
                             if tok.overlaps(edu)]
                 # if possible, take tokens only from the tree chosen by
                 # align_with_trees()
@@ -181,7 +268,7 @@ class DocumentPlus(object):
 
         # if there is no sentence segmentation from syntax,
         # use the raw (bad) one from the .out
-        if syn_trees is None:
+        if len(syn_trees) == 1:  # only lpad
             self.edu2sent = self.edu2raw_sent
             self.ptb_trees = None  # mark for deprecation
             return self
@@ -202,6 +289,9 @@ class DocumentPlus(object):
             ptb_trees[edu] = ptrees  # mark for deprecation
             # get the actual tree
             if len(ptrees) == 0:
+                # no tree at all can happen when the EDU text is totally
+                # absent from the list of sentences of this doc in the PTB
+                # ex: wsj_0696.out, last sentence
                 ptree_idx = None
             elif len(ptrees) == 1:
                 ptree = ptrees[0]
@@ -218,7 +308,7 @@ class DocumentPlus(object):
                 # cry for help if it goes bad
                 if max(ovlap_ratios) < 0.5:
                     emsg = 'Slightly unsure about this EDU segmentation'
-                    print('EDU: ', edu)
+                    # print('EDU: ', edu)
                     # print('ptrees: ', [t.leaves() for t in ptrees])
                     # raise ValueError(emsg)
                 # otherwise just emit err msgs for info

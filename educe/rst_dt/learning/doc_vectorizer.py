@@ -169,7 +169,7 @@ class DocumentCountVectorizer(object):
         self.feature_set = feature_set
         # EXPERIMENTAL
         # preprocessor for each EDU
-        self.edu_preprocess = feature_set.edu_preprocess
+        self.doc_preprocess = feature_set.build_doc_preprocessor()
         # feature extractor for single EDUs
         sing_header, sing_extract = feature_set.build_edu_feature_extractor()
         self.sing_header = sing_header
@@ -199,7 +199,7 @@ class DocumentCountVectorizer(object):
     def _extract_feature_vectors(self, doc):
         """Extract feature vectors for all EDU pairs of a document"""
 
-        edu_preprocess = self.edu_preprocess
+        doc_preprocess = self.doc_preprocess
         sing_header = self.sing_header
         sing_extract = self.sing_extract
         pair_header = self.pair_header
@@ -207,7 +207,7 @@ class DocumentCountVectorizer(object):
         separator = self.separator
 
         # preprocess each EDU
-        edu_info = {edu: edu_preprocess(doc, edu) for edu in doc.edus}
+        edu_info = doc_preprocess(doc)
 
         # extract one feature vector per EDU pair
         feat_vecs = []

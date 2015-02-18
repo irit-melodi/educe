@@ -106,6 +106,8 @@ def main(args):
         # to get proper sentence segmentation
         doc = doc.align_with_trees()
         doc = doc.align_with_tokens()
+        # dummy, fallback tokenization if there is no PTB gold or silver
+        doc = doc.align_with_raw_words()
 
         return doc
 

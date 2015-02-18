@@ -12,8 +12,7 @@ import re
 
 from educe.internalutil import treenode
 from educe.learning.keys import Substance
-from .base import (get_sentence, get_paragraph,
-                   lowest_common_parent)
+from .base import lowest_common_parent, DocumentPlusPreprocessor
 
 
 # ---------------------------------------------------------------------
@@ -25,70 +24,26 @@ TT_PATTERN = r'.*[a-zA-Z_0-9].*'
 TT_FILTER = re.compile(TT_PATTERN)
 
 
-def edu_preprocess(doc, edu):
-    """Gather and preprocess relevant info from edu"""
-    res = dict()
+def token_filter_li2014(token):
+    """Token filter defined in Li et al.'s parser.
 
-    # store EDU
-    res['edu'] = edu
+    This filter only applies to tagged tokens.
+    """
+    return (TT_FILTER.match(token.word) is not None and
+            TT_FILTER.match(token.tag) is not None)
 
-    # tokens
-    tokens = doc.ptb_tokens[edu]
-    if tokens is not None:
-        # filter tags and tokens as in Li et al.'s parser
-        tokens = [tt for tt in tokens
-                  if (TT_FILTER.match(tt.word) is not None and
-                      TT_FILTER.match(tt.tag) is not None)]
-        res['tokens'] = tokens
-        res['tags'] = [tok.tag for tok in tokens]
-        res['words'] = [tok.word for tok in tokens]
 
-    # doc structure
-    edus = doc.edus
-    edu2sent = doc.edu2sent
-
-    if edu.is_left_padding():
-        res['edu_idx_in_sent'] = 0
-        res['edu_rev_idx_in_sent'] = 0
-        res['sent_idx'] = 0
-    else:
-        edu_idx = edus.index(edu)
-        sent_idx = edu2sent[edu_idx]
-        if sent_idx is not None:
-            # position of EDU in sentence
-            edus_sent = [e_idx for e_idx, e in enumerate(edus)
-                         if (edu2sent[e_idx] is not None and
-                             edu2sent[e_idx] == sent_idx)]
-            # aka num_edus_from_sent_start aka offset
-            res['edu_idx_in_sent'] = edus_sent.index(edu_idx)
-            # aka num_edus_to_sent_end aka revOffset
-            res['edu_rev_idx_in_sent'] = list(reversed(edus_sent)).index(edu_idx)
-            # aka sentence_id
-            res['sent_idx'] = sent_idx
-
-    para = get_paragraph(doc, edu)
-    if para is not None:
-        edus_para = [e for e in edus
-                     if get_paragraph(doc, e) == para]
-        # aka num_edus_to_para_end aka revSentenceID (?!)
-        # TODO: check for the 10th time if this is a bug in Li et al.'s parser
-        res['edu_rev_idx_in_para'] = list(reversed(edus_para)).index(edu)
-        # aka paragraphID
-        res['para_idx'] = para.num
-
-    # syntax
-    ptrees = doc.ptb_trees[edu]
-    if ptrees is not None:
-        res['ptrees'] = ptrees
-
-    return res
+def build_doc_preprocessor():
+    """Build the preprocessor for feature extraction in each EDU of doc"""
+    # TODO re-do in a better, more modular way
+    return DocumentPlusPreprocessor(token_filter_li2014).preprocess
 
 
 # ---------------------------------------------------------------------
 # single EDU features
 # ---------------------------------------------------------------------
 
-_single_word = [
+SINGLE_WORD = [
     ('ptb_word_first', Substance.DISCRETE),
     ('ptb_word_last', Substance.DISCRETE),
     ('ptb_word_first2', Substance.DISCRETE),
@@ -112,7 +67,7 @@ def extract_single_word(edu_info):
         yield ('ptb_word_last2', (words[-2], words[-1]))
 
 
-_single_pos = [
+SINGLE_POS = [
     ('ptb_pos_tag_first', Substance.DISCRETE),
     ('ptb_pos_tag_last', Substance.DISCRETE),
     ('POS', Substance.BASKET)
@@ -133,7 +88,7 @@ def extract_single_pos(edu_info):
             yield ('POS', tag)
 
 
-_single_length = [
+SINGLE_LENGTH = [
     ('num_tokens', Substance.DISCRETE),
     ('num_tokens_div5', Substance.DISCRETE)
 ]
@@ -152,7 +107,7 @@ def extract_single_length(edu_info):
 
 # features on document structure
 
-_single_sentence = [
+SINGLE_SENTENCE = [
     # offset
     ('num_edus_from_sent_start', Substance.DISCRETE),
     # revOffset
@@ -170,7 +125,9 @@ def extract_single_sentence(edu_info):
         yield ('num_edus_from_sent_start', str(edu_info['edu_idx_in_sent']))
         yield ('num_edus_to_sent_end', str(edu_info['edu_rev_idx_in_sent']))
         # position of sentence in doc
-        yield ('sentence_id', str(edu_info['sent_idx']))
+        sent_id = edu_info['sent_idx']
+        if sent_id is not None:
+            yield ('sentence_id', str(sent_id))
     except KeyError:
         pass
 
@@ -180,7 +137,7 @@ def extract_single_sentence(edu_info):
         pass
 
 
-_single_para = [
+SINGLE_PARA = [
     ('paragraph_id', Substance.DISCRETE),
     ('paragraph_id_div5', Substance.DISCRETE)
 ]
@@ -193,8 +150,9 @@ def extract_single_para(edu_info):
     except KeyError:
         pass
     else:
-        yield ('paragraph_id', str(para_idx))
-        yield ('paragraph_id_div5', str(para_idx / 5))
+        if para_idx is not None:
+            yield ('paragraph_id', str(para_idx))
+            yield ('paragraph_id_div5', str(para_idx / 5))
 
 
 # features on syntax
@@ -234,7 +192,7 @@ def get_syntactic_labels(edu_info):
     return result
 
 
-_single_syntax = [
+SINGLE_SYNTAX = [
     ('SYN', Substance.BASKET)
 ]
 
@@ -254,19 +212,19 @@ def build_edu_feature_extractor():
     funcs = []
 
     # word
-    feats.extend(_single_word)
+    feats.extend(SINGLE_WORD)
     funcs.append(extract_single_word)
     # pos
-    feats.extend(_single_pos)
+    feats.extend(SINGLE_POS)
     funcs.append(extract_single_pos)
     # length
-    feats.extend(_single_length)
+    feats.extend(SINGLE_LENGTH)
     funcs.append(extract_single_length)
     # para
-    feats.extend(_single_para)
+    feats.extend(SINGLE_PARA)
     funcs.append(extract_single_para)
     # sent
-    feats.extend(_single_sentence)
+    feats.extend(SINGLE_SENTENCE)
     funcs.append(extract_single_sentence)
     # syntax (disabled)
     # feats.extend(_single_syntax)
@@ -291,7 +249,7 @@ def build_edu_feature_extractor():
 # EDU pairs
 # ---------------------------------------------------------------------
 
-_pair_word = [
+PAIR_WORD = [
     ('ptb_word_first_pairs', Substance.DISCRETE),
     ('ptb_word_last_pairs', Substance.DISCRETE),
     ('ptb_word_first2_pairs', Substance.DISCRETE),
@@ -321,7 +279,7 @@ def extract_pair_word(edu_info1, edu_info2):
 
 
 # pos
-_pair_pos = [
+PAIR_POS = [
     ('ptb_pos_tag_first_pairs', Substance.DISCRETE),
 ]
 
@@ -338,7 +296,7 @@ def extract_pair_pos(edu_info1, edu_info2):
         yield ('ptb_pos_tag_first_pairs', (tags1[0], tags2[0]))
 
 
-_pair_length = [
+PAIR_LENGTH = [
     ('num_tokens_div5_pair', Substance.DISCRETE),
     ('num_tokens_diff_div5', Substance.DISCRETE)
 ]
@@ -359,7 +317,7 @@ def extract_pair_length(edu_info1, edu_info2):
     yield ('num_tokens_diff_div5', str((num_toks1 - num_toks2) / 5))
 
 
-_pair_para = [
+PAIR_PARA = [
     ('first_paragraph', Substance.DISCRETE),
     ('num_paragraphs_between', Substance.DISCRETE),
     ('num_paragraphs_between_div3', Substance.DISCRETE)
@@ -373,20 +331,20 @@ def extract_pair_para(edu_info1, edu_info2):
         para_id2 = edu_info2['para_idx']
     except KeyError:
         return
+    if para_id1 is not None and para_id2 is not None:
+        if para_id1 < para_id2:
+            first_para = 'first'
+        elif para_id1 > para_id2:
+            first_para = 'second'
+        else:
+            first_para = 'same'
+        yield ('first_paragraph', first_para)
 
-    if para_id1 < para_id2:
-        first_para = 'first'
-    elif para_id1 > para_id2:
-        first_para = 'second'
-    else:
-        first_para = 'same'
-    yield ('first_paragraph', first_para)
-
-    yield ('num_paragraphs_between', str(para_id1 - para_id2))
-    yield ('num_paragraphs_between_div3', str((para_id1 - para_id2) / 3))
+        yield ('num_paragraphs_between', str(para_id1 - para_id2))
+        yield ('num_paragraphs_between_div3', str((para_id1 - para_id2) / 3))
 
 
-_pair_sent = [
+PAIR_SENT = [
     ('offset_diff', Substance.DISCRETE),
     ('rev_offset_diff', Substance.DISCRETE),
     ('offset_diff_div3', Substance.DISCRETE),
@@ -435,35 +393,21 @@ def extract_pair_sent(edu_info1, edu_info2):
     yield ('line_id_diff', str(line_id1 - line_id2))
 
     # sentenceID
-    try:
-        sent_id1 = edu_info1['sent_idx']
-        sent_id2 = edu_info2['sent_idx']
-    except KeyError:
-        pass
-    else:
-        yield ('same_bad_sentence',
+    sent_id1 = edu_info1['sent_idx']
+    sent_id2 = edu_info2['sent_idx']
+    if sent_id1 is not None and sent_id2 is not None:
+        yield ('same_sentence',
                'same' if sent_id1 == sent_id2 else 'different')
         yield ('sentence_id_diff', str(sent_id1 - sent_id2))
         yield ('sentence_id_diff_div3', str((sent_id1 - sent_id2) / 3))
+
     # revSentenceID
-    try:
-        rev_sent_id1 = edu_info1['edu_rev_idx_in_para']
-        rev_sent_id2 = edu_info2['edu_rev_idx_in_para']
-    except KeyError:
-        pass
-    else:
+    rev_sent_id1 = edu_info1['edu_rev_idx_in_para']
+    rev_sent_id2 = edu_info2['edu_rev_idx_in_para']
+    if rev_sent_id1 is not None and rev_sent_id2 is not None:
         yield ('rev_sentence_id_diff', str(rev_sent_id1 - rev_sent_id2))
         yield ('rev_sentence_id_diff_div3',
                str((rev_sent_id1 - rev_sent_id2) / 3))
-
-
-_pair_syntax = [
-]
-
-
-def extract_pair_syntax(edu_info1, edu_info2):
-    """Syntax pair features"""
-    return
 
 
 def build_pair_feature_extractor():
@@ -477,24 +421,24 @@ def build_pair_feature_extractor():
     funcs = []
 
     # feature type: 1
-    feats.extend(_pair_word)
+    feats.extend(PAIR_WORD)
     funcs.append(extract_pair_word)
     # 2
-    feats.extend(_pair_pos)
+    feats.extend(PAIR_POS)
     funcs.append(extract_pair_pos)
     # 3
-    feats.extend(_pair_para)
+    feats.extend(PAIR_PARA)
     funcs.append(extract_pair_para)
-    feats.extend(_pair_sent)
+    feats.extend(PAIR_SENT)
     funcs.append(extract_pair_sent)
     # 4
-    feats.extend(_pair_length)
+    feats.extend(PAIR_LENGTH)
     funcs.append(extract_pair_length)
     # 5
-    # feats.extend(_pair_syntax)
+    # feats.extend(PAIR_SYNTAX)  # NotImplemented
     # funcs.append(extract_pair_syntax)
     # 6
-    # feats.extend(_pair_semantics)  # NotImplemented
+    # feats.extend(PAIR_SEMANTICS)  # NotImplemented
     # funcs.append(extract_pair_semantics)
 
     def _extract_all(edu_info1, edu_info2):

@@ -140,13 +140,14 @@ class PtbParser(object):
 
         Return a tokenized document.
         """
-        # get doc text
-        # here we cheat and get it from the RST-DT tree
-        rst_text = doc.orig_rsttree.text()
         # get tokens from PTB
         ptb_name = _guess_ptb_name(doc.key)
         if ptb_name is None:
             return doc
+
+        # get doc text
+        # here we cheat and get it from the RST-DT tree
+        rst_text = doc.orig_rsttree.text()
         tagged_tokens = self.reader.tagged_words(ptb_name)
         # tweak tokens THEN filter empty nodes
         tweaked1, tweaked2 =\
@@ -156,8 +157,10 @@ class PtbParser(object):
         spans = generic_token_spans(rst_text, tweaked1,
                                     txtfn=lambda x: x.tweaked_word)
         result = [_mk_token(t, s) for t, s in izip(tweaked2, spans)]
+
         # store in doc
-        doc.tkd_tokens = result
+        doc.tkd_tokens.extend(result)
+
         return doc
 
     def parse(self, doc):
@@ -171,12 +174,14 @@ class PtbParser(object):
 
         Note: does nothing if there is no associated PTB corpus entry.
         """
-        # get tokens from tokenized document
-        tokens_iter = iter(doc.tkd_tokens)
         # get PTB trees
         ptb_name = _guess_ptb_name(doc.key)
         if ptb_name is None:
             return doc
+
+        # get tokens from tokenized document
+        tokens_iter = iter(doc.tkd_tokens)
+
         results = []
         for tree in self.reader.parsed_sents(ptb_name):
             # apply standard cleaning to tree
