@@ -75,8 +75,11 @@ def main(args):
     # RST data
     rst_reader = RstDtParser(args.corpus, args, coarse_rels=True)
     rst_corpus = rst_reader.corpus
-    # TODO: change rst_corpus, e.g. to return an OrderedDict,
-    # so that the order in which docs are enumerated is guaranteed
+    # TODO: change educe.corpus.Reader.slurp*() so that they return an object
+    # which contains a *list* of FileIds and a *list* of annotations
+    # (see sklearn's Bunch)
+    # on creation of these lists, one can impose the list of names to be
+    # sorted so that the order in which docs are iterated is guaranteed
     # to be always the same
 
     # PTB data
@@ -112,7 +115,9 @@ def main(args):
         return doc
 
     # generate DocumentPluses
-    docs = [open_plus(doc) for doc in rst_corpus]  # TODO sorted(rst_corpus) ?
+    # TODO remove sorted() once educe.corpus.Reader is able
+    # to iterate over a stable (sorted) list of FileIds
+    docs = [open_plus(doc) for doc in sorted(rst_corpus)]
     # instance generator
     instance_generator = lambda doc: doc.all_edu_pairs()
 
