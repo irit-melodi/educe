@@ -1,3 +1,8 @@
+"""This module provides loaders for file formats found in the RST-WSJ-corpus.
+"""
+
+from __future__ import print_function
+
 import codecs
 import os
 
@@ -43,10 +48,9 @@ def load_rst_wsj_corpus_edus_file(f):
 FIL_SEP_PARA = '\n\n'  # probably useless
 FIL_SEP_SENT = '\n  '
 
-# TODO move to more relevant place (?)
-# TODO use this info :-)
-file_to_ptb = {'file1': 'wsj_0764',
-}
+
+# TODO complete, move to more relevant place (?) and use this info
+FILE_TO_PTB = {'file1': 'wsj_0764'}
 
 
 def _load_rst_wsj_corpus_text_file_file(f):
@@ -74,7 +78,7 @@ def _load_rst_wsj_corpus_text_file_file(f):
     # TODO remove trailing '\n' of last sentence
 
     return text, output_paras
-    
+
 
 def load_rst_wsj_corpus_text_file_file(f):
     """Load a text file whose name is of the form `file##`
@@ -154,5 +158,7 @@ def load_rst_wsj_corpus_text_file(f):
     elif bn_prefix == 'wsj_':
         return load_rst_wsj_corpus_text_file_wsj(f)
     else:
-        raise ValueError('Unsupported file: {}'.format(f))
-
+        # raise ValueError(err_msg.format(f))
+        err_msg = 'W: using wsj_ loader for file of unknown type: {}'
+        print(err_msg.format(f))
+        return load_rst_wsj_corpus_text_file_wsj(f)
