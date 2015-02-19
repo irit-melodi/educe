@@ -3,20 +3,11 @@ Basics for feature extraction
 """
 
 from __future__ import print_function
-from collections import namedtuple
-from functools import wraps
-import copy
-import itertools
-import os
 
-from educe.internalutil import ifilter
-from educe.learning.keys import KeyGroup, MergedKeyGroup, HeaderType,\
-    ClassKeyGroup
-from educe.external.postag import Token
-from educe.rst_dt import (SimpleRSTTree, id_to_path,
-                          ptb as r_ptb)
-from educe.rst_dt.text import Sentence, Paragraph
-from educe.rst_dt.deptree import RstDepTree
+from functools import wraps
+import itertools as it
+
+from educe.learning.keys import KeyGroup, MergedKeyGroup, HeaderType
 
 
 class FeatureExtractionException(Exception):
@@ -26,20 +17,6 @@ class FeatureExtractionException(Exception):
     """
     def __init__(self, msg):
         super(FeatureExtractionException, self).__init__(msg)
-
-
-# The comments on these named tuples can be docstrings in Python3,
-# or we can wrap the class, but eh...
-
-# A document and relevant contextual information
-DocumentPlus = namedtuple('DocumentPlus',
-                          ['key',
-                           'edus',
-                           'rsttree',
-                           'deptree',
-                           'ptb_trees',  # only those that overlap
-                           'ptb_tokens',  # only those that overlap
-                           'surrounders'])
 
 
 # ---------------------------------------------------------------------
@@ -120,37 +97,6 @@ def on_last_bigram(wrapped):
         "[a] -> string"
         return " ".join(map(wrapped, things[-2:])) if things else None
     return inner
-
-
-# ---------------------------------------------------------------------
-# single EDU features: meta features
-# ---------------------------------------------------------------------
-
-@edu_feature
-def feat_start(edu):
-    "text span start"
-    return edu.text_span().char_start
-
-
-@edu_feature
-def feat_end(edu):
-    "text span end"
-    return edu.text_span().char_end
-
-
-@edu_feature
-def feat_id(edu):
-    "some sort of unique identifier for the EDU"
-    return edu.identifier()
-
-
-# ---------------------------------------------------------------------
-# pair of EDUs meta features
-# ---------------------------------------------------------------------
-
-def feat_grouping(current, edu1, edu2):
-    "which file in the corpus this pair appears in"
-    return os.path.basename(id_to_path(current.key))
 
 
 # ---------------------------------------------------------------------
@@ -301,35 +247,13 @@ class BasePairKeys(MergedKeyGroup):
             group.fill(current, edu1, edu2, vec)
 
 
-# ---------------------------------------------------------------------
-# extraction generators
-# ---------------------------------------------------------------------
-
-def get_sentence(current, edu):
-    "get sentence surrounding this EDU"
-    # TODO do we need bounds-checking or lookup failure handling?
-    return current.surrounders[edu][1]
-
-
-def get_paragraph(current, edu):
-    "get paragraph surrounding this EDU"
-    # TODO do we need bounds-checking or lookup failure handling?
-    return current.surrounders[edu][0]
-
-
 # tree utils
-# TODO move to a more appropriate place
-def simplify_deptree(dtree):
-    """
-    Boil a dependency tree down into a dictionary from (edu, edu) to rel
-    """
-    relations = {(src, tgt): rel
-                 for src, tgt, rel in dtree.get_dependencies()}
-    return relations
-
-
 def lowest_common_parent(treepositions):
-    """Find tree position of the lowest common parent of a list of nodes."""
+    """Find tree position of the lowest common parent of a list of nodes.
+
+    treepositions is a list of tree positions
+    see nltk.tree.Tree.treepositions()
+    """
     if not treepositions:
         return None
 
@@ -348,149 +272,136 @@ def lowest_common_parent(treepositions):
 # end of tree utils
 
 
-def containing(span):
+def relative_indices(group_indices, reverse=False):
+    """Generate a list of relative indices inside each group.
+
+    Each None value triggers a new group.
     """
-    span -> anno -> bool
+    # TODO rewrite using np.ediff1d, np.where and the like
 
-    if this annotation encloses the given span
-    """
-    return lambda x: x.text_span().encloses(span)
+    groupby = it.groupby
 
+    if reverse:
+        group_indices = list(group_indices)
+        group_indices.reverse()
 
-def _filter0(pred, iterable):
-    """
-    First item that satisifies a predicate in a given
-    iterable, otherwise None
-    """
-    matches = ifilter(pred, iterable)
-    try:
-        return matches.next()
-    except StopIteration:
-        return None
+    result = []
+    for group_idx, dup_values in groupby(group_indices):
+        if group_idx is None:
+            rel_indices = (0 for dup_value in dup_values)
+        else:
+            rel_indices = (rel_idx for rel_idx, dv in enumerate(dup_values))
+        result.extend(rel_indices)
 
+    if reverse:
+        result.reverse()
 
-def _surrounding_text(edu):
-    """
-    Determine which paragraph and sentence (if any) surrounds
-    this EDU. Try to accomodate the occasional off-by-a-smidgen
-    error by folks marking these EDU boundaries, eg. original
-    text:
-
-    Para1: "Magazines are not providing us in-depth information on
-    circulation," said Edgar Bronfman Jr., .. "How do readers feel
-    about the magazine?...
-    Research doesn't tell us whether people actually do read the
-    magazines they subscribe to."
-
-    Para2: Reuben Mark, chief executive of Colgate-Palmolive, said...
-
-    Marked up EDU is wide to the left by three characters:
-    "
-
-    Reuben Mark, chief executive of Colgate-Palmolive, said...
-    """
-    if edu.is_left_padding():
-        sent = Sentence.left_padding()
-        para = Paragraph.left_padding([sent])
-        return para, sent
-    # normal case
-    espan = edu.text_span()
-    para = _filter0(containing(espan), edu.context.paragraphs)
-    # sloppy EDUs happen; try shaving off some characters
-    # if we can't find a paragraph
-    if para is None:
-        espan = copy.copy(espan)
-        espan.char_start += 1
-        espan.char_end -= 1
-        etext = edu.context.text(espan)
-        # kill left whitespace
-        espan.char_start += len(etext) - len(etext.lstrip())
-        etext = etext.lstrip()
-        # kill right whitespace
-        espan.char_end -= len(etext) - len(etext.rstrip())
-        etext = etext.rstrip()
-        # try again
-        para = _filter0(containing(espan), edu.context.paragraphs)
-
-    sent = _filter0(containing(espan), para.sentences) if para else None
-    return para, sent
+    return result
 
 
-def _ptb_stuff(doc_ptb_trees, edu):
-    """
-    The PTB trees and tokens which are relevant to any given edu
-    """
-    if doc_ptb_trees is None:
-        return None, None
-    if edu.is_left_padding():
-        start_token = Token.left_padding()
-        ptb_tokens = [start_token]
-        ptb_trees = []
-    else:
-        ptb_trees = [t for t in doc_ptb_trees if t.overlaps(edu)]
-        all_tokens = itertools.chain.from_iterable(t.leaves()
-                                                   for t in ptb_trees)
-        ptb_tokens = [tok for tok in all_tokens if tok.overlaps(edu)]
-    return ptb_trees, ptb_tokens
+class DocumentPlusPreprocessor(object):
+    """Preprocessor for feature extraction on a DocumentPlus"""
 
+    def __init__(self, token_filter=None):
+        """
+        token_filter is a function that returns True if a token should be
+        kept; if None is provided, all tokens are kept
+        """
+        if token_filter is None:
+            token_filter = lambda token: True
+        self.token_filter = token_filter
 
-def preprocess(rst_corpus, k, ptb_corpus):
-    """
-    Pre-process and bundle up a representation of the current document
-    """
-    rtree = SimpleRSTTree.from_rst_tree(rst_corpus[k])
-    # convert to deptree
-    dtree = RstDepTree.from_simple_rst_tree(rtree)
-    edus = dtree.edus
+    def preprocess(self, doc):
+        """Preprocess a document and output basic features for each EDU.
 
-    # align with document structure
-    surrounders = {edu: _surrounding_text(edu) for edu in edus}
-    # align with syntactic structure
-    doc_ptb_trees = r_ptb.parse_trees(rst_corpus, k, ptb_corpus)
-    ptb_trees = {}
-    ptb_tokens = {}
-    for edu in edus:
-        ptb_trees[edu], ptb_tokens[edu] = _ptb_stuff(doc_ptb_trees, edu)
+        Return a dict(EDU, (dict(basic_feat_name, basic_feat_val)))
+        """
+        token_filter = self.token_filter
 
-    return DocumentPlus(key=k,
-                        edus=edus,
-                        rsttree=rtree,
-                        deptree=dtree,
-                        ptb_trees=ptb_trees,
-                        ptb_tokens=ptb_tokens,
-                        surrounders=surrounders)
+        edus = doc.edus
+        edu2sent = doc.edu2sent
+        edu2para = doc.edu2para
+        edu2raw_sent = doc.edu2raw_sent
+        raw_words = doc.raw_words  # TEMPORARY
+        ptb_tokens = doc.ptb_tokens
+        ptb_trees = doc.ptb_trees
+        # pre-compute relative indices (in sent, para) in one iteration
+        idxes_in_sent = relative_indices(edu2sent)
+        rev_idxes_in_sent = relative_indices(edu2sent, reverse=True)
+        idxes_in_para = relative_indices(edu2para)
+        rev_idxes_in_para = relative_indices(edu2para, reverse=True)
 
+        result = dict()
 
-def extract_pair_features(feature_set, rst_corpus, ptb_corpus, live=False):
-    """
-    Return relations between pairs of EDUs as a dictionary
-    """
+        # special case: left padding EDU
+        edu = edus[0]
+        res = dict()
+        res['edu'] = edu
+        # raw words (temporary)
+        res['raw_words'] = []
+        # tokens
+        res['tokens'] = []
+        res['tags'] = []
+        res['words'] = []
+        # sentence
+        res['edu_idx_in_sent'] = idxes_in_sent[0]
+        res['edu_rev_idx_in_sent'] = rev_idxes_in_sent[0]
+        res['sent_idx'] = 0
+        # para
+        res['edu_rev_idx_in_para'] = rev_idxes_in_para[0]
+        # aka paragraphID
+        res['para_idx'] = 0
+        # raw sent
+        res['raw_sent_idx'] = edu2raw_sent[0]
+        result[edu] = res
 
-    for k in rst_corpus:
-        current = preprocess(rst_corpus, k, ptb_corpus)
-        edus = current.edus
-        # reduced dependency graph as dictionary (edu to [edu])
-        relations = simplify_deptree(current.deptree) if not live else {}
+        # regular EDUs
+        for edu_idx, edu in enumerate(edus[1:], start=1):
+            res = dict()
+            res['edu'] = edu
 
-        # single edu features
-        sf_cache = {}
-        for edu in edus:
-            sf_cache[edu] = feature_set.SingleEduKeys()
-            sf_cache[edu].fill(current, edu)
+            # raw words (temporary)
+            res['raw_words'] = raw_words[edu]
 
-        # pairs
-        # the fake root cannot have any incoming edge
-        for epair in itertools.product(edus, edus[1:]):
-            edu1, edu2 = epair
-            if edu1 == edu2:
-                continue
-            vec = feature_set.PairKeys(sf_cache=sf_cache)
-            vec.fill(current, edu1, edu2)
+            # tokens
+            if ptb_tokens is not None:
+                tokens = ptb_tokens[edu]
+                if tokens is not None:
+                    tokens = [tt for tt in tokens if token_filter(tt)]
+                    res['tokens'] = tokens
+                    res['tags'] = [tok.tag for tok in tokens]
+                    res['words'] = [tok.word for tok in tokens]
 
-            if live:
-                yield vec
-            else:
-                vec_rel = ClassKeyGroup(vec)
-                vec_rel.set_class(relations[epair] if epair in relations
-                                  else 'UNRELATED')
-                yield vec_rel
+            # doc structure
+
+            # position of sentence containing EDU in doc
+            # aka sentence_id
+            res['sent_idx'] = edu2sent[edu_idx]
+
+            # position of EDU in sentence
+            # aka num_edus_from_sent_start aka offset
+            res['edu_idx_in_sent'] = idxes_in_sent[edu_idx]
+            # aka num_edus_to_sent_end aka revOffset
+            res['edu_rev_idx_in_sent'] = rev_idxes_in_sent[edu_idx]
+
+            # position of paragraph containing EDU in doc
+            # aka paragraphID
+            res['para_idx'] = edu2para[edu_idx]
+            # position of raw sentence
+            res['raw_sent_idx'] = edu2raw_sent[edu_idx]
+
+            # position of EDU in paragraph
+            # aka num_edus_to_para_end aka revSentenceID (?!)
+            # TODO: check for the 10th time if this is a bug in Li et al.'s
+            # parser
+            res['edu_rev_idx_in_para'] = rev_idxes_in_para[edu_idx]
+
+            # syntax
+            if ptb_trees is not None:
+                ptrees = ptb_trees[edu]
+                if ptrees is not None:
+                    res['ptrees'] = ptrees
+
+            result[edu] = res
+
+        return result

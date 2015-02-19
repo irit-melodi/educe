@@ -111,37 +111,37 @@ class RstDtParser(object):
 
     def decode(self, doc_key):
         """Decode a document from the RST-DT (gold)"""
-        grouping = os.path.basename(id_to_path(doc_key))
-        doc = DocumentPlus(doc_key, grouping)
-
+        # create a DocumentPlus
         # the RST tree is currently pivotal to get all the layers of info
         orig_rsttree = self.corpus[doc_key]
         # convert relation labels if needed
         if self.rel_conv is not None:
             orig_rsttree = self.rel_conv(orig_rsttree)
-        doc.orig_rsttree = orig_rsttree
-        # TODO get EDUs here
-        # doc.edus.append(orig_rsttree.leaves())
-
-        # get text and doc structure
+        # the RST tree is backed by an RSTContext that contains the document
+        # text and structure (paragraphs and badly segmented sents)
         rst_context = treenode(orig_rsttree).context
-        doc.rst_context = rst_context
-        # directly store paragraphs and (badly segmented) sentences
-        paragraphs = rst_context.paragraphs
-        sentences_iter = (para.sentences for para in paragraphs)
-        sentences = list(itertools.chain.from_iterable(sentences_iter))
-        doc.paragraphs.extend(paragraphs)
-        doc.raw_sentences.extend(sentences)
+        # grouping is the document name
+        grouping = os.path.basename(id_to_path(doc_key))
+        # finally...
+        doc = DocumentPlus(doc_key, grouping, rst_context)
+
+        # TODO get EDUs here
+        # edus = orig_rsttree.leaves()
+        # doc.edus.extend(edus)
+        # attach original RST tree
+        doc.orig_rsttree = orig_rsttree
 
         # convert to binary tree
         rsttree = SimpleRSTTree.from_rst_tree(orig_rsttree)
         doc.rsttree = rsttree
+
         # convert to dep tree
         deptree = RstDepTree.from_simple_rst_tree(rsttree)
         doc.deptree = deptree
+
         # get EDUs (bad)
-        # TODO: get EDUs from orig_rsttree.leaves(),
-        # let document_plus do the left padding
+        # TODO: get EDUs from orig_rsttree.leaves() and let
+        # document_plus do the left padding
         doc.edus = doc.deptree.edus
 
         return doc
