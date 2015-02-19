@@ -33,4 +33,5 @@ def config_argparser(parser):
 
 def main(args):
     "main for feature listing mode"
-    print(args.feature_set.PairKeys().help_text())
+    print('W: educe.rst_dt.learning.cmd.features is marked for deprecation')
+    # print(args.feature_set.PairKeys().help_text())

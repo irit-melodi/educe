@@ -10,17 +10,20 @@ Extract features to CSV files
 
 from __future__ import print_function
 import os
-import sys
+import itertools
 
 import educe.corpus
 import educe.glozz
 import educe.stac
 import educe.util
 
-from educe.rst_dt import ptb as r_ptb
-from educe.learning.orange_format import dump_orange_tab_file
+from educe.learning.svmlight_format import dump_svmlight_file
+from educe.learning.edu_input_format import dump_all
+from educe.learning.vocabulary_format import dump_vocabulary
 from ..args import add_usual_input_args
-from ..base import extract_pair_features
+from ..doc_vectorizer import DocumentCountVectorizer, DocumentLabelExtractor
+from educe.rst_dt.corpus import RstDtParser
+from educe.rst_dt.ptb import PtbParser
 
 
 NAME = 'extract'
@@ -69,30 +72,79 @@ def main(args):
     feature_set = args.feature_set
     live = args.parsing
 
-    # load corpora
-    is_interesting = educe.util.mk_is_interesting(args)
-    reader = educe.rst_dt.Reader(args.corpus)
-    anno_files = reader.filter(reader.files(), is_interesting)
-    corpus = reader.slurp(anno_files, verbose=True)
-    ptb = r_ptb.reader(args.ptb)
+    # RST data
+    rst_reader = RstDtParser(args.corpus, args, coarse_rels=True)
+    rst_corpus = rst_reader.corpus
+    # TODO: change rst_corpus, e.g. to return an OrderedDict,
+    # so that the order in which docs are enumerated is guaranteed
+    # to be always the same
 
-    # extract instances
-    X = extract_pair_features(feature_set, corpus, ptb, live=live)
+    # PTB data
+    ptb_parser = PtbParser(args.ptb)
 
-    # dump instances to file
+    # align EDUs with sentences, tokens and trees from PTB
+    def open_plus(doc):
+        """Open and fully load a document
+
+        doc is an educe.corpus.FileId
+        """
+        # create a DocumentPlus
+        doc = rst_reader.decode(doc)
+        # populate it with layers of info
+        # tokens
+        doc = ptb_parser.tokenize(doc)
+        # syn parses
+        doc = ptb_parser.parse(doc)
+        # disc segments
+        doc = rst_reader.segment(doc)
+        # disc parse
+        doc = rst_reader.parse(doc)
+        # pre-compute the relevant info for each EDU
+        doc = doc.align_with_doc_structure()
+        # logical order is align with tokens, then align with trees
+        # but aligning with trees first for the PTB enables
+        # to get proper sentence segmentation
+        doc = doc.align_with_trees()
+        doc = doc.align_with_tokens()
+
+        return doc
+
+    # generate DocumentPluses
+    docs = [open_plus(doc) for doc in rst_corpus]  # TODO sorted(rst_corpus) ?
+    # instance generator
+    instance_generator = lambda doc: doc.all_edu_pairs()
+
+    # extract vectorized samples
+    vzer = DocumentCountVectorizer(instance_generator,
+                                   feature_set,
+                                   min_df=5)
+    X_gen = vzer.fit_transform(docs)
+
+    # extract class label for each instance
+    if live:
+        y_gen = itertools.repeat(0)
+    else:
+        labtor = DocumentLabelExtractor(instance_generator)
+        # y_gen = labtor.fit_transform(rst_corpus)
+        # fit then transform enables to get classes_ for the dump
+        labtor.fit(docs)
+        y_gen = labtor.transform(docs)
+
+    # dump instances to files
     if not os.path.exists(args.output):
         os.makedirs(args.output)
+    # data file
+    of_ext = '.sparse'
     if live:
-        out_file = os.path.join(args.output, 'extracted-features.tab')
+        out_file = os.path.join(args.output, 'extracted-features' + of_ext)
     else:
         of_bn = os.path.join(args.output, os.path.basename(args.corpus))
-        of_ext = '.tab'
         out_file = '{}.relations{}'.format(of_bn, of_ext)
-    try:
-        dump_orange_tab_file(X, [], out_file)
-    except ValueError as e:
-        # FIXME: I have a nagging feeling that we should properly
-        # support this by just printing a CSV header and nothing
-        # else, but I'm trying to minimise code paths and for now
-        # failing in this corner case feels like a lesser evil :-/
-        sys.exit(str(e))
+
+    # dump
+    dump_all(X_gen, y_gen, out_file, labtor.labelset_, docs,
+             instance_generator)
+
+    # dump vocabulary
+    vocab_file = out_file + '.vocab'
+    dump_vocabulary(vzer.vocabulary_, vocab_file)
