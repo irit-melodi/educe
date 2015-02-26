@@ -223,6 +223,7 @@ class DocumentPlus(object):
 
         return self
 
+    # START HERE: move functionality to ptb.py
     def align_with_tokens(self):
         """Compute for each EDU the overlapping tokens"""
         tokens = self.tkd_tokens
@@ -326,6 +327,8 @@ class DocumentPlus(object):
         self.ptb_trees = ptb_trees  # mark for deprecation
 
         return self
+    # END HERE: move to ptb.py
+
 
     def all_edu_pairs(self):
         """Generate all EDU pairs of a document"""

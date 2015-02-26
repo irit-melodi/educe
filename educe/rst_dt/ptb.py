@@ -2,7 +2,7 @@
 # License: CeCILL-B (French BSD3-like)
 
 """
-Alignment with the Penn Treebank
+Alignment between the RST-WSJ-corpus and the Penn Treebank
 """
 
 from os import path as fp
@@ -20,12 +20,24 @@ from educe.annotation import Span
 from educe.external.parser import\
     ConstituencyTree
 from educe.external.postag import\
-    generic_token_spans, Token
+    generic_token_spans, Token, EducePosTagException
 from educe.internalutil import izip
 from educe.ptb.annotation import\
     PTB_TO_TEXT, is_nonword_token, TweakedToken,\
     transform_tree, strip_subcategory, prune_tree, is_non_empty,\
     is_empty_category
+
+
+# map RST-WSJ files to PTB files
+
+# fileN are exceptions to the regular mapping scheme
+FILE_TO_PTB = {
+    'file1': 'wsj_0764',
+    'file2': 'wsj_0430',
+    'file3': 'wsj_0766',
+    'file4': 'wsj_0778',
+    'file5': 'wsj_2172'
+}
 
 
 def _guess_ptb_name(k):
@@ -37,6 +49,12 @@ def _guess_ptb_name(k):
     (note that returning something is not a guarantee either)
     """
     bname = fp.splitext(fp.basename(k.doc))[0]
+
+    # use manual RST-WSJ to PTB file mapping if necessary
+    if bname in FILE_TO_PTB:
+        bname = FILE_TO_PTB[bname]
+
+    # standard mapping scheme
     nparts = bname.split("_")
     if len(nparts) > 1:
         section = nparts[1][:2]  # wsj_2431 => 24
@@ -45,11 +63,60 @@ def _guess_ptb_name(k):
         return None
 
 
+# docs for which the PTB misses text at the end of the doc but the
+# RST-WSJ does not, such as reference to other articles, place of
+# writing (in signature at the end of readers' mail)...
+# ex: (See: "XXXX Plans Rule on YYY" -- WSJ Oct. 27, 1989) in erratas
+# NB: this means we don't have gold PTB trees for the extra text
+PTB_MISSING_TEXT = [
+    'wsj_0603',
+    'wsj_0605',
+    'wsj_0608',
+    'wsj_0609',
+    'wsj_0611',
+    'wsj_0614',
+    'wsj_0694',
+    'wsj_0696',
+    'wsj_1107',
+    'wsj_1377',
+    'wsj_1382',
+    'wsj_1970',
+    'wsj_2352'
+]
+
+# docs for which the RST-WSJ-corpus file misses text at the end of the doc
+RST_MISSING_TEXT = [
+    'file1',
+]
+
+
+# docs for which the PTB contains erroneous sentence segmentation
+PTB_WRONG_SENTENCE_SEG = [
+    'wsj_0678',
+    'wsj_1105',
+    'wsj_1125',
+    'wsj_1128',
+    'wsj_1158',
+    'wsj_1323',
+    'wsj_2303',
+]
+
+# docs for which the RST-WSJ contains erroneous EDU segmentation that
+# conflicts with the (here) correct sentence segmentation from the PTB
+RST_WRONG_EDU_SEG = [
+    'wsj_1123',
+    'wsj_1373',
+    'wsj_2317',
+    'wsj_2343',
+]
+
+
 # PTB has a (virtual) fullstop after sentence-final abbreviation, eg.
 # he went to the U.S.
 _PTB_EXTRA_FULLSTOPS =\
     [('06/wsj_0617.mrg', 966),
      ('06/wsj_0695.mrg', 64),
+     ('07/wsj_0764.mrg', 882),
      ('11/wsj_1101.mrg', 736),
      ('11/wsj_1125.mrg', 222),
      ('13/wsj_1318.mrg', 212),
@@ -150,13 +217,32 @@ class PtbParser(object):
         rst_text = doc.orig_rsttree.text()
         tagged_tokens = self.reader.tagged_words(ptb_name)
         # tweak tokens THEN filter empty nodes
+
         tweaked1, tweaked2 =\
             itertools.tee(_tweak_token(ptb_name)(i, tok) for i, tok in
                           enumerate(tagged_tokens)
                           if not is_empty_category(tok[1]))
         spans = generic_token_spans(rst_text, tweaked1,
                                     txtfn=lambda x: x.tweaked_word)
-        result = [_mk_token(t, s) for t, s in izip(tweaked2, spans)]
+        # this "try..catch" is a dirty, fragile quick fix
+        # TODO handle the problem more cleanly upstream
+        try:
+            result = [_mk_token(t, s) for t, s in izip(tweaked2, spans)]
+        except EducePosTagException as e:
+            e_msg = str(e.args[0])
+            print('e_msg: ', e_msg)
+            print('ptb_name: ', ptb_name)
+            # it gets messier
+            if (e_msg.startswith('Too many tokens') and
+                doc.grouping in RST_MISSING_TEXT):
+                # RESUME HERE: currently broken
+                # result is not assigned if the exception is raised
+                # TODO modify external.postag.generic_token_spans
+                # to enable flexibility (e.g. not all tokens get matched)
+                print('current result: ', result)
+                raise
+            else:
+                raise
 
         # store in doc
         doc.tkd_tokens.extend(result)
@@ -180,7 +266,10 @@ class PtbParser(object):
             return doc
 
         # get tokens from tokenized document
-        tokens_iter = iter(doc.tkd_tokens)
+        # FIXME alignment/reconstruction should never have to deal
+        # with the left padding token in the first place
+        doc_tokens = doc.tkd_tokens[1:]  # skip left padding token
+        tokens_iter = iter(doc_tokens)
 
         results = []
         for tree in self.reader.parsed_sents(ptb_name):

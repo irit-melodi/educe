@@ -201,7 +201,8 @@ def extract_single_syntax(edu_info):
     """syntactic features for the EDU"""
     syn_labels = get_syntactic_labels(edu_info)
     if syn_labels is not None:
-        yield ('SYN', syn_labels)
+        for syn_label in syn_labels:
+            yield ('SYN', syn_label)
 
 
 # TODO: features on semantic similarity
@@ -227,7 +228,7 @@ def build_edu_feature_extractor():
     feats.extend(SINGLE_SENTENCE)
     funcs.append(extract_single_sentence)
     # syntax (disabled)
-    # feats.extend(_single_syntax)
+    # feats.extend(SINGLE_SYNTAX)
     # funcs.append(extract_single_syntax)
 
     def _extract_all(edu_info):

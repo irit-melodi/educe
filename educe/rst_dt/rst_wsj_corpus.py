@@ -49,10 +49,6 @@ FIL_SEP_PARA = '\n\n'  # probably useless
 FIL_SEP_SENT = '\n  '
 
 
-# TODO complete, move to more relevant place (?) and use this info
-FILE_TO_PTB = {'file1': 'wsj_0764'}
-
-
 def _load_rst_wsj_corpus_text_file_file(f):
     """Actually do load"""
     text = f.read()
