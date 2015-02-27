@@ -2,8 +2,10 @@
 # License: CeCILL-B (French BSD3-like)
 
 """
-Alignment with the Penn Treebank
+Alignment the RST-WSJ-corpus with the Penn Treebank
 """
+
+from __future__ import print_function
 
 from os import path as fp
 import itertools
@@ -28,6 +30,21 @@ from educe.ptb.annotation import\
     is_empty_category
 
 
+# map RST-WSJ files to PTB files
+
+# fileN are exceptions to the regular mapping scheme
+# they also (except for file4 ?) have a few mismatches between the RST-WSJ
+# and PTB versions: missing tokens, wrong tokens...
+# see _PTB_SUBSTS_OTHER
+FILE_TO_PTB = {
+    'file1': 'wsj_0764',
+    'file2': 'wsj_0430',
+    'file3': 'wsj_0766',
+    'file4': 'wsj_0778',
+    'file5': 'wsj_2172'
+}
+
+
 def _guess_ptb_name(k):
     """
     Given an RST DT corpus key, guess the equivalent filename from the
@@ -37,6 +54,12 @@ def _guess_ptb_name(k):
     (note that returning something is not a guarantee either)
     """
     bname = fp.splitext(fp.basename(k.doc))[0]
+
+    # use manual RST-WSJ to PTB file mapping if necessary
+    if bname in FILE_TO_PTB:
+        bname = FILE_TO_PTB[bname]
+
+    # standard mapping scheme
     nparts = bname.split("_")
     if len(nparts) > 1:
         section = nparts[1][:2]  # wsj_2431 => 24
@@ -45,11 +68,60 @@ def _guess_ptb_name(k):
         return None
 
 
+# docs for which the PTB misses text at the end of the doc but the
+# RST-WSJ does not, such as reference to other articles, place of
+# writing (in signature at the end of readers' mail)...
+# ex: (See: "XXXX Plans Rule on YYY" -- WSJ Oct. 27, 1989) in erratas
+# NB: this means we don't have gold PTB trees for the extra text
+PTB_MISSING_TEXT = [
+    'wsj_0603',
+    'wsj_0605',
+    'wsj_0608',
+    'wsj_0609',
+    'wsj_0611',
+    'wsj_0614',
+    'wsj_0694',
+    'wsj_0696',
+    'wsj_1107',
+    'wsj_1377',
+    'wsj_1382',
+    'wsj_1970',
+    'wsj_2352'
+]
+
+# docs for which the RST-WSJ-corpus file misses text at the end of the doc
+RST_MISSING_TEXT = [
+    # 'file1',  # handled in _PTB_SUBSTS_OTHER under wsj_0764
+]
+
+
+# docs for which the PTB contains erroneous sentence segmentation
+PTB_WRONG_SENTENCE_SEG = [
+    'wsj_0678',
+    'wsj_1105',
+    'wsj_1125',
+    'wsj_1128',
+    'wsj_1158',
+    'wsj_1323',
+    'wsj_2303',
+]
+
+# docs for which the RST-WSJ contains erroneous EDU segmentation that
+# conflicts with the (here) correct sentence segmentation from the PTB
+RST_WRONG_EDU_SEG = [
+    'wsj_1123',
+    'wsj_1373',
+    'wsj_2317',
+    'wsj_2343',
+]
+
+
 # PTB has a (virtual) fullstop after sentence-final abbreviation, eg.
 # he went to the U.S.
 _PTB_EXTRA_FULLSTOPS =\
     [('06/wsj_0617.mrg', 966),
      ('06/wsj_0695.mrg', 64),
+     ('07/wsj_0764.mrg', 882),  # aka file1
      ('11/wsj_1101.mrg', 736),
      ('11/wsj_1125.mrg', 222),
      ('13/wsj_1318.mrg', 212),
@@ -65,15 +137,39 @@ _PTB_EXTRA_FULLSTOPS =\
 
 # these specific fileid, token number combinations are skipped or rewritten
 # (prefix, subst)
-_PTB_SUBSTS_OTHER =\
-    {('06/wsj_0675.mrg', 546): ("-", None),  # --
-     ('11/wsj_1139.mrg', 582): (">", None),  # insertion
-     ('11/wsj_1161.mrg', 845): ("<", None),  # insertion
-     ('11/wsj_1171.mrg', 207): (None, "'"),   # backtick
-     ('13/wsj_1303.mrg', 388): (None, ""),  # extra full stop
-     ('13/wsj_1331.mrg', 930): (None, "`S"),
-     ('13/wsj_1367.mrg', 364): ("--", None),  # insertion
-     ('13/wsj_1377.mrg', 4): (None, "")}
+_PTB_SUBSTS_OTHER = {
+    # file1
+    ('07/wsj_0764.mrg', 981): (None, ""),  # token in PTB missing from RST-WSJ
+    ('07/wsj_0764.mrg', 982): (None, ""),  # token in PTB missing from RST-WSJ
+    ('07/wsj_0764.mrg', 983): (None, ""),  # token in PTB missing from RST-WSJ
+    # file2
+    ('04/wsj_0430.mrg', 413): (None, ","),  # '.' in PTB, ',' in RST-WSJ
+    # file3
+    ('07/wsj_0766.mrg', 111): (None, "&amp;"),  # & in PTB, &amp; in RST-WSJ
+    ('07/wsj_0766.mrg', 1836): (None, ""),  # token in PTB missing from RST-WSJ
+    ('07/wsj_0766.mrg', 1839): (None, ""),  # token in PTB missing from RST-WSJ
+    # file5
+    ('21/wsj_2172.mrg', 113): (None, "``"),  # `` in PTB, `` too in RST-WSJ
+    # where it is usually " in RST-WSJ
+    ('21/wsj_2172.mrg', 177): (None, "among analysts"),  # 2nd token in
+    # RST-WSJ missing from PTB
+    ('21/wsj_2172.mrg', 359): (None, "17"),  # 5 in PTB, 17 in RST-WSJ
+    ('21/wsj_2172.mrg', 439): (None, "&amp;"),  # & in PTB, &amp; in RST-WSJ
+    ('21/wsj_2172.mrg', 742): (None, "3.00"),  # 2 in PTB, 3.00 in RST-WSJ
+    ('21/wsj_2172.mrg', 759): (None, "17"),  # 5 in PTB, 17 in RST-WSJ
+    ('21/wsj_2172.mrg', 1001): (None, "&amp;"),  # & in PTB, &amp; in RST-WSJ
+    ('21/wsj_2172.mrg', 1250): (None, ""),  # token in PTB missing from RST-WSJ
+    ('21/wsj_2172.mrg', 1280): (None, ""),  # token in PTB missing from RST-WSJ
+    # regular wsj_ files
+    ('06/wsj_0675.mrg', 546): ("-", None),  # --
+    ('11/wsj_1139.mrg', 582): (">", None),  # insertion
+    ('11/wsj_1161.mrg', 845): ("<", None),  # insertion
+    ('11/wsj_1171.mrg', 207): (None, "'"),   # backtick
+    ('13/wsj_1303.mrg', 388): (None, ""),  # extra full stop
+    ('13/wsj_1331.mrg', 930): (None, "`S"),
+    ('13/wsj_1367.mrg', 364): ("--", None),  # insertion
+    ('13/wsj_1377.mrg', 4): (None, "")
+}
 
 _PTB_SUBSTS = dict([(_k, (None, "")) for _k in _PTB_EXTRA_FULLSTOPS] +
                    list(_PTB_SUBSTS_OTHER.items()))
@@ -180,7 +276,10 @@ class PtbParser(object):
             return doc
 
         # get tokens from tokenized document
-        tokens_iter = iter(doc.tkd_tokens)
+        # FIXME alignment/reconstruction should never have to deal
+        # with the left padding token in the first place
+        doc_tokens = doc.tkd_tokens[1:]  # skip left padding token
+        tokens_iter = iter(doc_tokens)
 
         results = []
         for tree in self.reader.parsed_sents(ptb_name):
