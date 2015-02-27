@@ -2,7 +2,7 @@
 # License: CeCILL-B (French BSD3-like)
 
 """
-Alignment between the RST-WSJ-corpus and the Penn Treebank
+Alignment the RST-WSJ-corpus with the Penn Treebank
 """
 
 from __future__ import print_function
