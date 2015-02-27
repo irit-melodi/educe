@@ -5,6 +5,8 @@
 Alignment between the RST-WSJ-corpus and the Penn Treebank
 """
 
+from __future__ import print_function
+
 from os import path as fp
 import itertools
 import re
@@ -31,6 +33,9 @@ from educe.ptb.annotation import\
 # map RST-WSJ files to PTB files
 
 # fileN are exceptions to the regular mapping scheme
+# they also (except for file4 ?) have a few mismatches between the RST-WSJ
+# and PTB versions: missing tokens, wrong tokens...
+# see _PTB_SUBSTS_OTHER
 FILE_TO_PTB = {
     'file1': 'wsj_0764',
     'file2': 'wsj_0430',
@@ -86,7 +91,7 @@ PTB_MISSING_TEXT = [
 
 # docs for which the RST-WSJ-corpus file misses text at the end of the doc
 RST_MISSING_TEXT = [
-    'file1',
+#    'file1',  # handled in _PTB_SUBSTS_OTHER under wsj_0764
 ]
 
 
@@ -132,15 +137,39 @@ _PTB_EXTRA_FULLSTOPS =\
 
 # these specific fileid, token number combinations are skipped or rewritten
 # (prefix, subst)
-_PTB_SUBSTS_OTHER =\
-    {('06/wsj_0675.mrg', 546): ("-", None),  # --
-     ('11/wsj_1139.mrg', 582): (">", None),  # insertion
-     ('11/wsj_1161.mrg', 845): ("<", None),  # insertion
-     ('11/wsj_1171.mrg', 207): (None, "'"),   # backtick
-     ('13/wsj_1303.mrg', 388): (None, ""),  # extra full stop
-     ('13/wsj_1331.mrg', 930): (None, "`S"),
-     ('13/wsj_1367.mrg', 364): ("--", None),  # insertion
-     ('13/wsj_1377.mrg', 4): (None, "")}
+_PTB_SUBSTS_OTHER = {
+    # file1
+    ('07/wsj_0764.mrg', 981): (None, ""),  # token in PTB missing from RST-WSJ
+    ('07/wsj_0764.mrg', 982): (None, ""),  # token in PTB missing from RST-WSJ
+    ('07/wsj_0764.mrg', 983): (None, ""),  # token in PTB missing from RST-WSJ
+    # file2
+    ('04/wsj_0430.mrg', 413): (None, ","),  # '.' in PTB, ',' in RST-WSJ
+    # file3
+    ('07/wsj_0766.mrg', 111): (None, "&amp;"),  # & in PTB, &amp; in RST-WSJ
+    ('07/wsj_0766.mrg', 1836): (None, ""),  # token in PTB missing from RST-WSJ
+    ('07/wsj_0766.mrg', 1839): (None, ""),  # token in PTB missing from RST-WSJ
+    # file5
+    ('21/wsj_2172.mrg', 113): (None, "``"),  # `` in PTB, `` too in RST-WSJ
+    # where it is usually " in RST-WSJ
+    ('21/wsj_2172.mrg', 177): (None, "among analysts"),  # 2nd token in
+    # RST-WSJ missing from PTB
+    ('21/wsj_2172.mrg', 359): (None, "17"),  # 5 in PTB, 17 in RST-WSJ
+    ('21/wsj_2172.mrg', 439): (None, "&amp;"),  # & in PTB, &amp; in RST-WSJ
+    ('21/wsj_2172.mrg', 742): (None, "3.00"),  # 2 in PTB, 3.00 in RST-WSJ
+    ('21/wsj_2172.mrg', 759): (None, "17"),  # 5 in PTB, 17 in RST-WSJ
+    ('21/wsj_2172.mrg', 1001): (None, "&amp;"),  # & in PTB, &amp; in RST-WSJ
+    ('21/wsj_2172.mrg', 1250): (None, ""),  # token in PTB missing from RST-WSJ
+    ('21/wsj_2172.mrg', 1280): (None, ""),  # token in PTB missing from RST-WSJ
+    # regular wsj_ files
+    ('06/wsj_0675.mrg', 546): ("-", None),  # --
+    ('11/wsj_1139.mrg', 582): (">", None),  # insertion
+    ('11/wsj_1161.mrg', 845): ("<", None),  # insertion
+    ('11/wsj_1171.mrg', 207): (None, "'"),   # backtick
+    ('13/wsj_1303.mrg', 388): (None, ""),  # extra full stop
+    ('13/wsj_1331.mrg', 930): (None, "`S"),
+    ('13/wsj_1367.mrg', 364): ("--", None),  # insertion
+    ('13/wsj_1377.mrg', 4): (None, "")
+}
 
 _PTB_SUBSTS = dict([(_k, (None, "")) for _k in _PTB_EXTRA_FULLSTOPS] +
                    list(_PTB_SUBSTS_OTHER.items()))
@@ -224,25 +253,7 @@ class PtbParser(object):
                           if not is_empty_category(tok[1]))
         spans = generic_token_spans(rst_text, tweaked1,
                                     txtfn=lambda x: x.tweaked_word)
-        # this "try..catch" is a dirty, fragile quick fix
-        # TODO handle the problem more cleanly upstream
-        try:
-            result = [_mk_token(t, s) for t, s in izip(tweaked2, spans)]
-        except EducePosTagException as e:
-            e_msg = str(e.args[0])
-            print('e_msg: ', e_msg)
-            print('ptb_name: ', ptb_name)
-            # it gets messier
-            if (e_msg.startswith('Too many tokens') and
-                doc.grouping in RST_MISSING_TEXT):
-                # RESUME HERE: currently broken
-                # result is not assigned if the exception is raised
-                # TODO modify external.postag.generic_token_spans
-                # to enable flexibility (e.g. not all tokens get matched)
-                print('current result: ', result)
-                raise
-            else:
-                raise
+        result = [_mk_token(t, s) for t, s in izip(tweaked2, spans)]
 
         # store in doc
         doc.tkd_tokens.extend(result)
