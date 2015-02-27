@@ -22,7 +22,7 @@ from educe.annotation import Span
 from educe.external.parser import\
     ConstituencyTree
 from educe.external.postag import\
-    generic_token_spans, Token, EducePosTagException
+    generic_token_spans, Token
 from educe.internalutil import izip
 from educe.ptb.annotation import\
     PTB_TO_TEXT, is_nonword_token, TweakedToken,\
@@ -91,7 +91,7 @@ PTB_MISSING_TEXT = [
 
 # docs for which the RST-WSJ-corpus file misses text at the end of the doc
 RST_MISSING_TEXT = [
-#    'file1',  # handled in _PTB_SUBSTS_OTHER under wsj_0764
+    # 'file1',  # handled in _PTB_SUBSTS_OTHER under wsj_0764
 ]
 
 
