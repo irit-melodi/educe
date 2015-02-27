@@ -121,7 +121,7 @@ RST_WRONG_EDU_SEG = [
 _PTB_EXTRA_FULLSTOPS =\
     [('06/wsj_0617.mrg', 966),
      ('06/wsj_0695.mrg', 64),
-     ('07/wsj_0764.mrg', 882),
+     ('07/wsj_0764.mrg', 882),  # aka file1
      ('11/wsj_1101.mrg', 736),
      ('11/wsj_1125.mrg', 222),
      ('13/wsj_1318.mrg', 212),
@@ -246,7 +246,6 @@ class PtbParser(object):
         rst_text = doc.orig_rsttree.text()
         tagged_tokens = self.reader.tagged_words(ptb_name)
         # tweak tokens THEN filter empty nodes
-
         tweaked1, tweaked2 =\
             itertools.tee(_tweak_token(ptb_name)(i, tok) for i, tok in
                           enumerate(tagged_tokens)
