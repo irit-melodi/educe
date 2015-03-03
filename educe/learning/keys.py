@@ -295,6 +295,8 @@ class KeyGroup(dict):
                 continue
 
             if ks is Substance.DISCRETE:
+                if fv is False:
+                    continue
                 feature = '{}{}={}'.format(fn, suffix, fv)
                 yield (feature, 1)
             elif ks is Substance.CONTINUOUS:
