@@ -48,7 +48,20 @@ def _dump_edu_input_file(docs, f):
 
 
 def dump_edu_input_file(docs, f):
-    """Dump a dataset in the EDU input format."""
+    """Dump a dataset in the EDU input format.
+
+    Each document must have:
+
+    * edus: sequence of edu objects
+    * grouping: string (some sort of document id)
+    * edu2sent: int -> int or string or None (edu num to sentence num)
+
+    The EDUs must provide:
+
+    * identifier(): string
+    * text(): string
+
+    """
     with open(f, 'wb') as f:
         _dump_edu_input_file(docs, f)
 
@@ -75,6 +88,13 @@ def dump_all(X_gen, y_gen, f, class_mapping, docs, instance_generator):
     """Dump a whole dataset: features (in svmlight) and EDU pairs
 
     class_mapping is a mapping from label to int
+
+    :type X_gen: iterable of int arrays
+    :type y_gen: iterable of int
+    :param f: output features file path
+    :param class_mapping: dict(string, int)
+    :param instance_generator: function that returns an iterable
+                               of pairs given a document
     """
     # the labelset will be written in a comment at the beginning of the
     # svmlight file
