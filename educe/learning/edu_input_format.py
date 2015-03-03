@@ -4,9 +4,10 @@ See `https://github.com/kowey/attelo/blob/scikit/doc/input.rst`
 """
 
 from __future__ import absolute_import, print_function
-
 import csv
 import itertools
+
+import six
 
 from .svmlight_format import dump_svmlight_file
 
@@ -28,9 +29,12 @@ def _dump_edu_input_file(docs, f):
             edu_txt = edu.text().replace('\n', ' ')
             # subgroup: sentence identifier, backoff on EDU id
             sent_idx = edu2sent[i]
-            subgroup = ('{}_sent{}'.format(grouping, sent_idx)
-                        if sent_idx is not None
-                        else edu_gid)
+            if sent_idx is None:
+                subgroup = edu_gid
+            elif isinstance(sent_idx, six.string_types):
+                subgroup = sent_idx
+            else:
+                subgroup = '{}_sent{}'.format(grouping, sent_idx)
             edu_start = edu.span.char_start
             edu_end = edu.span.char_end
             writer.writerow([edu_gid,
