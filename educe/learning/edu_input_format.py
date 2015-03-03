@@ -1,16 +1,18 @@
 """This module implements a dumper for the EDU input format
 
-See `https://github.com/kowey/attelo/blob/scikit/doc/input.rst`
+See `https://github.com/kowey/attelo/blob/scikit/doc/input.rst`_
 """
 
 from __future__ import absolute_import, print_function
 import csv
-import itertools
 
 import six
 
 from .svmlight_format import dump_svmlight_file
 
+# pylint: disable=invalid-name
+# a lot of the names here are chosen deliberately to
+# go with scikit convention
 
 # EDUs
 def _dump_edu_input_file(docs, f):
