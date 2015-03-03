@@ -39,6 +39,14 @@ educe.stac.corpus module
     :undoc-members:
     :show-inheritance:
 
+educe.stac.document_plus module
+-------------------------------
+
+.. automodule:: educe.stac.document_plus
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 educe.stac.graph module
 -----------------------
 

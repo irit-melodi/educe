@@ -12,6 +12,14 @@ educe.stac.learning.addressee module
     :undoc-members:
     :show-inheritance:
 
+educe.stac.learning.doc_vectorizer module
+-----------------------------------------
+
+.. automodule:: educe.stac.learning.doc_vectorizer
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 educe.stac.learning.features module
 -----------------------------------
 
