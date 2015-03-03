@@ -1,4 +1,5 @@
 # pylint: disable=R0904, C0103
+# pylint: disable=too-few-public-methods
 """
 Feature extraction library functions for STAC corpora.
 The feature extraction script (rel-info) is a lightweight frontend
@@ -41,6 +42,7 @@ import educe.util
 from ..util.context import Context, enclosed, edus_in_span
 from ..annotation import turn_id
 from ..lexicon.wordclass import LexEntry, Lexicon
+from ..document_plus import (Dialogue, EDU)
 
 
 class CorpusConsistencyException(Exception):
@@ -286,23 +288,6 @@ def subject_lemmas(span, trees):
     return [tree.label().features["lemma"] for tree in subtrees]
 
 
-def attachments(relations, du1, du2):
-    """
-    Return any relations between the two discourse units
-    """
-    def connects(rel, id1, id2):
-        "is a rel between the annotations with the two ids"
-        return rel.span.t1 == id1 and rel.span.t2 == id2
-
-    def is_match(rel):
-        "is a rel between the two discourse units"
-        id1 = du1.local_id()
-        id2 = du2.local_id()
-        return connects(rel, id1, id2)
-
-    return list(filter(is_match, relations))
-
-
 def map_topdown(good, prunable, trees):
     """
     Do topdown search on all these trees, concatenate results.
@@ -332,6 +317,9 @@ def enclosed_trees(span, trees):
 
 # The comments on these named tuples can be docstrings in Python3,
 # or we can wrap the class, but eh...
+
+# feature extraction environment
+DocEnv = namedtuple("DocEnv", "inputs current sf_cache live")
 
 # Global resources and settings used to extract feature vectors
 FeatureInput = namedtuple('FeatureInput',
@@ -641,13 +629,6 @@ def speakers_first_turn_in_dialogue(context, _):
 # ---------------------------------------------------------------------
 # pair features
 # ---------------------------------------------------------------------
-
-
-def feat_dialogue(current, edu1, _):
-    "dialogue that contains both EDUs"
-    ctx1 = current.contexts[edu1]
-    dia_span = ctx1.dialogue.text_span()
-    return friendly_dialogue_id(current.key, dia_span)
 
 
 #pylint: disable=unused-argument
@@ -1002,19 +983,6 @@ class SingleEduSubgroup(KeyGroup):
             vec[key.name] = key.function(current, edu)
 
 
-class SingleEduSubgroup_Meta(SingleEduSubgroup):
-    """
-    Basic EDU-identification features
-    """
-    def __init__(self):
-        desc = self.__doc__.strip()
-        keys =\
-            [MagicKey.meta_fn(feat_id),
-             MagicKey.meta_fn(feat_start),
-             MagicKey.meta_fn(feat_end)]
-        super(SingleEduSubgroup_Meta, self).__init__(desc, keys)
-
-
 class SingleEduSubgroup_Debug(SingleEduSubgroup):
     """
     debug features
@@ -1095,8 +1063,7 @@ class SingleEduKeys(MergedKeyGroup):
     Features for a single EDU
     """
     def __init__(self, inputs):
-        groups = [SingleEduSubgroup_Meta(),
-                  SingleEduSubgroup_Token(),
+        groups = [SingleEduSubgroup_Token(),
                   SingleEduSubgroup_Chat(),
                   SingleEduSubgroup_Punct(),
                   SingleEduSubgroup_Parser(),
@@ -1253,30 +1220,13 @@ class PairSubgroup_Debug(PairSubgroup):
             vec[key.name] = key.function(current, edu1, edu2)
 
 
-class PairSubGroup_Core(PairSubgroup):
-    "core features"
-
-    def __init__(self):
-        desc = self.__doc__.strip()
-        keys =\
-            [MagicKey.meta_fn(feat_dialogue),
-             MagicKey.meta_fn(feat_annotator)]
-        super(PairSubGroup_Core, self).__init__(desc, keys)
-
-    def fill(self, current, edu1, edu2, target=None):
-        vec = self if target is None else target
-        for key in self.keys:
-            vec[key.name] = key.function(current, edu1, edu2)
-
-
 class PairKeys(MergedKeyGroup):
     """
     Features for pairs of EDUs
     """
     def __init__(self, inputs, sf_cache=None):
         self.sf_cache = sf_cache
-        groups = [PairSubGroup_Core(),
-                  PairSubgroup_Gap(sf_cache),
+        groups = [PairSubgroup_Gap(sf_cache),
                   PairSubgroup_Tuple(inputs, sf_cache)]
         if inputs.debug:
             groups.append(PairSubgroup_Debug())
@@ -1306,6 +1256,14 @@ class PairKeys(MergedKeyGroup):
         return super(PairKeys, self).csv_values() +\
             self.edu1.csv_values() +\
             self.edu2.csv_values()
+
+    def one_hot_values_gen(self, suffix=''):
+        for pair in super(PairKeys, self).one_hot_values_gen():
+            yield pair
+        for pair in self.edu1.one_hot_values_gen(suffix='_DU1'):
+            yield pair
+        for pair in self.edu2.one_hot_values_gen(suffix='_DU2'):
+            yield pair
 
     def help_text(self):
         lines = [super(PairKeys, self).help_text(),
@@ -1356,9 +1314,6 @@ class FeatureCache(dict):
 # ---------------------------------------------------------------------
 # extraction generators
 # ---------------------------------------------------------------------
-
-# feature extraction environment
-DocEnv = namedtuple("DocEnv", "inputs current sf_cache live")
 
 
 def _get_unit_key(inputs, key, live):
@@ -1421,77 +1376,109 @@ def get_players(inputs):
             for x in kdocs}
 
 
+def relation_dict(doc, quiet=False):
+    """
+    Return the relations instances from a document in the
+    form of an id pair to label dictionary
+
+    If there is more than one relation between a pair of
+    EDUs we pick one of them arbitrarily and ignore the
+    other
+    """
+    relations = {}
+    for rel in doc.relations:
+        pair = rel.source.identifier(), rel.target.identifier()
+        if pair not in relations:
+            relations[pair] = rel.type
+        elif not quiet:
+            print(('Ignoring {type1} relation instance ({edu1} -> {edu2}); '
+                   'another of type {type2} already exists'
+                   '').format(type1=rel.type,
+                              edu1=pair[0],
+                              edu2=pair[1],
+                              type2=relations[pair]),
+                  file=sys.stderr)
+    return relations
+
+
 def _extract_pair(env, edu1, edu2):
     """
     Extraction for a given pair of EDUs
     (directional, so would have to be called twice)
     """
-    doc = env.current.doc
     vec = PairKeys(env.inputs, sf_cache=env.sf_cache)
     vec.fill(env.current, edu1, edu2)
-    rels = attachments(doc.relations, edu1, edu2)
-    if env.live:
-        return vec, vec
-    else:
-        rels_vec = ClassKeyGroup(vec)
-        pairs_vec = ClassKeyGroup(vec)
-        if len(rels) > 1:
-            print('More than one relation between %s and %s' %
-                  (edu1, edu2),
-                  file=sys.stderr)
-        rels_vec.set_class(rels[0].type if rels else 'UNRELATED')
-        pairs_vec.set_class(bool(rels))
-        return pairs_vec, rels_vec
+    return vec
+
+def _id_pair((edu1, edu2)):
+    "pair of ids for pair of edus"
+    return edu1.identifier(), edu2.identifier()
 
 
-def _extract_doc_pairs(env, window):
+def _mk_high_level_dialogues(current):
+    """:rtype: iterable(:pyclass:`educe.stac.document_plus.Dialogue`)
+    """
+    doc = current.doc
+    annos = sorted([x for x in doc.units if educe.stac.is_edu(x)],
+                   key=lambda x: x.span)
+    edus = []
+    dialogues = {} # EDU -> glozz anno
+    edus_in_dialogues = defaultdict(list)
+    for anno in annos:
+        edu = EDU(doc,
+                  current.contexts[anno],
+                  anno,
+                  educe.stac.twin_from(current.unitdoc, anno))
+        edus.append(edu)
+        dia = current.contexts[anno].dialogue
+        dialogues[edu] = dia
+        edus_in_dialogues[dia].append(edu)
+
+    relations = relation_dict(doc)
+
+    for dia in sorted(edus_in_dialogues, key=lambda x: x.span):
+        d_edus = edus_in_dialogues[dia]
+        d_relations = {}
+        for pair in itr.product(d_edus, d_edus):
+            rel = relations.get(_id_pair(pair))
+            if rel is not None:
+                d_relations[pair] = rel
+        yield Dialogue(dia, d_edus, d_relations)
+
+
+def mk_high_level_dialogues(inputs, live=False):
+    """
+    Generate all relevant EDU pairs for a document
+    (generator)
+    """
+    stage = 'unannotated' if live else 'discourse'
+    people = get_players(inputs)
+    for key in inputs.corpus:
+        if stage is not None and key.stage != stage:
+            continue
+        env = mk_env(inputs, people, key, live)
+        for dia in _mk_high_level_dialogues(env.current):
+            yield dia
+
+# FIXME: this duplicates the dialogue generation process
+# above but we're not really fussed at the moment because
+# this is really just transitionary code until we can
+# simplify away a lot of the pairkeys infrastructure
+def extract_pair_features(inputs, window, live=False):
     """
     Extraction for all relevant pairs in a document
     (generator)
     """
-    doc = env.current.doc
-    edus = sorted([x for x in doc.units if educe.stac.is_edu(x)],
-                  key=lambda x: x.span)
-    for edu1 in edus:
-        for edu2 in itr.dropwhile(lambda x: x.span <= edu1.span, edus):
-            ctx1 = env.current.contexts[edu1]
-            ctx2 = env.current.contexts[edu2]
-            if ctx1.dialogue != ctx2.dialogue:
-                break  # we can break because the EDUs are sorted
-                       # so once we're out of dialogue, anything
-                       # that follows will also be so
-            vecs = _extract_pair(env, edu1, edu2)
-            # pylint: disable=no-member
-            qvec = vecs[0] if env.live else vecs[0].group
-            # pylint: enable=no-member
-            if window >= 0 and qvec["num_edus_between"] > window:
-                break  # move on to next edu1
-            # both directions
-            yield vecs
-            yield _extract_pair(env, edu2, edu1)
-        # we shouldn't ever need edu1 again; expiring this means
-        # the cache uses constantish memory
-        env.sf_cache.expire(edu1)
-
-
-def extract_pair_features(inputs, window,
-                          live=False):
-    """
-    Return a pair of dictionaries, one for attachments
-    and one for relations
-
-    :param stage: only extract from inputs in the given stage
-                  (None to avoid limiting).  For live parsing
-                  mode, you likely want 'unannotated'
-    """
     stage = 'unannotated' if live else 'discourse'
     people = get_players(inputs)
-    for k in inputs.corpus:
-        if stage is not None and k.stage != stage:
+    for key in inputs.corpus:
+        if stage is not None and key.stage != stage:
             continue
-        env = mk_env(inputs, people, k, live)
-        for res in _extract_doc_pairs(env, window):
-            yield res
+        env = mk_env(inputs, people, key, live)
+        for dia in _mk_high_level_dialogues(env.current):
+            for edu1, edu2 in dia.edu_pairs(window):
+                yield _extract_pair(env, edu1._anno, edu2._anno)
+
 
 # ---------------------------------------------------------------------
 # extraction generators (single edu)

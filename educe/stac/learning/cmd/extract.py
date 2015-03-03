@@ -9,17 +9,27 @@ Extract features to CSV files
 """
 
 from __future__ import print_function
+from os import path as fp
 import codecs
 import csv
 import os
 import sys
 
+from educe.learning.pairkeys_vectorizer import (PairKeysVectorizer)
+from educe.stac.annotation import (SUBORDINATING_RELATIONS,
+                                   COORDINATING_RELATIONS)
 from educe.stac.learning import features
 import educe.corpus
 from educe.learning.csv_format import KeyGroupWriter
+from educe.learning.edu_input_format import dump_all
+from educe.learning.vocabulary_format import dump_vocabulary
 import educe.glozz
 import educe.stac
 import educe.util
+
+from ..doc_vectorizer import (LabelVectorizer)
+from ..features import (mk_high_level_dialogues,
+                        extract_pair_features)
 
 NAME = 'extract'
 
@@ -171,24 +181,33 @@ def main_corpus_pairs(args):
     The usual main. Extract feature vectors from the corpus
     """
     inputs = features.read_corpus_inputs(args)
-    of_bn = os.path.join(args.output, os.path.basename(args.corpus))
-    of_ext = '.csv'
-    if not os.path.exists(args.output):
-        os.makedirs(args.output)
+    dialogues = list(mk_high_level_dialogues(inputs, args.parsing))
+    # these paths should go away once we switch to a proper dumper
+    out_file = fp.join(args.output, fp.basename(args.corpus))
+    out_file += '.relations.sparse'
+    instance_generator = lambda x: x.edu_pairs(args.window)
 
-    relations_file = of_bn + '.relations' + of_ext
-    edu_pairs_file = of_bn + '.edu-pairs' + of_ext
-    with codecs.open(relations_file, 'wb') as r_ofile:
-        with codecs.open(edu_pairs_file, 'wb') as p_ofile:
-            gen = features.extract_pair_features(inputs, args.window)
-            try:
-                _write_pairs(gen, r_ofile, p_ofile)
-            except StopIteration:
-                # FIXME: I have a nagging feeling that we should properly
-                # support this by just printing a CSV header and nothing
-                # else, but I'm trying to minimise code paths and for now
-                # failing in this corner case feels like a lesser evil :-/
-                sys.exit("No features to extract!")
+    labels = frozenset(SUBORDINATING_RELATIONS +
+                       COORDINATING_RELATIONS)
+
+    # pylint: disable=invalid-name
+    # scikit-convention
+    feats = extract_pair_features(inputs, args.window, live=args.parsing)
+    vzer = PairKeysVectorizer()
+    X_gen = vzer.fit_transform(feats)
+    # pylint: enable=invalid-name
+    labtor = LabelVectorizer(instance_generator, labels)
+    y_gen = labtor.transform(dialogues)
+
+    dump_all(X_gen,
+             y_gen,
+             out_file,
+             labtor.labelset_,
+             dialogues,
+             instance_generator)
+    # dump vocabulary
+    vocab_file = out_file + '.vocab'
+    dump_vocabulary(vzer.vocabulary_, vocab_file)
 
 
 def main(args):
