@@ -282,6 +282,34 @@ class KeyGroup(dict):
         """
         return [self.csv_value(k) for k in self.keys]
 
+    def one_hot_values_gen(self, suffix=''):
+        """Get a one-hot encoded version of this KeyGroups as a generator
+
+        suffix is added to the feature name
+        """
+        for key in self.keys:
+            ks = key.substance
+            fn = key.name
+            fv = self[fn]
+            if fv is None:
+                continue
+
+            if ks is Substance.DISCRETE:
+                feature = '{}{}={}'.format(fn, suffix, fv)
+                yield (feature, 1)
+            elif ks is Substance.CONTINUOUS:
+                feature = '{}{}'.format(fn, suffix)
+                yield (feature, fv)
+            elif ks is Substance.STRING:
+                feature = '{}{}={}'.format(fn, suffix, fv)
+                yield (feature, 1)
+            elif ks is Substance.BASKET:
+                for k, v in fv.items():
+                    feature = '{}{}'.format(k, suffix)
+                    yield (feature, v)
+            else:
+                raise ValueError('Unknown substance for {}'.format(ks))
+
     def help_text(self):
         """
         A multi-line block of help text listing the features in this group
