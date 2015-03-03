@@ -23,7 +23,7 @@ REQS = \
 
 
 setup(name='educe',
-      version='0.2',
+      version='0.3',
       author='Eric Kow',
       author_email='eric@erickow.com',
       packages=find_packages(),
