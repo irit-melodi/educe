@@ -17,6 +17,7 @@ REQS = \
      'python-graph-dot',
      'frozendict',
      'sh',
+     'six',
      'nltk >= 3.0.0',
      'soundex']
 
