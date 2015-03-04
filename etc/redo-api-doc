@@ -4,6 +4,7 @@
 rm -rf docs/api-doc
 sphinx-apidoc educe -o docs/api-doc\
         educe/*/util/cmd\
+        educe/*/oneoff/cmd\
         educe/*/learning/cmd\
         educe/tests.py\
         educe/*/tests.py\
