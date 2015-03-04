@@ -297,17 +297,17 @@ class KeyGroup(dict):
             if ks is Substance.DISCRETE:
                 if fv is False:
                     continue
-                feature = '{}{}={}'.format(fn, suffix, fv)
+                feature = u'{}{}={}'.format(fn, suffix, fv)
                 yield (feature, 1)
             elif ks is Substance.CONTINUOUS:
-                feature = '{}{}'.format(fn, suffix)
+                feature = u'{}{}'.format(fn, suffix)
                 yield (feature, fv)
             elif ks is Substance.STRING:
-                feature = '{}{}={}'.format(fn, suffix, fv)
+                feature = u'{}{}={}'.format(fn, suffix, fv)
                 yield (feature, 1)
             elif ks is Substance.BASKET:
                 for k, v in fv.items():
-                    feature = '{}{}'.format(k, suffix)
+                    feature = u'{}{}'.format(k, suffix)
                     yield (feature, v)
             else:
                 raise ValueError('Unknown substance for {}'.format(ks))
