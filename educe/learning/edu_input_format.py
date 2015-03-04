@@ -40,7 +40,7 @@ def _dump_edu_input_file(docs, f):
             edu_start = edu.span.char_start
             edu_end = edu.span.char_end
             writer.writerow([edu_gid,
-                             edu_txt,
+                             edu_txt.encode('utf-8'),
                              grouping,
                              subgroup,
                              edu_start,
