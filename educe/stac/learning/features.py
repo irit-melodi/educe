@@ -744,21 +744,6 @@ class LexKeyGroup(KeyGroup):
         """
         return "lex_" + self.key
 
-    def help_text(self):
-        """
-        CSV field names for each entry/class in the lexicon
-        """
-        header_name = (self.key_prefix() + "_...").ljust(KeyGroup.NAME_WIDTH)
-        header = "[D] %s %s" % (header_name, "")
-        lines = [header]
-        for cname, lclass in self.lexicon.entries.items():
-            keyname = cname
-            if self.has_subclasses:
-                subkeys = ", ".join(lclass.just_subclasses())
-                keyname += "_{%s}" % subkeys
-            lines.append("       %s" % keyname.ljust(KeyGroup.NAME_WIDTH))
-        return "\n".join(lines)
-
     def fill(self, current, edu, target=None):
         """
         See `SingleEduSubgroup`
@@ -801,18 +786,6 @@ class PdtbLexKeyGroup(KeyGroup):
         "All feature keys in this lexicon should start with this string"
         return "pdtb"
 
-    def help_text(self):
-        """
-        CSV field names for each entry/class in the lexicon
-        """
-        header_name = (self.key_prefix() + "_...").ljust(KeyGroup.NAME_WIDTH)
-        header_help = "if has lexical marker for the given class"
-        header = "[D] %s %s" % (header_name, header_help)
-        lines = [header]
-        for rel in self.lexicon:
-            lines.append("       %s" % rel.ljust(KeyGroup.NAME_WIDTH))
-        return "\n".join(lines)
-
     def fill(self, current, edu, target=None):
         "See `SingleEduSubgroup`"
         vec = self if target is None else target
@@ -847,19 +820,6 @@ class VerbNetLexKeyGroup(KeyGroup):
     def key_prefix(cls):
         "All feature keys in this lexicon should start with this string"
         return "verbnet"
-
-    def help_text(self):
-        """
-        CSV field names for each entry/class in the lexicon
-        """
-        header_name = (self.key_prefix() + "_...").ljust(KeyGroup.NAME_WIDTH)
-        header_help = "if has lemma in the given class"
-        header = "[D] %s %s" % (header_name, header_help)
-        lines = [header]
-        for ventry in self.ventries:
-            lines.append("       %s" %
-                         ventry.classname.ljust(KeyGroup.NAME_WIDTH))
-        return "\n".join(lines)
 
     def fill(self, current, edu, target=None):
         "See `SingleEduSubgroup`"
@@ -896,19 +856,6 @@ class InquirerLexKeyGroup(KeyGroup):
         "All feature keys in this lexicon should start with this string"
         return "inq"
 
-    def help_text(self):
-        """
-        CSV field names for each entry/class in the lexicon
-        """
-        header_name = (self.key_prefix() + "_...").ljust(KeyGroup.NAME_WIDTH)
-        header_help = "if has token in the given class"
-        header = "[D] %s %s" % (header_name, header_help)
-        lines = [header]
-        for entry in self.lexicon:
-            lines.append("       %s" %
-                         entry.ljust(KeyGroup.NAME_WIDTH))
-        return "\n".join(lines)
-
     def fill(self, current, edu, target=None):
         "See `SingleEduSubgroup`"
 
@@ -933,12 +880,6 @@ class MergedLexKeyGroup(MergedKeyGroup):
              VerbNetLexKeyGroup(inputs.verbnet_entries)]
         description = "lexical features"
         super(MergedLexKeyGroup, self).__init__(description, groups)
-
-    def help_text(self):
-        lines = [self.description,
-                 "-" * len(self.description)] +\
-            [g.help_text() for g in self.groups]
-        return "\n".join(lines)
 
     def fill(self, current, edu, target=None):
         "See `SingleEduSubgroup`"
@@ -1264,12 +1205,6 @@ class PairKeys(MergedKeyGroup):
             yield pair
         for pair in self.edu2.one_hot_values_gen(suffix='_DU2'):
             yield pair
-
-    def help_text(self):
-        lines = [super(PairKeys, self).help_text(),
-                 "",
-                 self.edu1.help_text()]
-        return "\n".join(lines)
 
     def fill(self, current, edu1, edu2, target=None):
         "See `PairSubgroup`"
