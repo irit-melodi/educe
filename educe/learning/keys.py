@@ -247,41 +247,6 @@ class KeyGroup(dict):
         else:
             super(KeyGroup, self).__setitem__(key, val)
 
-    def csv_headers(self, htype):
-        """
-        A list of key names in a format that can be understood
-        by the Orange machine learning library.
-        """
-        if htype is HeaderType.OLD_CSV:
-            return [k.to_csv() for k in self.keys]
-        elif htype is HeaderType.NAME:
-            return [k.name for k in self.keys]
-        elif htype is HeaderType.SUBSTANCE:
-            return [Substance.to_orange(k.substance) for k in self.keys]
-        elif htype is HeaderType.PURPOSE:
-            return [Purpose.to_orange(k.purpose) for k in self.keys]
-        else:
-            raise ValueError("Unknown header type " + htype)
-
-    def csv_value(self, key):
-        """
-        Value corresponding to a single key.
-        """
-        value = self[key.name]
-        if (key.substance is Substance.BASKET) and (value is not None):
-            return " ".join(u"{0}={1}".format(k, v) for k, v in value.items())
-        else:
-            return value
-
-    def csv_values(self):
-        """
-        A heterogeneous list of values representing one CSV row.
-        Naturally, each item in the list should correspond to the
-        item in the same position of `csv_headers()` and
-        vice-versa
-        """
-        return [self.csv_value(k) for k in self.keys]
-
     def one_hot_values_gen(self, suffix=''):
         """Get a one-hot encoded version of this KeyGroups as a generator
 
@@ -361,22 +326,4 @@ class ClassKeyGroup(KeyGroup):
         class key
         """
         self[self.classname] = value
-
-    def csv_headers(self, htype):
-        """
-        A list of key names in a format that can be understood
-        by the Orange machine learning library.
-        """
-        return super(ClassKeyGroup, self).csv_headers(htype) +\
-            self.group.csv_headers(htype)
-
-    def csv_values(self):
-        """
-        A heterogeneous list of values representing one CSV row.
-        Naturally, each item in the list should correspond to the
-        item in the same position of `csv_headers()` and
-        vice-versa
-        """
-        return super(ClassKeyGroup, self).csv_values() +\
-            self.group.csv_values()
 # pylint: enable=too-many-public-methods, pointless-string-statement
