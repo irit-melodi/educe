@@ -1182,22 +1182,6 @@ class PairKeys(MergedKeyGroup):
         super(PairKeys, self).__init__("pair features",
                                        groups)
 
-    def csv_headers(self, htype):
-        if htype in [HeaderType.OLD_CSV, HeaderType.NAME]:
-            return super(PairKeys, self).csv_headers(htype) +\
-                    [h + "_DU1" for h in self.edu1.csv_headers(htype)] +\
-                    [h + "_DU2" for h in self.edu2.csv_headers(htype)]
-        else:
-            return super(PairKeys, self).csv_headers(htype) +\
-                    self.edu1.csv_headers(htype) +\
-                    self.edu2.csv_headers(htype)
-
-
-    def csv_values(self):
-        return super(PairKeys, self).csv_values() +\
-            self.edu1.csv_values() +\
-            self.edu2.csv_values()
-
     def one_hot_values_gen(self, suffix=''):
         for pair in super(PairKeys, self).one_hot_values_gen():
             yield pair
