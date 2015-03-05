@@ -12,14 +12,6 @@ educe.learning.csv module
     :undoc-members:
     :show-inheritance:
 
-educe.learning.csv_format module
---------------------------------
-
-.. automodule:: educe.learning.csv_format
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 educe.learning.edu_input_format module
 --------------------------------------
 
@@ -32,14 +24,6 @@ educe.learning.keys module
 --------------------------
 
 .. automodule:: educe.learning.keys
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-educe.learning.orange_format module
------------------------------------
-
-.. automodule:: educe.learning.orange_format
     :members:
     :undoc-members:
     :show-inheritance:
