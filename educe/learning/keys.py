@@ -75,7 +75,6 @@ class Purpose(object):
             return "class"
         else:
             raise ValueError("Unknown purpose" + purpose)
-# pylint: enable=too-few-public-methods
 
 
 class HeaderType(object):
