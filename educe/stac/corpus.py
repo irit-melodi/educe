@@ -5,6 +5,7 @@
 Corpus layout conventions (re-exported by educe.stac)
 """
 
+from collections import OrderedDict
 from glob import glob
 import os
 import re
@@ -15,6 +16,8 @@ import educe.corpus
 import educe.glozz as glozz
 from .annotation import STAC_OUTPUT_SETTINGS
 
+# pylint: disable=too-few-public-methods
+
 
 class Reader(educe.corpus.Reader):
     """
@@ -24,7 +27,7 @@ class Reader(educe.corpus.Reader):
         educe.corpus.Reader.__init__(self, corpusdir)
 
     def files(self):
-        corpus = {}
+        corpus = OrderedDict()
         full_glob = os.path.join(self.rootdir, '*')
         anno_glob = '*.aa'
 
@@ -48,7 +51,7 @@ class Reader(educe.corpus.Reader):
                                 "the form doc_subdocument: %s", subdoc)
             corpus[file_id] = (anno_file, text_file)
 
-        for doc_dir in glob(full_glob):
+        for doc_dir in sorted(glob(full_glob)):
             doc = os.path.basename(doc_dir)
             for stage in ['unannotated', 'units', 'discourse']:
                 stage_dir = os.path.join(doc_dir, stage)
