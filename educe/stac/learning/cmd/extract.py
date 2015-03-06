@@ -11,7 +11,6 @@ Extract features to CSV files
 from __future__ import print_function
 from os import path as fp
 import codecs
-import csv
 import os
 import sys
 
@@ -20,7 +19,6 @@ from educe.stac.annotation import (SUBORDINATING_RELATIONS,
                                    COORDINATING_RELATIONS)
 from educe.stac.learning import features
 import educe.corpus
-from educe.learning.csv_format import KeyGroupWriter
 from educe.learning.edu_input_format import dump_all
 from educe.learning.vocabulary_format import dump_vocabulary
 import educe.glozz
@@ -32,16 +30,6 @@ from ..features import (mk_high_level_dialogues,
                         extract_pair_features)
 
 NAME = 'extract'
-
-
-def mk_csv_writer(keys, fstream):
-    """
-    start off csv writer for a given mode
-    """
-    csv_quoting = csv.QUOTE_MINIMAL
-    writer = KeyGroupWriter(fstream, keys, quoting=csv_quoting)
-    writer.writeheader()
-    return writer
 
 
 # ----------------------------------------------------------------------
@@ -89,44 +77,44 @@ def config_argparser(parser):
 # ---------------------------------------------------------------------
 
 
-def main_parsing_pairs(args):
-    """
-    Main to call when live data are passed in (--parsing). Live data are data
-    that we want to discourse parsing on, so we don't know if they are attached
-    or what the label is.
-
-    As of 2014-08-19, there must be an 'unannotated' stage and an optional
-    'units' stage (for dialogue acts)
-    """
-    inputs = features.read_corpus_inputs(args, stage='units|unannotated')
-    features_file = os.path.join(args.output, 'extracted-features.csv')
-    with codecs.open(features_file, 'wb') as ofile:
-        header = features.PairKeys(inputs)
-        writer = mk_csv_writer(header, ofile)
-        feats = features.extract_pair_features(inputs,
-                                               args.window,
-                                               live=True)
-        for row, _ in feats:
-            writer.writerow(row)
-
-
-def _write_singles(gen, ofile):
-    """
-    Given a generator of single edu rows
-
-    * use first row as header, then write the first row
-    * write the rest of the rows
-
-    If there are no rows, this will throw an StopIteration
-    exception
-    """
-    # first row
-    row0 = gen.next()
-    writer = mk_csv_writer(row0, ofile)
-    writer.writerow(row0)
-    # now the rest of them
-    for row in gen:
-        writer.writerow(row)
+#def main_parsing_pairs(args):
+#    """
+#    Main to call when live data are passed in (--parsing). Live data are data
+#    that we want to discourse parsing on, so we don't know if they are attached
+#    or what the label is.
+#
+#    As of 2014-08-19, there must be an 'unannotated' stage and an optional
+#    'units' stage (for dialogue acts)
+#    """
+#    inputs = features.read_corpus_inputs(args, stage='units|unannotated')
+#    features_file = os.path.join(args.output, 'extracted-features.csv')
+#    with codecs.open(features_file, 'wb') as ofile:
+#        header = features.PairKeys(inputs)
+#        writer = mk_csv_writer(header, ofile)
+#        feats = features.extract_pair_features(inputs,
+#                                               args.window,
+#                                               live=True)
+#        for row, _ in feats:
+#            writer.writerow(row)
+#
+#
+#def _write_singles(gen, ofile):
+#    """
+#    Given a generator of single edu rows
+#
+#    * use first row as header, then write the first row
+#    * write the rest of the rows
+#
+#    If there are no rows, this will throw an StopIteration
+#    exception
+#    """
+#    # first row
+#    row0 = gen.next()
+#    writer = mk_csv_writer(row0, ofile)
+#    writer.writerow(row0)
+#    # now the rest of them
+#    for row in gen:
+#        writer.writerow(row)
 
 
 def main_corpus_single(args):
@@ -151,29 +139,6 @@ def main_corpus_single(args):
             # else, but I'm trying to minimise code paths and for now
             # failing in this corner case feels like a lesser evil :-/
             sys.exit("No features to extract!")
-
-
-def _write_pairs(gen, r_ofile, p_ofile):
-    """
-    Given a generator of pairs and the relations/pairs output
-    file handles:
-
-    * use first row as header, then write the first row
-    * write the rest of the rows
-
-    If there are no rows, this will throw an StopIteration
-    exception
-    """
-    # first row
-    p_row0, r_row0 = gen.next()
-    p_writer = mk_csv_writer(p_row0, p_ofile)
-    r_writer = mk_csv_writer(r_row0, r_ofile)
-    p_writer.writerow(p_row0)
-    r_writer.writerow(r_row0)
-    # now the rest of them
-    for p_row, r_row in gen:
-        p_writer.writerow(p_row)
-        r_writer.writerow(r_row)
 
 
 def main_corpus_pairs(args):
@@ -216,8 +181,10 @@ def main(args):
     if args.parsing and args.single:
         sys.exit("Can't mixing --parsing and --single")
     elif args.parsing:
-        main_parsing_pairs(args)
+        raise Exception('Still broken')
+        #main_parsing_pairs(args)
     elif args.single:
-        main_corpus_single(args)
+        raise Exception('Still broken')
+        #main_corpus_single(args)
     else:
         main_corpus_pairs(args)
