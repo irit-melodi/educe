@@ -20,6 +20,14 @@ educe.rst_dt.learning.base module
     :undoc-members:
     :show-inheritance:
 
+educe.rst_dt.learning.doc_vectorizer module
+-------------------------------------------
+
+.. automodule:: educe.rst_dt.learning.doc_vectorizer
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 educe.rst_dt.learning.features module
 -------------------------------------
 
@@ -32,6 +40,14 @@ educe.rst_dt.learning.features_li2014 module
 --------------------------------------------
 
 .. automodule:: educe.rst_dt.learning.features_li2014
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+educe.rst_dt.learning.tests module
+----------------------------------
+
+.. automodule:: educe.rst_dt.learning.tests
     :members:
     :undoc-members:
     :show-inheritance:

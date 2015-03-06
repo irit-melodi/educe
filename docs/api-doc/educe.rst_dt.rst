@@ -36,6 +36,14 @@ educe.rst_dt.deptree module
     :undoc-members:
     :show-inheritance:
 
+educe.rst_dt.document_plus module
+---------------------------------
+
+.. automodule:: educe.rst_dt.document_plus
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 educe.rst_dt.graph module
 -------------------------
 
@@ -56,6 +64,14 @@ educe.rst_dt.ptb module
 -----------------------
 
 .. automodule:: educe.rst_dt.ptb
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+educe.rst_dt.rst_wsj_corpus module
+----------------------------------
+
+.. automodule:: educe.rst_dt.rst_wsj_corpus
     :members:
     :undoc-members:
     :show-inheritance:

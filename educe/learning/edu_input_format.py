@@ -1,15 +1,18 @@
 """This module implements a dumper for the EDU input format
 
-See `https://github.com/kowey/attelo/blob/scikit/doc/input.rst`
+See `https://github.com/kowey/attelo/blob/scikit/doc/input.rst`_
 """
 
 from __future__ import absolute_import, print_function
-
 import csv
-import itertools
+
+import six
 
 from .svmlight_format import dump_svmlight_file
 
+# pylint: disable=invalid-name
+# a lot of the names here are chosen deliberately to
+# go with scikit convention
 
 # EDUs
 def _dump_edu_input_file(docs, f):
@@ -28,13 +31,16 @@ def _dump_edu_input_file(docs, f):
             edu_txt = edu.text().replace('\n', ' ')
             # subgroup: sentence identifier, backoff on EDU id
             sent_idx = edu2sent[i]
-            subgroup = ('{}_sent{}'.format(grouping, sent_idx)
-                        if sent_idx is not None
-                        else edu_gid)
+            if sent_idx is None:
+                subgroup = edu_gid
+            elif isinstance(sent_idx, six.string_types):
+                subgroup = sent_idx
+            else:
+                subgroup = '{}_sent{}'.format(grouping, sent_idx)
             edu_start = edu.span.char_start
             edu_end = edu.span.char_end
             writer.writerow([edu_gid,
-                             edu_txt,
+                             edu_txt.encode('utf-8'),
                              grouping,
                              subgroup,
                              edu_start,
@@ -42,7 +48,20 @@ def _dump_edu_input_file(docs, f):
 
 
 def dump_edu_input_file(docs, f):
-    """Dump a dataset in the EDU input format."""
+    """Dump a dataset in the EDU input format.
+
+    Each document must have:
+
+    * edus: sequence of edu objects
+    * grouping: string (some sort of document id)
+    * edu2sent: int -> int or string or None (edu num to sentence num)
+
+    The EDUs must provide:
+
+    * identifier(): string
+    * text(): string
+
+    """
     with open(f, 'wb') as f:
         _dump_edu_input_file(docs, f)
 
@@ -69,6 +88,13 @@ def dump_all(X_gen, y_gen, f, class_mapping, docs, instance_generator):
     """Dump a whole dataset: features (in svmlight) and EDU pairs
 
     class_mapping is a mapping from label to int
+
+    :type X_gen: iterable of int arrays
+    :type y_gen: iterable of int
+    :param f: output features file path
+    :param class_mapping: dict(string, int)
+    :param instance_generator: function that returns an iterable
+                               of pairs given a document
     """
     # the labelset will be written in a comment at the beginning of the
     # svmlight file
