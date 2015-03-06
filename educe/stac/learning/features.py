@@ -1,4 +1,3 @@
-# pylint: disable=R0904, C0103
 # pylint: disable=too-few-public-methods
 """
 Feature extraction library functions for STAC corpora.
@@ -25,7 +24,6 @@ from educe.external.parser import\
     SearchableTree,\
     ConstituencyTree
 from educe.learning.keys import\
-    HeaderType,\
     MagicKey, Key, KeyGroup, MergedKeyGroup, ClassKeyGroup
 from educe.stac import postag, corenlp
 from educe.stac.annotation import speaker, addressees
@@ -41,7 +39,7 @@ import educe.util
 
 from ..util.context import Context, enclosed, edus_in_span
 from ..annotation import turn_id
-from ..lexicon.wordclass import LexEntry, Lexicon
+from ..lexicon.wordclass import Lexicon
 from ..document_plus import (Dialogue, EDU)
 
 
@@ -1328,6 +1326,7 @@ def _extract_pair(env, edu1, edu2):
     vec = PairKeys(env.inputs, sf_cache=env.sf_cache)
     vec.fill(env.current, edu1, edu2)
     return vec
+
 
 def _id_pair(pair):
     "pair of ids for pair of edus"
