@@ -1329,8 +1329,9 @@ def _extract_pair(env, edu1, edu2):
     vec.fill(env.current, edu1, edu2)
     return vec
 
-def _id_pair((edu1, edu2)):
+def _id_pair(pair):
     "pair of ids for pair of edus"
+    edu1, edu2 = pair
     return edu1.identifier(), edu2.identifier()
 
 
