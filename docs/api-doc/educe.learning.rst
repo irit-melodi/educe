@@ -20,18 +20,18 @@ educe.learning.edu_input_format module
     :undoc-members:
     :show-inheritance:
 
-educe.learning.keys module
---------------------------
+educe.learning.keygroup_vectorizer module
+-----------------------------------------
 
-.. automodule:: educe.learning.keys
+.. automodule:: educe.learning.keygroup_vectorizer
     :members:
     :undoc-members:
     :show-inheritance:
 
-educe.learning.pairkeys_vectorizer module
------------------------------------------
+educe.learning.keys module
+--------------------------
 
-.. automodule:: educe.learning.pairkeys_vectorizer
+.. automodule:: educe.learning.keys
     :members:
     :undoc-members:
     :show-inheritance:
