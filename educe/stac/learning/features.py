@@ -1,3 +1,4 @@
+# pylint: disable=invalid-name
 # pylint: disable=too-few-public-methods
 """
 Feature extraction library functions for STAC corpora.

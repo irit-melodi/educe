@@ -10,7 +10,6 @@ Extract features to CSV files
 
 from __future__ import print_function
 from os import path as fp
-import codecs
 import os
 import sys
 
