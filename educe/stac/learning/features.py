@@ -1397,13 +1397,27 @@ def read_common_inputs(args, corpus):
     return _read_resources(args, corpus, postags, parses)
 
 
-def read_corpus_inputs(args, stage=None):
+def read_corpus_inputs(args):
     """
     Read and filter the part of the corpus we want features for
     """
-    preselected = {"stage": stage or ["discourse", "units"]}
-    is_interesting = educe.util.mk_is_interesting(args,
-                                                  preselected=preselected)
+    if args.single:
+        # ignore annotator filter for unannotated documents
+        args1 = copy.copy(args)
+        args1.annotator = None
+        is_interesting1 =\
+            educe.util.mk_is_interesting(args1,
+                                         preselected={'stage': ['unannotated']})
+        # but pay attention to it for units
+        is_interesting2 =\
+            educe.util.mk_is_interesting(args,
+                                         preselected={'stage': ['units']})
+        is_interesting = lambda x: is_interesting1(x) or is_interesting2(x)
+    else:
+        preselected = {"stage": ["discourse", "units"]}
+        is_interesting = educe.util.mk_is_interesting(args,
+                                                      preselected=preselected)
+
     reader = educe.stac.Reader(args.corpus)
     anno_files = reader.filter(reader.files(), is_interesting)
     corpus = reader.slurp(anno_files, verbose=True)

@@ -114,14 +114,7 @@ def main_pairs(args):
     """
     The usual main. Extract feature vectors from the corpus
     """
-    if args.parsing:
-        # in live mode, we don't have a discourse stage to read
-        # however hopefully somebody has done dialogue act
-        # extraction for us
-        inputs = features.read_corpus_inputs(args, stage='units|unannotated')
-    else:
-        inputs = features.read_corpus_inputs(args)
-
+    inputs = features.read_corpus_inputs(args)
     dialogues = list(mk_high_level_dialogues(inputs, args.parsing))
     # these paths should go away once we switch to a proper dumper
     out_file = fp.join(args.output, fp.basename(args.corpus))
