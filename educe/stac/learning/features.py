@@ -1365,35 +1365,36 @@ def _mk_high_level_dialogues(current):
         yield Dialogue(dia, d_edus, d_relations)
 
 
+def mk_envs(inputs, live=False):
+    """
+    Generate an environment for each document in the corpus.
+    The environment pools together all the information we
+    have on a single document
+    """
+    stage = 'unannotated' if live else 'discourse'
+    people = get_players(inputs)
+    for key in inputs.corpus:
+        if stage is not None and key.stage != stage:
+            continue
+        yield mk_env(inputs, people, key, live)
+
+
 def mk_high_level_dialogues(inputs, live=False):
     """
     Generate all relevant EDU pairs for a document
     (generator)
     """
-    stage = 'unannotated' if live else 'discourse'
-    people = get_players(inputs)
-    for key in inputs.corpus:
-        if stage is not None and key.stage != stage:
-            continue
-        env = mk_env(inputs, people, key, live)
+    for env in mk_envs(inputs, live):
         for dia in _mk_high_level_dialogues(env.current):
             yield dia
 
-# FIXME: this duplicates the dialogue generation process
-# above but we're not really fussed at the moment because
-# this is really just transitionary code until we can
-# simplify away a lot of the pairkeys infrastructure
+
 def extract_pair_features(inputs, window, live=False):
     """
     Extraction for all relevant pairs in a document
     (generator)
     """
-    stage = 'unannotated' if live else 'discourse'
-    people = get_players(inputs)
-    for key in inputs.corpus:
-        if stage is not None and key.stage != stage:
-            continue
-        env = mk_env(inputs, people, key, live)
+    for env in mk_envs(inputs, live):
         for dia in _mk_high_level_dialogues(env.current):
             for edu1, edu2 in dia.edu_pairs(window):
                 yield _extract_pair(env, edu1._anno, edu2._anno)
