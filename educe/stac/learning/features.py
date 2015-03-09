@@ -1293,14 +1293,14 @@ def mk_high_level_dialogues(inputs, live=False):
             yield dia
 
 
-def extract_pair_features(inputs, window, live=False):
+def extract_pair_features(inputs, live=False):
     """
     Extraction for all relevant pairs in a document
     (generator)
     """
     for env in mk_envs(inputs, live):
         for dia in _mk_high_level_dialogues(env.current):
-            for edu1, edu2 in dia.edu_pairs(window):
+            for edu1, edu2 in dia.edu_pairs():
                 yield _extract_pair(env, edu1._anno, edu2._anno)
 
 

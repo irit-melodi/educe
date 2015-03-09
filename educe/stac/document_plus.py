@@ -48,11 +48,8 @@ class Dialogue(object):
                          for i, e in enumerate(edus, start=1)}
         self.relations = relations
 
-    def edu_pairs(self, window):
+    def edu_pairs(self):
         """Return all EDU pairs within this dialogue.
-
-        If window is > 0; we only return pairs that have no
-        more than `window` EDUs between them
 
         NB: this is a generator
         """
@@ -62,9 +59,7 @@ class Dialogue(object):
             # pylint: disable=cell-var-from-loop
             is_before = lambda x: x[0] <= num1
             # pylint: enable=cell-var-from-loop
-            for num2, edu2 in itr.dropwhile(is_before, i_edus):
-                if window >= 0 and num2 - num1 > window:
-                    break  # move on to next edu1
+            for _, edu2 in itr.dropwhile(is_before, i_edus):
                 yield (edu1, edu2)
                 yield (edu2, edu1)
 

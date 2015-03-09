@@ -60,10 +60,6 @@ def config_argparser(parser):
     parser.add_argument('--quiet', '-q', action='store_const',
                         const=0,
                         dest='verbose')
-    parser.add_argument('--window', action='store', metavar='INT', type=int,
-                        default=5,
-                        help="Ignore EDU pairs greater this distance apart "
-                        "(-1 for no window) ")
     parser.add_argument('--single', action='store_true',
                         help="Features for single EDUs (instead of pairs)")
     parser.add_argument('--parsing', action='store_true',
@@ -130,14 +126,14 @@ def main_pairs(args):
     # these paths should go away once we switch to a proper dumper
     out_file = fp.join(args.output, fp.basename(args.corpus))
     out_file += '.relations.sparse'
-    instance_generator = lambda x: x.edu_pairs(args.window)
+    instance_generator = lambda x: x.edu_pairs()
 
     labels = frozenset(SUBORDINATING_RELATIONS +
                        COORDINATING_RELATIONS)
 
     # pylint: disable=invalid-name
     # scikit-convention
-    feats = extract_pair_features(inputs, args.window, live=args.parsing)
+    feats = extract_pair_features(inputs, live=args.parsing)
     vzer = KeyGroupVectorizer()
     X_gen = vzer.fit_transform(feats)
     # pylint: enable=invalid-name
