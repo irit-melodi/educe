@@ -14,7 +14,7 @@ import codecs
 import os
 import sys
 
-from educe.learning.pairkeys_vectorizer import (PairKeysVectorizer)
+from educe.learning.keygroup_vectorizer import (KeyGroupVectorizer)
 from educe.stac.annotation import (SUBORDINATING_RELATIONS,
                                    COORDINATING_RELATIONS)
 from educe.stac.learning import features
@@ -158,7 +158,7 @@ def main_corpus_pairs(args):
     # pylint: disable=invalid-name
     # scikit-convention
     feats = extract_pair_features(inputs, args.window, live=args.parsing)
-    vzer = PairKeysVectorizer()
+    vzer = KeyGroupVectorizer()
     X_gen = vzer.fit_transform(feats)
     # pylint: enable=invalid-name
     labtor = LabelVectorizer(instance_generator, labels)
