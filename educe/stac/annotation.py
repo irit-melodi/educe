@@ -91,6 +91,13 @@ COORDINATING_RELATIONS = \
      'Conditional',
      'Alternation']
 
+DIALOGUE_ACTS =\
+    ['Offer',
+     'Counteroffer',
+     'Accept',
+     'Refusal',
+     'Other']
+
 _F_ADDRESSEE = 'Addressee'
 
 
