@@ -82,28 +82,7 @@ def config_argparser(parser):
 # ---------------------------------------------------------------------
 
 
-#def main_parsing_pairs(args):
-#    """
-#    Main to call when live data are passed in (--parsing). Live data are data
-#    that we want to discourse parsing on, so we don't know if they are attached
-#    or what the label is.
-#
-#    As of 2014-08-19, there must be an 'unannotated' stage and an optional
-#    'units' stage (for dialogue acts)
-#    """
-#    inputs = features.read_corpus_inputs(args, stage='units|unannotated')
-#    features_file = os.path.join(args.output, 'extracted-features.csv')
-#    with codecs.open(features_file, 'wb') as ofile:
-#        header = features.PairKeys(inputs)
-#        writer = mk_csv_writer(header, ofile)
-#        feats = features.extract_pair_features(inputs,
-#                                               args.window,
-#                                               live=True)
-#        for row, _ in feats:
-#            writer.writerow(row)
-
-
-def main_corpus_single(args):
+def main_single(args):
     """
     The usual main. Extract feature vectors from the corpus
     (single edus only)
@@ -140,12 +119,18 @@ def main_corpus_single(args):
     dump_vocabulary(vzer.vocabulary_, vocab_file)
 
 
-
-def main_corpus_pairs(args):
+def main_pairs(args):
     """
     The usual main. Extract feature vectors from the corpus
     """
-    inputs = features.read_corpus_inputs(args)
+    if args.parsing:
+        # in live mode, we don't have a discourse stage to read
+        # however hopefully somebody has done dialogue act
+        # extraction for us
+        inputs = features.read_corpus_inputs(args, stage='units|unannotated')
+    else:
+        inputs = features.read_corpus_inputs(args)
+
     dialogues = list(mk_high_level_dialogues(inputs, args.parsing))
     # these paths should go away once we switch to a proper dumper
     out_file = fp.join(args.output, fp.basename(args.corpus))
@@ -183,10 +168,7 @@ def main(args):
 
     if args.parsing and args.single:
         sys.exit("Can't mixing --parsing and --single")
-    elif args.parsing:
-        raise Exception('Still broken')
-        #main_parsing_pairs(args)
     elif args.single:
-        main_corpus_single(args)
+        main_single(args)
     else:
-        main_corpus_pairs(args)
+        main_pairs(args)
