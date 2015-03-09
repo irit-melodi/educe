@@ -15,19 +15,25 @@ import os
 import sys
 
 from educe.learning.keygroup_vectorizer import (KeyGroupVectorizer)
-from educe.stac.annotation import (SUBORDINATING_RELATIONS,
+from educe.stac.annotation import (DIALOGUE_ACTS,
+                                   SUBORDINATING_RELATIONS,
                                    COORDINATING_RELATIONS)
 from educe.stac.learning import features
 import educe.corpus
-from educe.learning.edu_input_format import dump_all
+from educe.learning.edu_input_format import (dump_all,
+                                             labels_comment,
+                                             dump_svmlight_file,
+                                             dump_edu_input_file)
 from educe.learning.vocabulary_format import dump_vocabulary
 import educe.glozz
 import educe.stac
 import educe.util
 
-from ..doc_vectorizer import (LabelVectorizer)
+from ..doc_vectorizer import (DialogueActVectorizer,
+                              LabelVectorizer)
 from ..features import (mk_high_level_dialogues,
-                        extract_pair_features)
+                        extract_pair_features,
+                        extract_single_features)
 
 NAME = 'extract'
 
@@ -96,25 +102,6 @@ def config_argparser(parser):
 #                                               live=True)
 #        for row, _ in feats:
 #            writer.writerow(row)
-#
-#
-#def _write_singles(gen, ofile):
-#    """
-#    Given a generator of single edu rows
-#
-#    * use first row as header, then write the first row
-#    * write the rest of the rows
-#
-#    If there are no rows, this will throw an StopIteration
-#    exception
-#    """
-#    # first row
-#    row0 = gen.next()
-#    writer = mk_csv_writer(row0, ofile)
-#    writer.writerow(row0)
-#    # now the rest of them
-#    for row in gen:
-#        writer.writerow(row)
 
 
 def main_corpus_single(args):
@@ -123,22 +110,36 @@ def main_corpus_single(args):
     (single edus only)
     """
     inputs = features.read_corpus_inputs(args)
-    of_bn = os.path.join(args.output, os.path.basename(args.corpus))
-    of_ext = '.csv'
-    if not os.path.exists(args.output):
+    dialogues = list(mk_high_level_dialogues(inputs, args.parsing))
+    # these paths should go away once we switch to a proper dumper
+    out_file = fp.join(args.output, fp.basename(args.corpus))
+    out_file += '.just-edus.sparse'
+    instance_generator = lambda x: x.edus[1:]  # drop fake root
+
+    # pylint: disable=invalid-name
+    # scikit-convention
+    feats = extract_single_features(inputs, live=args.parsing)
+    vzer = KeyGroupVectorizer()
+    X_gen = vzer.fit_transform(feats)
+    # pylint: enable=invalid-name
+    labtor = DialogueActVectorizer(instance_generator, DIALOGUE_ACTS)
+    y_gen = labtor.transform(dialogues)
+
+    if not fp.exists(args.output):
         os.makedirs(args.output)
 
-    just_edus_file = of_bn + '.just-edus' + of_ext
-    with codecs.open(just_edus_file, 'wb') as ofile:
-        gen = features.extract_single_features(inputs)
-        try:
-            _write_singles(gen, ofile)
-        except StopIteration:
-            # FIXME: I have a nagging feeling that we should properly
-            # support this by just printing a CSV header and nothing
-            # else, but I'm trying to minimise code paths and for now
-            # failing in this corner case feels like a lesser evil :-/
-            sys.exit("No features to extract!")
+    # list dialogue acts
+    comment = labels_comment(labtor.labelset_)
+
+    # dump: EDUs, pairings, vectorized pairings with label
+    edu_input_file = out_file + '.edu_input'
+    dump_edu_input_file(dialogues, edu_input_file)
+    dump_svmlight_file(X_gen, y_gen, out_file, comment=comment)
+
+    # dump vocabulary
+    vocab_file = out_file + '.vocab'
+    dump_vocabulary(vzer.vocabulary_, vocab_file)
+
 
 
 def main_corpus_pairs(args):
@@ -164,6 +165,9 @@ def main_corpus_pairs(args):
     labtor = LabelVectorizer(instance_generator, labels)
     y_gen = labtor.transform(dialogues)
 
+    if not fp.exists(args.output):
+        os.makedirs(args.output)
+
     dump_all(X_gen,
              y_gen,
              out_file,
@@ -184,7 +188,6 @@ def main(args):
         raise Exception('Still broken')
         #main_parsing_pairs(args)
     elif args.single:
-        raise Exception('Still broken')
-        #main_corpus_single(args)
+        main_corpus_single(args)
     else:
         main_corpus_pairs(args)

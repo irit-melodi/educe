@@ -84,6 +84,19 @@ class EDU(object):
         self._unit_anno = unit_anno
         self.span = self._anno.text_span()  # used by vectorizer
 
+    def dialogue_act(self):
+        """
+        The (normalised) speech act associated with this EDU
+        (None if unknown)
+        """
+        dact = self._unit_anno.type
+        if dact == 'Strategic_comment':
+            return 'Other'
+        elif dact == 'Segment':
+            return None
+        else:
+            return dact
+
     def text(self):
         "The text for just this EDU"
         return self._doc.text(self.span)

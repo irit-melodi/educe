@@ -1411,13 +1411,7 @@ def _extract_single(env, edu):
     """
     vec = SingleEduKeysForSingleExtraction(env.inputs)
     vec.fill(env.current, edu)
-    if env.live:
-        return vec
-    else:
-        act = real_dialogue_act(edu)
-        cl_vec = ClassKeyGroup(vec)
-        cl_vec.set_class(clean_dialogue_act(act))
-        return cl_vec
+    return vec
 
 
 def _extract_doc_singles(env):
