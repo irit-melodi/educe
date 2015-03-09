@@ -68,11 +68,6 @@ def config_argparser(parser):
                         help="Features for single EDUs (instead of pairs)")
     parser.add_argument('--parsing', action='store_true',
                         help='Extract features for parsing')
-    parser.add_argument('--debug', action='store_true',
-                        help='Emit fields used for debugging purposes')
-    parser.add_argument('--experimental', action='store_true',
-                        help='Enable experimental features '
-                             '(currently corenlp)')
     parser.add_argument('--ignore-cdus', action='store_true',
                         help='Avoid going into CDUs')
     parser.set_defaults(func=main)

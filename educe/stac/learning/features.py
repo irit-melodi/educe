@@ -326,7 +326,7 @@ FeatureInput = namedtuple('FeatureInput',
                            'lexicons', 'pdtb_lex',
                            'verbnet_entries',
                            'inquirer_lex',
-                           'ignore_cdus', 'debug', 'experimental'])
+                           'ignore_cdus'])
 
 # Overlaps with FeatureInput a bit; if this keeps up we may merge
 # them somehow
@@ -406,19 +406,6 @@ def clean_dialogue_act(act):
     return "Other" if act2 == "Strategic_comment" else act2
 
 
-def friendly_dialogue_id(k, span):
-    """
-    Dialogue identifier which may be easier to understand when debugging
-    the feature vector (based on its text span).
-
-    The regular timestamp based identifiers look too much like each other.
-    """
-    bname = os.path.basename(educe.stac.id_to_path(k))
-    start = span.char_start
-    end = span.char_end
-    return '%s_%04d_%04d' % (bname, start, end)
-
-
 # ---------------------------------------------------------------------
 # single EDU non-lexical features
 # ---------------------------------------------------------------------
@@ -437,12 +424,6 @@ def feat_start(_, edu):
 def feat_end(_, edu):
     "text span end"
     return edu.text_span().char_end
-
-
-@type_text
-def feat_text(current, edu):
-    "EDU text [debug only]"
-    return current.doc.text(edu.text_span())
 
 
 @context_feature
@@ -636,16 +617,6 @@ def feat_annotator(current, edu1, edu2):
     anno = current.doc.origin.annotator
     return "none" if anno is None or anno is "" else anno
 #pylint: enable=unused-argument
-
-
-@type_text
-def feat_pair_text(current, edu1, edu2):
-    "text from DU1 start to DU2 end [debug only]"
-    doc = current.doc
-    edu1_span = edu1.text_span()
-    edu2_span = edu2.text_span()
-    big_span = edu1_span.merge(edu2_span)
-    return doc.text(big_span)
 
 
 @tuple_feature(underscore)  # decorator does the pairing boilerplate
@@ -923,16 +894,6 @@ class SingleEduSubgroup(KeyGroup):
             vec[key.name] = key.function(current, edu)
 
 
-class SingleEduSubgroup_Debug(SingleEduSubgroup):
-    """
-    debug features
-    """
-    def __init__(self):
-        desc = self.__doc__.strip()
-        keys = [MagicKey.meta_fn(feat_text)]
-        super(SingleEduSubgroup_Debug, self).__init__(desc, keys)
-
-
 class SingleEduSubgroup_Token(SingleEduSubgroup):
     """
     word/token-based features
@@ -1008,8 +969,6 @@ class SingleEduKeys(MergedKeyGroup):
                   SingleEduSubgroup_Punct(),
                   SingleEduSubgroup_Parser(),
                   MergedLexKeyGroup(inputs)]
-        if inputs.debug:
-            groups.append(SingleEduSubgroup_Debug())
         super(SingleEduKeys, self).__init__("single EDU features",
                                             groups)
 
@@ -1020,45 +979,6 @@ class SingleEduKeys(MergedKeyGroup):
         vec = self if target is None else target
         for group in self.groups:
             group.fill(current, edu, vec)
-
-# ---------------------------------------------------------------------
-# EDU singletons (standalone mode)
-# ---------------------------------------------------------------------
-
-
-class SingleEduSubgroup_Standalone(SingleEduSubgroup):
-    """
-    additional keys for single EDU in standalone mode
-    """
-    def __init__(self):
-        desc = self.__doc__.strip()
-        keys = [Key.meta("dialogue", "dialogue that contains both EDUs")]
-        super(SingleEduSubgroup_Standalone, self).__init__(desc, keys)
-
-    def fill(self, current, edu, target=None):
-        vec = self if target is None else target
-        dia_span = current.contexts[edu].dialogue.text_span()
-        vec["dialogue"] = friendly_dialogue_id(current.key, dia_span)
-
-
-class SingleEduKeysForSingleExtraction(MergedKeyGroup):
-    """
-    Features for a single EDU, not used within EDU pair extraction,
-    but just in standalone mode for dialogue act annotations
-    """
-    def __init__(self, inputs):
-        groups = [SingleEduSubgroup_Standalone(),
-                  SingleEduKeys(inputs)]
-        super(SingleEduKeysForSingleExtraction,
-              self).__init__("standalone single EDUs", groups)
-
-    def fill(self, current, edu, target=None):
-        "See `SingleEduSubgroup`"
-
-        vec = self if target is None else target
-        for group in self.groups:
-            group.fill(current, edu, vec)
-
 
 # ---------------------------------------------------------------------
 # EDU pairs
@@ -1146,20 +1066,6 @@ class PairSubgroup_Gap(PairSubgroup):
             vec[key.name] = key.function(current, gap, edu1, edu2)
 
 
-class PairSubgroup_Debug(PairSubgroup):
-    "debug features"
-
-    def __init__(self):
-        desc = self.__doc__.strip()
-        keys = [MagicKey.meta_fn(feat_pair_text)]
-        super(PairSubgroup_Debug, self).__init__(desc, keys)
-
-    def fill(self, current, edu1, edu2, target=None):
-        vec = self if target is None else target
-        for key in self.keys:
-            vec[key.name] = key.function(current, edu1, edu2)
-
-
 class PairKeys(MergedKeyGroup):
     """
     Features for pairs of EDUs
@@ -1168,9 +1074,6 @@ class PairKeys(MergedKeyGroup):
         self.sf_cache = sf_cache
         groups = [PairSubgroup_Gap(sf_cache),
                   PairSubgroup_Tuple(inputs, sf_cache)]
-        if inputs.debug:
-            groups.append(PairSubgroup_Debug())
-
         if sf_cache is None:
             self.edu1 = SingleEduKeys(inputs)
             self.edu2 = SingleEduKeys(inputs)
@@ -1405,16 +1308,6 @@ def extract_pair_features(inputs, window, live=False):
 # extraction generators (single edu)
 # ---------------------------------------------------------------------
 
-
-def _extract_single(env, edu):
-    """
-    Extraction for a single EDU
-    """
-    vec = SingleEduKeysForSingleExtraction(env.inputs)
-    vec.fill(env.current, edu)
-    return vec
-
-
 def _extract_doc_singles(env):
     """
     Extraction for all relevant single EDUs in a document
@@ -1422,7 +1315,10 @@ def _extract_doc_singles(env):
     """
     doc = env.current.doc
     edus = [unit for unit in doc.units if educe.stac.is_edu(unit)]
-    return (_extract_single(env, edu) for edu in edus)
+    for edu in edus:
+        vec = SingleEduKeys(env.inputs)
+        vec.fill(env.current, edu)
+        yield vec
 
 
 def extract_single_features(inputs, live=False):
@@ -1481,15 +1377,13 @@ def _read_resources(args, corpus, postags, parses):
                        for x in VERBNET_CLASSES]
     return FeatureInput(corpus, postags, parses,
                         LEXICONS, pdtb_lex, verbnet_entries, inq_lex,
-                        args.ignore_cdus, args.debug, args.experimental)
+                        args.ignore_cdus)
 
 
 def read_list_inputs(args):
     """
     Read just the resources and flags needed to do a feature listing
     """
-    args.debug = True
-    args.experimental = True
     args.ignore_cdus = None
     return _read_resources(args, None, None, None)
 
