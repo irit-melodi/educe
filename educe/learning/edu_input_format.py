@@ -84,6 +84,22 @@ def dump_pairings_file(epairs, f):
         _dump_pairings_file(epairs, f)
 
 
+def labels_comment(class_mapping):
+    """Return a string listing class labels in the format that
+    attelo expects
+    """
+    classes_ = [lbl for lbl, _ in sorted(class_mapping.items(),
+                                         key=lambda x: x[1])]
+    # first item should be reserved for unknown labels
+    # we don't want to output this
+    classes_ = classes_[1:]
+    if classes_:
+        comment = 'labels: {}'.format(' '.join(classes_))
+    else:
+        comment = None
+    return comment
+
+
 def dump_all(X_gen, y_gen, f, class_mapping, docs, instance_generator):
     """Dump a whole dataset: features (in svmlight) and EDU pairs
 
@@ -98,15 +114,7 @@ def dump_all(X_gen, y_gen, f, class_mapping, docs, instance_generator):
     """
     # the labelset will be written in a comment at the beginning of the
     # svmlight file
-    classes_ = [lbl for lbl, idx in sorted(class_mapping.items(),
-                                           key=lambda x: x[1])]
-    # first item should be reserved for unknown labels
-    # we don't want to output this
-    classes_ = classes_[1:]
-    if classes_:
-        comment = 'labels: {}'.format(' '.join(classes_))
-    else:
-        comment = None
+    comment = labels_comment(class_mapping)
 
     # dump: EDUs, pairings, vectorized pairings with label
     edu_input_file = f + '.edu_input'
