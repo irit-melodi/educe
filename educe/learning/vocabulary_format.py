@@ -19,3 +19,19 @@ def dump_vocabulary(vocabulary, f):
     """
     with codecs.open(f, 'w', 'utf-8') as f:
         _dump_vocabulary(vocabulary, f)
+
+
+def _load_vocabulary(f):
+    """Actually read the vocabulary"""
+    vocabulary = {}
+    for row in f.readlines():
+        name, idx_ = row.split('\t', 2)
+        vocabulary[name] = int(idx_) - 1
+    return vocabulary
+
+
+def load_vocabulary(f):
+    """Read vocabulary file into a dictionary of feature name
+    and index"""
+    with codecs.open(f, 'r', 'utf-8') as f:
+        return _load_vocabulary(f)
