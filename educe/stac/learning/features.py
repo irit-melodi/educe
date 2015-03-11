@@ -1310,6 +1310,9 @@ def extract_single_features(inputs, stage):
     """
     for env in mk_envs(inputs, stage):
         doc = env.current.doc
+        # skip any documents which are not yet annotated
+        if env.current.unitdoc is None:
+            continue
         edus = [unit for unit in doc.units if educe.stac.is_edu(unit)]
         for edu in edus:
             vec = SingleEduKeys(env.inputs)
