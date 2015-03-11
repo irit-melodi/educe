@@ -94,9 +94,9 @@ def np_info(inputs, lexinfo, key, item):
     return fields
 
 
-def _on_doc(inputs, lexinfo, people, key, live):
+def _on_doc(inputs, lexinfo, people, key):
     "all resource nps for a document"
-    env = mk_env(inputs, people, key, live)
+    env = mk_env(inputs, people, key)
     doc = inputs.corpus[key]
     results = []
     _, lex_lookup = lexinfo
@@ -147,9 +147,13 @@ def _read_corpus_inputs(args):
     postags = postag.read_tags(corpus, args.corpus)
     parses = corenlp.read_results(corpus, args.corpus)
     LEXICON.read(args.resources)
-    return FeatureInput(corpus, postags, parses,
-                        [LEXICON], None, None, None,
-                        True, True, True)
+    return FeatureInput(corpus=corpus,
+                        postags=postags,
+                        parses=parses,
+                        lexicons=[LEXICON],
+                        pdtb_lex=None,
+                        verbnet_entries=None,
+                        inquirer_lex=None)
 
 
 def _conll_writer(args):
@@ -169,7 +173,7 @@ def main(args):
     inputs = _read_corpus_inputs(args)
     lexinfo = _mk_lexlookup(inputs.lexicons)
     players = get_players(inputs)
-    rows = concat(_on_doc(inputs, lexinfo, players, key, False)
+    rows = concat(_on_doc(inputs, lexinfo, players, key)
                   for key in inputs.corpus)
 
     writer = _conll_writer(args)
