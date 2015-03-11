@@ -84,7 +84,10 @@ class EDU(object):
         The (normalised) speech act associated with this EDU
         (None if unknown)
         """
-        dact = self._unit_anno.type
+        if self._unit_anno is None:
+            return None
+        else:
+            dact = self._unit_anno.type
         if dact == 'Strategic_comment':
             return 'Other'
         elif dact == 'Segment':
