@@ -299,30 +299,3 @@ class MergedKeyGroup(KeyGroup):
         for group in groups:
             keys.extend(group.keys)
         super(MergedKeyGroup, self).__init__(description, keys)
-
-
-# pylint: disable=too-many-public-methods, pointless-string-statement
-class ClassKeyGroup(KeyGroup):
-    """
-    A key group which contains a single class key and another
-    key group. The help text does not mention the class key.
-
-    To set the class value, use `set_class`
-    (the usual dictionary mechanism also works if you don't
-    mind having to remember the name of the key)
-    """
-    def __init__(self, group, classname="CLASS"):
-        keys = [Key.discrete(classname, "what we are trying to learn",
-                             purpose=Purpose.CLASS)]
-        self.classname = classname
-        self.group = group
-        self.value = None
-        super(ClassKeyGroup, self).__init__("", keys)
-
-    def set_class(self, value):
-        """
-        Set the value to be associated with the distinguished
-        class key
-        """
-        self[self.classname] = value
-# pylint: enable=too-many-public-methods, pointless-string-statement

@@ -24,8 +24,7 @@ from educe.annotation import Span
 from educe.external.parser import\
     SearchableTree,\
     ConstituencyTree
-from educe.learning.keys import\
-    MagicKey, Key, KeyGroup, MergedKeyGroup, ClassKeyGroup
+from educe.learning.keys import (MagicKey, Key, KeyGroup, MergedKeyGroup)
 from educe.stac import postag, corenlp
 from educe.stac.annotation import speaker, addressees
 from educe.learning.csv import tune_for_csv
