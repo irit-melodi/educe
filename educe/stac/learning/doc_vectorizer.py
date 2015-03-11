@@ -2,6 +2,9 @@
 
 # pylint: disable=too-few-public-methods
 
+from .features import clean_dialogue_act
+
+
 UNK = '__UNK__'
 ROOT = 'ROOT'
 UNRELATED = 'UNRELATED'
@@ -28,7 +31,7 @@ class DialogueActVectorizer(object):
         # run through documents to generate y
         for doc in raw_documents:
             for edu in self.instance_generator(doc):
-                label = edu.dialogue_act() or UNK
+                label = clean_dialogue_act(edu.dialogue_act() or UNK)
                 yield self.labelset_[label]
 
 
