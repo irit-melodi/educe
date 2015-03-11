@@ -411,7 +411,8 @@ def clean_dialogue_act(act):
     pref = "FIXME:"
     # pylint: enable=fixme
     act2 = act[len(pref):] if act.startswith(pref) else act
-    return "Other" if act2 == "Strategic_comment" else act2
+    return "Other" if act2 in ["Strategic_comment",
+                               "Preference"] else act2
 
 
 # ---------------------------------------------------------------------
