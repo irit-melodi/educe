@@ -127,6 +127,20 @@ INQUIRER_CLASSES = ['Positiv',
                     'Route']   # related to Catan game
 
 # ---------------------------------------------------------------------
+# preprocessing
+# ---------------------------------------------------------------------
+
+def strip_cdus(corpus):
+    """
+    For all documents in a corpus, remove any CDUs and relink the
+    document accordingly.  This mutates the corpus
+    """
+    for key in corpus:
+        # replace all CDUs in links with their recursive heads
+        graph = stac_gr.Graph.from_doc(corpus, key)
+        graph.strip_cdus(sloppy=True)
+
+# ---------------------------------------------------------------------
 # relation queries
 # ---------------------------------------------------------------------
 
@@ -317,19 +331,14 @@ def enclosed_trees(span, trees):
 # or we can wrap the class, but eh...
 
 # feature extraction environment
-DocEnv = namedtuple("DocEnv", "inputs current sf_cache live")
+DocEnv = namedtuple("DocEnv", "inputs current sf_cache")
 
 # Global resources and settings used to extract feature vectors
 FeatureInput = namedtuple('FeatureInput',
                           ['corpus', 'postags', 'parses',
                            'lexicons', 'pdtb_lex',
                            'verbnet_entries',
-                           'inquirer_lex',
-                           'ignore_cdus'])
-
-# Overlaps with FeatureInput a bit; if this keeps up we may merge
-# them somehow
-Resources = namedtuple('Resources', "lexicons pdtb_lex")
+                           'inquirer_lex'])
 
 # A document and relevant contextual information
 DocumentPlus = namedtuple('DocumentPlus',
@@ -1136,19 +1145,13 @@ class FeatureCache(dict):
 # ---------------------------------------------------------------------
 
 
-def _get_unit_key(inputs, key, live):
+def _get_unit_key(inputs, key):
     """
     Given the key for what is presumably a discourse level or
     unannotated document, return the key for for its unit-level
     equivalent.
-
-    In live/parsing mode, we assume we are working with
-    unannotated data; so we relax the match a bit by
-    ignoring the author
-
-    May be None if there is no such key equivalent
     """
-    if live:
+    if key.annotator is None:
         twins = [k for k in inputs.corpus if
                  k.doc == key.doc and
                  k.subdoc == key.subdoc and
@@ -1160,18 +1163,12 @@ def _get_unit_key(inputs, key, live):
         return twin if twin in inputs.corpus else None
 
 
-def mk_env(inputs, people, key, live):
+def mk_env(inputs, people, key):
     """
     Pre-process and bundle up a representation of the current document
     """
     doc = inputs.corpus[key]
-    if not inputs.ignore_cdus:
-        # replace all CDUs in links with their recursive heads
-        graph = stac_gr.Graph.from_doc(inputs.corpus, key)
-        # pylint: disable=maybe-no-member
-        graph.strip_cdus(sloppy=True)
-        # pylint: enable=maybe-no-member
-    unit_key = _get_unit_key(inputs, key, live)
+    unit_key = _get_unit_key(inputs, key)
     current =\
         DocumentPlus(key=key,
                      doc=doc,
@@ -1182,8 +1179,7 @@ def mk_env(inputs, people, key, live):
 
     return DocEnv(inputs=inputs,
                   current=current,
-                  sf_cache=FeatureCache(inputs, current),
-                  live=live)
+                  sf_cache=FeatureCache(inputs, current))
 
 
 def get_players(inputs):
@@ -1268,70 +1264,57 @@ def _mk_high_level_dialogues(current):
         yield Dialogue(dia, d_edus, d_relations)
 
 
-def mk_envs(inputs, live=False):
+def mk_envs(inputs, stage):
     """
-    Generate an environment for each document in the corpus.
+    Generate an environment for each document in the corpus
+    within the given stage.
+
     The environment pools together all the information we
     have on a single document
     """
-    stage = 'unannotated' if live else 'discourse'
     people = get_players(inputs)
     for key in inputs.corpus:
-        if stage is not None and key.stage != stage:
+        if key.stage != stage:
             continue
-        yield mk_env(inputs, people, key, live)
+        yield mk_env(inputs, people, key)
 
 
-def mk_high_level_dialogues(inputs, live=False):
+def mk_high_level_dialogues(inputs, stage):
     """
     Generate all relevant EDU pairs for a document
     (generator)
     """
-    for env in mk_envs(inputs, live):
+    for env in mk_envs(inputs, stage):
         for dia in _mk_high_level_dialogues(env.current):
             yield dia
 
 
-def extract_pair_features(inputs, live=False):
+def extract_pair_features(inputs, stage):
     """
     Extraction for all relevant pairs in a document
     (generator)
     """
-    for env in mk_envs(inputs, live):
+    for env in mk_envs(inputs, stage):
         for dia in _mk_high_level_dialogues(env.current):
             for edu1, edu2 in dia.edu_pairs():
                 yield _extract_pair(env, edu1._anno, edu2._anno)
-
 
 # ---------------------------------------------------------------------
 # extraction generators (single edu)
 # ---------------------------------------------------------------------
 
-def _extract_doc_singles(env):
-    """
-    Extraction for all relevant single EDUs in a document
-    (generator)
-    """
-    doc = env.current.doc
-    edus = [unit for unit in doc.units if educe.stac.is_edu(unit)]
-    for edu in edus:
-        vec = SingleEduKeys(env.inputs)
-        vec.fill(env.current, edu)
-        yield vec
 
-
-def extract_single_features(inputs, live=False):
+def extract_single_features(inputs, stage):
     """
     Return a dictionary for each EDU
     """
-    people = get_players(inputs)
-    for k in inputs.corpus:
-        if k.stage != 'units':
-            continue
-        env = mk_env(inputs, people, k, live)
-        for res in _extract_doc_singles(env):
-            yield res
-
+    for env in mk_envs(inputs, stage):
+        doc = env.current.doc
+        edus = [unit for unit in doc.units if educe.stac.is_edu(unit)]
+        for edu in edus:
+            vec = SingleEduKeys(env.inputs)
+            vec.fill(env.current, edu)
+            yield vec
 
 # ---------------------------------------------------------------------
 # input readers
@@ -1363,44 +1346,29 @@ def _read_inquirer_lexicon(args):
     return words
 
 
-def _read_resources(args, corpus, postags, parses):
+def mk_is_interesting(args, single):
     """
-    Read all external resources
-    """
-    for lex in LEXICONS:
-        lex.read(args.resources)
-    pdtb_lex = read_pdtb_lexicon(args)
-    inq_lex = _read_inquirer_lexicon(args)
+    Return a function that filters corpus keys to pick out the ones
+    we specified on the command line
 
-    verbnet_entries = [VerbNetEntry(x, frozenset(vnet.lemmas(x)))
-                       for x in VERBNET_CLASSES]
-    return FeatureInput(corpus, postags, parses,
-                        LEXICONS, pdtb_lex, verbnet_entries, inq_lex,
-                        args.ignore_cdus)
+    We have two cases here: for pair extraction, we just want to
+    grab the units and if possible the discourse stage. In live mode,
+    there won't be a discourse stage, but that's fine because we can
+    just fall back on units.
 
+    For single extraction (dialogue acts), we'll also want to grab the
+    units stage and fall back to unannotated when in live mode. This
+    is made a bit trickier by the fact that unannotated does not have
+    an annotator, so we have to accomodate that.
 
-def read_list_inputs(args):
-    """
-    Read just the resources and flags needed to do a feature listing
-    """
-    args.ignore_cdus = None
-    return _read_resources(args, None, None, None)
+    Phew.
 
+    It's a bit specific to feature extraction in that here we are
+    trying
 
-def read_common_inputs(args, corpus):
+    :type single: bool
     """
-    Read the data that is common to live/corpus mode.
-    """
-    postags = postag.read_tags(corpus, args.corpus)
-    parses = corenlp.read_results(corpus, args.corpus)
-    return _read_resources(args, corpus, postags, parses)
-
-
-def read_corpus_inputs(args):
-    """
-    Read and filter the part of the corpus we want features for
-    """
-    if args.single:
+    if single:
         # ignore annotator filter for unannotated documents
         args1 = copy.copy(args)
         args1.annotator = None
@@ -1408,16 +1376,42 @@ def read_corpus_inputs(args):
             educe.util.mk_is_interesting(args1,
                                          preselected={'stage': ['unannotated']})
         # but pay attention to it for units
+        args2 = args
         is_interesting2 =\
-            educe.util.mk_is_interesting(args,
+            educe.util.mk_is_interesting(args2,
                                          preselected={'stage': ['units']})
-        is_interesting = lambda x: is_interesting1(x) or is_interesting2(x)
+        return lambda x: is_interesting1(x) or is_interesting2(x)
     else:
         preselected = {"stage": ["discourse", "units"]}
-        is_interesting = educe.util.mk_is_interesting(args,
-                                                      preselected=preselected)
+        return educe.util.mk_is_interesting(args, preselected=preselected)
 
+
+def read_corpus_inputs(args):
+    """
+    Read and filter the part of the corpus we want features for
+    """
     reader = educe.stac.Reader(args.corpus)
-    anno_files = reader.filter(reader.files(), is_interesting)
+    anno_files = reader.filter(reader.files(),
+                               mk_is_interesting(args, args.single))
     corpus = reader.slurp(anno_files, verbose=True)
-    return read_common_inputs(args, corpus)
+
+    if not args.ignore_cdus:
+        strip_cdus(corpus)
+    postags = postag.read_tags(corpus, args.corpus)
+    parses = corenlp.read_results(corpus, args.corpus)
+
+    for lex in LEXICONS:
+        lex.read(args.resources)
+    pdtb_lex = read_pdtb_lexicon(args)
+    inq_lex = _read_inquirer_lexicon(args)
+
+    verbnet_entries = [VerbNetEntry(x, frozenset(vnet.lemmas(x)))
+                       for x in VERBNET_CLASSES]
+
+    return FeatureInput(corpus=corpus,
+                        postags=postags,
+                        parses=parses,
+                        lexicons=LEXICONS,
+                        pdtb_lex=pdtb_lex,
+                        verbnet_entries=verbnet_entries,
+                        inquirer_lex=inq_lex)

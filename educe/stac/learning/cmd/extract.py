@@ -79,15 +79,18 @@ def main_single(args):
     (single edus only)
     """
     inputs = features.read_corpus_inputs(args)
-    dialogues = list(mk_high_level_dialogues(inputs, args.parsing))
+    stage = 'unannotated'  # dialogue extract will hunt down
+                           # any unit level annotations that
+                           # go with this if possible
+    dialogues = list(mk_high_level_dialogues(inputs, stage))
     # these paths should go away once we switch to a proper dumper
     out_file = fp.join(args.output, fp.basename(args.corpus))
-    out_file += '.just-edus.sparse'
+    out_file += '.dialogue-acts.sparse'
     instance_generator = lambda x: x.edus[1:]  # drop fake root
 
     # pylint: disable=invalid-name
     # scikit-convention
-    feats = extract_single_features(inputs, live=args.parsing)
+    feats = extract_single_features(inputs, stage)
     vzer = KeyGroupVectorizer()
     X_gen = vzer.fit_transform(feats)
     # pylint: enable=invalid-name
@@ -115,7 +118,8 @@ def main_pairs(args):
     The usual main. Extract feature vectors from the corpus
     """
     inputs = features.read_corpus_inputs(args)
-    dialogues = list(mk_high_level_dialogues(inputs, args.parsing))
+    stage = 'unannotated' if args.parsing else 'discourse'
+    dialogues = list(mk_high_level_dialogues(inputs, stage))
     # these paths should go away once we switch to a proper dumper
     out_file = fp.join(args.output, fp.basename(args.corpus))
     out_file += '.relations.sparse'
@@ -126,7 +130,7 @@ def main_pairs(args):
 
     # pylint: disable=invalid-name
     # scikit-convention
-    feats = extract_pair_features(inputs, live=args.parsing)
+    feats = extract_pair_features(inputs, stage)
     vzer = KeyGroupVectorizer()
     X_gen = vzer.fit_transform(feats)
     # pylint: enable=invalid-name
