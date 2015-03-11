@@ -1243,10 +1243,12 @@ def _mk_high_level_dialogues(current):
     dialogues = {} # EDU -> glozz anno
     edus_in_dialogues = defaultdict(list)
     for anno in annos:
+        unit_anno = None if current.unitdoc is None\
+            else educe.stac.twin_from(current.unitdoc, anno)
         edu = EDU(doc,
                   current.contexts[anno],
                   anno,
-                  educe.stac.twin_from(current.unitdoc, anno))
+                  unit_anno)
         edus.append(edu)
         dia = current.contexts[anno].dialogue
         dialogues[edu] = dia
