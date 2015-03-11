@@ -29,21 +29,6 @@ class Substance(object):
     STRING = 3
     BASKET = 4
 
-    @classmethod
-    def to_orange(cls, substance):
-        """
-        Orange-compatible string representation
-        """
-        if substance is cls.CONTINUOUS:
-            return "c"
-        elif substance is cls.DISCRETE:
-            return "d"
-        elif substance is cls.STRING:
-            return "s"
-        elif substance is cls.BASKET:
-            return "basket"
-        else:
-            raise ValueError("Unknown substance " + substance)
 
 
 class Key(object):
