@@ -30,7 +30,6 @@ class Substance(object):
     BASKET = 4
 
 
-
 class Key(object):
     """
     Feature name plus a bit of metadata
@@ -128,29 +127,29 @@ class KeyGroup(dict):
         suffix is added to the feature name
         """
         for key in self.keys:
-            ks = key.substance
-            fn = key.name
-            fv = self[fn]
-            if fv is None:
+            subst = key.substance
+            kname = key.name
+            fval = self[kname]
+            if fval is None:
                 continue
 
-            if ks is Substance.DISCRETE:
-                if fv is False:
+            if subst is Substance.DISCRETE:
+                if fval is False:
                     continue
-                feature = u'{}{}={}'.format(fn, suffix, fv)
+                feature = u'{}{}={}'.format(kname, suffix, fval)
                 yield (feature, 1)
-            elif ks is Substance.CONTINUOUS:
-                feature = u'{}{}'.format(fn, suffix)
-                yield (feature, fv)
-            elif ks is Substance.STRING:
-                feature = u'{}{}={}'.format(fn, suffix, fv)
+            elif subst is Substance.CONTINUOUS:
+                feature = u'{}{}'.format(kname, suffix)
+                yield (feature, fval)
+            elif subst is Substance.STRING:
+                feature = u'{}{}={}'.format(kname, suffix, fval)
                 yield (feature, 1)
-            elif ks is Substance.BASKET:
-                for k, v in fv.items():
-                    feature = u'{}{}'.format(k, suffix)
-                    yield (feature, v)
+            elif subst is Substance.BASKET:
+                for bkey, bval in fval.items():
+                    feature = u'{}{}'.format(bkey, suffix)
+                    yield (feature, bval)
             else:
-                raise ValueError('Unknown substance for {}'.format(ks))
+                raise ValueError('Unknown substance for {}'.format(subst))
 
 
 class MergedKeyGroup(KeyGroup):
