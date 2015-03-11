@@ -35,7 +35,7 @@ class DialogueActVectorizer(object):
 class LabelVectorizer(object):
     """Label extractor for the STAC corpus."""
 
-    def __init__(self, instance_generator, labels):
+    def __init__(self, instance_generator, labels, zero=False):
         """
         instance_generator to enumerate the instances from a doc
 
@@ -46,14 +46,16 @@ class LabelVectorizer(object):
         self.labelset_[UNK] = 0
         self.labelset_[ROOT] = 1
         self.labelset_[UNRELATED] = 2
+        self._zero = zero
 
     def transform(self, raw_documents):
         """Learn the label encoder and return a vector of labels
 
         There is one label per instance extracted from raw_documents.
         """
+        zlabel = UNK if self._zero else UNRELATED
         # run through documents to generate y
         for doc in raw_documents:
             for pair in self.instance_generator(doc):
-                label = doc.relations.get(pair, UNRELATED)
+                label = doc.relations.get(pair, zlabel)
                 yield self.labelset_[label]
