@@ -220,9 +220,9 @@ def read_annotation_file(anno_filename, text_filename):
     tree = None
 
     # read text file
-    text, text_annos = load_rst_wsj_corpus_text_file(text_filename)
+    text, sents, paras = load_rst_wsj_corpus_text_file(text_filename)
     # use it as context for the RST tree
-    context = RSTContext(text, text_annos)
+    context = RSTContext(text, sents, paras)
     # read RST tree
     with codecs.open(anno_filename, 'r', 'utf-8') as stream:
         tree = parse_rst_dt_tree(stream.read(), context)

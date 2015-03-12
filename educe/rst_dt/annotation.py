@@ -37,9 +37,12 @@ class RSTContext(object):
     accompany a RST tree proper. The idea is to have each subtree
     pointing back to the same context object for easy retrieval.
     """
-    def __init__(self, text, paragraphs):
+    def __init__(self, text, sentences, paragraphs):
         self._text = text
         "original text on which standoff annotations are based"
+
+        self.sentences = sentences
+        "sentence annotations pointing back to the text"
 
         self.paragraphs = paragraphs
         "Paragraph annotations pointing back to the text"

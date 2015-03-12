@@ -122,8 +122,14 @@ SINGLE_SENTENCE = [
 def extract_single_sentence(edu_info):
     """Sentence features for the EDU"""
     try:
-        yield ('num_edus_from_sent_start', str(edu_info['edu_idx_in_sent']))
-        yield ('num_edus_to_sent_end', str(edu_info['edu_rev_idx_in_sent']))
+        offset = edu_info['edu_idx_in_sent']
+        if offset is not None:
+            yield ('num_edus_from_sent_start', str(offset))
+
+        rev_offset = edu_info['edu_rev_idx_in_sent']
+        if rev_offset is not None:
+            yield ('num_edus_to_sent_end', str(rev_offset))
+
         # position of sentence in doc
         sent_id = edu_info['sent_idx']
         if sent_id is not None:
@@ -372,10 +378,12 @@ def extract_pair_sent(edu_info1, edu_info2):
     except KeyError:
         pass
     else:
-        yield ('offset_diff', str(offset1 - offset2))
-        yield ('offset_diff_div3', str((offset1 - offset2) / 3))
-        yield ('offset_pair', (offset1, offset2))
-        yield ('offset_div3_pair', (offset1 / 3, offset2 / 3))
+        if offset1 is not None and offset2 is not None:
+            yield ('offset_diff', str(offset1 - offset2))
+            yield ('offset_diff_div3', str((offset1 - offset2) / 3))
+            yield ('offset_pair', (offset1, offset2))
+            yield ('offset_div3_pair', (offset1 / 3, offset2 / 3))
+
     # rev_offset features
     try:
         rev_offset1 = edu_info1['edu_rev_idx_in_sent']
@@ -383,10 +391,11 @@ def extract_pair_sent(edu_info1, edu_info2):
     except KeyError:
         pass
     else:
-        yield ('rev_offset_diff', str(rev_offset1 - rev_offset2))
-        yield ('rev_offset_diff_div3', str((rev_offset1 - rev_offset2) / 3))
-        yield ('rev_offset_pair', (rev_offset1, rev_offset2))
-        yield ('rev_offset_div3_pair', (rev_offset1 / 3, rev_offset2 / 3))
+        if rev_offset1 is not None and offset2 is not None:
+            yield ('rev_offset_diff', str(rev_offset1 - rev_offset2))
+            yield ('rev_offset_diff_div3', str((rev_offset1 - rev_offset2) / 3))
+            yield ('rev_offset_pair', (rev_offset1, rev_offset2))
+            yield ('rev_offset_div3_pair', (rev_offset1 / 3, rev_offset2 / 3))
 
     # lineID: distance of edu in EDUs from document start
     line_id1 = edu_info1['edu'].num - 1  # real EDU numbers are in [1..]

@@ -10,6 +10,13 @@ from educe.annotation import Span
 from educe.rst_dt.text import Paragraph, Sentence
 
 
+MAIN_FOLDER = 'RSTtrees-WSJ-main-1.0'
+TRAIN_FOLDER = os.path.join(MAIN_FOLDER, 'TRAINING')
+TEST_FOLDER = os.path.join(MAIN_FOLDER, 'TEST')
+# subset that has been double-annotated
+DOUBLE_FOLDER = 'RSTtrees-WSJ-double-1.0'
+
+
 def _load_rst_wsj_corpus_edus_file(f):
     """Actually do load"""
     txt = []
@@ -44,8 +51,7 @@ def load_rst_wsj_corpus_edus_file(f):
 # file## files
 ##############
 
-# TODO: maybe don't generate Paragraph, as there is no paragraph marking
-FIL_SEP_PARA = '\n\n'  # probably useless
+# fileN documents lack paragraph delimitations
 FIL_SEP_SENT = '\n  '
 
 
@@ -55,25 +61,23 @@ def _load_rst_wsj_corpus_text_file_file(f):
 
     start = 0
     sent_id = 0
-    output_paras = []
-    for para_id, paragraph in enumerate(text.split(FIL_SEP_PARA)):
-        output_sentences = []
-        for sentence in paragraph.split(FIL_SEP_SENT):
-            end = start + len(sentence)
-            # NEW: remove leading white spaces
-            lws = len(sentence) - len(sentence.lstrip())
-            if lws:
-                start += lws
-            # end NEW
-            if end > start:
-                output_sentences.append(Sentence(sent_id, Span(start, end)))
-                sent_id += 1
-            start = end + 3  # + 3 for + len(FIL_SEP_SENT)
-        output_paras.append(Paragraph(para_id, output_sentences))
-        start -= 1  # start += len(FIL_SEP_PARA) - len(FIL_SEP_SENT)
+    output_sents = []
+    output_paras = None  # paragraph marking are missing from these documents
+
+    for sentence in text.split(FIL_SEP_SENT):
+        end = start + len(sentence)
+        # NEW: remove leading white spaces
+        lws = len(sentence) - len(sentence.lstrip())
+        if lws:
+            start += lws
+        # end NEW
+        if end > start:
+            output_sents.append(Sentence(sent_id, Span(start, end)))
+            sent_id += 1
+        start = end + 3  # + 3 for + len(FIL_SEP_SENT)
     # TODO remove trailing '\n' of last sentence
 
-    return text, output_paras
+    return text, output_sents, output_paras
 
 
 def load_rst_wsj_corpus_text_file_file(f):
@@ -83,8 +87,8 @@ def load_rst_wsj_corpus_text_file_file(f):
     Each line contains a sentence preceded by two or three leading spaces.
     """
     with codecs.open(f, 'r', 'utf-8') as f:
-        text, paragraphs = _load_rst_wsj_corpus_text_file_file(f)
-    return (text, paragraphs)
+        text, sents, paras = _load_rst_wsj_corpus_text_file_file(f)
+    return (text, sents, paras)
 
 
 ##################
@@ -100,9 +104,10 @@ def _load_rst_wsj_corpus_text_file_wsj(f):
 
     start = 0
     sent_id = 0
+    output_sents = []
     output_paras = []
     for para_id, paragraph in enumerate(text.split(WSJ_SEP_PARA)):
-        output_sentences = []
+        para_sents = []
         for sentence in paragraph.split(WSJ_SEP_SENT):
             end = start + len(sentence)
             # NEW: remove trailing white space
@@ -111,13 +116,14 @@ def _load_rst_wsj_corpus_text_file_wsj(f):
                 end -= rws
             # end NEW
             if end > start:
-                output_sentences.append(Sentence(sent_id, Span(start, end)))
+                para_sents.append(Sentence(sent_id, Span(start, end)))
                 sent_id += 1
             start = end + rws + 1  # + 1 for + len(WSJ_SEP_SENT)
-        output_paras.append(Paragraph(para_id, output_sentences))
+        output_paras.append(Paragraph(para_id, para_sents))
+        output_sents.extend(para_sents)
         start += 2  # whitespace and second newline
 
-    return text, output_paras
+    return text, output_sents, output_paras
 
 
 def load_rst_wsj_corpus_text_file_wsj(f):
@@ -135,14 +141,14 @@ def load_rst_wsj_corpus_text_file_wsj(f):
     rough approximation, it may be helpful.
     """
     with codecs.open(f, 'r', 'utf-8') as f:
-        text, paragraphs = _load_rst_wsj_corpus_text_file_wsj(f)
-    return (text, paragraphs)
+        text, sents, paras = _load_rst_wsj_corpus_text_file_wsj(f)
+    return (text, sents, paras)
 
 
 def load_rst_wsj_corpus_text_file(f):
     """Load a text file from the RST-WSJ-CORPUS.
 
-    Return a sequence of Paragraph annotations from an RST text.
+    Return the text plus its sentences and paragraphs.
 
     The corpus contains two types of text files, so this function is
     mainly an entry point that delegates to the appropriate function.

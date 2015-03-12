@@ -124,7 +124,7 @@ def lowest_common_parent(treepositions):
 def relative_indices(group_indices, reverse=False):
     """Generate a list of relative indices inside each group.
 
-    Each None value triggers a new group.
+    None values are mapped to None.
     """
     # TODO rewrite using np.ediff1d, np.where and the like
 
@@ -137,7 +137,7 @@ def relative_indices(group_indices, reverse=False):
     result = []
     for group_idx, dup_values in groupby(group_indices):
         if group_idx is None:
-            rel_indices = (0 for dup_value in dup_values)
+            rel_indices = (None for dup_value in dup_values)
         else:
             rel_indices = (rel_idx for rel_idx, dv in enumerate(dup_values))
         result.extend(rel_indices)
@@ -149,7 +149,14 @@ def relative_indices(group_indices, reverse=False):
 
 
 class DocumentPlusPreprocessor(object):
-    """Preprocessor for feature extraction on a DocumentPlus"""
+    """Preprocessor for feature extraction on a DocumentPlus
+
+    This pre-processor currently does not explicitly impute missing values,
+    but it probably should eventually.
+    As the ultimate output is features in a sparse format, the current
+    strategy amounts to imputing missing values as 0, which is most
+    certainly not optimal.
+    """
 
     def __init__(self, token_filter=None):
         """
@@ -164,6 +171,8 @@ class DocumentPlusPreprocessor(object):
         """Preprocess a document and output basic features for each EDU.
 
         Return a dict(EDU, (dict(basic_feat_name, basic_feat_val)))
+
+        TODO explicitly impute missing values, e.g. for (rev_)idxes_in_*
         """
         token_filter = self.token_filter
 
