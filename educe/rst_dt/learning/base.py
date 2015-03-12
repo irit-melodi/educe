@@ -121,10 +121,17 @@ def lowest_common_parent(treepositions):
 # end of tree utils
 
 
-def relative_indices(group_indices, reverse=False):
+def relative_indices(group_indices, reverse=False, valna=None):
     """Generate a list of relative indices inside each group.
+    Missing (None) values are handled specifically: each missing
+    value is mapped to `valna`.
 
-    None values are mapped to None.
+    Parameters
+    ----------
+    reverse: boolean, optional
+        If True, compute indices relative to the end of each group.
+    valna: int or None, optional
+        Relative index for missing values.
     """
     # TODO rewrite using np.ediff1d, np.where and the like
 
@@ -137,7 +144,7 @@ def relative_indices(group_indices, reverse=False):
     result = []
     for group_idx, dup_values in groupby(group_indices):
         if group_idx is None:
-            rel_indices = (None for dup_value in dup_values)
+            rel_indices = (valna for dup_value in dup_values)
         else:
             rel_indices = (rel_idx for rel_idx, dv in enumerate(dup_values))
         result.extend(rel_indices)
