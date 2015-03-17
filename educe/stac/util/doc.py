@@ -323,8 +323,11 @@ def move_portion(renames, src_doc, tgt_doc,
     middle = rename_ids(renames,
                         shift_annotations(snipped, len(prefix_text)))
 
-    new_tgt_doc = shift_annotations(tgt_doc, len(middle_text),
-                                    point=tgt_split)
+    if tgt_split > 0:
+        new_tgt_doc = shift_annotations(tgt_doc, len(middle_text),
+                                        point=tgt_split)
+    else:
+        new_tgt_doc = copy.deepcopy(tgt_doc)
     _set_doc_parts(new_tgt_doc, [new_tgt_doc, middle])
     evil_set_text(new_tgt_doc, prefix_text + middle_text + suffix_text)
 
