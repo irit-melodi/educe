@@ -230,6 +230,8 @@ def split_doc(doc, middle):
         Note that this is not the same as checking for enclosure
         because we do not include the rightward edge
         """
+        if span is None:
+            return False
         return span.char_start < point and span.char_end > point
 
     leftovers = [x for x in doc.annotations()
