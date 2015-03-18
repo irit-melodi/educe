@@ -7,18 +7,14 @@ Merge adjacent EDUs
 
 from __future__ import print_function
 from collections import namedtuple
-import collections
 import copy
 import sys
 
 import educe.stac
-from educe.stac.graph import EnclosureGraph
 
 from ..annotate import show_diff, annotate_doc
-from ..context import sorted_first_widest, edus_in_span
-from ..glozz import\
-    TimestampCache, set_anno_author, set_anno_date,\
-    anno_id_from_tuple
+from ..context import (edus_in_span)
+from ..glozz import (TimestampCache, set_anno_author, set_anno_date)
 from ..args import\
     add_usual_input_args,\
     add_usual_output_args,\
@@ -73,12 +69,9 @@ def _actually_merge(tcache, edus, doc):
 
     def one_or_join(strs):
         "Return element if singleton, otherwise moosh together"
+        strs = [x for x in strs if x is not None]
         return list(strs)[0] if len(strs) == 1\
             else _MERGE_PREFIX + "/".join(strs)
-
-    def exists(item):
-        "True if the item is not None"
-        return item is not None
 
     if not edus:
         return
@@ -90,9 +83,10 @@ def _actually_merge(tcache, edus, doc):
 
     if doc.origin.stage == 'units':
         new_edu.type = one_or_join(frozenset(x.type for x in edus))
-        for key in frozenset(x for edu in edus for x in edu.features.keys()):
-            old_values = frozenset(filter(exists, (x.features.get(key)
-                                                   for x in edus)))
+        # feature keys for all edus
+        all_keys = frozenset(x for edu in edus for x in edu.features.keys())
+        for key in all_keys:
+            old_values = frozenset(x.features.get(key) for x in edus)
             new_edu.features[key] = one_or_join(old_values)
 
     # in-place replacement
@@ -107,7 +101,7 @@ def _actually_merge(tcache, edus, doc):
         retarget(doc, edu.local_id(), new_edu)
 
 
-def _merge_edus(tcache, k, span, doc):
+def _merge_edus(tcache, span, doc):
     """
     Find any EDUs within the given span in the document
     and merge them into a single one.
@@ -200,7 +194,7 @@ def main(args):
     for k in corpus:
         old_doc = corpus[k]
         new_doc = copy.deepcopy(old_doc)
-        _merge_edus(tcache, k, args.span, new_doc)
+        _merge_edus(tcache, args.span, new_doc)
         diffs = _mini_diff(k, old_doc, new_doc, args.span)
         print("\n".join(diffs).encode('utf-8'), file=sys.stderr)
         save_document(output_dir, k, new_doc)
