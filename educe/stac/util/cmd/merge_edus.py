@@ -32,7 +32,7 @@ from ..output import save_document
 from .split_edu import\
     _AUTHOR, _SPLIT_PREFIX
 
-NAME = 'merge-edus'
+NAME = 'merge-edu'
 # pylint: disable=fixme
 _MERGE_PREFIX = _SPLIT_PREFIX
 # pylint: enable=fixme
