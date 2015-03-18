@@ -184,12 +184,14 @@ class DocumentPlusPreprocessor(object):
         token_filter = self.token_filter
 
         edus = doc.edus
-        edu2sent = doc.edu2sent
-        edu2para = doc.edu2para
-        edu2raw_sent = doc.edu2raw_sent
         raw_words = doc.raw_words  # TEMPORARY
-        ptb_tokens = doc.ptb_tokens
-        ptb_trees = doc.ptb_trees
+        tokens = doc.tkd_tokens
+        trees = doc.tkd_trees
+        # mappings from EDU to other annotations
+        edu2raw_sent = doc.edu2raw_sent
+        edu2para = doc.edu2para
+        edu2sent = doc.edu2sent
+        edu2tokens = doc.edu2tokens
         # pre-compute relative indices (in sent, para) in one iteration
         idxes_in_sent = relative_indices(edu2sent)
         rev_idxes_in_sent = relative_indices(edu2sent, reverse=True)
@@ -229,9 +231,10 @@ class DocumentPlusPreprocessor(object):
             res['raw_words'] = raw_words[edu]
 
             # tokens
-            if ptb_tokens is not None:
-                tokens = ptb_tokens[edu]
-                if tokens is not None:
+            if tokens is not None:
+                tok_idcs = edu2tokens[edu_idx]
+                toks = [tokens[tok_idx] for tok_idx in tok_idcs]
+                if toks is not None:
                     tokens = [tt for tt in tokens if token_filter(tt)]
                     res['tokens'] = tokens
                     res['tags'] = [tok.tag for tok in tokens]
@@ -262,10 +265,11 @@ class DocumentPlusPreprocessor(object):
             res['edu_rev_idx_in_para'] = rev_idxes_in_para[edu_idx]
 
             # syntax
-            if ptb_trees is not None:
-                ptrees = ptb_trees[edu]
-                if ptrees is not None:
-                    res['ptrees'] = ptrees
+            if len(trees) > 1:
+                tree_idx = edu2sent[edu_idx]
+                if tree_idx is not None:
+                    tree = trees[tree_idx]
+                    res['ptree'] = tree
 
             result[edu] = res
 

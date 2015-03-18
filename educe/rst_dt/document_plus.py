@@ -270,42 +270,34 @@ class DocumentPlus(object):
         """Compute for each EDU the overlapping tokens"""
         tokens = self.tkd_tokens
         if len(tokens) == 1:  # only lpad
-            self.ptb_tokens = None
+            self.edu2tokens = None
             return self
 
         # TODO possibly: replace this with a greedy procedure
         # that assigns each token to exactly one EDU
 
-        ptb_tokens = dict()  # overlapping PTB tokens
+        edu2tokens = []  # PTB tokens that overlap with this EDU
 
-        syn_trees = self.tkd_trees
         edus = self.edus
-        edu2sent = self.edu2sent
 
         for i, edu in enumerate(edus):
             if edu.is_left_padding():
-                start_token = tokens[0]
-                ptb_toks = [start_token]
+                tok_idcs = [0]  # 0 is the index of the start token
             else:
-                ptb_toks = [tok for tok in tokens
+                tok_idcs = [tok_idx
+                            for tok_idx, tok in enumerate(tokens)
                             if tok.overlaps(edu)]
-                # if possible, take tokens only from the tree chosen by
-                # align_with_trees()
-                ptree_idx = edu2sent[i]
-                if ptree_idx is not None:
-                    ptree = syn_trees[ptree_idx]
-                    if ptree is not None:
-                        clean_ptb_toks = [tok for tok in ptree.leaves()
-                                          if tok.overlaps(edu)]
-                        ptb_toks = clean_ptb_toks
-            ptb_tokens[edu] = ptb_toks
+                # TODO store the index of the first token of each EDU
+                # this will be useful for future features
 
-        self.ptb_tokens = ptb_tokens
+            edu2tokens.append(tok_idcs)
+
+        self.edu2tokens = edu2tokens
 
         return self
 
     # TODO move functionality to ptb.py
-    def align_with_trees(self):
+    def align_with_trees(self, strict=False):
         """Compute for each EDU the overlapping trees"""
         syn_trees = self.tkd_trees
 
@@ -313,62 +305,58 @@ class DocumentPlus(object):
         # use the raw (bad) one from the .out
         if len(syn_trees) == 1:  # only lpad
             self.edu2sent = self.edu2raw_sent
-            self.ptb_trees = None  # mark for deprecation
             return self
 
         edu2sent = []
-        ptb_trees = dict()  # mark for deprecation
 
         edus = self.edus
 
         # left padding EDU
         assert edus[0].is_left_padding()
         edu2sent.append(0)
-        ptb_trees[edus[0]] = []  # mark for deprecation
+
         # regular EDUs
         for edu in edus[1:]:
-            ptrees = [tree for tree in syn_trees
-                      if (tree is not None and
-                          tree.overlaps(edu))]
-            ptb_trees[edu] = ptrees  # mark for deprecation
-            # get the actual tree
-            if len(ptrees) == 0:
-                # no tree at all can happen when the EDU text is totally
+            tree_idcs = [tree_idx
+                         for tree_idx, tree in enumerate(syn_trees)
+                         if tree is not None and tree.overlaps(edu)]
+
+            if len(tree_idcs) == 1:
+                tree_idx = tree_idcs[0]
+            elif len(tree_idcs) == 0:
+                # "no tree at all" can happen when the EDU text is totally
                 # absent from the list of sentences of this doc in the PTB
                 # ex: wsj_0696.out, last sentence
-                ptree_idx = None
-            elif len(ptrees) == 1:
-                ptree = ptrees[0]
-                ptree_idx = syn_trees.index(ptree)
-            else:  # len(ptrees) > 1
-                # if more than one PTB trees overlap with this EDU,
-                # pick the PTB tree with maximal overlap
-                # if it covers at least 90% of the chars of the EDU
-                len_espan = edu.span.length()  # length of EDU span
-                ovlaps = [t.overlaps(edu).length()
-                          for t in ptrees]
+                if strict:
+                    print(edu)
+                    emsg = 'No PTB tree for this EDU'
+                    raise ValueError(emsg)
+
+                tree_idx = None
+            else:
+                # more than one PTB trees overlap with this EDU
+                if strict:
+                    emsg = ('Segmentation mismatch:',
+                            'one EDU, more than one PTB tree')
+                    print(edu)
+                    for ptree in ptrees:
+                        print('    ', [str(leaf) for leaf in ptree.leaves()])
+                    raise ValueError(emsg)
+
+                # heuristics: pick the PTB tree with maximal overlap
+                # with the EDU span
+                len_espan = edu.span.length()
+                ovlaps = [syn_trees[tree_idx].overlaps(edu).length()
+                          for tree_idx in tree_idcs]
                 ovlap_ratios = [float(ovlap) / len_espan
                                 for ovlap in ovlaps]
-                # cry for help if it goes bad
-                if max(ovlap_ratios) < 0.5:
-                    emsg = 'Slightly unsure about this EDU segmentation'
-                    # print('EDU: ', edu)
-                    # print('ptrees: ', [t.leaves() for t in ptrees])
-                    # raise ValueError(emsg)
-                # otherwise just emit err msgs for info
-                if False:
-                    err_msg = 'More than one PTB tree for this EDU'
-                    print(err_msg)
-                    print('EDU: ', edu)
-                    print('ovlap_ratios: ', ovlap_ratios)
-                # proceed and get the tree with max overlap
+                # find the argmax
                 max_idx = ovlap_ratios.index(max(ovlap_ratios))
-                ptree = ptrees[max_idx]
-                ptree_idx = syn_trees.index(ptree)
-            edu2sent.append(ptree_idx)
+                tree_idx = tree_idcs[max_idx]
+
+            edu2sent.append(tree_idx)
 
         self.edu2sent = edu2sent
-        self.ptb_trees = ptb_trees  # mark for deprecation
 
         return self
 

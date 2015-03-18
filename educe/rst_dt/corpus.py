@@ -239,15 +239,18 @@ def _open_plus(doc_key, dis_filename, txt_filename, rel_conv=None,
 
     # get syntactic information
     if syn_parser is not None:
+        # tokenization + POS tagging
         docp = syn_parser.tokenize(docp)
-        docp = syn_parser.parse(docp)
-        # align with EDUs
-        docp = docp.align_with_trees()
         docp = docp.align_with_tokens()
+        # constituent trees
+        docp = syn_parser.parse(docp)
+        docp = docp.align_with_trees()
+
     # dummy, fallback tokenization if there is not PTB gold or silver
     docp = docp.align_with_raw_words()
 
     return docp
+
 
 def load_rst_wsj_documents(corpusdir, load_content=True, labelset='coarse',
                            syn_parser=None):
@@ -292,7 +295,6 @@ def load_rst_wsj_documents(corpusdir, load_content=True, labelset='coarse',
     return {file_id: (dis_fn, txt_fn)
             for file_id, dis_fn, txt_fn
             in zip(file_ids, dis_filenames, txt_filenames)}
-
 
 
 def load_rst_wsj_corpus(corpus_home, subset='train', labelset='coarse',
