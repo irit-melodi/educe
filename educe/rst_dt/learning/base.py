@@ -174,7 +174,7 @@ class DocumentPlusPreprocessor(object):
             token_filter = lambda token: True
         self.token_filter = token_filter
 
-    def preprocess(self, doc):
+    def preprocess(self, doc, strict=False):
         """Preprocess a document and output basic features for each EDU.
 
         Return a dict(EDU, (dict(basic_feat_name, basic_feat_val)))
@@ -240,11 +240,13 @@ class DocumentPlusPreprocessor(object):
                     res['tags'] = [tok.tag for tok in filtd_toks]
                     res['words'] = [tok.word for tok in filtd_toks]
                 else:
-                    emsg = 'No token for EDU'
-                    print(list(enumerate(tokens)))
-                    print(tok_idcs)
-                    print(edu.text())
-                    raise ValueError(emsg)
+                    if strict:
+                        emsg = 'No token for EDU'
+                        print(list(enumerate(tokens)))
+                        print(tok_idcs)
+                        print(edu.text())
+                        raise ValueError(emsg)
+                    # maybe I should fill res with empty lists? unclear
 
             # doc structure
 
