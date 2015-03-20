@@ -171,7 +171,7 @@ class DocumentPlus(object):
 
         self.edu2para = edu2para
 
-        # align EDUs with sentences
+        # align EDUs with raw sentences
         # NB: this usually fails due to bad sentence segmentation, e.g.
         # ... Prof.\nHarold ... in wsj_##.out files,
         # or end of sentence missing in file## files.
@@ -218,24 +218,6 @@ class DocumentPlus(object):
 
         self.edu2raw_sent = edu2raw_sent
 
-        # surrounders (backwards compat)
-        # map left padding EDU to left padding paragraph and raw_sentence
-        surrounders = dict()
-        for i, edu in enumerate(edus):
-            if edu2para is None or edu2para[i] is None:
-                para = None
-            else:
-                para = paragraphs[edu2para[i]]
-
-            if edu2raw_sent is None or edu2raw_sent[i] is None:
-                raw_sent = None
-            else:
-                raw_sent = raw_sentences[edu2raw_sent[i]]
-
-            surrounders[edu] = (para, raw_sent)
-
-        self.surrounders = surrounders  # mark for deprecation
-
         return self
 
     def align_with_raw_words(self):
@@ -276,7 +258,7 @@ class DocumentPlus(object):
         # TODO possibly: replace this with a greedy procedure
         # that assigns each token to exactly one EDU
 
-        edu2tokens = []  # PTB tokens that overlap with this EDU
+        edu2tokens = []  # tokens that overlap with this EDU
 
         edus = self.edus
 
@@ -293,7 +275,6 @@ class DocumentPlus(object):
             edu2tokens.append(tok_idcs)
 
         self.edu2tokens = edu2tokens
-
         return self
 
     # TODO move functionality to ptb.py
@@ -357,7 +338,6 @@ class DocumentPlus(object):
             edu2sent.append(tree_idx)
 
         self.edu2sent = edu2sent
-
         return self
 
     def all_edu_pairs(self):

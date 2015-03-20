@@ -168,33 +168,31 @@ def get_syntactic_labels(edu_info):
     result = []
 
     try:
-        ptrees = edu_info['ptrees']
+        ptree = edu_info['ptree']
     except KeyError:
         return None
 
     edu = edu_info['edu']
 
-    # for each PTB tree, get the tree position of its leaves that are in the
-    # EDU
-    tpos_leaves_edu = ((ptree, [tpos_leaf
-                                for tpos_leaf in ptree.treepositions('leaves')
-                                if ptree[tpos_leaf].overlaps(edu)])
-                       for ptree in ptrees)
+    # get the tree position of the leaves of the syntactic tree that are in
+    # the EDU
+    tpos_leaves_edu = [tpos_leaf
+                       for tpos_leaf in ptree.treepositions('leaves')
+                       if ptree[tpos_leaf].overlaps(edu)]
     # for each span of syntactic leaves in this EDU
-    for ptree, leaves in tpos_leaves_edu:
-        tpos_parent = lowest_common_parent(leaves)
-        # for each leaf between leftmost and rightmost, add its ancestors
-        # up to the lowest common parent
-        for leaf in leaves:
-            for i in reversed(range(len(leaf))):
-                tpos_node = leaf[:i]
-                node = ptree[tpos_node]
-                node_lbl = treenode(node)
-                if tpos_node == tpos_parent:
-                    result.append('top_' + node_lbl)
-                    break
-                else:
-                    result.append(node_lbl)
+    tpos_parent = lowest_common_parent(tpos_leaves_edu)
+    # for each leaf between leftmost and rightmost, add its ancestors
+    # up to the lowest common parent
+    for leaf in tpos_leaves_edu:
+        for i in reversed(range(len(leaf))):
+            tpos_node = leaf[:i]
+            node = ptree[tpos_node]
+            node_lbl = treenode(node)
+            if tpos_node == tpos_parent:
+                result.append('top_' + node_lbl)
+                break
+            else:
+                result.append(node_lbl)
     return result
 
 
