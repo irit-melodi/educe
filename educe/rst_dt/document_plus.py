@@ -262,16 +262,18 @@ class DocumentPlus(object):
 
         edus = self.edus
 
-        for i, edu in enumerate(edus):
-            if edu.is_left_padding():
-                tok_idcs = [0]  # 0 is the index of the start token
-            else:
-                tok_idcs = [tok_idx
-                            for tok_idx, tok in enumerate(tokens)
-                            if tok.overlaps(edu)]
-                # TODO store the index of the first token of each EDU
-                # this will be useful for future features
+        # left padding EDU
+        assert edus[0].is_left_padding()
+        tok_idcs = [0]  # 0 is the index of the start token
+        edu2tokens.append(tok_idcs)
 
+        # regular EDUs
+        for edu in edus[1:]:
+            tok_idcs = [tok_idx
+                        for tok_idx, tok in enumerate(tokens[1:], start=1)
+                        if tok.overlaps(edu)]
+            # TODO store the index of the first token of each EDU
+            # this will be useful for future features
             edu2tokens.append(tok_idcs)
 
         self.edu2tokens = edu2tokens
@@ -299,7 +301,7 @@ class DocumentPlus(object):
         # regular EDUs
         for edu in edus[1:]:
             tree_idcs = [tree_idx
-                         for tree_idx, tree in enumerate(syn_trees)
+                         for tree_idx, tree in enumerate(syn_trees[1:], start=1)
                          if tree is not None and tree.overlaps(edu)]
 
             if len(tree_idcs) == 1:

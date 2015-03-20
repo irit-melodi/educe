@@ -235,7 +235,7 @@ class DocumentPlusPreprocessor(object):
                 tok_idcs = edu2tokens[edu_idx]
                 toks = [tokens[tok_idx] for tok_idx in tok_idcs]
                 if toks:
-                    filtd_toks = [tt for tt in tokens if token_filter(tt)]
+                    filtd_toks = [tt for tt in toks if token_filter(tt)]
                     res['tokens'] = filtd_toks
                     res['tags'] = [tok.tag for tok in filtd_toks]
                     res['words'] = [tok.word for tok in filtd_toks]

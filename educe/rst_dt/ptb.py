@@ -241,8 +241,8 @@ class PtbParser(object):
 
         # get doc text
         # here we cheat and get it from the RST-DT tree
-        rst_text = doc.orig_rsttree.text()
-        # rst_text = doc.text  # TODO
+        # was: rst_text = doc.orig_rsttree.text()
+        rst_text = doc.text
         tagged_tokens = self.reader.tagged_words(ptb_name)
         # tweak tokens THEN filter empty nodes
         tweaked1, tweaked2 =\
