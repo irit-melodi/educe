@@ -234,11 +234,17 @@ class DocumentPlusPreprocessor(object):
             if tokens is not None:
                 tok_idcs = edu2tokens[edu_idx]
                 toks = [tokens[tok_idx] for tok_idx in tok_idcs]
-                if toks is not None:
-                    tokens = [tt for tt in tokens if token_filter(tt)]
-                    res['tokens'] = tokens
-                    res['tags'] = [tok.tag for tok in tokens]
-                    res['words'] = [tok.word for tok in tokens]
+                if toks:
+                    filtd_toks = [tt for tt in tokens if token_filter(tt)]
+                    res['tokens'] = filtd_toks
+                    res['tags'] = [tok.tag for tok in filtd_toks]
+                    res['words'] = [tok.word for tok in filtd_toks]
+                else:
+                    emsg = 'No token for EDU'
+                    print(list(enumerate(tokens)))
+                    print(tok_idcs)
+                    print(edu.text())
+                    raise ValueError(emsg)
 
             # doc structure
 
