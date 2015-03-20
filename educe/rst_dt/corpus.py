@@ -5,7 +5,6 @@
 Corpus management (re-exported by educe.rst_dt)
 """
 
-import itertools
 import os
 import sys
 from glob import glob
@@ -182,7 +181,6 @@ class RstRelationConverter(object):
 
     def convert_tree(self, rst_tree):
         """Change relation labels in rst_tree using the mapping"""
-        relmap = self.relmap
         conv_lbl = self.convert_label
         for pos in rst_tree.treepositions():
             t = rst_tree[pos]
