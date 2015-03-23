@@ -60,17 +60,16 @@ class BasicRfc(object):
         return (graph.is_relation(lnk) and
                 len(nodes) == 2 and nodes[1] == node)
 
-    def frontier(self):
+    def _frontier_points(self, nodes):
         """
-        Return nodes on the right frontier, a dictionary
-        mapping each node to the nearest node (in the sequence)
-        that either
+        Given an ordered sequence of nodes, return a dictionary
+        mapping each node to the nearest node
+        (in the sequence) that either
 
         * points to it with a subordinating relation
         * includes it as a CDU member
         """
         graph = self._graph
-        nodes = graph.first_widest_dus()
 
         def position(name):
             'return a relative position for a node'
@@ -99,9 +98,27 @@ class BasicRfc(object):
 
         return points
 
+    def frontier(self, last=None):
+        """
+        Return the list of nodes on the right frontier of a graph
+        given the last node (if not specified, we take the very
+        last node)
+        """
+        graph = self._graph
+        nodes = graph.first_widest_dus()
+        points = self._frontier_points(nodes)
+        if nodes:
+            last = last or nodes[-1]
+            res = [last]
+            for rfc_node in self._build_right_frontier(points, last):
+                res.append(rfc_node)
+            return res
+        else:
+            return []
+
     def violations(self):
         '''
-        Return a dictionary of node names which are the targets of right
+        Return a dictionary of node names which are the parents of right
         frontier violation, along with the offending relation instance edge
         names.
 
@@ -115,7 +132,7 @@ class BasicRfc(object):
         if len(nodes) < 2:
             return res
 
-        points = self.frontier()
+        points = self._frontier_points(nodes)
         nexts = itr.islice(nodes, 1, None)
         for last, node1 in itr.izip(nodes, nexts):
             for lnk in graph.links(node1):
