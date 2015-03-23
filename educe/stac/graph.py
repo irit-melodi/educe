@@ -239,90 +239,12 @@ class Graph(educe.graph.Graph):
         return self.sorted_first_widest(dus)
 
 
-    def _build_right_frontier(self, points, last):
-        """
-        Given a dictionary mapping each node to its closest
-        right frontier node, generate a path up that frontier.
-        """
-        frontier = []
-        current  = last
-        while current in points:
-            next    = points[current]
-            yield current
-            current = next
-
-    def _is_on_right_frontier(self, points, last, node):
-        """
-        Return True if node is on the right frontier as
-        represented by the pair points/last.
-
-        This uses `build_frontier`
-        """
-        return any(fnode == node for fnode in
-                   self._build_right_frontier(points, last))
-
-    def _frontier_points(self, nodes):
-        """
-        Given an ordered sequence of nodes in this graph return a dictionary
-        mapping each node to the nearest node (in the sequence) that either
-
-        * points to it with a subordinating relation
-        * includes it as a CDU member
-        """
-        points = {}
-        def position(n):
-            if n in nodes:
-                return nodes.index(n)
-            else:
-                return -1
-
-        for n1 in nodes:
-            candidates = []
-
-            def is_incoming_subordinate_rel(l):
-                ns = self.links(l)
-                return self.is_relation(l)\
-                        and stac.is_subordinating(self.annotation(l))\
-                        and len(ns) == 2 and ns[1] == n1
-
-            def add_candidate(n2):
-                candidates.append((n2,position(n2)))
-
-            for l in self.links(n1):
-                if is_incoming_subordinate_rel(l):
-                    n2 = self.links(l)[0]
-                    add_candidate(n2)
-                elif self.is_cdu(l):
-                    n2 = self.mirror(l)
-                    add_candidate(n2)
-
-            if candidates:
-                best = max(candidates, key=lambda x:x[1])
-                points[n1] = best[0]
-            else:
-                points[n1] = None
-
-        return points
-
     def right_frontier_violations(self):
-        nodes      = self.first_widest_dus()
-        violations = collections.defaultdict(list)
-        if len(nodes) < 2:
-            return violations
+        '''
+        See educe.stac.rfc
+        '''
+        return BasicRfc(self).violations()
 
-        points = self._frontier_points(nodes)
-        nexts  = itertools.islice(nodes, 1, None)
-        for last,n1 in itertools.izip(nodes, nexts):
-            def is_incoming(l):
-                ns = self.links(l)
-                return self.is_relation(l) and len(ns) == 2 and ns[1] == n1
-
-            for l in self.links(n1):
-                if not is_incoming(l): continue
-                n2 = self.links(l)[0]
-                if not self._is_on_right_frontier(points, last, n2):
-                    violations[n2].append(l)
-        return violations
 
 class DotGraph(educe.graph.DotGraph):
     """
