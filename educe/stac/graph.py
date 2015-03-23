@@ -25,6 +25,7 @@ from .. import corpus, stac, annotation
 from ..graph import *
 import educe.graph
 import educe.stac.annotation as stac_anno
+from .rfc import BasicRfc
 
 # ---------------------------------------------------------------------
 #
