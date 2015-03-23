@@ -338,9 +338,9 @@ class DotGraph(educe.graph.DotGraph):
         if 'highlight' in anno.features:
             attrs['fontcolor'] = anno.features['highlight']
             attrs['color'] = anno.features['highlight']
-        elif not stac.is_subordinating(anno):
-            attrs['fontcolor'] = 'dodgerblue4'
-            attrs['color'    ] = 'gray13'
+
+        if not stac.is_subordinating(anno):
+            attrs['style'] = 'dashed'
         return attrs
 
     def _complex_rel_attrs(self, anno):
