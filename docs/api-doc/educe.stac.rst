@@ -63,6 +63,14 @@ educe.stac.postag module
     :undoc-members:
     :show-inheritance:
 
+educe.stac.rfc module
+---------------------
+
+.. automodule:: educe.stac.rfc
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Module contents
 ---------------
