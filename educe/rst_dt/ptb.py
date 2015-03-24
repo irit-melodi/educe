@@ -19,15 +19,13 @@ from nltk.corpus.reader import BracketParseCorpusReader
 # pylint: enable=no-name-in-module
 
 from educe.annotation import Span
-from educe.external.parser import\
-    ConstituencyTree
-from educe.external.postag import\
-    generic_token_spans, Token
+from educe.external.parser import (ConstituencyTree)
+from educe.external.postag import (generic_token_spans, Token)
 from educe.internalutil import izip
-from educe.ptb.annotation import\
-    PTB_TO_TEXT, is_nonword_token, TweakedToken,\
-    transform_tree, strip_subcategory, prune_tree, is_non_empty,\
-    is_empty_category
+from educe.ptb.annotation import (PTB_TO_TEXT, is_nonword_token,
+                                  TweakedToken, transform_tree,
+                                  strip_subcategory, prune_tree,
+                                  is_non_empty, is_empty_category)
 
 
 # map RST-WSJ files to PTB files
@@ -243,7 +241,8 @@ class PtbParser(object):
 
         # get doc text
         # here we cheat and get it from the RST-DT tree
-        rst_text = doc.orig_rsttree.text()
+        # was: rst_text = doc.orig_rsttree.text()
+        rst_text = doc.text
         tagged_tokens = self.reader.tagged_words(ptb_name)
         # tweak tokens THEN filter empty nodes
         tweaked1, tweaked2 =\
@@ -281,7 +280,7 @@ class PtbParser(object):
         doc_tokens = doc.tkd_tokens[1:]  # skip left padding token
         tokens_iter = iter(doc_tokens)
 
-        results = []
+        trees = []
         for tree in self.reader.parsed_sents(ptb_name):
             # apply standard cleaning to tree
             # strip function tags, remove empty nodes
@@ -291,8 +290,9 @@ class PtbParser(object):
             #
             leaves = tree_no_empty_no_gf.leaves()
             tslice = itertools.islice(tokens_iter, len(leaves))
-            results.append(ConstituencyTree.build(tree_no_empty_no_gf,
-                                                  tslice))
+            clean_tree = ConstituencyTree.build(tree_no_empty_no_gf,
+                                                tslice)
+            trees.append(clean_tree)
         # store trees in doc
-        doc.tkd_trees.extend(results)
+        doc.tkd_trees.extend(trees)
         return doc

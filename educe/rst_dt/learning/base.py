@@ -121,10 +121,17 @@ def lowest_common_parent(treepositions):
 # end of tree utils
 
 
-def relative_indices(group_indices, reverse=False):
+def relative_indices(group_indices, reverse=False, valna=None):
     """Generate a list of relative indices inside each group.
+    Missing (None) values are handled specifically: each missing
+    value is mapped to `valna`.
 
-    Each None value triggers a new group.
+    Parameters
+    ----------
+    reverse: boolean, optional
+        If True, compute indices relative to the end of each group.
+    valna: int or None, optional
+        Relative index for missing values.
     """
     # TODO rewrite using np.ediff1d, np.where and the like
 
@@ -137,7 +144,7 @@ def relative_indices(group_indices, reverse=False):
     result = []
     for group_idx, dup_values in groupby(group_indices):
         if group_idx is None:
-            rel_indices = (0 for dup_value in dup_values)
+            rel_indices = (valna for dup_value in dup_values)
         else:
             rel_indices = (rel_idx for rel_idx, dv in enumerate(dup_values))
         result.extend(rel_indices)
@@ -149,7 +156,14 @@ def relative_indices(group_indices, reverse=False):
 
 
 class DocumentPlusPreprocessor(object):
-    """Preprocessor for feature extraction on a DocumentPlus"""
+    """Preprocessor for feature extraction on a DocumentPlus
+
+    This pre-processor currently does not explicitly impute missing values,
+    but it probably should eventually.
+    As the ultimate output is features in a sparse format, the current
+    strategy amounts to imputing missing values as 0, which is most
+    certainly not optimal.
+    """
 
     def __init__(self, token_filter=None):
         """
@@ -160,20 +174,24 @@ class DocumentPlusPreprocessor(object):
             token_filter = lambda token: True
         self.token_filter = token_filter
 
-    def preprocess(self, doc):
+    def preprocess(self, doc, strict=False):
         """Preprocess a document and output basic features for each EDU.
 
         Return a dict(EDU, (dict(basic_feat_name, basic_feat_val)))
+
+        TODO explicitly impute missing values, e.g. for (rev_)idxes_in_*
         """
         token_filter = self.token_filter
 
         edus = doc.edus
-        edu2sent = doc.edu2sent
-        edu2para = doc.edu2para
-        edu2raw_sent = doc.edu2raw_sent
         raw_words = doc.raw_words  # TEMPORARY
-        ptb_tokens = doc.ptb_tokens
-        ptb_trees = doc.ptb_trees
+        tokens = doc.tkd_tokens
+        trees = doc.tkd_trees
+        # mappings from EDU to other annotations
+        edu2raw_sent = doc.edu2raw_sent
+        edu2para = doc.edu2para
+        edu2sent = doc.edu2sent
+        edu2tokens = doc.edu2tokens
         # pre-compute relative indices (in sent, para) in one iteration
         idxes_in_sent = relative_indices(edu2sent)
         rev_idxes_in_sent = relative_indices(edu2sent, reverse=True)
@@ -213,13 +231,22 @@ class DocumentPlusPreprocessor(object):
             res['raw_words'] = raw_words[edu]
 
             # tokens
-            if ptb_tokens is not None:
-                tokens = ptb_tokens[edu]
-                if tokens is not None:
-                    tokens = [tt for tt in tokens if token_filter(tt)]
-                    res['tokens'] = tokens
-                    res['tags'] = [tok.tag for tok in tokens]
-                    res['words'] = [tok.word for tok in tokens]
+            if tokens is not None:
+                tok_idcs = edu2tokens[edu_idx]
+                toks = [tokens[tok_idx] for tok_idx in tok_idcs]
+                if toks:
+                    filtd_toks = [tt for tt in toks if token_filter(tt)]
+                    res['tokens'] = filtd_toks
+                    res['tags'] = [tok.tag for tok in filtd_toks]
+                    res['words'] = [tok.word for tok in filtd_toks]
+                else:
+                    if strict:
+                        emsg = 'No token for EDU'
+                        print(list(enumerate(tokens)))
+                        print(tok_idcs)
+                        print(edu.text())
+                        raise ValueError(emsg)
+                    # maybe I should fill res with empty lists? unclear
 
             # doc structure
 
@@ -246,10 +273,11 @@ class DocumentPlusPreprocessor(object):
             res['edu_rev_idx_in_para'] = rev_idxes_in_para[edu_idx]
 
             # syntax
-            if ptb_trees is not None:
-                ptrees = ptb_trees[edu]
-                if ptrees is not None:
-                    res['ptrees'] = ptrees
+            if len(trees) > 1:
+                tree_idx = edu2sent[edu_idx]
+                if tree_idx is not None:
+                    tree = trees[tree_idx]
+                    res['ptree'] = tree
 
             result[edu] = res
 

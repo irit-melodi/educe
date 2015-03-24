@@ -5,7 +5,6 @@
 Corpus management (re-exported by educe.rst_dt)
 """
 
-import itertools
 import os
 import sys
 from glob import glob
@@ -36,9 +35,20 @@ class Reader(educe.corpus.Reader):
     def __init__(self, corpusdir):
         educe.corpus.Reader.__init__(self, corpusdir)
 
-    def files(self):
+    def files(self, exclude_file_docs=False):
+        """
+        Parameters
+        ----------
+        exclude_file_docs : boolean, optional (default=False)
+            If True, fileX documents are ignored. The figures reported by
+            (Li et al., 2014) on the RST-DT corpus indicate they exclude
+            fileN files, whereas Joty seems to include them.
+            fileN documents are more damaged than wsj_XX documents, e.g.
+            text mismatches with the corresponding document in the PTB.
+        """
         anno_files = {}
-        full_glob = os.path.join(self.rootdir, '*.dis')
+        dis_glob = 'wsj_*.dis' if exclude_file_docs else '*.dis'
+        full_glob = os.path.join(self.rootdir, dis_glob)
 
         for fname in glob(full_glob):
             text_file = os.path.splitext(fname)[0]
@@ -94,12 +104,14 @@ class RstDtParser(object):
     """Fake parser that gets annotation from the RST-DT.
     """
 
-    def __init__(self, corpus_dir, args, coarse_rels=False):
+    def __init__(self, corpus_dir, args, coarse_rels=False,
+                 exclude_file_docs=False):
         # TODO: kill `args`
         self.reader = Reader(corpus_dir)
         # pre-load corpus
+        anno_files_unfltd = self.reader.files(exclude_file_docs)
         is_interesting = educe.util.mk_is_interesting(args)
-        anno_files = self.reader.filter(self.reader.files(), is_interesting)
+        anno_files = self.reader.filter(anno_files_unfltd, is_interesting)
         self.corpus = self.reader.slurp(anno_files, verbose=True)
         # setup label converter for the desired granularity
         # 'fine' means we don't change anything
@@ -176,14 +188,17 @@ class RstRelationConverter(object):
                 relmap[old_rel] = new_rel
         return relmap
 
+    def convert_label(self, label):
+        """Convert a label following the mapping, lowercased otherwise"""
+        return self.relmap.get(label.lower(), label.lower())
+
     def convert_tree(self, rst_tree):
         """Change relation labels in rst_tree using the mapping"""
-        relmap = self.relmap
+        conv_lbl = self.convert_label
         for pos in rst_tree.treepositions():
             t = rst_tree[pos]
             if isinstance(t, Tree):
                 node = treenode(t)
                 # replace old rel with new rel
-                old_rel = node.rel.lower()
-                node.rel = relmap.get(old_rel, old_rel)
+                node.rel = conv_lbl(node.rel)
         return rst_tree
