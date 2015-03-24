@@ -323,7 +323,7 @@ class Graph(gr.hypergraph, AttrsMixin):
         :param nodeset: only copy nodes with these names
         :type  nodeset: iterable of strings
         """
-        g = Graph()
+        g = self.__class__()
         g.corpus = self.corpus
         g.doc_key = self.doc_key
         g.doc = self.doc
