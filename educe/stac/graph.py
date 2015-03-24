@@ -32,7 +32,7 @@ class MultiheadedCduException(Exception):
 
 class Graph(educe.graph.Graph):
     def __init__(self):
-        educe.graph.Graph.__init__(self)
+        super(Graph, self).__init__()
 
     @classmethod
     def from_doc(cls, corpus, doc_key, pred=lambda x:True):
