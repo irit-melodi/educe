@@ -230,6 +230,8 @@ def split_doc(doc, middle):
         Note that this is not the same as checking for enclosure
         because we do not include the rightward edge
         """
+        if span is None:
+            return False
         return span.char_start < point and span.char_end > point
 
     leftovers = [x for x in doc.annotations()
@@ -321,8 +323,11 @@ def move_portion(renames, src_doc, tgt_doc,
     middle = rename_ids(renames,
                         shift_annotations(snipped, len(prefix_text)))
 
-    new_tgt_doc = shift_annotations(tgt_doc, len(middle_text),
-                                    point=tgt_split)
+    if tgt_split > 0:
+        new_tgt_doc = shift_annotations(tgt_doc, len(middle_text),
+                                        point=tgt_split)
+    else:
+        new_tgt_doc = copy.deepcopy(tgt_doc)
     _set_doc_parts(new_tgt_doc, [new_tgt_doc, middle])
     evil_set_text(new_tgt_doc, prefix_text + middle_text + suffix_text)
 

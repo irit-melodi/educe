@@ -1,8 +1,0 @@
---allow-external pydot
---allow-external python-graph-core
---allow-external python-graph-dot
---allow-unverified pydot
---allow-unverified python-graph-core
---allow-unverified python-graph-dot
--e hg+https://bitbucket.org/prologic/pydot#egg=pydot
--e .

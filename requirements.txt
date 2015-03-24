@@ -1,7 +1,4 @@
---allow-external pydot
---allow-external python-graph-core
---allow-external python-graph-dot
---allow-unverified pydot
---allow-unverified python-graph-core
---allow-unverified python-graph-dot
+https://github.com/chapmanb/python-graph/releases/download/1.8.2/python-graph-core-1.8.2.tar.gz
+https://github.com/chapmanb/python-graph/releases/download/1.8.2/python-graph-dot-1.8.2.tar.gz
+git+https://github.com/nlhepler/pydot.git#egg=pydot
 -e .
