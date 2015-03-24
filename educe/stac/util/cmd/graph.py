@@ -131,8 +131,6 @@ def _main_enclosure_graph(args):
             gra_ = stacgraph.EnclosureGraph(corpus[k], postags[k])
         else:
             gra_ = stacgraph.EnclosureGraph(corpus[k])
-        if args.reduce:
-            gra_.reduce()
         dot_gra = stacgraph.EnclosureDotGraph(gra_)
         if dot_gra.get_nodes():
             dot_gra.set("ratio", "compress")
@@ -185,8 +183,6 @@ def config_argparser(parser):
     psr_enc = parser.add_argument_group("enclosure graphs")
     psr_enc.add_argument('--enclosure', action='store_true',
                          help='Generate enclosure graphs')
-    psr_enc.add_argument('--reduce', action='store_true',
-                         help='Reduce enclosure graphs [requires --enclosure]')
     psr_enc.add_argument('--tokens', action='store_true',
                          help='Include pos-tagged tokens')
 
