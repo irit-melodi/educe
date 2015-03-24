@@ -383,9 +383,9 @@ class Graph(gr.hypergraph, AttrsMixin):
         being both a node/edge for relations/CDUs.
         """
         ccs = accessibility.connected_components(self)
-        subgraphs = collections.defaultdict(list)
+        subgraphs = collections.defaultdict(set)
         for node, i in ccs.items():
-            subgraphs[i].append(node)
+            subgraphs[i].add(node)
 
         # the basic idea here: if any member of connected component is
         # one of our hybrid node/edge creatures, we need to help the
@@ -408,10 +408,10 @@ class Graph(gr.hypergraph, AttrsMixin):
                     if e is not None:
                         links = set(self.links(e))
                         for k2 in subgraphs.keys():
-                            links2 = set(subgraphs[k2])
+                            links2 = subgraphs[k2]
                             if k2 != k and not links2.isdisjoint(links):
                                 eaten.add(k2)
-                                merged[k].extend(links2)
+                                merged[k] |= links2
             subgraphs = merged
 
         ccs = frozenset([frozenset(v) for v in subgraphs.values()])
