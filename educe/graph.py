@@ -343,9 +343,9 @@ class Graph(gr.hypergraph, AttrsMixin):
         # keep expanding the copyable edge list until we've
         # covered everything that exclusively points
         # (indirectly or otherwise) to our copy set
-        keep_growing    = True
+        keep_growing = True
         edges_remaining = self.hyperedges()
-        edges_wanted    = set()
+        edges_wanted = set()
         while keep_growing:
             keep_growing = False
             for e in edges_remaining:
@@ -492,35 +492,31 @@ class Graph(gr.hypergraph, AttrsMixin):
     def _mk_node_id(self, x):
         return 'n_' + self._mk_guid(x)
 
-    def _mk_node(self, anno, type, mirrored=False):
+    def _mk_node(self, anno, ntype, mirrored=False):
         # a node is mirrored if there is a also an edge
         # corresponding to the same object
         local_id = anno.local_id()
-        node_id  = self._mk_node_id(local_id)
-        edge_id  = self._mk_edge_id(local_id)
-        attrs = { 'type'       : type
-                , 'annotation' : anno
-                }
+        node_id = self._mk_node_id(local_id)
+        attrs = {'type': ntype,
+                 'annotation': anno}
         if mirrored:
             attrs['mirror'] = self._mk_edge_id(local_id)
         else:
             attrs['mirror'] = None
         return (node_id, attrs)
 
-    def _mk_edge(self, anno, type, members, mirrored=False):
+    def _mk_edge(self, anno, etype, members, mirrored=False):
         local_id = anno.local_id()
-        node_id  = self._mk_node_id(local_id)
-        edge_id  = self._mk_edge_id(local_id)
-        attrs   = { 'type'       : type
-                  , 'annotation' : anno
-                  }
+        edge_id = self._mk_edge_id(local_id)
+        attrs = {'type': etype,
+                 'annotation': anno}
         if mirrored:
             attrs['mirror'] = self._mk_node_id(local_id)
         else:
             attrs['mirror'] = None
 
-        links   = [ self._mk_node_id(m) for m in members ]
-        return (edge_id,attrs,links)
+        links = [self._mk_node_id(m) for m in members]
+        return (edge_id, attrs, links)
 
     def _unit_node(self, anno):
         return self._mk_node(anno, 'EDU')
@@ -670,17 +666,16 @@ class DotGraph(pydot.Dot):
         return self.__point(logical_target, 'lhead')
 
     def _add_edu(self, node):
-        anno  = self.core.annotation(node)
+        anno = self.core.annotation(node)
         label = self._edu_label(anno)
-        attrs = { 'label' : textwrap.fill(label, 30)
-                , 'shape' : 'plaintext'
-                }
+        attrs = {'label': textwrap.fill(label, 30),
+                 'shape': 'plaintext'}
         if not self._edu_label(anno):
             attrs['fontcolor'] = 'red'
         self.add_node(pydot.Node(node, **attrs))
 
     def _add_simple_rel(self, hyperedge):
-        anno  = self.core.annotation(hyperedge)
+        anno = self.core.annotation(hyperedge)
         links = self.core.links(hyperedge)
         attrs = self._simple_rel_attrs(anno)
 
@@ -700,7 +695,7 @@ class DotGraph(pydot.Dot):
         self.add_edge(pydot.Edge(link1, link2, **attrs))
 
     def _add_complex_rel(self, hyperedge):
-        anno  = self.core.annotation(hyperedge)
+        anno = self.core.annotation(hyperedge)
         links = self.core.links(hyperedge)
         link1_, link2_ = links
         midpoint_attrs, attrs1, attrs2 = self._complex_rel_attrs(anno)
@@ -773,7 +768,7 @@ class DotGraph(pydot.Dot):
                  'label': 'CDU',
                  'shape': 'rectangle'}
         cdu_id = self._dot_id(hyperedge)
-        self.add_node(pydot.Node(cdu_id,  **attrs))
+        self.add_node(pydot.Node(cdu_id, **attrs))
         for node in self.core.links(hyperedge):
             edge_attrs = {'style': 'dashed',
                           'color': 'grey'}
@@ -810,10 +805,9 @@ class DotGraph(pydot.Dot):
             members = self.core.cdu_members(e)
             other_members = set()
             for e2 in self.core.cdus():
-                if e != e2: other_members.update(self.core.cdu_members(e2))
-            def is_complex(n):
-                return n in other_members
-            if any([is_complex(n) for n in members]):
+                if e != e2:
+                    other_members.update(self.core.cdu_members(e2))
+            if any(n in other_members for n in members):
                 self.complex_cdus.add(e)
 
         # CDUs which are contained in another
@@ -885,7 +879,7 @@ class EnclosureGraph(dgr.digraph, AttrsMixin):
             (annotation -> sort key)
     """
     def __init__(self, annotations, key=None):
-        super(EnclosureGraph,self).__init__()
+        super(EnclosureGraph, self).__init__()
         AttrsMixin.__init__(self)
         self._build_enclosure_graph(annotations, key)
 
