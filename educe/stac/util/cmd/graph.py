@@ -101,7 +101,7 @@ def _main_rfc_graph(args):
         for subgraph in gra.connected_components():
             sublast = gra.sorted_first_widest(subgraph)[-1]
             for node in rfc.frontier(sublast):
-                gra.annotation(node).features['highlight'] = 'orange'
+                gra.annotation(node).features['highlight'] = 'green'
         for node, links in rfc.violations().items():
             # gra.annotation(node).features['highlight'] = 'orange'
             for link in links:
