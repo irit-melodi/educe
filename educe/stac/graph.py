@@ -8,8 +8,6 @@ STAC-specific conventions related to graphs.
 """
 
 import copy
-import collections
-import itertools
 import re
 import textwrap
 
