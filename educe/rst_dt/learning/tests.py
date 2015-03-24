@@ -13,11 +13,12 @@ def test_relative_indices():
     assert relative_indices(example1, reverse=True) == inv_exa1
 
     # second example: case with None
-    # each None is considered to be a distinct subgroup
+    # each None has relative index 'valna'
+    # so if valna=0, each None is considered to be a distinct subgroup
     example2 = [None, 0, 1, 1, None, None]
     
     rel_exa2 = [0, 0, 0, 1, 0, 0]
-    assert relative_indices(example2) == rel_exa2
+    assert relative_indices(example2, valna=0) == rel_exa2
 
     inv_exa2 = [0, 0, 1, 0, 0, 0]
-    assert relative_indices(example2, reverse=True) == inv_exa2
+    assert relative_indices(example2, reverse=True, valna=0) == inv_exa2
