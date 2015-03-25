@@ -7,7 +7,7 @@ stac-util subcommands
 
 # pylint: disable=redefined-builtin
 # (we have a command called filter)
-from . import (count, filter, filter_graph, graph, insert,
+from . import (count, count_rfc, filter, filter_graph, graph, insert,
                merge_dialogue, merge_edus, move, nudge, nudge_dialogue, rename,
                rewrite, split_edu, text, tmp)
 
@@ -19,6 +19,7 @@ SUBCOMMAND_SECTIONS =\
     [('Querying',
       [text,
        count,
+       count_rfc,
        graph,
        filter_graph]),
      ('Editing',
