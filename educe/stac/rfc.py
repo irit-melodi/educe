@@ -114,7 +114,7 @@ class BasicRfc(object):
         points = self._frontier_points(nodes)
         if nodes:
             last = last or nodes[-1]
-            res = [last]
+            res = []
             for rfc_node in self._build_right_frontier(points, last):
                 res.append(rfc_node)
             return res
