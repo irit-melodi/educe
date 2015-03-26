@@ -85,17 +85,21 @@ class BasicRfc(object):
 
         points = {}
         for node1 in nodes:
+            # Computing neighbor of node1
             candidates = []
             for lnk in graph.links(node1):
                 if (self._is_incoming_to(node1, lnk) and
                         is_subordinating(graph.annotation(lnk))):
+                    # N2 -S> N1
                     node2 = graph.links(lnk)[0]
                     candidates.append((node2, position(node2)))
                 elif graph.is_cdu(lnk):
+                    # N2 = [...N1...]
                     node2 = graph.mirror(lnk)
                     candidates.append((node2, position(node2)))
 
             if candidates:
+                # Get the last/nearest (in textual order) candidate
                 best = max(candidates, key=lambda x: x[1])
                 points[node1] = best[0]
             else:
