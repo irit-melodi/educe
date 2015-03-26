@@ -37,9 +37,14 @@ class BasicRfc(object):
         Given a dictionary mapping each node to its closest
         right frontier node, generate a path up that frontier.
         """
+        seen = set()
         current = last
         while current in points:
             next_point = points[current]
+            if current in seen:
+                # corner case: loop in graph
+                break
+            seen.add(current)
             yield current
             current = next_point
 
