@@ -25,10 +25,6 @@ from ..output import save_document
 
 NAME = 'count-rfc'
 
-# Total
-# Violation by algo
-# Split 
-
 class DummyRfc:
     def __init__(self, graph):
         self.graph = graph
@@ -48,8 +44,6 @@ def process_doc(corpus, key):
     res = Counter()
     dgraph = graph.Graph.from_doc(corpus, key)
     relations = dgraph.relations()
-    # for rel in relations:
-        # res['total', dgraph.annotation(rel).type] += 1
 
     for name, method in rfc_methods:
         violations = method(dgraph).violations()
@@ -77,7 +71,6 @@ def display(res):
                 + list(res[(col_name, table_name, row_name)]
                     for col_name in col_names))
         print(tabulate(tres, headers=[table_name]+col_names)+'\n')
-    # print(res)
 
 def config_argparser(parser):
     """
@@ -106,12 +99,9 @@ def main(args):
 
     res = Counter()
     for key in corpus:
-        print(key)
-        # doc = corpus[key]
         part_res = process_doc(corpus, key)
         res.update(part_res.elements())
 
-    # Printing res...
     display(res)
     
     # announce_output_dir(output_dir)
