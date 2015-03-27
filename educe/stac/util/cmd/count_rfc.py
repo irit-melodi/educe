@@ -30,7 +30,7 @@ class DummyRfc:
         self.graph = graph
         
     def violations(self):
-        return dict(x=self.graph.relations())
+        return self.graph.relations()
 
 rfc_methods = (
     ('total', DummyRfc),
@@ -46,10 +46,8 @@ def process_doc(corpus, key):
     relations = dgraph.relations()
 
     for name, method in rfc_methods:
-        violations = method(dgraph).violations()
         v_rels = [dgraph.annotation(n)
-            for ns in violations.values()
-            for n in ns]
+            for n in method(dgraph).violations()]
         for rel in v_rels:
             is_forward = rel.source.text_span() <= rel.target.text_span()
             for label in ('Both', 'Forwards' if is_forward else 'Backwards'):

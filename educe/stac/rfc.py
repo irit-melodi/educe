@@ -127,17 +127,16 @@ class BasicRfc(object):
 
     def violations(self):
         '''
-        Return a dictionary of node names which are the parents of right
-        frontier violation, along with the offending relation instance edge
-        names.
+        Return a list of relation instance names, corresponding to the
+        RF violations for the given graph.
 
         You'll need a stac graph object to interpret these names with.
 
-        :rtype: dict(string, [string])
+        :rtype: [string]
         '''
         graph = self._graph
         nodes = graph.first_widest_dus()
-        res = collections.defaultdict(list)
+        res = list()
         if len(nodes) < 2:
             return res
 
@@ -149,5 +148,5 @@ class BasicRfc(object):
                     continue
                 node2 = graph.links(lnk)[0]
                 if not self._is_on_right_frontier(points, last, node2):
-                    res[node2].append(lnk)
+                    res.append(lnk)
         return res
