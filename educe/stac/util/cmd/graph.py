@@ -94,15 +94,15 @@ def _main_rfc_graph(args):
 
     for key in sorted(keys):
         gra = stacgraph.Graph.from_doc(corpus, key)
-        rfc = BasicRfc(gra)
-        for subgraph in gra.connected_components():
-            sublast = gra.sorted_first_widest(subgraph)[-1]
-            for node in rfc.frontier(sublast):
+        for subgra_nodes in gra.connected_components():
+            subgra = gra.copy(subgra_nodes)
+            sub_rfc = mk_rfc(subgra)
+            for node in sub_rfc.frontier():
                 gra.annotation(node).features['highlight'] = 'green'
-        for node, links in rfc.violations().items():
-            # gra.annotation(node).features['highlight'] = 'orange'
-            for link in links:
-                gra.annotation(link).features['highlight'] = 'red'
+
+        rfc = mk_rfc(gra)
+        for link in rfc.violations():
+            gra.annotation(link).features['highlight'] = 'red'
         dot_gra = stacgraph.DotGraph(gra)
         if dot_gra.get_nodes():
             write_dot_graph(key, output_dir, dot_gra,
