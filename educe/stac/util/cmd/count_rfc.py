@@ -14,7 +14,7 @@ from collections import defaultdict, Counter
 import educe.stac.graph as graph
 from educe.util import (
     add_corpus_filters, fields_without)
-from educe.stac.rfc import BasicRfc
+from educe.stac.rfc import BasicRfc, ThreadedRfc
 from ..args import (
     add_usual_input_args, add_usual_output_args,
     read_corpus,
@@ -34,7 +34,8 @@ class DummyRfc:
 
 rfc_methods = (
     ('total', DummyRfc),
-    ('basic', BasicRfc)
+    ('basic', BasicRfc),
+    ('mlast', ThreadedRfc)     # Multiple lasts (one for each speaker)
     )
 
 def process_doc(corpus, key):

@@ -10,7 +10,7 @@ import sys
 
 from educe import graph
 from educe.util import add_corpus_filters, fields_without
-from educe.stac.rfc import (BasicRfc)
+from educe.stac.rfc import (BasicRfc, ThreadedRfc)
 import educe.corpus
 import educe.stac
 import educe.stac.graph as stacgraph
@@ -86,6 +86,13 @@ def _main_rfc_graph(args):
     args.stage = 'discourse|units'
     corpus = _read_corpus(args)
     output_dir = get_output_dir(args)
+
+    if args.rfc == 'basic':
+        mk_rfc = BasicRfc
+    elif args.rfc == 'mlast':
+        mk_rfc = ThreadedRfc
+    else:
+        raise NotImplementedError
 
     if args.live:
         keys = corpus
@@ -173,7 +180,7 @@ def config_argparser(parser):
                          help='Strip away CDUs (substitute w heads)')
 
     psr_rfc = parser.add_argument_group("RFC graphs")
-    psr_rfc.add_argument('--basic-rfc', action='store_true',
+    psr_rfc.add_argument('--rfc', choices=['basic', 'mlast'],
                          help='Highlight RFC frontier and violations')
 
     psr_enc = parser.add_argument_group("enclosure graphs")
@@ -196,7 +203,7 @@ def main(args):
     """
     if args.enclosure:
         _main_enclosure_graph(args)
-    elif args.basic_rfc:
+    elif args.rfc:
         _main_rfc_graph(args)
     else:
         _main_rel_graph(args)
