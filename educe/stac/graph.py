@@ -17,7 +17,6 @@ from educe.annotation import Annotation
 from .. import stac, annotation
 import educe.graph
 import educe.stac.annotation as stac_anno
-from .rfc import BasicRfc
 
 # pylint: disable=too-few-public-methods
 
@@ -229,13 +228,6 @@ class Graph(educe.graph.Graph):
 
         dus = list(filter(is_interesting_du,self.nodes()))
         return self.sorted_first_widest(dus)
-
-
-    def right_frontier_violations(self):
-        '''
-        See educe.stac.rfc
-        '''
-        return BasicRfc(self).violations()
 
 
 class DotGraph(educe.graph.DotGraph):
