@@ -13,7 +13,8 @@ from educe.stac.tests import\
     FakeEDU, FakeCDU, FakeRelInst, FakeDocument, FakeKey,\
     graph_ids
 
-from .checks import is_cross_dialogue, is_puncture, containing_cdu_chain
+from .checks.annotation import is_cross_dialogue
+from .checks.graph import containing_cdu_chain, is_puncture
 from ..util.context import Context
 
 
