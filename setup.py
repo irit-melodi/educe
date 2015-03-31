@@ -11,7 +11,8 @@ import sys
 PY3 = sys.version > '3'
 
 REQS = \
-    ['funcparserlib' if PY3 else 'funcparserlib == 0.3.6',
+    ['enum34',
+     'funcparserlib' if PY3 else 'funcparserlib == 0.3.6',
      'pydot' if PY3 else 'pydot >= 1.0.28',
      'python-graph-core',
      'python-graph-dot',
