@@ -1,13 +1,28 @@
 educe.stac.sanity package
 =========================
 
+Subpackages
+-----------
+
+.. toctree::
+
+    educe.stac.sanity.checks
+
 Submodules
 ----------
 
-educe.stac.sanity.checks module
+educe.stac.sanity.common module
 -------------------------------
 
-.. automodule:: educe.stac.sanity.checks
+.. automodule:: educe.stac.sanity.common
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+educe.stac.sanity.html module
+-----------------------------
+
+.. automodule:: educe.stac.sanity.html
     :members:
     :undoc-members:
     :show-inheritance:
