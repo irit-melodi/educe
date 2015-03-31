@@ -7,6 +7,7 @@ Corpus layout conventions (re-exported by educe.stac)
 
 from collections import OrderedDict
 from glob import glob
+import copy
 import os
 import re
 import sys
@@ -157,3 +158,18 @@ def is_metal(fileid):
     "If the annotator is one of the distinguished standard annotators"
     anno = fileid.annotator or ""
     return anno.lower() in METAL_REVIEWERS
+
+
+def twin_key(key, stage):
+    """
+    Given an annotation key, return a copy shifted over to a different
+    stage.
+
+    Note that copying from unannotated to another stage, you will need
+    to set the annotator
+    """
+    key2 = copy.copy(key)
+    key2.stage = stage
+    if stage == 'unannotated':
+        key2.annotator = None
+    return key2
