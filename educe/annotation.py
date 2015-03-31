@@ -16,6 +16,7 @@ some sort of graph representation of them
 # License: CeCILL-B (French BSD3)
 
 # pylint: disable=too-many-arguments, protected-access
+# pylint: disable=too-few-public-methods
 
 from itertools import chain
 
@@ -363,13 +364,16 @@ class Relation(Annotation):
 
     Use the `source` and `target` field to grab these respective
     annotations, but note that they are only instantiated after
-    `fleshout` is called (when initialising a `Document`, any
-    relations and schemas within are also fleshed out)
+    `fleshout` is called (corpus slurping normally fleshes out
+    documents and thus their relations)
     """
     def __init__(self, rel_id, span, rtype, features, metadata=None):
         Annotation.__init__(self, rel_id, span, rtype, features, metadata)
         self.source = None  # to be defined in fleshout
+        'source annotation; will be defined by fleshout'
+
         self.target = None
+        'target annotation; will be defined by fleshout'
 
     def _members(self):
         return [self.source, self.target]

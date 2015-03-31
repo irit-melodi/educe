@@ -259,7 +259,7 @@ def is_subordinating(annotation):
     """
     See Relation typology above
     """
-    return isinstance(annotation, Schema) and\
+    return isinstance(annotation, Relation) and\
         annotation.type in SUBORDINATING_RELATIONS
 
 
@@ -267,7 +267,7 @@ def is_coordinating(annotation):
     """
     See Relation typology above
     """
-    return isinstance(annotation, Schema) and\
+    return isinstance(annotation, Relation) and\
         annotation.type in COORDINATING_RELATIONS
 
 

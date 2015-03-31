@@ -9,16 +9,15 @@ from __future__ import print_function
 import sys
 
 from educe import graph
-from educe.stac import postag
 from educe.util import add_corpus_filters, fields_without
+from educe.stac.rfc import (BasicRfc, ThreadedRfc)
 import educe.corpus
 import educe.stac
 import educe.stac.graph as stacgraph
+import educe.stac.postag
 
-from ..args import\
-    get_output_dir, anno_id
-from ..glozz import\
-    anno_id_from_tuple
+from ..args import (get_output_dir, anno_id)
+from ..glozz import (anno_id_from_tuple)
 from ..output import write_dot_graph
 
 
@@ -53,20 +52,18 @@ def _main_rel_graph(args):
 
     for k in sorted(keys):
         if args.highlight:
-            highlights = list(map(anno_id_from_tuple, args.highlight))
+            highlights = [anno_id_from_tuple(x) for x in args.highlight]
             for anno in corpus[k].annotations():
                 if anno.local_id() in highlights:
                     anno.features['highlight'] = 'orange'
         try:
-            gra_ = stacgraph.Graph.from_doc(corpus, k)
+            gra = stacgraph.Graph.from_doc(corpus, k)
             if args.strip_cdus:
-                gra = gra_.without_cdus()
-            else:
-                gra = gra_
+                gra = gra.without_cdus()
             dot_gra = stacgraph.DotGraph(gra)
             if dot_gra.get_nodes():
                 write_dot_graph(k, output_dir, dot_gra,
-                                 run_graphviz=args.draw)
+                                run_graphviz=args.draw)
                 if args.split:
                     ccs = gra.connected_components()
                     for part, nodes in enumerate(ccs, 1):
@@ -82,6 +79,45 @@ def _main_rel_graph(args):
             print(warning, file=sys.stderr)
 
 
+def _main_rfc_graph(args):
+    """
+    Draw graphs showing relation instances between EDUs
+    """
+    args.stage = 'discourse|units'
+    corpus = _read_corpus(args)
+    output_dir = get_output_dir(args)
+
+    if args.rfc == 'basic':
+        mk_rfc = BasicRfc
+    elif args.rfc == 'mlast':
+        mk_rfc = ThreadedRfc
+    else:
+        raise NotImplementedError
+
+    if args.live:
+        keys = corpus
+    else:
+        keys = [k for k in corpus if k.stage == 'discourse']
+
+    for key in sorted(keys):
+        gra = stacgraph.Graph.from_doc(corpus, key)
+        for subgra_nodes in gra.connected_components():
+            subgra = gra.copy(subgra_nodes)
+            sub_rfc = mk_rfc(subgra)
+            for node in sub_rfc.frontier():
+                gra.annotation(node).features['highlight'] = 'green'
+
+        rfc = mk_rfc(gra)
+        for link in rfc.violations():
+            gra.annotation(link).features['highlight'] = 'red'
+        dot_gra = stacgraph.DotGraph(gra)
+        if dot_gra.get_nodes():
+            write_dot_graph(key, output_dir, dot_gra,
+                            run_graphviz=args.draw)
+        else:
+            print("Skipping %s (empty graph)" % key, file=sys.stderr)
+
+
 def _main_enclosure_graph(args):
     """
     Draw graphs showing which annotations' spans include the others
@@ -90,7 +126,7 @@ def _main_enclosure_graph(args):
     output_dir = get_output_dir(args)
     keys = corpus
     if args.tokens:
-        postags = postag.read_tags(corpus, args.corpus)
+        postags = educe.stac.postag.read_tags(corpus, args.corpus)
     else:
         postags = None
 
@@ -99,8 +135,6 @@ def _main_enclosure_graph(args):
             gra_ = stacgraph.EnclosureGraph(corpus[k], postags[k])
         else:
             gra_ = stacgraph.EnclosureGraph(corpus[k])
-        if args.reduce:
-            gra_.reduce()
         dot_gra = stacgraph.EnclosureDotGraph(gra_)
         if dot_gra.get_nodes():
             dot_gra.set("ratio", "compress")
@@ -145,11 +179,13 @@ def config_argparser(parser):
     psr_rel.add_argument('--strip-cdus', action='store_true',
                          help='Strip away CDUs (substitute w heads)')
 
+    psr_rfc = parser.add_argument_group("RFC graphs")
+    psr_rfc.add_argument('--rfc', choices=['basic', 'mlast'],
+                         help='Highlight RFC frontier and violations')
+
     psr_enc = parser.add_argument_group("enclosure graphs")
     psr_enc.add_argument('--enclosure', action='store_true',
                          help='Generate enclosure graphs')
-    psr_enc.add_argument('--reduce', action='store_true',
-                         help='Reduce enclosure graphs [requires --enclosure]')
     psr_enc.add_argument('--tokens', action='store_true',
                          help='Include pos-tagged tokens')
 
@@ -167,6 +203,8 @@ def main(args):
     """
     if args.enclosure:
         _main_enclosure_graph(args)
+    elif args.rfc:
+        _main_rfc_graph(args)
     else:
         _main_rel_graph(args)
 

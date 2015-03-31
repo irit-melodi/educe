@@ -94,20 +94,20 @@ Classes
 ~~~~~~~
 """
 
+from __future__ import print_function
 import copy
 import collections
 import textwrap
-import warnings
 
-from educe import corpus
-from pygraph.readwrite import dot
 import pydot
 import pygraph.classes.hypergraph as gr
 import pygraph.classes.digraph    as dgr
-from pygraph.algorithms import traversal
 from pygraph.algorithms import accessibility
 
+# pylint: disable=too-few-public-methods, star-args
+
 class DuplicateIdException(Exception):
+    '''Condition that arises in inconsistent corpora'''
     def __init__(self, duplicate):
         self.duplicate = duplicate
         Exception.__init__(self, "Duplicate node id: %s" % duplicate)
@@ -229,8 +229,8 @@ class Graph(gr.hypergraph, AttrsMixin):
 
     @classmethod
     def from_doc(cls, corpus, doc_key,
-                 could_include=lambda x:False,
-                 pred=lambda x:True):
+                 could_include=lambda x: False,
+                 pred=lambda x: True):
         """
         Return a graph representation of a document
 
@@ -253,49 +253,52 @@ class Graph(gr.hypergraph, AttrsMixin):
             say that `could_include` gives; and `pred` takes away)
         :type   pred: annotation -> boolean
         """
-        self         = cls()
-        doc          = corpus[doc_key]
-        self.corpus  = corpus
-        self.doc_key = doc_key
-        self.doc     = doc
+        grph = cls()
+        doc = corpus[doc_key]
+        grph.corpus = corpus
+        grph.doc_key = doc_key
+        grph.doc = doc
 
         # objects that are pointed to by a relations or schemas
         included = []
-        for x in list(filter(could_include, doc.units)):
-            included.append(x.local_id())
-        for x in list(filter(pred, doc.relations)):
-            included.extend([x.span.t1, x.span.t2])
-        for x in list(filter(pred, doc.schemas)):
-            included.extend(x.span)
+        included.extend(x.local_id() for x in doc.units
+                        if could_include(x))
+        for anno in doc.relations:
+            if pred(anno):
+                included.extend([anno.span.t1, anno.span.t2])
+        for anno in doc.schemas:
+            if pred(anno):
+                included.extend(anno.span)
 
         nodes = []
         edges = []
 
-        edus  = [ x for x in doc.units   if x.local_id() in included and pred(x) ]
-        rels  = [ x for x in doc.relations if pred(x) ]
-        cdus  = [ s for s in doc.schemas if pred(s) ]
+        edus = [x for x in doc.units   if x.local_id() in included and pred(x)]
+        rels = [x for x in doc.relations if pred(x)]
+        cdus = [s for s in doc.schemas if pred(s)]
 
-        for x in edus: nodes.append(self._unit_node(x))
-        for x in rels: nodes.append(self._rel_node(x))
-        for x in cdus: nodes.append(self._schema_node(x))
-        for x in rels: edges.append(self._rel_edge(x))
-        for x in cdus: edges.append(self._schema_edge(x))
+        nodes.extend(grph._unit_node(x) for x in edus)
+        nodes.extend(grph._rel_node(x) for x in rels)
+        nodes.extend(grph._schema_node(x)for x in cdus)
+        edges.extend(grph._rel_edge(x) for x in rels)
+        edges.extend(grph._schema_edge(x) for x in cdus)
 
         for node, attrs in nodes:
-            if not self.has_node(node):
-                self.add_node(node)
-                for x in attrs.items():
-                    self.add_node_attribute(node,x)
+            if not grph.has_node(node):
+                grph.add_node(node)
+                for anno in attrs.items():
+                    grph.add_node_attribute(node, anno)
             else:
                 raise DuplicateIdException(node)
 
         for edge, attrs, links in edges:
-            if not self.has_edge(edge):
-                self.add_edge(edge)
-                self.add_edge_attributes(edge, attrs.items())
-                for l in links: self.link(l,edge)
+            if not grph.has_edge(edge):
+                grph.add_edge(edge)
+                grph.add_edge_attributes(edge, attrs.items())
+                for lnk in links:
+                    grph.link(lnk, edge)
 
-        return self
+        return grph
 
     def copy(self, nodeset=None):
         """
@@ -320,10 +323,10 @@ class Graph(gr.hypergraph, AttrsMixin):
         :param nodeset: only copy nodes with these names
         :type  nodeset: iterable of strings
         """
-        g=Graph()
-        g.corpus  = self.corpus
+        g = self.__class__()
+        g.corpus = self.corpus
         g.doc_key = self.doc_key
-        g.doc     = self.doc
+        g.doc = self.doc
 
         if nodeset is None:
             nodes_wanted = set(self.nodes())
@@ -340,9 +343,9 @@ class Graph(gr.hypergraph, AttrsMixin):
         # keep expanding the copyable edge list until we've
         # covered everything that exclusively points
         # (indirectly or otherwise) to our copy set
-        keep_growing    = True
+        keep_growing = True
         edges_remaining = self.hyperedges()
-        edges_wanted    = set()
+        edges_wanted = set()
         while keep_growing:
             keep_growing = False
             for e in edges_remaining:
@@ -379,35 +382,36 @@ class Graph(gr.hypergraph, AttrsMixin):
         same name but also adds awareness of our conventions about there
         being both a node/edge for relations/CDUs.
         """
-        ccs       = accessibility.connected_components(self)
-        subgraphs = collections.defaultdict(list)
-        for x,c in ccs.items():
-            subgraphs[c].append(x)
+        ccs = accessibility.connected_components(self)
+        subgraphs = collections.defaultdict(set)
+        for node, i in ccs.items():
+            subgraphs[i].add(node)
 
         # the basic idea here: if any member of connected component is
         # one of our hybrid node/edge creatures, we need to help the
         # graph library recognise that that anything connected *via*
         # the edge should also be considered as connected *to* the
         # edge, so we merge the components
-        eaten  = set ()
+        eaten = set()
         merged = {}
-        prior  = subgraphs.keys()
+        prior = subgraphs.keys()
         while sorted(merged.keys()) != prior:
-            prior     = sorted(merged.keys())
-            merged    = {}
+            prior = sorted(merged.keys())
+            merged = {}
             for k in subgraphs:
-                if k in eaten: continue
-                cc = subgraphs[k]
-                merged[k] = copy.copy(cc)
-                for n in cc:
+                if k in eaten:
+                    continue
+                subg = subgraphs[k]
+                merged[k] = copy.copy(subg)
+                for n in subg:
                     e = self.mirror(n)
                     if e is not None:
                         links = set(self.links(e))
                         for k2 in subgraphs.keys():
-                            links2 = set(subgraphs[k2])
+                            links2 = subgraphs[k2]
                             if k2 != k and not links2.isdisjoint(links):
                                 eaten.add(k2)
-                                merged[k].extend(links2)
+                                merged[k] |= links2
             subgraphs = merged
 
         ccs = frozenset([frozenset(v) for v in subgraphs.values()])
@@ -427,15 +431,15 @@ class Graph(gr.hypergraph, AttrsMixin):
         By convention, the first link is considered the source and the
         the second is considered the target.
         """
-        xs = [ e for e in self.hyperedges() if self.is_relation(e) ]
-        return frozenset(xs)
+        return frozenset(e for e in self.hyperedges()
+                         if self.is_relation(e))
 
     def edus(self):
         """
         Set of nodes representing elementary discourse units
         """
-        xs = [ e for e in self.nodes() if self.is_edu(e) ]
-        return frozenset(xs)
+        return frozenset(e for e in self.nodes()
+                         if self.is_edu(e))
 
     def cdus(self):
         """
@@ -443,8 +447,8 @@ class Graph(gr.hypergraph, AttrsMixin):
 
         See also `cdu_members`
         """
-        xs = [ e for e in self.hyperedges() if self.is_cdu(e) ]
-        return frozenset(xs)
+        return frozenset(e for e in self.hyperedges()
+                         if self.is_cdu(e))
 
     def containing_cdu(self, node):
         """
@@ -453,8 +457,9 @@ class Graph(gr.hypergraph, AttrsMixin):
         If there is more than one containing CDU, return one of them
         arbitrarily.
         """
-        for e in self.links(self.nodeform(node)):
-            if self.is_cdu(e): return e
+        for node in self.links(self.nodeform(node)):
+            if self.is_cdu(node):
+                return node
         return None
 
     def cdu_members(self, cdu, deep=False):
@@ -487,35 +492,31 @@ class Graph(gr.hypergraph, AttrsMixin):
     def _mk_node_id(self, x):
         return 'n_' + self._mk_guid(x)
 
-    def _mk_node(self, anno, type, mirrored=False):
+    def _mk_node(self, anno, ntype, mirrored=False):
         # a node is mirrored if there is a also an edge
         # corresponding to the same object
         local_id = anno.local_id()
-        node_id  = self._mk_node_id(local_id)
-        edge_id  = self._mk_edge_id(local_id)
-        attrs = { 'type'       : type
-                , 'annotation' : anno
-                }
+        node_id = self._mk_node_id(local_id)
+        attrs = {'type': ntype,
+                 'annotation': anno}
         if mirrored:
             attrs['mirror'] = self._mk_edge_id(local_id)
         else:
             attrs['mirror'] = None
         return (node_id, attrs)
 
-    def _mk_edge(self, anno, type, members, mirrored=False):
+    def _mk_edge(self, anno, etype, members, mirrored=False):
         local_id = anno.local_id()
-        node_id  = self._mk_node_id(local_id)
-        edge_id  = self._mk_edge_id(local_id)
-        attrs   = { 'type'       : type
-                  , 'annotation' : anno
-                  }
+        edge_id = self._mk_edge_id(local_id)
+        attrs = {'type': etype,
+                 'annotation': anno}
         if mirrored:
             attrs['mirror'] = self._mk_node_id(local_id)
         else:
             attrs['mirror'] = None
 
-        links   = [ self._mk_node_id(m) for m in members ]
-        return (edge_id,attrs,links)
+        links = [self._mk_node_id(m) for m in members]
+        return (edge_id, attrs, links)
 
     def _unit_node(self, anno):
         return self._mk_node(anno, 'EDU')
@@ -553,17 +554,19 @@ class DotGraph(pydot.Dot):
     """
 
     def _edu_label(self, anno):
+        '''string to display for an EDU'''
         return anno.type
 
     def _rel_label(self, anno):
+        '''string to display for a relation instance'''
         return anno.type
 
     def _simple_rel_attrs(self, anno):
+        '''formatting options for a relation instance'''
         return\
-            { 'label'      : ' ' + self._rel_label(anno)
-            , 'shape'      : 'plaintext'
-            , 'fontcolor'  : 'blue'
-            }
+            {'label': ' ' + self._rel_label(anno),
+             'shape': 'plaintext',
+             'fontcolor': 'blue'}
 
     def _complex_rel_attrs(self, anno):
         """
@@ -571,26 +574,16 @@ class DotGraph(pydot.Dot):
         (midpoint, to midpoint, from midpoint)
         """
         midpoint_attrs =\
-            { 'label'      : self._rel_label(anno)
-            , 'style'      : 'dotted'
-            , 'fontcolor'  : 'blue'
-            }
-        attrs1  = { 'arrowhead' : 'tee'
-                  , 'arrowsize' : '0.5'
-                  }
-        attrs2  = {
-                  }
+            {'label': self._rel_label(anno),
+             'style': 'dotted',
+             'fontcolor': 'blue'}
+        attrs1 = {'arrowhead' : 'tee',
+                  'arrowsize' : '0.5'}
+        attrs2 = {}
         return (midpoint_attrs, attrs1, attrs2)
 
     def _simple_cdu_attrs(self, anno):
-        return { 'color' : 'lightgrey'
-               }
-
-    def _edu_is_error(self, anno):
-        """
-        If there is something seemingly wrong with this EDU
-        """
-        return not stac.is_dialogue_act(anno)
+        return {'color': 'lightgrey'}
 
     def _has_rel_link(self, rel):
         """
@@ -673,17 +666,16 @@ class DotGraph(pydot.Dot):
         return self.__point(logical_target, 'lhead')
 
     def _add_edu(self, node):
-        anno  = self.core.annotation(node)
+        anno = self.core.annotation(node)
         label = self._edu_label(anno)
-        attrs = { 'label' : textwrap.fill(label, 30)
-                , 'shape' : 'plaintext'
-                }
+        attrs = {'label': textwrap.fill(label, 30),
+                 'shape': 'plaintext'}
         if not self._edu_label(anno):
             attrs['fontcolor'] = 'red'
         self.add_node(pydot.Node(node, **attrs))
 
     def _add_simple_rel(self, hyperedge):
-        anno  = self.core.annotation(hyperedge)
+        anno = self.core.annotation(hyperedge)
         links = self.core.links(hyperedge)
         attrs = self._simple_rel_attrs(anno)
 
@@ -703,7 +695,7 @@ class DotGraph(pydot.Dot):
         self.add_edge(pydot.Edge(link1, link2, **attrs))
 
     def _add_complex_rel(self, hyperedge):
-        anno  = self.core.annotation(hyperedge)
+        anno = self.core.annotation(hyperedge)
         links = self.core.links(hyperedge)
         link1_, link2_ = links
         midpoint_attrs, attrs1, attrs2 = self._complex_rel_attrs(anno)
@@ -714,8 +706,8 @@ class DotGraph(pydot.Dot):
 
         midpoint_id = self.core.node(hyperedge)
         midpoint = pydot.Node(midpoint_id, **midpoint_attrs)
-        edge1    = pydot.Edge(link1, midpoint_id, **attrs1)
-        edge2    = pydot.Edge(midpoint_id, link2, **attrs2)
+        edge1 = pydot.Edge(link1, midpoint_id, **attrs1)
+        edge2 = pydot.Edge(midpoint_id, link2, **attrs2)
         self.add_node(midpoint)
         self.add_edge(edge1)
         self.add_edge(edge2)
@@ -724,7 +716,7 @@ class DotGraph(pydot.Dot):
         """
         Straightforward CDU that can be supported as a cluster.
         """
-        anno  = self.core.annotation(hyperedge)
+        anno = self.core.annotation(hyperedge)
         attrs = self._simple_cdu_attrs(anno)
         if len(self.complex_cdus) > 0 and 'label' not in attrs:
             # complex CDUs have a CDU node, so I thought it might be
@@ -732,20 +724,21 @@ class DotGraph(pydot.Dot):
             # CDUs so the user knows it's the same thing
             attrs['label'] = 'CDU'
         subg = pydot.Subgraph(self._dot_id(hyperedge), **attrs)
-        local_nodes  = self.core.links(hyperedge)
+        local_nodes = self.core.links(hyperedge)
         local_nodes2 = []
 
         # take into account links to relations (sigh)
         def is_enclosed(l):
-            return l != hyperedge and\
-                    l in self.complex_rels and\
-                    all( [x in local_nodes for x in self.core.links(l)] )
+            return (l != hyperedge and
+                    l in self.complex_rels and
+                    all(x in local_nodes for x in self.core.links(l)))
         for node in local_nodes:
             if self.core.is_relation(node):
                 local_nodes2.append(node)
             else:
                 local_nodes2.append(node)
-                rlinks = list(filter(is_enclosed, self.core.links(node)))
+                rlinks = [x for x in self.core.links(node)
+                          if is_enclosed(x)]
                 local_nodes2.extend(self.core.mirror(l) for l in rlinks)
 
         for node in local_nodes2:
@@ -771,16 +764,14 @@ class DotGraph(pydot.Dot):
         CDU-box representation (for example if we have non-embedded
         CDUs that share items)
         """
-        attrs    = { 'color' : 'grey'
-                   , 'label' : 'CDU'
-                   , 'shape' : 'rectangle'
-                   }
-        cdu_id   = self._dot_id(hyperedge)
-        self.add_node(pydot.Node(cdu_id,  **attrs))
+        attrs = {'color': 'grey',
+                 'label': 'CDU',
+                 'shape': 'rectangle'}
+        cdu_id = self._dot_id(hyperedge)
+        self.add_node(pydot.Node(cdu_id, **attrs))
         for node in self.core.links(hyperedge):
-            edge_attrs = { 'style' : 'dashed'
-                         , 'color' : 'grey'
-                         }
+            edge_attrs = {'style': 'dashed',
+                          'color': 'grey'}
             dest, attrs_ = self._point_to(node)
             edge_attrs.update(attrs_)
             self.add_edge(pydot.Edge(cdu_id, dest, **edge_attrs))
@@ -791,12 +782,12 @@ class DotGraph(pydot.Dot):
 
             anno_graph (Graph):  abstract annotation graph
         """
-        self.core       = anno_graph
-        self.doc        = self.core.doc
-        self.doc_key    = self.core.doc_key
-        self.corpus     = self.core.corpus
-        self.turns      = [ u for u in self.core.doc.units if u.type == 'Turn' ]
-        pydot.Dot.__init__(self, compound='true')
+        self.core = anno_graph
+        self.doc = self.core.doc
+        self.doc_key = self.core.doc_key
+        self.corpus = self.core.corpus
+        self.turns = [u for u in self.core.doc.units if u.type == 'Turn']
+        super(DotGraph, self).__init__(compound='true')
         self.set_name('hypergraph')
 
         # rels which are the target of links
@@ -811,13 +802,12 @@ class DotGraph(pydot.Dot):
         #self.complex_cdus = self.core.cdus()
         self.complex_cdus = set()
         for e in self.core.cdus():
-            members       = self.core.cdu_members(e)
+            members = self.core.cdu_members(e)
             other_members = set()
             for e2 in self.core.cdus():
-                if e != e2: other_members.update(self.core.cdu_members(e2))
-            def is_complex(n):
-                return n in other_members
-            if any([is_complex(n) for n in members]):
+                if e != e2:
+                    other_members.update(self.core.cdu_members(e2))
+            if any(n in other_members for n in members):
                 self.complex_cdus.add(e)
 
         # CDUs which are contained in another
@@ -830,7 +820,7 @@ class DotGraph(pydot.Dot):
 
         # Add all of the nodes first
         for node in sorted(self.core.edus(),
-                           key=lambda x:self.core.annotation(x).span):
+                           key=lambda x: self.core.annotation(x).span):
             self._add_edu(node)
 
         # Add nodes that have some sort of error condition or another
@@ -889,7 +879,7 @@ class EnclosureGraph(dgr.digraph, AttrsMixin):
             (annotation -> sort key)
     """
     def __init__(self, annotations, key=None):
-        super(EnclosureGraph,self).__init__()
+        super(EnclosureGraph, self).__init__()
         AttrsMixin.__init__(self)
         self._build_enclosure_graph(annotations, key)
 
@@ -939,8 +929,8 @@ class EnclosureGraph(dgr.digraph, AttrsMixin):
         for anno in annotations:
             node, attrs = self._mk_node(anno)
             self.add_node(node)
-            for x in attrs.items():
-                self.add_node_attribute(node,x)
+            for pair in attrs.items():
+                self.add_node_attribute(node, pair)
             of_width[spans[anno].length()].append(anno)
 
         narrow = []
@@ -962,9 +952,8 @@ class EnclosureGraph(dgr.digraph, AttrsMixin):
         # a node is mirrored if there is a also an edge
         # corresponding to the same object
         node_id  = self._mk_node_id(anno)
-        attrs = { 'type'       : anno.type
-                , 'annotation' : anno
-                }
+        attrs = {'type': anno.type,
+                 'annotation' : anno}
         return (node_id, attrs)
 
     def _add_edge(self, anno1, anno2):
@@ -975,12 +964,6 @@ class EnclosureGraph(dgr.digraph, AttrsMixin):
 
     def _attrs(self, x):
         return self.node_attributes_dict(x)
-
-    def reduce(self):
-        """
-        DEPRECATED
-        """
-        warnings.warn("deprecated", DeprecationWarning)
 
     def inside(self, annotation):
         """
@@ -1008,21 +991,20 @@ class EnclosureDotGraph(pydot.Dot):
     def _add_unit(self, node):
         anno  = self.core.annotation(node)
         label = self._unit_label(anno)
-        attrs = { 'label' : textwrap.fill(label, 30)
-                , 'shape' : 'plaintext'
-                }
+        attrs = {'label' : textwrap.fill(label, 30),
+                 'shape' : 'plaintext'}
         self.add_node(pydot.Node(node, **attrs))
 
     def _add_edge(self, edge):
         (node1, node2) = edge
         attrs = {}
-        self.add_edge(pydot.Edge(node1, node2,**attrs))
+        self.add_edge(pydot.Edge(node1, node2, **attrs))
 
     def _unit_label(self, anno):
         return "%s %s" % (anno.type, anno.text_span())
 
     def __init__(self, enc_graph):
-        super(EnclosureDotGraph,self).__init__()
+        super(EnclosureDotGraph, self).__init__()
         self.core = enc_graph
 
         def node_sort_key(node):

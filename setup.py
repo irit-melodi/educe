@@ -19,6 +19,7 @@ REQS = \
      'frozendict',
      'sh',
      'six',
+     'tabulate',
      'nltk >= 3.0.0',
      'soundex']
 
