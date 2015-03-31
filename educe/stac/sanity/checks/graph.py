@@ -7,7 +7,7 @@ from collections import defaultdict
 import copy
 
 from educe import stac
-from educe.util import (concat)
+from educe.stac.rfc import (BasicRfc)
 import educe.stac.graph as egr
 
 from .. import html as h
@@ -158,7 +158,7 @@ def rfc_violations(inputs, k, gra):
     """
     doc = inputs.corpus[k]
     contexts = inputs.contexts[k]
-    violations = concat(gra.right_frontier_violations().values())
+    violations = BasicRfc(gra).violations()
     return [rel_link_item(doc, contexts, gra, v)
             for v in violations]
 
