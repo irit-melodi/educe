@@ -10,17 +10,17 @@ Tests for educe
 
 import unittest
 
-from educe.annotation import\
-    Span, RelSpan,\
-    Annotation,\
-    Unit, Relation, Schema, Document
+from educe.annotation import (Span, RelSpan,
+                              Annotation,
+                              Unit, Relation, Schema, Document)
 import educe.graph as educe
 from   educe.graph import EnclosureGraph
+from educe.util import relative_indices
+
 
 # ---------------------------------------------------------------------
 # spans
 # ---------------------------------------------------------------------
-
 
 class SpanTest(unittest.TestCase):
     "tests for educe.annotation.Span"
@@ -334,3 +334,26 @@ class BasicGraphTest(unittest.TestCase):
         gr4   = gr.copy(nodeset=xset4)
         self.assertEqual(xset2,             gr4.edus())
         self.assertEqual(set(['X1', 'X2']), gr4.cdus())
+
+
+def test_relative_indices():
+    """Test for relative_indices"""
+    # first example: common case
+    example1 = [0, 1, 1, 1, 2, 3, 3]
+
+    rel_exa1 = [0, 0, 1, 2, 0, 0, 1]
+    assert relative_indices(example1) == rel_exa1
+
+    inv_exa1 = [0, 2, 1, 0, 0, 1, 0]
+    assert relative_indices(example1, reverse=True) == inv_exa1
+
+    # second example: case with None
+    # each None has relative index 'valna'
+    # so if valna=0, each None is considered to be a distinct subgroup
+    example2 = [None, 0, 1, 1, None, None]
+
+    rel_exa2 = [0, 0, 0, 1, 0, 0]
+    assert relative_indices(example2, valna=0) == rel_exa2
+
+    inv_exa2 = [0, 0, 1, 0, 0, 0]
+    assert relative_indices(example2, reverse=True, valna=0) == inv_exa2
