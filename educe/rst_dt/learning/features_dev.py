@@ -611,8 +611,8 @@ def build_pair_feature_extractor():
     feats.extend(PAIR_LENGTH)
     funcs.append(extract_pair_length)
     # 5
-    # feats.extend(PAIR_SYNTAX)
-    # funcs.append(extract_pair_syntax)
+    feats.extend(PAIR_SYNTAX)
+    funcs.append(extract_pair_syntax)
     # 6
     # feats.extend(PAIR_SEMANTICS)  # NotImplemented
     # funcs.append(extract_pair_semantics)
