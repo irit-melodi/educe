@@ -363,13 +363,6 @@ def extract_pair_doc(edu_info1, edu_info2):
 
     # absolute distance
     abs_dist = abs(edu_idx1 - edu_idx2)
-    yield ('dist_edus_abs', abs_dist)
-
-    # RESUME HERE
-    # EXPERIMENTAL boolean feature for adjacent EDUs
-    if abs_dist == 1:
-        yield ('adjacent_edus', True)
-
     # (left- and right-) oriented distances
     if edu_idx1 < edu_idx2:  # right attachment (gov before dep)
         yield ('dist_edus_right', abs_dist)
@@ -465,15 +458,16 @@ def extract_pair_sent(edu_info1, edu_info2):
     if sent_id1 is not None and sent_id2 is not None:
         yield ('same_sentence', (sent_id1 == sent_id2))
 
+        # current best config: rel_dist + L/R_bools
+        # abs_dist does not seem to work well for inter-sent
+
+        # rel dist
         yield ('dist_sent', sent_id1 - sent_id2)
-        # TODO resume here
-        abs_sent_dist = abs(sent_id1 - sent_id2)
-        # yield ('dist_sent_abs', abs_sent_dist)
+
+        # L/R booleans
         if sent_id1 < sent_id2:  # right attachment (gov < dep)
-            # yield ('dist_sent_right', abs_sent_dist)
             yield ('sent_right', True)
-        else:
-            # yield ('dist_sent_left', abs_sent_dist)
+        elif sent_id1 > sent_id2:  # left attachment
             yield ('sent_left', True)
 
         yield ('sentence_id_diff_div3', (sent_id1 - sent_id2) / 3)
