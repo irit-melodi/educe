@@ -121,40 +121,6 @@ def lowest_common_parent(treepositions):
 # end of tree utils
 
 
-def relative_indices(group_indices, reverse=False, valna=None):
-    """Generate a list of relative indices inside each group.
-    Missing (None) values are handled specifically: each missing
-    value is mapped to `valna`.
-
-    Parameters
-    ----------
-    reverse: boolean, optional
-        If True, compute indices relative to the end of each group.
-    valna: int or None, optional
-        Relative index for missing values.
-    """
-    # TODO rewrite using np.ediff1d, np.where and the like
-
-    groupby = it.groupby
-
-    if reverse:
-        group_indices = list(group_indices)
-        group_indices.reverse()
-
-    result = []
-    for group_idx, dup_values in groupby(group_indices):
-        if group_idx is None:
-            rel_indices = (valna for dup_value in dup_values)
-        else:
-            rel_indices = (rel_idx for rel_idx, dv in enumerate(dup_values))
-        result.extend(rel_indices)
-
-    if reverse:
-        result.reverse()
-
-    return result
-
-
 class DocumentPlusPreprocessor(object):
     """Preprocessor for feature extraction on a DocumentPlus
 
@@ -192,11 +158,15 @@ class DocumentPlusPreprocessor(object):
         edu2para = doc.edu2para
         edu2sent = doc.edu2sent
         edu2tokens = doc.edu2tokens
+        lex_heads = doc.lex_heads  # EXPERIMENTAL
+        
         # pre-compute relative indices (in sent, para) in one iteration
-        idxes_in_sent = relative_indices(edu2sent)
-        rev_idxes_in_sent = relative_indices(edu2sent, reverse=True)
-        idxes_in_para = relative_indices(edu2para)
-        rev_idxes_in_para = relative_indices(edu2para, reverse=True)
+        # NB: moved to document_plus itself
+        idxes_in_sent = doc.edu2idx_in_sent
+        rev_idxes_in_sent = doc.edu2rev_idx_in_sent
+
+        idxes_in_para = doc.edu2idx_in_para
+        rev_idxes_in_para = doc.edu2rev_idx_in_para
 
         result = dict()
 
@@ -210,6 +180,8 @@ class DocumentPlusPreprocessor(object):
         res['tokens'] = []
         res['tags'] = []
         res['words'] = []
+        res['tok_beg'] = 0  # EXPERIMENTAL
+        res['tok_end'] = 0  # EXPERIMENTAL
         # sentence
         res['edu_idx_in_sent'] = idxes_in_sent[0]
         res['edu_rev_idx_in_sent'] = rev_idxes_in_sent[0]
@@ -278,7 +250,7 @@ class DocumentPlusPreprocessor(object):
                 if tree_idx is not None:
                     tree = trees[tree_idx]
                     res['ptree'] = tree
-
+                    res['pheads'] = lex_heads[tree_idx]
             result[edu] = res
 
         return result

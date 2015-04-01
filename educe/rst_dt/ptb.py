@@ -26,6 +26,7 @@ from educe.ptb.annotation import (PTB_TO_TEXT, is_nonword_token,
                                   TweakedToken, transform_tree,
                                   strip_subcategory, prune_tree,
                                   is_non_empty, is_empty_category)
+from educe.ptb.head_finder import find_lexical_heads
 
 
 # map RST-WSJ files to PTB files
@@ -281,6 +282,7 @@ class PtbParser(object):
         tokens_iter = iter(doc_tokens)
 
         trees = []
+        lex_heads = []
         for tree in self.reader.parsed_sents(ptb_name):
             # apply standard cleaning to tree
             # strip function tags, remove empty nodes
@@ -293,6 +295,20 @@ class PtbParser(object):
             clean_tree = ConstituencyTree.build(tree_no_empty_no_gf,
                                                 tslice)
             trees.append(clean_tree)
+
+            # lexicalize the PTB tree: find the head word of each constituent
+            # constituents and their heads are designated by their Gorn address
+            # ("tree position" in NLTK) in the tree
+            lheads = find_lexical_heads(clean_tree)
+            lex_heads.append(lheads)
+
         # store trees in doc
         doc.tkd_trees.extend(trees)
+        # store lexical heads in doc
+        # TODO move to DocumentPlus
+        doc.lex_heads = []
+        doc.lex_heads.append(None)
+        # end TODO
+        doc.lex_heads.extend(lex_heads)
+
         return doc
