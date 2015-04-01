@@ -1409,7 +1409,7 @@ def read_corpus_inputs(args):
     for lex in LEXICONS:
         lex.read(args.resources)
     pdtb_lex = read_pdtb_lexicon(args)
-    inq_lex = _read_inquirer_lexicon(args)
+    inq_lex = {} #_read_inquirer_lexicon(args)
 
     verbnet_entries = [VerbNetEntry(x, frozenset(vnet.lemmas(x)))
                        for x in VERBNET_CLASSES]
