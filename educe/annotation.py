@@ -175,18 +175,24 @@ class Span(object):
         return Span(big_start, big_end)
 
 
-# pylint: disable=too-few-public-methods, invalid-name
+# pylint: disable=invalid-name
 class RelSpan(object):
     """
     Which two units a relation connections.
     """
     def __init__(self, t1, t2):
         self.t1 = t1
+        "string: id of an annotation"
+
         self.t2 = t2
+        "string: id of an annotation"
 
     def __str__(self):
         return '%s -> %s' % (self.t1, self.t2)
-# pylint: enable=too-few-public-methods, invalid-name
+
+    def __repr__(self):
+        return 'RelSpan(%s, %s)' % (self.t1, self.t2)
+# pylint: enable=invalid-name
 
 
 # pylint: disable=no-self-use
