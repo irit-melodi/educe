@@ -45,6 +45,9 @@ class Span(object):
     def __str__(self):
         return '(%d,%d)' % (self.char_start, self.char_end)
 
+    def __repr__(self):
+        return 'Span(%d, %d)' % (self.char_start, self.char_end)
+
     def __lt__(self, other):
         return self.char_start < other.char_start or\
             (self.char_start == other.char_start and
