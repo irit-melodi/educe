@@ -4,11 +4,13 @@ from __future__ import print_function
 import argparse
 
 from . import (features_li2014,
-               features as features_eyk)
+               features as features_eyk,
+               features_dev)
 
 
 FEATURE_SETS = {'li2014': features_li2014,
-                'eyk': features_eyk}
+                'eyk': features_eyk,
+                'dev': features_dev}
 
 DEFAULT_FEATURE_SET = 'li2014'
 

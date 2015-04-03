@@ -8,6 +8,7 @@ import copy
 import itertools
 
 from educe.external.postag import Token
+from educe.util import relative_indices
 from .text import Sentence, Paragraph, clean_edu_text
 from .annotation import EDU
 
@@ -170,6 +171,13 @@ class DocumentPlus(object):
                 edu2para.append(para_idx)
 
         self.edu2para = edu2para
+
+        # compute relative index of each EDU to the beginning (resp. to
+        # the end) of the paragraph
+        idxes_in_para = relative_indices(edu2para)
+        rev_idxes_in_para = relative_indices(edu2para, reverse=True)
+        self.edu2idx_in_para = idxes_in_para
+        self.edu2rev_idx_in_para = rev_idxes_in_para
 
         # align EDUs with raw sentences
         # NB: this usually fails due to bad sentence segmentation, e.g.
@@ -340,6 +348,14 @@ class DocumentPlus(object):
             edu2sent.append(tree_idx)
 
         self.edu2sent = edu2sent
+
+        # compute relative index of each EDU from the beginning (resp. to
+        # the end) of the sentence around
+        idxes_in_sent = relative_indices(edu2sent)
+        rev_idxes_in_sent = relative_indices(edu2sent, reverse=True)
+        self.edu2idx_in_sent = idxes_in_sent
+        self.edu2rev_idx_in_sent = rev_idxes_in_sent
+
         return self
 
     def all_edu_pairs(self):
