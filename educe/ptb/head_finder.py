@@ -133,7 +133,7 @@ def find_lexical_heads(tree):
                 # if h > 2 and Y_h-1 == 'CC': head = Y_h-2
                 if (c_idx > 1 and cnt_hws[c_idx - 1] == 'CC'):
                     c_idx = c_idx - 2
-                    hw = cnt_hws[c_idx - 2]
+                    hw = cnt_hws[c_idx]
 
         else:  # must be a Token
             p_nt = subtree.tag
