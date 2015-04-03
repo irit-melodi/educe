@@ -428,12 +428,9 @@ def extract_pair_sent(edu_info1, edu_info2):
     sent_id2 = edu_info2['sent_idx']
 
     # offset features
-    try:
-        offset1 = edu_info1['edu_idx_in_sent']
-        offset2 = edu_info2['edu_idx_in_sent']
-    except KeyError:
-        pass
-    else:
+    offset1 = edu_info1['edu_idx_in_sent']
+    offset2 = edu_info2['edu_idx_in_sent']
+    if offset1 is not None and offset2 is not None:
         # offset diff
         yield ('offset_diff', offset1 - offset2)
         yield ('offset_diff_div3', (offset1 - offset2) / 3)
@@ -442,17 +439,13 @@ def extract_pair_sent(edu_info1, edu_info2):
         yield ('offset_div3_pair', (offset1 / 3, offset2 / 3))
 
     # rev_offset features
-    try:
-        rev_offset1 = edu_info1['edu_rev_idx_in_sent']
-        rev_offset2 = edu_info2['edu_rev_idx_in_sent']
-    except KeyError:
-        pass
-    else:
-        if rev_offset1 is not None and rev_offset2 is not None:
-            yield ('rev_offset_diff', rev_offset1 - rev_offset2)
-            yield ('rev_offset_diff_div3', (rev_offset1 - rev_offset2) / 3)
-            yield ('rev_offset_pair', (rev_offset1, rev_offset2))
-            yield ('rev_offset_div3_pair', (rev_offset1 / 3, rev_offset2 / 3))
+    rev_offset1 = edu_info1['edu_rev_idx_in_sent']
+    rev_offset2 = edu_info2['edu_rev_idx_in_sent']
+    if rev_offset1 is not None and rev_offset2 is not None:
+        yield ('rev_offset_diff', rev_offset1 - rev_offset2)
+        yield ('rev_offset_diff_div3', (rev_offset1 - rev_offset2) / 3)
+        yield ('rev_offset_pair', (rev_offset1, rev_offset2))
+        yield ('rev_offset_div3_pair', (rev_offset1 / 3, rev_offset2 / 3))
 
     # sentenceID
     if sent_id1 is not None and sent_id2 is not None:
