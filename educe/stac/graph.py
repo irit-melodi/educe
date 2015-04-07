@@ -259,8 +259,7 @@ class DotGraph(educe.graph.DotGraph):
         if len(enclosing_turns) > 0:
             turn = enclosing_turns[0]
             speaker = stac_anno.speaker(turn)
-            turn_text = stac.split_turn_text(self.doc.text(turn.span))[0]
-            turn_id = turn_text.split(':')[0].strip()
+            turn_id = stac_anno.turn_id(turn)
             return speaker, turn_id
         else:
             return None, None
