@@ -69,11 +69,11 @@ def save_document(output_dir, k, doc):
             fout.write(doc_bytes)
 
 
-def write_dot_graph(k, odir, dot_graph, part=None, run_graphviz=True):
+def write_dot_graph(doc_key, odir, dot_graph, part=None, run_graphviz=True):
     """
     Write a dot graph and possibly run graphviz on it
     """
-    ofile_basename = output_path_stub(odir, k)
+    ofile_basename = output_path_stub(odir, doc_key)
     if part is not None:
         ofile_basename += '_' + str(part)
     dot_file = ofile_basename + '.dot'
