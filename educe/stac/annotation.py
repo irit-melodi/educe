@@ -131,7 +131,7 @@ def turn_id(anno):
     annotation (or None if this information is missing).
     """
     tid_str = anno.features.get('Identifier')
-    return int(tid_str) if tid_str else None
+    return int(tid_str) if tid_str is not None else None
 
 
 def addressees(anno):
