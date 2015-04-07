@@ -413,6 +413,10 @@ class Schema(Annotation):
 
     Use the `members` field to grab the annotations themselves.
     But note that it is only created when `fleshout` is called.
+
+    :type units: set(string)
+    :type relations: set(string)
+    :type schemas: set(string)
     """
     def __init__(self, rel_id, units, relations, schemas, stype,
                  features, metadata=None):
@@ -493,8 +497,10 @@ class Document(Standoff):
     def set_origin(self, origin):
         """
         If you have more than one document, it's a good idea to
-        set its origin to an `educe.corpus.file_id` so that you
+        set its origin to a file ID so that you
         can more reliably the annotations apart.
+
+        :type origin: :py:class:`educe.corpus.FileId`
         """
         self.origin = origin
         for anno in self.annotations():
