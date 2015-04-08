@@ -4,7 +4,7 @@ information about it
 """
 
 import warnings
-from ..annotation import is_edu, is_turn
+from ..annotation import is_edu, is_cdu, is_turn
 from ..annotation import speaker as anno_speaker
 from ..graph import WrappedToken, EnclosureGraph
 
@@ -146,6 +146,22 @@ class Context(object):
             for edu in filter(is_edu, doc.units):
                 contexts[edu] = cls._for_edu(egraph, doc_turns, edu)
         return contexts
+
+
+def speakers(contexts, anno):
+    """
+    Return a list of speakers of an EDU or CDU (in the textual
+    order of the EDUs).
+    """
+    if is_edu(anno):
+        return [contexts[anno].speaker()]
+    elif is_cdu(anno):
+        edus = sorted([x for x in anno.terminals() if is_edu(x)],
+                      key=lambda x: x.text_span())
+        return [contexts[x].speaker() for x in edus]
+    else:
+        raise ValueError('Expected either an EDU or CDU but got: %s | %s' %
+                         (type(anno), anno))
 
 
 def enclosed(span, annos):
