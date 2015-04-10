@@ -154,6 +154,7 @@ def main(args):
         labelset = load_labels(args.labels)
         labtor = DocumentLabelExtractor(instance_generator,
                                         labelset=labelset)
+        labtor.fit(docs)
         y_gen = labtor.transform(docs)
     else:
         labtor = DocumentLabelExtractor(instance_generator)
