@@ -18,7 +18,8 @@ import educe.stac
 import educe.util
 
 from educe.learning.svmlight_format import dump_svmlight_file
-from educe.learning.edu_input_format import dump_all
+from educe.learning.edu_input_format import (dump_all,
+                                             load_labels)
 from educe.learning.vocabulary_format import (dump_vocabulary,
                                               load_vocabulary)
 from ..args import add_usual_input_args
@@ -61,6 +62,11 @@ def config_argparser(parser):
                         '(when extracting test data, you may want to '
                         'use the feature vocabulary from the training '
                         'set ')
+    parser.add_argument('--labels',
+                        metavar='FILE',
+                        help='Read label set from given feature file '
+                        '(important when extracting test data)')
+
     parser.add_argument('--debug', action='store_true',
                         help='Emit fields used for debugging purposes')
     parser.add_argument('--experimental', action='store_true',
@@ -144,6 +150,11 @@ def main(args):
     # extract class label for each instance
     if live:
         y_gen = itertools.repeat(0)
+    elif args.labels is not None:
+        labelset = load_labels(args.labels)
+        labtor = DocumentLabelExtractor(instance_generator,
+                                        labelset)
+        y_gen = labtor.transform(docs)
     else:
         labtor = DocumentLabelExtractor(instance_generator)
         # y_gen = labtor.fit_transform(rst_corpus)
