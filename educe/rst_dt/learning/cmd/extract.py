@@ -153,7 +153,7 @@ def main(args):
     elif args.labels is not None:
         labelset = load_labels(args.labels)
         labtor = DocumentLabelExtractor(instance_generator,
-                                        labelset)
+                                        labelset=labelset)
         y_gen = labtor.transform(docs)
     else:
         labtor = DocumentLabelExtractor(instance_generator)
