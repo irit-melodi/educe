@@ -105,7 +105,9 @@ def _load_labels(f):
     """Actually read the label set"""
     line = f.readline()
     seq = line[1:].split()[1:]
-    return {lbl: idx for idx, lbl in enumerate(seq, start=1)}
+    labels = {lbl: idx for idx, lbl in enumerate(seq, start=1)}
+    labels['__UNK__'] = 0
+    return labels
 
 
 def load_labels(f):
