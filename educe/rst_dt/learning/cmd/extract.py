@@ -55,7 +55,7 @@ def config_argparser(parser):
                         dest='verbose')
     parser.add_argument('--parsing', action='store_true',
                         help='Extract features for parsing')
-    parser.add_argument('--vocabulary', action='store_const',
+    parser.add_argument('--vocabulary',
                         metavar='FILE',
                         help='Use given vocabulary for feature output '
                         '(when extracting test data, you may want to '
