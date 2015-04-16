@@ -153,7 +153,7 @@ class BasicRfc(object):
         :rtype: [string]
         '''
         graph = self._graph
-        nodes = graph.first_widest_dus()
+        nodes = graph.first_outermost_dus()
         res = list()
         if len(nodes) < 2:
             return res

@@ -8,6 +8,7 @@ import copy
 
 from educe import stac
 from educe.stac.rfc import (BasicRfc)
+from educe.stac.util.context import sorted_first_widest
 import educe.stac.graph as egr
 
 from .. import html as h
@@ -43,9 +44,10 @@ def search_graph_edus(inputs, k, gra, pred):
     """
     doc = inputs.corpus[k]
     contexts = inputs.contexts[k]
-    sorted_edus = gra.sorted_first_widest(gra.edus())
+    edu_names = {gra.annotation(name):name for name in gra.edus()}
+    sorted_edus = sorted_first_widest(edu_names.keys())
     return [UnitItem(doc, contexts, gra.annotation(x))
-            for x in sorted_edus if pred(gra, contexts, x)]
+            for x in sorted_edus if pred(gra, contexts, edu_names[x])]
 
 
 def search_graph_relations(inputs, k, gra, pred):

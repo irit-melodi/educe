@@ -245,7 +245,7 @@ class CduHeadTest(unittest.TestCase):
         self.assertEqual(deep_heads[ids['c1']],
                          deep_heads[ids['c2']])
 
-def test_first_widest_dus_simple():
+def test_first_outermost_dus_simple():
     edu1 = FakeEDU('e1',span=(1,2))
     edu2 = FakeEDU('e2',span=(1,3))
     edu3 = FakeEDU('e3',span=(2,3))
@@ -257,9 +257,9 @@ def test_first_widest_dus_simple():
     k   = corpus.FileId('moo',None,None,None)
     gr  = stac_gr.Graph.from_doc({k:doc}, k)
     ids = nodeform_graph_ids(gr)
-    assert gr.first_widest_dus() == [ ids[x] for x in ['e2','e1','e3'] ]
+    assert gr.first_outermost_dus() == [ ids[x] for x in ['e2','e1','e3'] ]
 
-def test_first_widest_dus():
+def test_first_outermost_dus():
     edu1 = FakeEDU('e1',span=(1,2))
     edu2 = FakeEDU('e2',span=(1,3))
     edu3 = FakeEDU('e3',span=(2,3))
@@ -281,7 +281,7 @@ def test_first_widest_dus():
     k   = corpus.FileId('moo',None,None,None)
     gr  = stac_gr.Graph.from_doc({k:doc}, k)
     ids = nodeform_graph_ids(gr)
-    got      = gr.first_widest_dus()
+    got      = gr.first_outermost_dus()
     expected = ['c3', 'c1','e2','e1','e3', 'c2', 'e4', 'e5' ]
     assert got == [ ids[x] for x in expected ]
 
