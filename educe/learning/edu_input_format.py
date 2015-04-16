@@ -4,6 +4,7 @@ See `https://github.com/kowey/attelo/blob/scikit/doc/input.rst`_
 """
 
 from __future__ import absolute_import, print_function
+import codecs
 import csv
 
 import six
@@ -98,6 +99,22 @@ def labels_comment(class_mapping):
     else:
         comment = None
     return comment
+
+
+def _load_labels(f):
+    """Actually read the label set"""
+    line = f.readline()
+    seq = line[1:].split()[1:]
+    labels = {lbl: idx for idx, lbl in enumerate(seq, start=1)}
+    labels['__UNK__'] = 0
+    return labels
+
+
+def load_labels(f):
+    """Read label set (from a features file) into a dictionary mapping labels
+    to indices and index"""
+    with codecs.open(f, 'r', 'utf-8') as f:
+        return _load_labels(f)
 
 
 def dump_all(X_gen, y_gen, f, class_mapping, docs, instance_generator):
