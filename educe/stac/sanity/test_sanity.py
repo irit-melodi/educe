@@ -14,7 +14,7 @@ from educe.stac.tests import\
     graph_ids
 
 from .checks.annotation import is_cross_dialogue
-from .checks.graph import containing_cdu_chain, is_puncture
+from .checks.graph import is_puncture
 from ..util.context import Context
 
 
@@ -143,7 +143,7 @@ class CduPunctureTest(SanityCheckerTest):
 
         mark = self.edu1_2.local_id()
         self.assertEqual(list(map(get_id, [c1, c2])),
-                         containing_cdu_chain(g, ids[mark]))
+                         g.containing_cdu_chain(ids[mark]))
 
     def test_enclosed(self):
         """
