@@ -27,6 +27,7 @@ from educe.external.parser import\
 from educe.learning.keys import (MagicKey, Key, KeyGroup, MergedKeyGroup)
 from educe.stac import postag, corenlp
 from educe.stac.annotation import speaker, addressees
+from educe.stac.corpus import (twin_key)
 from educe.learning.csv import tune_for_csv
 from educe.learning.util import tuple_feature, underscore
 import educe.corpus
@@ -166,14 +167,14 @@ def player_addresees(edu):
     return frozenset(x for x in addr1 if x not in ['All', '?'])
 
 
-def position_of_speaker_first_turn(ctx):
+def position_of_speaker_first_turn(edu):
     """
     Given an EDU context, determine the position of the first turn by that
     EDU's speaker relative to other turns in that dialogue.
     """
-    edu_speaker = speaker(ctx.turn)
+    edu_speaker = edu.speaker()
     # we can assume these are sorted
-    for i, turn in enumerate(ctx.dialogue_turns):
+    for i, turn in enumerate(edu.dialogue_turns):
         if speaker(turn) == edu_speaker:
             return i
     oops = "Implementation error? No turns found which match speaker's turn"
@@ -256,20 +257,18 @@ def lexical_markers(lclass, tokens):
     return frozenset(lclass.word_to_subclass[x] for x in sought & present)
 
 
-def real_dialogue_act(anno, unitdoc=None):
+def real_dialogue_act(edu):
     """
     Given an EDU in the 'discourse' stage of the corpus, return its
     dialogue act from the 'units' stage
     """
-    twin = educe.stac.twin_from(unitdoc, anno) if unitdoc is not None else None
-    edu = twin if twin is not None else anno
     acts = educe.stac.dialogue_act(edu)
     if len(acts) < 1:
-        oops = 'Was expecting at least one dialogue act for %s' % anno
+        oops = 'Was expecting at least one dialogue act for %s' % edu
         raise CorpusConsistencyException(oops)
     else:
         if len(acts) > 1:
-            print("More than one dialogue act for %s: %s" % (anno, acts),
+            print("More than one dialogue act for %s: %s" % (edu, acts),
                   file=sys.stderr)
         return list(acts)[0]
 
@@ -345,7 +344,6 @@ DocumentPlus = namedtuple('DocumentPlus',
                           ['key',
                            'doc',
                            'unitdoc',  # equiv doc from units
-                           'contexts',
                            'players',
                            'parses'])
 
@@ -366,20 +364,6 @@ def type_text(wrapped):
     def inner(*args, **kwargs):
         "call the wrapped function"
         return tune_for_csv(wrapped(*args, **kwargs))
-    return inner
-
-
-def context_feature(wrapped):
-    """
-    Lift a context based feature into a standard single EDU one ::
-
-        ((Context, Edu) -> a) ->
-        ((Current, Edu) -> a)
-    """
-    @wraps(wrapped)
-    def inner(current, edu):
-        "call the wrapped fuction"
-        return wrapped(current.contexts[edu], edu)
     return inner
 
 
@@ -435,49 +419,44 @@ def feat_end(_, edu):
     return edu.text_span().char_end
 
 
-@context_feature
-def num_tokens(context, _):
+def num_tokens(_, edu):
     "length of this EDU in tokens"
-    return len(context.tokens)
+    return len(edu.tokens)
 
 
 @type_text
-@context_feature
-def word_first(context, _):
+def word_first(_, edu):
     "the first word in this EDU"
-    return clean_chat_word(context.tokens[0]) if context.tokens else None
+    return clean_chat_word(edu.tokens[0]) if edu.tokens else None
 
 
 @type_text
-@context_feature
-def word_last(context, _):
+def word_last(_, edu):
     "the last word in this EDU"
-    return clean_chat_word(context.tokens[-1]) if context.tokens else None
+    return clean_chat_word(edu.tokens[-1]) if edu.tokens else None
 
 
 def has_player_name_exact(current, edu):
     "if the EDU text has a player name in it"
-    tokens = current.contexts[edu].tokens
+    tokens = edu.tokens
     return has_one_of_words(current.players, tokens)
 
 
 def has_player_name_fuzzy(current, edu):
     "if the EDU has a word that sounds like a player name"
-    tokens = current.contexts[edu].tokens
+    tokens = edu.tokens
     soundex = lambda w: Soundex().soundex(w)
     return has_one_of_words(current.players, tokens, norm=soundex)
 
 
-@context_feature
-def feat_has_emoticons(context, _):
+def feat_has_emoticons(_, edu):
     "if the EDU has emoticon-tagged tokens"
-    return bool(emoticons(context.tokens))
+    return bool(emoticons(edu.tokens))
 
 
-@context_feature
-def feat_is_emoticon_only(context, _):
+def feat_is_emoticon_only(_, edu):
     "if the EDU consists solely of an emoticon"
-    return is_just_emoticon(context.tokens)
+    return is_just_emoticon(edu.tokens)
 
 
 @edu_text_feature
@@ -555,8 +534,7 @@ def is_question(current, edu):
     span = edu.text_span()
     has_qmark = "?" in doc.text(span)[-1]
 
-    ctx = current.contexts[edu]
-    tokens = ctx.tokens
+    tokens = edu.tokens
     starts_w_qword = False
     if tokens:
         starts_w_qword = tokens[0].word.lower() in QUESTION_WORDS
@@ -568,52 +546,45 @@ def is_question(current, edu):
     return has_qmark or starts_w_qword or has_q_tag
 
 
-@context_feature
-def edu_position_in_turn(context, edu):
+def edu_position_in_turn(_, edu):
     "relative position of the EDU in the turn"
-    return 1 + context.turn_edus.index(edu)
+    return 1 + edu.turn_edus.index(edu)
 
 
-@context_feature
-def position_in_dialogue(context, _):
+def position_in_dialogue(_, edu):
     "relative position of the turn in the dialogue"
-    return 1 + context.dialogue_turns.index(context.turn)
+    return 1 + edu.dialogue_turns.index(edu.turn)
 
 
-@context_feature
-def position_in_game(context, _):
+def position_in_game(_, edu):
     "relative position of the turn in the game"
-    return 1 + context.doc_turns.index(context.turn)
+    return 1 + edu.doc_turns.index(edu.turn)
 
 
-@context_feature
-def turn_follows_gap(context, _):
+def turn_follows_gap(_, edu):
     "if the EDU turn number is > 1 + previous turn"
-    tid = turn_id(context.turn)
-    dialogue_tids = list(map(turn_id, context.dialogue_turns))
+    tid = turn_id(edu.turn)
+    dialogue_tids = [turn_id(x) for x in edu.dialogue_turns]
     return tid and tid - 1 in dialogue_tids and tid != min(dialogue_tids)
 
 
-@context_feature
-def speaker_started_the_dialogue(context, _):
+def speaker_started_the_dialogue(_, edu):
     "if the speaker for this EDU is the same as that of the\
  first turn in the dialogue"
-    return speaker(context.dialogue_turns[0]) == speaker(context.turn)
+    return speaker(edu.dialogue_turns[0]) == speaker(edu.turn)
 
 
-@context_feature
-def speaker_already_spoken_in_dialogue(context, _):
+def speaker_already_spoken_in_dialogue(_, edu):
     "if the speaker for this EDU is the same as that of a\
  previous turn in the dialogue"
-    return position_of_speaker_first_turn(context) <\
-        context.dialogue_turns.index(context.turn)
+    return position_of_speaker_first_turn(edu) <\
+        edu.dialogue_turns.index(edu.turn)
 
 
-@context_feature
-def speakers_first_turn_in_dialogue(context, _):
+def speakers_first_turn_in_dialogue(_, edu):
     "position in the dialogue of the turn in which the\
  speaker for this EDU first spoke"
-    return 1 + position_of_speaker_first_turn(context)
+    return 1 + position_of_speaker_first_turn(edu)
 
 # ---------------------------------------------------------------------
 # pair features
@@ -631,13 +602,13 @@ def feat_annotator(current, edu1, edu2):
 @tuple_feature(underscore)  # decorator does the pairing boilerplate
 def is_question_pairs(_, cache, edu):
     "boolean tuple: if each EDU is a question"
-    return cache[edu]["is_question"]
+    return cache[edu].get("is_question", False)
 
 
 @tuple_feature(underscore)
 def dialogue_act_pairs(current, _, edu):
     "tuple of dialogue acts for both EDUs"
-    return clean_dialogue_act(real_dialogue_act(edu, current.unitdoc))
+    return clean_dialogue_act(real_dialogue_act(edu))
 
 
 EduGap = namedtuple("EduGap", "sf_cache inner_edus turns_between")
@@ -663,16 +634,12 @@ def has_inner_question(current, gap, _edu1, _edu2):
 
 def same_speaker(current, _, edu1, edu2):
     "if both EDUs have the same speaker"
-    ctx1 = current.contexts[edu1]
-    ctx2 = current.contexts[edu2]
-    return speaker(ctx1.turn) == speaker(ctx2.turn)
+    return edu1.speaker() == edu2.speaker()
 
 
 def same_turn(current, _, edu1, edu2):
     "if both EDUs are in the same turn"
-    ctx1 = current.contexts[edu1]
-    ctx2 = current.contexts[edu2]
-    return ctx1.turn == ctx2.turn
+    return edu1.turn == edu2.turn
 
 
 # ---------------------------------------------------------------------
@@ -728,8 +695,7 @@ class LexKeyGroup(KeyGroup):
         See `SingleEduSubgroup`
         """
         vec = self if target is None else target
-        ctx = current.contexts[edu]
-        tokens = ctx.tokens
+        tokens = edu.tokens
         for cname, lclass in self.lexicon.entries.items():
             markers = lexical_markers(lclass, tokens)
             if self.has_subclasses:
@@ -768,8 +734,7 @@ class PdtbLexKeyGroup(KeyGroup):
     def fill(self, current, edu, target=None):
         "See `SingleEduSubgroup`"
         vec = self if target is None else target
-        ctx = current.contexts[edu]
-        tokens = ctx.tokens
+        tokens = edu.tokens
         for rel in self.lexicon:
             field = self.mk_field(rel)
             has_marker = has_pdtb_markers(self.lexicon[rel], tokens)
@@ -839,8 +804,7 @@ class InquirerLexKeyGroup(KeyGroup):
         "See `SingleEduSubgroup`"
 
         vec = self if target is None else target
-        ctx = current.contexts[edu]
-        tokens = frozenset(t.word.lower() for t in ctx.tokens)
+        tokens = frozenset(t.word.lower() for t in edu.tokens)
         for entry in self.lexicon:
             field = self.mk_field(entry)
             matching = tokens.intersection(self.lexicon[entry])
@@ -1052,14 +1016,11 @@ class PairSubgroup_Gap(PairSubgroup):
     def fill(self, current, edu1, edu2, target=None):
         vec = self if target is None else target
         doc = current.doc
-        ctx1 = current.contexts[edu1]
-        ctx2 = current.contexts[edu2]
-
         big_span = edu1.text_span().merge(edu2.text_span())
 
         # spans for the turns that come between the two edus
-        turns_between_span = Span(ctx1.turn.text_span().char_end,
-                                  ctx2.turn.text_span().char_start)
+        turns_between_span = Span(edu1.turn.text_span().char_end,
+                                  edu2.turn.text_span().char_start)
         turns_between = enclosed(turns_between_span,
                                  (t for t in doc.units if t.type == 'Turn'))
 
@@ -1174,7 +1135,6 @@ def mk_env(inputs, people, key):
         DocumentPlus(key=key,
                      doc=doc,
                      unitdoc=inputs.corpus[unit_key] if unit_key else None,
-                     contexts=Context.for_edus(doc, inputs.postags[key]),
                      players=people[key.doc],
                      parses=inputs.parses[key] if inputs.parses else None)
 
@@ -1234,30 +1194,65 @@ def _id_pair(pair):
     return edu1.identifier(), edu2.identifier()
 
 
+def _fuse_edus(dialogue_doc, unit_doc):
+    """
+    Return a copy of the document, where all EDUs have been converted
+    to higher level merged EDUs
+    """
+    doc = copy.deepcopy(dialogue_doc)
+    # first pass: create the EDU objects
+    annos = sorted([x for x in doc.units if educe.stac.is_edu(x)],
+                   key=lambda x: x.span)
+    replacements = {}
+    for anno in annos:
+        unit_anno = None if unit_doc is None\
+            else educe.stac.twin_from(unit_doc, anno)
+        edu = EDU(doc,
+                  anno,
+                  unit_anno)
+        replacements[anno] = edu
+
+    # second pass: rewrite doc so that annotations that corresponds
+    # to EDUs are replacement by their higher-level equivalents
+    edus = []
+    for anno in annos:
+        edu = replacements[anno]
+        edus.append(edu)
+        doc.units.remove(anno)
+        doc.units.append(edu)
+        for rel in doc.relations:
+            if rel.source == anno:
+                rel.source = edu
+            if rel.target == anno:
+                rel.target = edu
+        for schema in doc.schemas:
+            if anno in schema.units:
+                schema.units.remove(anno)
+                schema.units.append(edu)
+
+    # third pass: flesh out the EDUs with contextual info
+    # now the EDUs should be work as contexts too
+    contexts = Context.for_edus(doc)
+    for edu in edus:
+        edu.fleshout(contexts[edu])
+    return doc
+
+
 def _mk_high_level_dialogues(current):
     """:rtype: iterable(:pyclass:`educe.stac.document_plus.Dialogue`)
     """
     doc = current.doc
-    annos = sorted([x for x in doc.units if educe.stac.is_edu(x)],
-                   key=lambda x: x.span)
-    edus = []
-    dialogues = {} # EDU -> glozz anno
+    # first pass: create the EDU objects
+    edus = sorted([x for x in doc.units if educe.stac.is_edu(x)],
+                  key=lambda x: x.span)
     edus_in_dialogues = defaultdict(list)
-    for anno in annos:
-        unit_anno = None if current.unitdoc is None\
-            else educe.stac.twin_from(current.unitdoc, anno)
-        edu = EDU(doc,
-                  current.contexts[anno],
-                  anno,
-                  unit_anno)
-        edus.append(edu)
-        dia = current.contexts[anno].dialogue
-        dialogues[edu] = dia
-        edus_in_dialogues[dia].append(edu)
+    for edu in edus:
+        edus_in_dialogues[edu.dialogue].append(edu)
 
+    # finally, generat the high level dialogues
     relations = relation_dict(doc)
-
-    for dia in sorted(edus_in_dialogues, key=lambda x: x.span):
+    dialogues = sorted(edus_in_dialogues, key=lambda x: x.span)
+    for dia in dialogues:
         d_edus = edus_in_dialogues[dia]
         d_relations = {}
         for pair in itr.product(d_edus, d_edus):
@@ -1300,7 +1295,7 @@ def extract_pair_features(inputs, stage):
     for env in mk_envs(inputs, stage):
         for dia in _mk_high_level_dialogues(env.current):
             for edu1, edu2 in dia.edu_pairs():
-                yield _extract_pair(env, edu1._anno, edu2._anno)
+                yield _extract_pair(env, edu1, edu2)
 
 # ---------------------------------------------------------------------
 # extraction generators (single edu)
@@ -1392,6 +1387,20 @@ def mk_is_interesting(args, single):
         return educe.util.mk_is_interesting(args, preselected=preselected)
 
 
+def _fuse_corpus(corpus):
+    "Merge any dialogue/unit level documents together"
+    to_delete = []
+    for key in corpus:
+        if key.stage == 'unannotated':
+            corpus[key] = _fuse_edus(corpus[key], corpus[key])
+        elif key.stage == 'discourse':
+            ukey = twin_key(key, 'units')
+            corpus[key] = _fuse_edus(corpus[key], corpus[ukey])
+            to_delete.append(ukey)
+    for key in to_delete:
+        del corpus[key]
+
+
 def read_corpus_inputs(args):
     """
     Read and filter the part of the corpus we want features for
@@ -1400,6 +1409,7 @@ def read_corpus_inputs(args):
     anno_files = reader.filter(reader.files(),
                                mk_is_interesting(args, args.single))
     corpus = reader.slurp(anno_files, verbose=True)
+    _fuse_corpus(corpus)
 
     if not args.ignore_cdus:
         strip_cdus(corpus)
