@@ -20,7 +20,7 @@ import sys
 from nltk.corpus import verbnet as vnet
 from soundex import Soundex
 
-from educe.annotation import Span
+from educe.annotation import (Span, Relation, RelSpan)
 from educe.external.parser import\
     SearchableTree,\
     ConstituencyTree
@@ -1182,6 +1182,21 @@ def relation_dict(doc, quiet=False):
                               edu2=pair[1],
                               type2=relations[pair]),
                   file=sys.stderr)
+    # generate fake root links
+    for anno in doc.units:
+        is_target = False
+        for rel in doc.relations:
+            if rel.target == anno:
+                is_target = True
+                break
+        if not is_target:
+            key = ROOT, anno.identifier()
+            relations[key] = Relation(None,
+                                      RelSpan(ROOT, anno.identifier),
+                                      ROOT,
+                                      {})
+            relations[key].source = ROOT
+            relations[key].target = anno
     return relations
 
 
