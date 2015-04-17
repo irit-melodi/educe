@@ -32,7 +32,7 @@ from __future__ import print_function
 import itertools as itr
 
 from educe.annotation import (Span, Unit)
-from educe.stac.annotation import (speaker)
+from educe.stac.annotation import (is_edu, speaker)
 
 ROOT = 'ROOT'
 "distinguished fake EDU id for machine learning applications"
@@ -88,10 +88,11 @@ class EDU(Unit):
         self._anno = discourse_anno
         self._unit_anno = unit_anno
         unit_anno = unit_anno or discourse_anno
-        # as an annotation
+        unit_type = unit_anno.type if is_edu(unit_anno)\
+            else discourse_anno.type
         super(EDU, self).__init__(discourse_anno.local_id(),
                                   discourse_anno.text_span(),
-                                  unit_anno.type,
+                                  unit_type,
                                   discourse_anno.features,
                                   discourse_anno.metadata,
                                   discourse_anno.origin)
