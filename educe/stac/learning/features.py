@@ -26,7 +26,7 @@ from educe.external.parser import\
     ConstituencyTree
 from educe.learning.keys import (MagicKey, Key, KeyGroup, MergedKeyGroup)
 from educe.stac import postag, corenlp
-from educe.stac.annotation import speaker, addressees
+from educe.stac.annotation import speaker, addressees, is_relation_instance
 from educe.stac.corpus import (twin_key)
 from educe.learning.csv import tune_for_csv
 from educe.learning.util import tuple_feature, underscore
@@ -1168,6 +1168,9 @@ def relation_dict(doc, quiet=False):
     """
     relations = {}
     for rel in doc.relations:
+        if not is_relation_instance(rel):
+            # might be the odd Anaphora link lying around
+            continue
         pair = rel.source.identifier(), rel.target.identifier()
         if pair not in relations:
             relations[pair] = rel.type
