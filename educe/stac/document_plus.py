@@ -44,7 +44,7 @@ class Dialogue(object):
     Note that input EDUs should be sorted by span
     """
     def __init__(self, anno, edus, relations):
-        self.edus = [FakeRootEDU()] + edus
+        self.edus = [FakeRootEDU] + edus
         self.grouping = anno.identifier()
         # we start from 1 because 0 is for the fake root
         self.edu2sent = {i: e.subgrouping()
@@ -164,7 +164,7 @@ class EDU(Unit):
 
 
 # pylint: disable=no-self-use
-class FakeRootEDU(object):
+class _FakeRootEDU(object):
     """Virtual EDU to represent the notion of a fake root node
     sometimes used in dependency parsing applications
     """
@@ -193,3 +193,7 @@ class FakeRootEDU(object):
         "For feature extraction, should not ever really be rendered"
         return None
 # pylint: enable=no-self-use
+
+# pylint: disable=invalid-name
+FakeRootEDU = _FakeRootEDU()
+# pylint: enable=invalid-name

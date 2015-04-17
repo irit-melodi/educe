@@ -20,7 +20,7 @@ import sys
 from nltk.corpus import verbnet as vnet
 from soundex import Soundex
 
-from educe.annotation import (Span, Relation, RelSpan)
+from educe.annotation import (Span)
 from educe.external.parser import\
     SearchableTree,\
     ConstituencyTree
@@ -41,7 +41,7 @@ import educe.util
 from ..util.context import Context, enclosed, edus_in_span
 from ..annotation import turn_id
 from ..lexicon.wordclass import Lexicon
-from ..document_plus import (Dialogue, EDU, ROOT)
+from ..document_plus import (Dialogue, EDU, ROOT, FakeRootEDU)
 
 
 class CorpusConsistencyException(Exception):
@@ -1184,6 +1184,8 @@ def relation_dict(doc, quiet=False):
                   file=sys.stderr)
     # generate fake root links
     for anno in doc.units:
+        if not educe.stac.is_edu(anno):
+            continue
         is_target = False
         for rel in doc.relations:
             if rel.target == anno:
@@ -1191,12 +1193,7 @@ def relation_dict(doc, quiet=False):
                 break
         if not is_target:
             key = ROOT, anno.identifier()
-            relations[key] = Relation(None,
-                                      RelSpan(ROOT, anno.identifier),
-                                      ROOT,
-                                      {})
-            relations[key].source = ROOT
-            relations[key].target = anno
+            relations[key] = ROOT
     return relations
 
 
@@ -1277,7 +1274,7 @@ def _mk_high_level_dialogues(current):
     for dia in dialogues:
         d_edus = edus_in_dialogues[dia]
         d_relations = {}
-        for pair in itr.product(d_edus, d_edus):
+        for pair in itr.product([FakeRootEDU] + d_edus, d_edus):
             rel = relations.get(_id_pair(pair))
             if rel is not None:
                 d_relations[pair] = rel
