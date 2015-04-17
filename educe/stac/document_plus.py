@@ -166,6 +166,16 @@ class FakeRootEDU(object):
     """Virtual EDU to represent the notion of a fake root node
     sometimes used in dependency parsing applications
     """
+    type = ROOT
+
+    def __init__(self):
+        self.turn = self
+        self.span = Span(0, 0)
+
+    def text_span(self):
+        "Trivial text span"
+        return self.span
+
     def is_left_padding(self):
         "If this is a virtual EDU used in machine learning tasks"
         return True
@@ -176,4 +186,8 @@ class FakeRootEDU(object):
         Glozz layer we will use the 'local' identifier, which should be the
         same across stages"""
         return ROOT
+
+    def speaker(self):
+        "For feature extraction, should not ever really be rendered"
+        return None
 # pylint: enable=no-self-use

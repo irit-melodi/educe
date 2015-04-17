@@ -41,7 +41,7 @@ import educe.util
 from ..util.context import Context, enclosed, edus_in_span
 from ..annotation import turn_id
 from ..lexicon.wordclass import Lexicon
-from ..document_plus import (Dialogue, EDU)
+from ..document_plus import (Dialogue, EDU, ROOT)
 
 
 class CorpusConsistencyException(Exception):
@@ -1025,8 +1025,10 @@ class PairSubgroup_Gap(PairSubgroup):
                                  (t for t in doc.units if t.type == 'Turn'))
 
         inner_edus = edus_in_span(doc, big_span)
-        inner_edus.remove(edu1)
-        inner_edus.remove(edu2)
+        if edu1.identifier() != ROOT: # not present anyway
+            inner_edus.remove(edu1)
+        if edu2.identifier() != ROOT:
+            inner_edus.remove(edu2)
 
         gap = EduGap(inner_edus=inner_edus,
                      turns_between=turns_between,
@@ -1087,7 +1089,9 @@ class FeatureCache(dict):
         super(FeatureCache, self).__init__()
 
     def __getitem__(self, edu):
-        if edu in self:
+        if edu.identifier() == ROOT:
+            return KeyGroup('fake root group', [])
+        elif edu in self:
             return super(FeatureCache, self).__getitem__(edu)
         else:
             vec = SingleEduKeys(self.inputs)
