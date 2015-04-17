@@ -36,18 +36,18 @@ educe.rst_dt.learning.features module
     :undoc-members:
     :show-inheritance:
 
-educe.rst_dt.learning.features_li2014 module
---------------------------------------------
+educe.rst_dt.learning.features_dev module
+-----------------------------------------
 
-.. automodule:: educe.rst_dt.learning.features_li2014
+.. automodule:: educe.rst_dt.learning.features_dev
     :members:
     :undoc-members:
     :show-inheritance:
 
-educe.rst_dt.learning.tests module
-----------------------------------
+educe.rst_dt.learning.features_li2014 module
+--------------------------------------------
 
-.. automodule:: educe.rst_dt.learning.tests
+.. automodule:: educe.rst_dt.learning.features_li2014
     :members:
     :undoc-members:
     :show-inheritance:
