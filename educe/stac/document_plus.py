@@ -87,6 +87,7 @@ class EDU(Unit):
         self._doc = doc
         self._anno = discourse_anno
         self._unit_anno = unit_anno
+        unit_anno = unit_anno or discourse_anno
         # as an annotation
         super(EDU, self).__init__(discourse_anno.local_id(),
                                   discourse_anno.text_span(),
