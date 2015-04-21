@@ -116,17 +116,14 @@ class BasicRfc(object):
 
     def frontier(self):
         """
-        Return the list of nodes on the right frontier of a graph
+        Return the list of nodes on the right frontier of a whole graph
         """
         graph = self._graph
         nodes = graph.first_outermost_dus()
         points = self._frontier_points(nodes)
         if nodes:
             last = nodes[-1]
-            res = []
-            for rfc_node in self._build_right_frontier(points, last):
-                res.append(rfc_node)
-            return res
+            return list(self._build_right_frontier(points, last))
         else:
             return []
 
