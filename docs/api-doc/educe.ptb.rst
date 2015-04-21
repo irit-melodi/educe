@@ -12,6 +12,14 @@ educe.ptb.annotation module
     :undoc-members:
     :show-inheritance:
 
+educe.ptb.head_finder module
+----------------------------
+
+.. automodule:: educe.ptb.head_finder
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Module contents
 ---------------

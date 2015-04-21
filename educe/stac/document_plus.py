@@ -31,6 +31,9 @@ feature-extraction
 from __future__ import print_function
 import itertools as itr
 
+from educe.annotation import (Span, Unit)
+from educe.stac.annotation import (is_edu, speaker)
+
 ROOT = 'ROOT'
 "distinguished fake EDU id for machine learning applications"
 
@@ -41,7 +44,7 @@ class Dialogue(object):
     Note that input EDUs should be sorted by span
     """
     def __init__(self, anno, edus, relations):
-        self.edus = [FakeRootEDU()] + edus
+        self.edus = [FakeRootEDU] + edus
         self.grouping = anno.identifier()
         # we start from 1 because 0 is for the fake root
         self.edu2sent = {i: e.subgrouping()
@@ -54,7 +57,10 @@ class Dialogue(object):
         NB: this is a generator
         """
         i_edus = list(enumerate(self.edus))
+        _, fakeroot = i_edus[0]
         i_edus = i_edus[1:]  # drop left padding EDU
+        for _, edu in i_edus:
+            yield (fakeroot, edu)
         for num1, edu1 in i_edus:
             # pylint: disable=cell-var-from-loop
             is_before = lambda x: x[0] <= num1
@@ -63,21 +69,57 @@ class Dialogue(object):
                 yield (edu1, edu2)
                 yield (edu2, edu1)
 
-
-class EDU(object):
+# pylint: disable=too-many-instance-attributes
+# we're trying to cover a lot of ground here
+class EDU(Unit):
     """STAC EDU
 
-    If you can't find what you need here, try going down a level
-    and using stac.annotation on the :pyclass:`educe.annotation.Unit`
-    annotations instead)"""
-    def __init__(self, doc, context,
+    A STAC EDU merges information from the unit and discourse-level
+    unit-level annotations so that you can ignore the distinction
+    between the two annotation stages.
+
+    It also tries to be usable as a drop-in substitute for both
+    annotations and contexts
+    """
+    def __init__(self, doc,
                  discourse_anno,
                  unit_anno):
         self._doc = doc
-        self._context = context
         self._anno = discourse_anno
         self._unit_anno = unit_anno
-        self.span = self._anno.text_span()  # used by vectorizer
+        unit_anno = unit_anno or discourse_anno
+        unit_type = unit_anno.type if is_edu(unit_anno)\
+            else discourse_anno.type
+        super(EDU, self).__init__(discourse_anno.local_id(),
+                                  discourse_anno.text_span(),
+                                  unit_type,
+                                  discourse_anno.features,
+                                  discourse_anno.metadata,
+                                  discourse_anno.origin)
+        # to be fleshed out
+        self.turn = None
+        self.turn_edus = None
+        self.dialogue = None
+        self.dialogue_turns = None
+        self.doc_turns = None
+        self.tokens = None
+
+    def fleshout(self, context):
+        """
+        second phase of EDU initialisation; fill out contextual info
+        """
+        self.turn = context.turn
+        self.turn_edus = context.turn_edus
+        self.dialogue = context.dialogue
+        self.dialogue_turns = context.dialogue_turns
+        self.doc_turns = context.doc_turns
+        self.tokens = context.tokens
+
+    def speaker(self):
+        """
+        the speaker associated with the turn surrounding an edu
+        """
+        return speaker(self.turn)
 
     def dialogue_act(self):
         """
@@ -117,14 +159,25 @@ class EDU(object):
 
         :rtype int
         """
-        return self._context.turn.identifier()
+        return self.turn.identifier()
+# pylint: enable=too-many-instance-attributes
 
 
 # pylint: disable=no-self-use
-class FakeRootEDU(object):
+class _FakeRootEDU(object):
     """Virtual EDU to represent the notion of a fake root node
     sometimes used in dependency parsing applications
     """
+    type = ROOT
+
+    def __init__(self):
+        self.turn = self
+        self.span = Span(0, 0)
+
+    def text_span(self):
+        "Trivial text span"
+        return self.span
+
     def is_left_padding(self):
         "If this is a virtual EDU used in machine learning tasks"
         return True
@@ -135,4 +188,12 @@ class FakeRootEDU(object):
         Glozz layer we will use the 'local' identifier, which should be the
         same across stages"""
         return ROOT
+
+    def speaker(self):
+        "For feature extraction, should not ever really be rendered"
+        return None
 # pylint: enable=no-self-use
+
+# pylint: disable=invalid-name
+FakeRootEDU = _FakeRootEDU()
+# pylint: enable=invalid-name
