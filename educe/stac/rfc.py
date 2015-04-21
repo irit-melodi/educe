@@ -132,7 +132,7 @@ class BasicRfc(object):
         Return the list of nodes on the right frontier of a graph
         """
         graph = self._graph
-        nodes = graph.first_widest_dus()
+        nodes = graph.first_outermost_dus()
         points = self._frontier_points(nodes)
         if nodes:
             last = nodes[-1]
@@ -181,7 +181,7 @@ class ThreadedRfc(BasicRfc):
         Return the dict of node names to the set of last elements up to
         that node, and the last utterances by speakers
         """
-        nodes = self._graph.first_widest_dus()
+        nodes = self._graph.first_outermost_dus()
         contexts = Context.for_edus(self._graph.doc)
         doc_speakers = frozenset(ctx.speaker()
             for ctx in contexts.values())
@@ -204,7 +204,7 @@ class ThreadedRfc(BasicRfc):
         Return the list of nodes on the right frontier of a graph.
         """
         graph = self._graph
-        nodes = graph.first_widest_dus()
+        nodes = graph.first_outermost_dus()
         points = self._frontier_points(nodes)
 
         lasts = list(self._last_nodes()[1].values())
@@ -227,7 +227,7 @@ class ThreadedRfc(BasicRfc):
         :rtype: [string]
         '''
         graph = self._graph
-        nodes = graph.first_widest_dus()
+        nodes = graph.first_outermost_dus()
         res = list()
         if len(nodes) < 2:
             return res
