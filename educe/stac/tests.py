@@ -355,33 +355,28 @@ class BasicRfcTest(unittest.TestCase):
         self.assertNoViolations(graph)
 
     def test_cdu_dangler(self):
-        """ a -> [b-c] / c -> d (no violation)"""
-        lg, graph = mk_graphs('#Aabcd / x(bc) / Sax CbcSd')
-        self.assertNoViolations(graph)
-
-    def test_cdu_minidangler(self):
         """ [c] / c -> d (no violation)"""
         lg, graph = mk_graphs('#Acd / x(c) / Scd')
         self.assertNoViolations(graph)
 
     def test_ambiguity_multiparent(self):
-        """ a -> c / b -> c / a -> d / b -> d (no violation)
+        """ a -> c / b -> c / a -> d / b -> d (a and b not linked)
         Both parents of c (a and b) must be accessible by d
         """
         lg, graph = mk_graphs('#Aabcd / Sac bc ad bd')
-        self.assertNoViolations(graph)
+        violations = self.violations(graph)
+        self.assertNotIn(lg.get_edge('a', 'd'), violations)
+        self.assertNotIn(lg.get_edge('b', 'd'), violations)
 
     def test_ambiguity_cdu_and_parent(self):
-        """ a -> [b] -> d / a -> d / b -> d (no violation)
+        """ a -> b -> d / [b] -> d / a -> d (a and [b] not linked)
         Both x (enclosing CDU) and a (parent) must be accessible by d
         """
-        lg, graph = mk_graphs('#Aabd / x(b) / Sabd xd ad',
-            dump = '/tmp/graph/ambiguity')
+        lg, graph = mk_graphs('#Aabd / x(b) / Sabd xd ad')
         violations = self.violations(graph)
-        # self.assertNotIn(lg.get_edge('x', 'd'), violations)
-        # self.assertNotIn(lg.get_edge('a', 'd'), violations)
+        self.assertNotIn(lg.get_edge('x', 'd'), violations)
+        self.assertNotIn(lg.get_edge('a', 'd'), violations)
         self.assertNotIn(lg.get_edge('b', 'd'), violations)
-        # self.assertNoViolations(graph)
 
 class ThreadedRfcTest(BasicRfcTest):
     def violations(self, graph):
