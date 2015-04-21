@@ -58,15 +58,15 @@ class BasicRfc(object):
         right frontier node, generate a path up that frontier.
         """
         seen = set()
-        current = last
-        while current in points:
-            next_point = points[current]
+        candidates = collections.deque([last])
+        while candidates:
+            current = candidates.popleft()
             if current in seen:
-                # corner case: loop in graph
-                break
+                continue
             seen.add(current)
             yield current
-            current = next_point
+            if current in points:
+                candidates.extend(points[current])
 
     def _is_on_right_frontier(self, points, last, node):
         """
@@ -96,34 +96,21 @@ class BasicRfc(object):
         """
         graph = self._graph
 
-        def position(name):
-            'return a relative position for a node'
-            if name in nodes:
-                return nodes.index(name)
-            else:
-                return -1
-
-        points = {}
+        points = dict()
         for node1 in nodes:
-            # Computing neighbor of node1
-            candidates = []
+            # Computing neighbors of node1
+            candidates = list()
             for lnk in graph.links(node1):
                 if (self._is_incoming_to(node1, lnk) and
                         is_subordinating(graph.annotation(lnk))):
                     # N2 -S> N1
                     node2 = graph.links(lnk)[0]
-                    candidates.append((node2, position(node2)))
+                    candidates.append(node2)
                 elif graph.is_cdu(lnk):
                     # N2 = [...N1...]
                     node2 = graph.mirror(lnk)
-                    candidates.append((node2, position(node2)))
-
-            if candidates:
-                # Get the last/nearest (in textual order) candidate
-                best = max(candidates, key=lambda x: x[1])
-                points[node1] = best[0]
-            else:
-                points[node1] = None
+                    candidates.append(node2)
+            points[node1] = candidates
 
         return points
 
