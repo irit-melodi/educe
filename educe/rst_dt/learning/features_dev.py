@@ -4,7 +4,7 @@
 
 from __future__ import print_function
 
-from collections import deque
+from collections import deque, Counter
 import re
 import itertools
 
@@ -87,8 +87,10 @@ def extract_single_pos(edu_info):
     if tags:
         yield ('ptb_pos_tag_first', tags[0])
         yield ('ptb_pos_tag_last', tags[-1])
-        for tag in tags:
-            yield ('POS', tag)
+        # nb of occurrences of each POS tag in this EDU
+        tag_cnt = Counter(tags)
+        for tag, occ in tag_cnt.items():
+            yield ('POS_' + tag, occ)
 
 
 SINGLE_LENGTH = [

@@ -8,6 +8,7 @@ Computational Linguistics (Vol. 1, pp. 25-35).
 http://www.aclweb.org/anthology/P/P14/P14-1003.pdf
 """
 
+from collections import Counter
 import re
 
 from educe.internalutil import treenode
@@ -84,8 +85,10 @@ def extract_single_pos(edu_info):
     if tags:
         yield ('ptb_pos_tag_first', tags[0])
         yield ('ptb_pos_tag_last', tags[-1])
-        for tag in tags:
-            yield ('POS', tag)
+        # nb of occurrences of each POS tag in this EDU
+        tag_cnt = Counter(tags)
+        for tag, occ in tag_cnt.items():
+            yield ('POS_' + tag, occ)
 
 
 SINGLE_LENGTH = [
@@ -205,8 +208,9 @@ def extract_single_syntax(edu_info):
     """syntactic features for the EDU"""
     syn_labels = get_syntactic_labels(edu_info)
     if syn_labels is not None:
-        for syn_label in syn_labels:
-            yield ('SYN', syn_label)
+        syn_cnt = Counter(syn_labels)
+        for syn_lbl, occ in syn_cnt.items():
+            yield ('SYN_' + syn_lbl, occ)
 
 
 # TODO: features on semantic similarity
