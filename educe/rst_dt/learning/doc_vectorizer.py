@@ -234,11 +234,14 @@ class DocumentCountVectorizer(object):
                 sf_cache[edu2] = list(sing_extract(edu_info2))
                 sf_cache2 = sf_cache[edu2]
 
-            # extract pair features
-            feats = list(pair_extract(edu_info1, edu_info2))
-            # re-emit single EDU features with a suffix
-            feats.extend(list(re_emit(sf_cache1, '_EDU1')))
-            feats.extend(list(re_emit(sf_cache2, '_EDU2')))
+            feat_dict = dict()
+            # features
+            feat_dict['EDU1'] = dict(re_emit(sf_cache1, '_EDU1'))
+            feat_dict['EDU2'] = dict(re_emit(sf_cache2, '_EDU2'))
+            feat_dict['pair'] = dict(pair_extract(edu_info1, edu_info2))
+            # convert to list
+            feats = list(itertools.chain.from_iterable(
+                fd.items() for fd in feat_dict.values()))
 
             # apply one hot encoding for all string values
             oh_feats = []
