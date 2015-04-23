@@ -38,12 +38,14 @@ rfc_methods = (
     ('mlast', ThreadedRfc)     # Multiple lasts (one for each speaker)
     )
 
-def process_doc(corpus, key):
+def process_doc(corpus, key, strip=False):
     """ Tests document against RFC definitions.
 
     Returns dict of method:Counter """
     res = Counter()
     dgraph = graph.Graph.from_doc(corpus, key)
+    if strip:
+        dgraph.strip_cdus(sloppy=True)
     relations = dgraph.relations()
 
     for name, method in rfc_methods:
@@ -81,6 +83,8 @@ def config_argparser(parser):
     parser.add_argument('corpus', metavar='DIR',
                         nargs='?',
                         help='corpus dir')
+    parser.add_argument('--strip-cdus', action='store_true',
+                       help='remove CDUs from graphs')
     add_corpus_filters(parser, fields=fields_without(["stage"]))
     add_usual_output_args(parser)
     parser.set_defaults(func=main)
@@ -98,7 +102,7 @@ def main(args):
 
     res = Counter()
     for key in corpus:
-        part_res = process_doc(corpus, key)
+        part_res = process_doc(corpus, key, strip=args.strip_cdus)
         res.update(part_res.elements())
 
     display(res)
