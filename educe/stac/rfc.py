@@ -5,6 +5,8 @@ Right frontier constraint and its variants
 import collections
 import itertools as itr
 
+from six.moves import zip
+
 from educe import stac
 from educe.stac.util.context import Context
 import educe.stac.util.context
@@ -144,7 +146,7 @@ class BasicRfc(object):
 
         points = self._frontier_points(nodes)
         nexts = itr.islice(nodes, 1, None)
-        for last, node1 in itr.izip(nodes, nexts):
+        for last, node1 in zip(nodes, nexts):
             for lnk in graph.links(node1):
                 if not self._is_incoming_to(node1, lnk):
                     continue
