@@ -55,6 +55,14 @@ educe.stac.document_plus module
     :undoc-members:
     :show-inheritance:
 
+educe.stac.fake_graph module
+----------------------------
+
+.. automodule:: educe.stac.fake_graph
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 educe.stac.graph module
 -----------------------
 
