@@ -466,3 +466,47 @@ def build_pair_feature_extractor():
     feat_extractor = _extract_all
     # return header and extractor
     return header, feat_extractor
+
+
+def product_features(feats_g, feats_d, feats_gd):
+    """Generate features by taking the product of features.
+
+    Parameters
+    ----------
+    feats_g: dict(feat_name, feat_val)
+        features of the gov EDU
+    feats_d: dict(feat_name, feat_val)
+        features of the dep EDU
+    feats_gd: dict(feat_name, feat_val)
+        features of the (gov, dep) edge
+
+    Returns
+    -------
+    pf: dict(feat_name, feat_val)
+        product features
+    """
+    pf = dict()
+    return pf
+
+
+def combine_features(feats_g, feats_d, feats_gd):
+    """Generate features by taking a (linear) combination of features.
+
+    I suspect these do not have a great impact, if any, on results.
+
+    Parameters
+    ----------
+    feats_g: dict(feat_name, feat_val)
+        features of the gov EDU
+    feats_d: dict(feat_name, feat_val)
+        features of the dep EDU
+    feats_gd: dict(feat_name, feat_val)
+        features of the (gov, dep) edge
+
+    Returns
+    -------
+    cf: dict(feat_name, feat_val)
+        combined features
+    """
+    cf = dict()
+    return cf

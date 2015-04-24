@@ -205,6 +205,10 @@ class DocumentCountVectorizer(object):
         pair_header = self.pair_header
         pair_extract = self.pair_extract
         separator = self.separator
+        # NEW
+        feat_prod = self.feature_set.product_features
+        feat_comb = self.feature_set.combine_features
+        # end NEW
 
         # preprocess each EDU
         edu_info = doc_preprocess(doc)
@@ -217,31 +221,36 @@ class DocumentCountVectorizer(object):
         sf_cache = dict()
 
         for edu1, edu2 in edu_pairs:
+            feat_dict = dict()
             # retrieve info for each EDU
             edu_info1 = edu_info[edu1]
             edu_info2 = edu_info[edu2]
-
-            # extract and cache single features
-            try:
-                sf_cache1 = sf_cache[edu1]
-            except KeyError:
-                sf_cache[edu1] = list(sing_extract(edu_info1))
-                sf_cache1 = sf_cache[edu1]
-
-            try:
-                sf_cache2 = sf_cache[edu2]
-            except KeyError:
-                sf_cache[edu2] = list(sing_extract(edu_info2))
-                sf_cache2 = sf_cache[edu2]
-
-            feat_dict = dict()
-            # features
-            feat_dict['EDU1'] = dict(re_emit(sf_cache1, '_EDU1'))
-            feat_dict['EDU2'] = dict(re_emit(sf_cache2, '_EDU2'))
+            # gov EDU
+            if edu1 not in sf_cache:
+                sf_cache[edu1] = dict(sing_extract(edu_info1))
+            feat_dict['EDU1'] = dict(sf_cache[edu1])
+            # dep EDU
+            if edu2 not in sf_cache:
+                sf_cache[edu2] = dict(sing_extract(edu_info2))
+            feat_dict['EDU2'] = dict(sf_cache[edu2])
+            # pair
             feat_dict['pair'] = dict(pair_extract(edu_info1, edu_info2))
+            # NEW
+            # product features
+            feat_dict['pair'].update(feat_prod(feat_dict['EDU1'],
+                                               feat_dict['EDU2'],
+                                               feat_dict['pair']))
+            # combine features
+            feat_dict['pair'].update(feat_comb(feat_dict['EDU1'],
+                                               feat_dict['EDU2'],
+                                               feat_dict['pair']))
+            # add suffix to single EDU features
+            feat_dict['EDU1'] = dict(re_emit(feat_dict['EDU1'].items(), '_EDU1'))
+            feat_dict['EDU2'] = dict(re_emit(feat_dict['EDU2'].items(), '_EDU2'))
             # convert to list
             feats = list(itertools.chain.from_iterable(
                 fd.items() for fd in feat_dict.values()))
+            # end NEW
 
             # apply one hot encoding for all string values
             oh_feats = []

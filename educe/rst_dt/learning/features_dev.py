@@ -282,75 +282,6 @@ def build_edu_feature_extractor():
 # EDU pairs
 # ---------------------------------------------------------------------
 
-PAIR_WORD = [
-    ('ptb_word_first_pairs', Substance.DISCRETE),
-    ('ptb_word_last_pairs', Substance.DISCRETE),
-    ('ptb_word_first2_pairs', Substance.DISCRETE),
-    ('ptb_word_last2_pairs', Substance.DISCRETE),
-]
-
-
-def extract_pair_word(edu_info1, edu_info2):
-    """word tuple features"""
-    try:
-        words1 = edu_info1['words']
-        words2 = edu_info2['words']
-    except KeyError:
-        return
-
-    # pairs of unigrams
-    if words1 and words2:
-        yield ('ptb_word_first_pairs', (words1[0], words2[0]))
-        yield ('ptb_word_last_pairs', (words1[-1], words2[-1]))
-
-    # pairs of bigrams
-    if len(words1) > 1 and len(words2) > 1:
-        yield ('ptb_word_first2_pairs', (tuple(words1[:2]),
-                                         tuple(words2[:2])))
-        yield ('ptb_word_last2_pairs', (tuple(words1[-2:]),
-                                        tuple(words2[-2:])))
-
-
-# pos
-PAIR_POS = [
-    ('ptb_pos_tag_first_pairs', Substance.DISCRETE),
-]
-
-
-def extract_pair_pos(edu_info1, edu_info2):
-    """POS tuple features"""
-    try:
-        tags1 = edu_info1['tags']
-        tags2 = edu_info2['tags']
-    except KeyError:
-        return
-
-    if tags1 and tags2:
-        yield ('ptb_pos_tag_first_pairs', (tags1[0], tags2[0]))
-
-
-PAIR_LENGTH = [
-    ('num_tokens_div5_pair', Substance.DISCRETE),
-    ('num_tokens_diff_div5', Substance.CONTINUOUS)
-]
-
-
-def extract_pair_length(edu_info1, edu_info2):
-    """Sentence tuple features"""
-    try:
-        words1 = edu_info1['words']
-        words2 = edu_info2['words']
-    except KeyError:
-        return
-
-    num_toks1 = len(words1)
-    num_toks2 = len(words2)
-
-    yield ('num_tokens_div5_pair', (num_toks1 / 5, num_toks2 / 5))
-    # TODO abs etc
-    yield ('num_tokens_diff_div5', (num_toks1 - num_toks2) / 5)
-
-
 PAIR_DOC = [
     ('dist_edus_abs', Substance.CONTINUOUS),
     ('dist_edus_left', Substance.CONTINUOUS),
@@ -407,14 +338,6 @@ def extract_pair_para(edu_info1, edu_info2):
 
 
 PAIR_SENT = [
-    ('offset_diff', Substance.CONTINUOUS),
-    ('rev_offset_diff', Substance.CONTINUOUS),
-    ('offset_diff_div3', Substance.CONTINUOUS),
-    ('rev_offset_diff_div3', Substance.CONTINUOUS),
-    ('offset_pair', Substance.DISCRETE),
-    ('rev_offset_pair', Substance.DISCRETE),
-    ('offset_div3_pair', Substance.DISCRETE),
-    ('rev_offset_div3_pair', Substance.DISCRETE),
     ('same_bad_sentence', Substance.DISCRETE),
     ('sentence_id_diff', Substance.CONTINUOUS),
     ('sentence_id_diff_div3', Substance.CONTINUOUS),
@@ -437,7 +360,6 @@ def extract_pair_sent(edu_info1, edu_info2):
         yield ('offset_diff', offset1 - offset2)
         yield ('offset_diff_div3', (offset1 - offset2) / 3)
         # offset pair
-        yield ('offset_pair', (offset1, offset2))
         yield ('offset_div3_pair', (offset1 / 3, offset2 / 3))
 
     # rev_offset features
@@ -446,7 +368,6 @@ def extract_pair_sent(edu_info1, edu_info2):
     if rev_offset1 is not None and rev_offset2 is not None:
         yield ('rev_offset_diff', rev_offset1 - rev_offset2)
         yield ('rev_offset_diff_div3', (rev_offset1 - rev_offset2) / 3)
-        yield ('rev_offset_pair', (rev_offset1, rev_offset2))
         yield ('rev_offset_div3_pair', (rev_offset1 / 3, rev_offset2 / 3))
 
     # sentenceID
@@ -479,11 +400,13 @@ def extract_pair_sent(edu_info1, edu_info2):
 # syntax
 
 PAIR_SYNTAX = [
-    ('SYN_label_pair', Substance.DISCRETE),
     # relation between spanning nodes in the syntactic tree
-    ('SYN_same_span', Substance.CONTINUOUS),
-    ('SYN_sisters', Substance.CONTINUOUS),
-    ('SYN_embed', Substance.CONTINUOUS),
+    ('SYN_dom1', Substance.DISCRETE),
+    ('SYN_dom2', Substance.DISCRETE),
+    ('SYN_alabel', Substance.DISCRETE),
+    ('SYN_aword', Substance.DISCRETE),
+    ('SYN_hlabel', Substance.DISCRETE),
+    ('SYN_hword', Substance.DISCRETE),
 ]
 
 
@@ -589,22 +512,13 @@ def build_pair_feature_extractor():
     feats = []
     funcs = []
 
-    # feature type: 1
-    feats.extend(PAIR_WORD)
-    funcs.append(extract_pair_word)
-    # 2
-    feats.extend(PAIR_POS)
-    funcs.append(extract_pair_pos)
-    # 3
+    # feature type: 3
     feats.extend(PAIR_DOC)
     funcs.append(extract_pair_doc)
     feats.extend(PAIR_PARA)
     funcs.append(extract_pair_para)
     feats.extend(PAIR_SENT)
     funcs.append(extract_pair_sent)
-    # 4
-    feats.extend(PAIR_LENGTH)
-    funcs.append(extract_pair_length)
     # 5
     feats.extend(PAIR_SYNTAX)
     funcs.append(extract_pair_syntax)
@@ -625,3 +539,150 @@ def build_pair_feature_extractor():
     feat_extractor = _extract_all
     # return header and extractor
     return header, feat_extractor
+
+
+def product_features(feats_g, feats_d, feats_gd):
+    """Generate features by taking the product of features.
+
+    Parameters
+    ----------
+    feats_g: dict(feat_name, feat_val)
+        features of the gov EDU
+    feats_d: dict(feat_name, feat_val)
+        features of the dep EDU
+    feats_gd: dict(feat_name, feat_val)
+        features of the (gov, dep) edge
+
+    Returns
+    -------
+    pf: dict(feat_name, feat_val)
+        product features
+    """
+    pf = dict()
+
+    # feature type: 2
+    # ngram of POS, both EDUs
+    try:
+        pf['ptb_pos_tag_first_pairs'] = (feats_g['ptb_pos_tag_first'],
+                                         feats_d['ptb_pos_tag_first'])
+    except KeyError:
+        pass
+
+    # feature type: 1
+    # ngram of words, both EDUs
+    try:
+        pf['ptb_word_first_pairs'] = (feats_g['ptb_word_first'],
+                                      feats_d['ptb_word_first'])
+    except KeyError:
+        pass
+
+    try:
+        pf['ptb_word_last_pairs'] = (feats_g['ptb_word_last'],
+                                     feats_d['ptb_word_last'])
+    except KeyError:
+        pass
+
+    try:
+        pf['ptb_word_first2_pairs'] = (feats_g['ptb_word_first2'],
+                                       feats_d['ptb_word_first2'])
+    except KeyError:
+        pass
+
+    try:
+        pf['ptb_word_last2_pairs'] = (feats_g['ptb_word_last2'],
+                                      feats_d['ptb_word_last2'])
+    except KeyError:
+        pass
+
+    # feature type: 4
+    # length, both EDUs
+    try:
+        pf['num_tokens_div5_pair'] = (feats_g['num_tokens_div5'],
+                                      feats_d['num_tokens_div5'])
+    except KeyError:
+        pass
+
+    # feature type: 3
+    # position in sentence
+    try:
+        pf['offset_pair'] = (feats_g['num_edus_from_sent_start'],
+                             feats_d['num_edus_from_sent_start'])
+    except KeyError:
+        pass
+
+    try:
+        pf['rev_offset_pair'] = (feats_g['num_edus_to_sent_end'],
+                                 feats_d['num_edus_to_sent_end'])
+    except KeyError:
+        pass
+
+    return pf
+
+
+def combine_features(feats_g, feats_d, feats_gd):
+    """Generate features by taking a (linear) combination of features.
+
+    I suspect these do not have a great impact, if any, on results.
+
+    Parameters
+    ----------
+    feats_g: dict(feat_name, feat_val)
+        features of the gov EDU
+    feats_d: dict(feat_name, feat_val)
+        features of the dep EDU
+    feats_gd: dict(feat_name, feat_val)
+        features of the (gov, dep) edge
+
+    Returns
+    -------
+    cf: dict(feat_name, feat_val)
+        combined features
+    """
+    cf = dict()
+
+    # length, both EDUs
+    try:
+        cf['num_tokens_diff_div5'] = (feats_g['num_tokens'] -
+                                      feats_d['num_tokens']) / 5
+    except KeyError:
+        pass
+
+    # position in sentence
+    try:
+        cf['offset_diff'] = (feats_g['num_edus_from_sent_start'] -
+                             feats_d['num_edus_from_sent_start'])
+    except KeyError:
+        pass
+
+    try:
+        cf['rev_offset_diff'] = (feats_g['num_edus_to_sent_end'] -
+                                 feats_d['num_edus_to_sent_end'])
+    except KeyError:
+        pass
+
+    # not really linear combinations ... but this seems the least bad
+    # place (for the time being)
+    try:
+        cf['offset_div3_pair'] = (feats_g['num_edus_from_sent_start'] / 3,
+                                  feats_d['num_edus_from_sent_start'] / 3)
+    except KeyError:
+        pass
+
+    try:
+        cf['rev_offset_div3_pair'] = (feats_g['num_edus_to_sent_end'] / 3,
+                                      feats_d['num_edus_to_sent_end'] / 3)
+    except KeyError:
+        pass
+
+    # recombinations of combined features just produced
+    try:
+        cf['offset_diff_div3'] = cf['offset_diff'] / 3
+    except KeyError:
+        pass
+
+    try:
+        cf['rev_offset_diff_div3'] = cf['rev_offset_diff'] / 3
+    except KeyError:
+        pass
+
+    return cf
