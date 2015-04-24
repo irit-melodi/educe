@@ -294,6 +294,10 @@ def extract_pair_doc(edu_info1, edu_info2):
     edu_idx1 = edu_info1['edu'].num
     edu_idx2 = edu_info2['edu'].num
 
+    # direction of attachment
+    attach_dir = 'right' if edu_idx1 < edu_idx2 else 'left'
+    yield ('attach_dir', attach_dir)
+
     # absolute distance
     abs_dist = abs(edu_idx1 - edu_idx2)
     # (left- and right-) oriented distances
