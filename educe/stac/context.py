@@ -4,9 +4,9 @@ information about it
 """
 
 import warnings
-from ..annotation import is_edu, is_cdu, is_turn
-from ..annotation import speaker as anno_speaker
-from ..graph import WrappedToken, EnclosureGraph
+from .annotation import is_edu, is_cdu, is_turn
+from .annotation import speaker as anno_speaker
+from .graph import WrappedToken, EnclosureGraph
 
 
 # TODO: refactor with educe.stac.graph

@@ -16,9 +16,9 @@ import itertools
 import textwrap
 
 from educe.annotation import Schema
+from educe.stac.context import sorted_first_widest
 from educe.util import concat_l
 import educe.stac
-from .context import sorted_first_widest
 
 DEFAULT_INSERTS = {'Turn': ('\n', ''),
                    'Dialogue': ('\n', ''),

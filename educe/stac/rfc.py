@@ -8,8 +8,7 @@ import itertools as itr
 from six.moves import zip
 
 from educe import stac
-from educe.stac.util.context import Context
-import educe.stac.util.context
+from educe.stac.context import Context
 from .annotation import (is_subordinating)
 
 

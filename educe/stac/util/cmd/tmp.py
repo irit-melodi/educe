@@ -8,11 +8,11 @@ Expiremental sandbox (ignore)
 from __future__ import print_function
 from os import path as fp
 
+from educe.stac.context import (enclosed)
 import educe.stac
 from ..args import\
     (add_usual_input_args, add_usual_output_args,
      read_corpus)
-from ..context import (enclosed)
 
 
 def friendly_dialogue_id(k, span):

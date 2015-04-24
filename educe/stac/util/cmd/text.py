@@ -7,11 +7,11 @@ Dump the text in documents with segment annotations
 
 from __future__ import print_function
 
+from educe.stac.context import sorted_first_widest
 import educe.stac
 
 from ..annotate import annotate_doc
 from ..args import add_usual_input_args, read_corpus
-from ..context import sorted_first_widest
 from ..glozz import is_dialogue
 
 NAME = 'text'

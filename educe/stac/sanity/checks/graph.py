@@ -7,8 +7,8 @@ from collections import defaultdict
 import copy
 
 from educe import stac
+from educe.stac.context import sorted_first_widest
 from educe.stac.rfc import (BasicRfc)
-from educe.stac.util.context import sorted_first_widest
 import educe.stac.graph as egr
 
 from .. import html as h

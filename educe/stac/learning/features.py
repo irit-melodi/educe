@@ -27,6 +27,7 @@ from educe.external.parser import\
 from educe.learning.keys import (MagicKey, Key, KeyGroup, MergedKeyGroup)
 from educe.stac import postag, corenlp
 from educe.stac.annotation import speaker, addressees, is_relation_instance
+from educe.stac.context import Context, enclosed, edus_in_span
 from educe.stac.corpus import (twin_key)
 from educe.learning.csv import tune_for_csv
 from educe.learning.util import tuple_feature, underscore
@@ -38,7 +39,6 @@ import educe.stac.lexicon.pdtb_markers as pdtb_markers
 import educe.stac.graph as stac_gr
 import educe.util
 
-from ..util.context import Context, enclosed, edus_in_span
 from ..annotation import turn_id
 from ..lexicon.wordclass import Lexicon
 from ..document_plus import (Dialogue, EDU, ROOT, FakeRootEDU)

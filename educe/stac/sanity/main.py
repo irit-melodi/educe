@@ -25,7 +25,7 @@ from educe.corpus import FileId
 from educe.stac import graph as egr
 from educe.stac.corpus import (METAL_STR, twin_key)
 from educe.stac.util.args import STAC_GLOBS
-from educe.stac.util.context import Context
+from educe.stac.context import Context
 from educe.stac.corenlp import (parsed_file_name)
 import educe.util
 import educe.stac.sanity.checks.annotation
