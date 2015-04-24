@@ -105,7 +105,7 @@ class Graph(educe.graph.Graph):
         if len(candidates) == 0:
             return None
         elif len(candidates) == 1 or sloppy:
-            cand = self.sorted_first_widest(candidates)[0]
+            cand = self.sorted_first_outermost(candidates)[0]
             if self.is_cdu(cand):
                 return self.mirror(cand)
             else:
@@ -201,23 +201,21 @@ class Graph(educe.graph.Graph):
     # right frontier constraint
     # --------------------------------------------------
 
-    def sorted_first_widest(self, annos):
+    def sorted_first_outermost(self, annos):
         """
         Given a list of nodes, return the nodes ordered by their starting point,
         and in case of a tie their inverse width (ie. widest first).
         """
-        def span(n):
-            return self.annotation(n).text_span()
+        def key(anno):
+            """ Sort by starting point, then by width (widest first),
+            then by depth (outermost first) """
+            span = self.annotation(anno).text_span()
+            return (span.char_start, 0 - span.char_end,
+                len(self.containing_cdu_chain(anno)))
+        
+        return sorted(annos, key=key)
 
-        def from_span(span):
-            """negate the endpoint so that if we have a tie on the starting
-            point, the widest span comes first"""
-            return (span.char_start, 0 - span.char_end)
-
-        tagged = sorted((from_span(span(x)), x) for x in annos)
-        return [x for _, x in tagged]
-
-    def first_widest_dus(self):
+    def first_outermost_dus(self):
         """
         Return discourse units in this graph, ordered by their starting point,
         and in case of a tie their inverse width (ie. widest first)
@@ -227,7 +225,7 @@ class Graph(educe.graph.Graph):
                 (self.is_cdu(n) and self.cdu_members(n))
 
         dus = list(filter(is_interesting_du,self.nodes()))
-        return self.sorted_first_widest(dus)
+        return self.sorted_first_outermost(dus)
 
 
 class DotGraph(educe.graph.DotGraph):
@@ -237,7 +235,7 @@ class DotGraph(educe.graph.DotGraph):
     """
 
     def __init__(self, anno_graph):
-        nodes = anno_graph.first_widest_dus()
+        nodes = anno_graph.first_outermost_dus()
         self.node_order = {}
         for i, node in enumerate(nodes):
             self.node_order[anno_graph.annotation(node)] = i

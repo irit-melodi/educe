@@ -5,6 +5,8 @@ Right frontier constraint and its variants
 import collections
 import itertools as itr
 
+from six.moves import zip
+
 from educe import stac
 from educe.stac.util.context import Context
 import educe.stac.util.context
@@ -58,15 +60,15 @@ class BasicRfc(object):
         right frontier node, generate a path up that frontier.
         """
         seen = set()
-        current = last
-        while current in points:
-            next_point = points[current]
+        candidates = collections.deque([last])
+        while candidates:
+            current = candidates.popleft()
             if current in seen:
-                # corner case: loop in graph
-                break
+                continue
             seen.add(current)
             yield current
-            current = next_point
+            if current in points:
+                candidates.extend(points[current])
 
     def _is_on_right_frontier(self, points, last, node):
         """
@@ -96,50 +98,34 @@ class BasicRfc(object):
         """
         graph = self._graph
 
-        def position(name):
-            'return a relative position for a node'
-            if name in nodes:
-                return nodes.index(name)
-            else:
-                return -1
-
-        points = {}
+        points = dict()
         for node1 in nodes:
-            # Computing neighbor of node1
-            candidates = []
+            # Computing neighbors of node1
+            candidates = list()
             for lnk in graph.links(node1):
                 if (self._is_incoming_to(node1, lnk) and
                         is_subordinating(graph.annotation(lnk))):
                     # N2 -S> N1
                     node2 = graph.links(lnk)[0]
-                    candidates.append((node2, position(node2)))
+                    candidates.append(node2)
                 elif graph.is_cdu(lnk):
                     # N2 = [...N1...]
                     node2 = graph.mirror(lnk)
-                    candidates.append((node2, position(node2)))
-
-            if candidates:
-                # Get the last/nearest (in textual order) candidate
-                best = max(candidates, key=lambda x: x[1])
-                points[node1] = best[0]
-            else:
-                points[node1] = None
+                    candidates.append(node2)
+            points[node1] = candidates
 
         return points
 
     def frontier(self):
         """
-        Return the list of nodes on the right frontier of a graph
+        Return the list of nodes on the right frontier of a whole graph
         """
         graph = self._graph
-        nodes = graph.first_widest_dus()
+        nodes = graph.first_outermost_dus()
         points = self._frontier_points(nodes)
         if nodes:
             last = nodes[-1]
-            res = []
-            for rfc_node in self._build_right_frontier(points, last):
-                res.append(rfc_node)
-            return res
+            return list(self._build_right_frontier(points, last))
         else:
             return []
 
@@ -153,14 +139,14 @@ class BasicRfc(object):
         :rtype: [string]
         '''
         graph = self._graph
-        nodes = graph.first_widest_dus()
+        nodes = graph.first_outermost_dus()
         res = list()
         if len(nodes) < 2:
             return res
 
         points = self._frontier_points(nodes)
         nexts = itr.islice(nodes, 1, None)
-        for last, node1 in itr.izip(nodes, nexts):
+        for last, node1 in zip(nodes, nexts):
             for lnk in graph.links(node1):
                 if not self._is_incoming_to(node1, lnk):
                     continue
@@ -181,7 +167,7 @@ class ThreadedRfc(BasicRfc):
         Return the dict of node names to the set of last elements up to
         that node, and the last utterances by speakers
         """
-        nodes = self._graph.first_widest_dus()
+        nodes = self._graph.first_outermost_dus()
         contexts = Context.for_edus(self._graph.doc)
         doc_speakers = frozenset(ctx.speaker()
             for ctx in contexts.values())
@@ -204,7 +190,7 @@ class ThreadedRfc(BasicRfc):
         Return the list of nodes on the right frontier of a graph.
         """
         graph = self._graph
-        nodes = graph.first_widest_dus()
+        nodes = graph.first_outermost_dus()
         points = self._frontier_points(nodes)
 
         lasts = list(self._last_nodes()[1].values())
@@ -227,7 +213,7 @@ class ThreadedRfc(BasicRfc):
         :rtype: [string]
         '''
         graph = self._graph
-        nodes = graph.first_widest_dus()
+        nodes = graph.first_outermost_dus()
         res = list()
         if len(nodes) < 2:
             return res

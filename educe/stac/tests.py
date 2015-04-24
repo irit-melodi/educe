@@ -3,15 +3,25 @@
 # Author: Eric Kow
 # License: BSD3
 
+from __future__ import print_function
+
 """
 Tests for educe.stac
 """
 
+import sys
+import codecs
+import os.path
 import copy
+import subprocess
 
 import educe.tests
 import educe.stac.graph as stac_gr
 from educe import annotation, corpus, stac
+from educe.stac import fake_graph
+from educe.stac.rfc import BasicRfc, ThreadedRfc
+from educe.corpus import FileId
+from educe.stac.util.output import mk_parent_dirs
 
 import sys
 import unittest
@@ -235,7 +245,7 @@ class CduHeadTest(unittest.TestCase):
         self.assertEqual(deep_heads[ids['c1']],
                          deep_heads[ids['c2']])
 
-def test_first_widest_dus_simple():
+def test_first_outermost_dus_simple():
     edu1 = FakeEDU('e1',span=(1,2))
     edu2 = FakeEDU('e2',span=(1,3))
     edu3 = FakeEDU('e3',span=(2,3))
@@ -247,9 +257,9 @@ def test_first_widest_dus_simple():
     k   = corpus.FileId('moo',None,None,None)
     gr  = stac_gr.Graph.from_doc({k:doc}, k)
     ids = nodeform_graph_ids(gr)
-    assert gr.first_widest_dus() == [ ids[x] for x in ['e2','e1','e3'] ]
+    assert gr.first_outermost_dus() == [ ids[x] for x in ['e2','e1','e3'] ]
 
-def test_first_widest_dus():
+def test_first_outermost_dus():
     edu1 = FakeEDU('e1',span=(1,2))
     edu2 = FakeEDU('e2',span=(1,3))
     edu3 = FakeEDU('e3',span=(2,3))
@@ -271,6 +281,115 @@ def test_first_widest_dus():
     k   = corpus.FileId('moo',None,None,None)
     gr  = stac_gr.Graph.from_doc({k:doc}, k)
     ids = nodeform_graph_ids(gr)
-    got      = gr.first_widest_dus()
+    got      = gr.first_outermost_dus()
     expected = ['c3', 'c1','e2','e1','e3', 'c2', 'e4', 'e5' ]
     assert got == [ ids[x] for x in expected ]
+
+def mk_graphs(src, dump=None):
+    """ Returns educe.fake_graph.LightGraph and educe.stac.Graph
+        for given LightGraph source string
+        (see LightGraph doc for specification)
+    """
+    # TODO : dump
+    lg = fake_graph.LightGraph(src)
+    doc = lg.get_doc()
+    doc_id = FileId('test', '01', 'discourse', 'GOLD')
+    doc.set_origin(doc_id)
+    graph = stac_gr.Graph.from_doc({doc_id:doc}, doc_id)
+
+    if dump is not None:
+        dump_graph(dump, graph)
+
+    return lg, graph
+
+def dump_graph(dump_filename, graph):
+    """
+    Write a dot graph and possibly run graphviz on it
+    """
+    dot_graph = stac_gr.DotGraph(graph)
+    dot_file = dump_filename + '.dot'
+    svg_file = dump_filename + '.svg'
+    mk_parent_dirs(dot_file)
+    with codecs.open(dot_file, 'w', encoding='utf-8') as dotf:
+        print(dot_graph.to_string(), file=dotf)
+    print("Creating %s" % svg_file, file=sys.stderr)
+    subprocess.call('dot -T svg -o %s %s' % (svg_file, dot_file), shell=True)
+
+class BasicRfcTest(unittest.TestCase):
+
+    def violations(self, graph):
+        rfc = BasicRfc(graph)
+        return list(graph.annotation(x) for x in rfc.violations())
+
+    def assertNoViolations(self, graph):
+        violations = self.violations(graph)
+        self.assertEqual(violations, [])
+
+    def test_trivial(self):
+        """ a -> b (no violations) """
+        lg, graph = mk_graphs('#Aab / Sab')
+        # lg, graph = mk_graphs('#Aab / Sab',
+            # dump = '/tmp/graph/trivial')
+        self.assertNoViolations(graph)
+
+    def test_trivial_violation(self):
+        """ a -C> b -S> c (a-c is a violation)"""
+        lg, graph = mk_graphs('#Aabc / CabSc Sac')
+        violations = self.violations(graph)
+        self.assertNotIn(lg.get_edge('a', 'b'), violations)
+        self.assertNotIn(lg.get_edge('b', 'c'), violations)
+        self.assertIn(lg.get_edge('a', 'c'), violations)
+
+    def test_cdu_bridge(self):
+        """ a -> [b-c] -> d (a-d is a violation unless b-c is in a CDU) """
+        lg1, g1 = mk_graphs('#Aabcd / SabCc Sad')
+        lg2, g2 = mk_graphs('#Aabcd / x(bc) / Sax Cbc Sad')
+        violations1 = self.violations(g1)
+        violations2 = self.violations(g2)
+        self.assertIn(lg1.get_edge('a', 'd'), violations1)
+        self.assertNotIn(lg2.get_edge('a', 'd'), violations2)
+
+    def test_cdu_basic(self):
+        """ a -> [b-c] -> d (no violation)"""
+        lg, graph = mk_graphs('#Aabcd / x(bc) / Saxd Cbc')
+        self.assertNoViolations(graph)
+
+    def test_cdu_dangler(self):
+        """ [c] / c -> d (no violation)"""
+        lg, graph = mk_graphs('#Acd / x(c) / Scd')
+        self.assertNoViolations(graph)
+
+    def test_ambiguity_multiparent(self):
+        """ a -> c / b -> c / a -> d / b -> d (a and b not linked)
+        Both parents of c (a and b) must be accessible by d
+        """
+        lg, graph = mk_graphs('#Aabcd / Sac bc ad bd')
+        violations = self.violations(graph)
+        self.assertNotIn(lg.get_edge('a', 'd'), violations)
+        self.assertNotIn(lg.get_edge('b', 'd'), violations)
+
+    def test_ambiguity_cdu_and_parent(self):
+        """ a -> b -> d / [b] -> d / a -> d (a and [b] not linked)
+        Both x (enclosing CDU) and a (parent) must be accessible by d
+        """
+        lg, graph = mk_graphs('#Aabd / x(b) / Sabd xd ad')
+        violations = self.violations(graph)
+        self.assertNotIn(lg.get_edge('x', 'd'), violations)
+        self.assertNotIn(lg.get_edge('a', 'd'), violations)
+        self.assertNotIn(lg.get_edge('b', 'd'), violations)
+
+class ThreadedRfcTest(BasicRfcTest):
+    def violations(self, graph):
+        rfc = ThreadedRfc(graph)
+        return list(graph.annotation(x) for x in rfc.violations())
+
+    def test_multi_basic(self):
+        """ Aa -> Cc, Bb -> Cc (a-c only violation if basic RFC) """
+        lg, graph = mk_graphs('#Aa Bb Cc / Sac bc')
+        basic_violations = super(ThreadedRfcTest, self).violations(graph)
+        self.assertNotIn(lg.get_edge('b', 'c'), basic_violations)
+        self.assertIn(lg.get_edge('a', 'c'), basic_violations)
+
+        multi_violations = self.violations(graph)
+        self.assertNotIn(lg.get_edge('b', 'c'), multi_violations)
+        self.assertNotIn(lg.get_edge('a', 'c'), multi_violations)

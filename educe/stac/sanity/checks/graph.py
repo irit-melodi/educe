@@ -8,6 +8,7 @@ import copy
 
 from educe import stac
 from educe.stac.rfc import (BasicRfc)
+from educe.stac.util.context import sorted_first_widest
 import educe.stac.graph as egr
 
 from .. import html as h
@@ -43,9 +44,10 @@ def search_graph_edus(inputs, k, gra, pred):
     """
     doc = inputs.corpus[k]
     contexts = inputs.contexts[k]
-    sorted_edus = gra.sorted_first_widest(gra.edus())
+    edu_names = {gra.annotation(name):name for name in gra.edus()}
+    sorted_edus = sorted_first_widest(edu_names.keys())
     return [UnitItem(doc, contexts, gra.annotation(x))
-            for x in sorted_edus if pred(gra, contexts, x)]
+            for x in sorted_edus if pred(gra, contexts, edu_names[x])]
 
 
 def search_graph_relations(inputs, k, gra, pred):
@@ -163,20 +165,6 @@ def rfc_violations(inputs, k, gra):
             for v in violations]
 
 
-def containing_cdu_chain(gra, cdu):
-    """
-    Given an annotation, return a list which represents its
-    containing CDU, the container's container, and forth.
-    Return the empty list if no CDU contains this one.
-    """
-    res = []
-    while cdu:
-        node = gra.nodeform(cdu)
-        res.append(node)
-        cdu = gra.containing_cdu(node)
-    return res[1:]  # drop the node itself
-
-
 def is_puncture(gra, _, rel):
     """
     Relation in a graph that traverse a CDU boundary
@@ -184,8 +172,8 @@ def is_puncture(gra, _, rel):
     if not stac.is_relation_instance(gra.annotation(rel)):
         return False
     n_from, n_to = gra.links(rel)
-    cdus_from = containing_cdu_chain(gra, n_from)
-    cdus_to = containing_cdu_chain(gra, n_to)
+    cdus_from = gra.containing_cdu_chain(n_from)
+    cdus_to = gra.containing_cdu_chain(n_to)
     prefix = len(cdus_from) - len(cdus_to)
     return prefix < 0 or cdus_from[prefix:] != cdus_to
 

@@ -462,6 +462,19 @@ class Graph(gr.hypergraph, AttrsMixin):
                 return node
         return None
 
+    def containing_cdu_chain(self, node):
+        """
+        Given an annotation, return a list which represents its
+        containing CDU, the container's container, and forth.
+        Return the empty list if no CDU contains this one.
+        """
+        res = []
+        while node:
+            node = self.nodeform(node)
+            res.append(node)
+            node = self.containing_cdu(node)
+        return res[1:]  # drop the node itself
+
     def cdu_members(self, cdu, deep=False):
         """
         Return the set of EDUs, CDUs, and relations which can be considered as
