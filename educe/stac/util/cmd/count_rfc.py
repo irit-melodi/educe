@@ -11,6 +11,8 @@ import sys
 from tabulate import tabulate
 from collections import defaultdict, Counter
 
+import educe.stac
+import educe.stac.util.context as context
 import educe.stac.graph as graph
 from educe.util import (
     add_corpus_filters, fields_without)
@@ -38,7 +40,7 @@ rfc_methods = (
     ('mlast', ThreadedRfc)     # Multiple lasts (one for each speaker)
     )
 
-def process_doc(corpus, key, strip=False):
+def process_doc_violations(corpus, key, strip=False):
     """ Tests document against RFC definitions.
 
     Returns dict of method:Counter """
@@ -58,7 +60,26 @@ def process_doc(corpus, key, strip=False):
                 res[(name, label, rel.type)] += 1
     return res
 
-def display(res):
+def process_doc_power(corpus, key, strip=False):
+    """ Computes filtering power of RFC definitions """
+    res = Counter()
+    dgraph = graph.Graph.from_doc(corpus, key)
+    if strip:
+        dgraph.strip_cdus(sloppy=True)
+    doc = corpus[key]
+    # Computing list of EDUs for each dialogue
+    ctxs = context.Context.for_edus(doc)
+    dia_edus = defaultdict(list)
+    for u in doc.units:
+        if educe.stac.is_edu(u):
+            dia_edus[ctxs[u].dialogue].append(u)
+    for dia, edus in dia_edus.items():
+        for i in range(len(edus)):
+            res[i+1] += 1
+    return res
+
+def display_violations(res):
+    """ Display results for violation count """
     table_names = ('Both', 'Forwards', 'Backwards')
     col_names = list(n for n, _ in rfc_methods)
     col_0 = col_names[0]
@@ -73,6 +94,14 @@ def display(res):
                     for col_name in col_names))
         print(tabulate(tres, headers=[table_name]+col_names)+'\n')
 
+def display_power(res):
+    col_names = ['length', 'dialogues']
+    row_names = sorted(res)
+    tres = list()
+    for row_name in row_names:
+        tres.append([row_name, res[row_name]])
+    print(tabulate(tres, headers=col_names)+'\n')
+
 def config_argparser(parser):
     """
     Subcommand flags.
@@ -85,9 +114,30 @@ def config_argparser(parser):
                         help='corpus dir')
     parser.add_argument('--strip-cdus', action='store_true',
                        help='remove CDUs from graphs')
+    parser.add_argument('--mode', choices=['violations', 'power'],
+        default='violations',
+        help='count RFC violations or filtering power')
     add_corpus_filters(parser, fields=fields_without(["stage"]))
     add_usual_output_args(parser)
     parser.set_defaults(func=main)
+
+def main_violations(corpus, strip):
+    """ Main for violation counting """
+    res = Counter()
+    for key in corpus:
+        part_res = process_doc_violations(corpus, key, strip=strip)
+        res.update(part_res.elements())
+
+    display_violations(res)
+
+def main_power(corpus, strip):
+    """ Main for filtering power computation """
+    res = Counter()
+    for key in corpus:
+        part_res = process_doc_power(corpus, key, strip=strip)
+        res.update(part_res.elements())
+
+    display_power(res)
 
 def main(args):
     """
@@ -100,11 +150,9 @@ def main(args):
     corpus = read_corpus(args, verbose=True,
         preselected=dict(stage=['discourse']))
 
-    res = Counter()
-    for key in corpus:
-        part_res = process_doc(corpus, key, strip=args.strip_cdus)
-        res.update(part_res.elements())
+    if args.mode == 'violations':
+        main_violations(corpus, strip=args.strip_cdus)
+    elif args.mode == 'power':
+        main_power(corpus, strip=args.strip_cdus)
 
-    display(res)
-    
     # announce_output_dir(output_dir)
