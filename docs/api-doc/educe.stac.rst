@@ -23,6 +23,14 @@ educe.stac.annotation module
     :undoc-members:
     :show-inheritance:
 
+educe.stac.context module
+-------------------------
+
+.. automodule:: educe.stac.context
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 educe.stac.corenlp module
 -------------------------
 

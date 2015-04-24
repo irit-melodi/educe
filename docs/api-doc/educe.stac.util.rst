@@ -20,14 +20,6 @@ educe.stac.util.args module
     :undoc-members:
     :show-inheritance:
 
-educe.stac.util.context module
-------------------------------
-
-.. automodule:: educe.stac.util.context
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 educe.stac.util.csv module
 --------------------------
 
