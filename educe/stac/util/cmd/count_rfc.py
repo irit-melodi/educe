@@ -63,9 +63,11 @@ def process_doc_violations(corpus, key, strip=False):
 def process_doc_power(corpus, key, strip=False):
     """ Computes filtering power of RFC definitions """
     res = Counter()
-    dgraph = graph.Graph.from_doc(corpus, key)
+    doc_graph = graph.Graph.from_doc(corpus, key)
     if strip:
-        dgraph.strip_cdus(sloppy=True)
+        doc_graph.strip_cdus(sloppy=True)
+    anno_to_nodes = dict((doc_graph.annotation(n), n)
+        for n in doc_graph.edus())
     doc = corpus[key]
     # Computing list of EDUs for each dialogue
     ctxs = context.Context.for_edus(doc)
@@ -75,7 +77,25 @@ def process_doc_power(corpus, key, strip=False):
             dia_edus[ctxs[u].dialogue].append(u)
     for dia, edus in dia_edus.items():
         for i in range(len(edus)):
-            res[i+1] += 1
+            res[('dia', i+1)] += 1
+        dia_edu_nodes = list(anno_to_nodes[edu] for edu in edus)
+        dia_graph = doc_graph.copy(dia_edu_nodes)
+        sorted_nodes = dia_graph.first_outermost_dus()
+        sorted_edus = [n for n in sorted_nodes if n in dia_edu_nodes]
+        for name, method in rfc_methods[1:]:
+            rfc = method(dia_graph)
+            f_points = rfc._frontier_points(sorted_nodes)
+            for i, last in enumerate(sorted_edus):
+                frontier = rfc._build_right_frontier(f_points, last)
+                frontier = list(n for n in frontier if dia_graph.is_edu(n))
+                # Corner case: backwards links
+                frontier = list(n for n in frontier if
+                    (dia_graph.annotation(n).text_span() <=
+                    dia_graph.annotation(last).text_span()))
+                res[(name, i+1)] += len(frontier)
+                if len(frontier) > i+1:
+                    print(i+1, len(frontier), frontier)
+                assert(len(frontier) <= i+1)
     return res
 
 def display_violations(res):
@@ -95,12 +115,24 @@ def display_violations(res):
         print(tabulate(tres, headers=[table_name]+col_names)+'\n')
 
 def display_power(res):
-    col_names = ['length', 'dialogues']
-    row_names = sorted(res)
+    """ Display results for RFC filtering power
+
+    res is a Counter[(nb_edus, method)]"""
+    methods = list(n for n, _ in rfc_methods)[1:]
+    col_names = ['length', 'dia']
+    for method in methods:
+        col_names += [method]
     tres = list()
-    for row_name in row_names:
-        tres.append([row_name, res[row_name]])
-    print(tabulate(tres, headers=col_names)+'\n')
+    for nb_edus in sorted(set(i for _, i in res)):
+        nb_dialogues = res[('dia', nb_edus)]
+        row = [nb_edus, nb_dialogues]
+        for method in methods:
+            total_frontier_size = res[(method, nb_edus)]
+            avg_frontier_size = float(total_frontier_size)/nb_dialogues
+            rfc_power = (100 * avg_frontier_size) / nb_edus
+            row.append(rfc_power)
+        tres.append(row)
+    print(tabulate(tres, headers=col_names, floatfmt='.1f')+'\n')
 
 def config_argparser(parser):
     """
