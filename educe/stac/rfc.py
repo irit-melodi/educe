@@ -164,76 +164,38 @@ class ThreadedRfc(BasicRfc):
 
         1. X is the textual last utterance of any speaker => RF(X)
     '''
+    def __init__(self, graph):
+        super(ThreadedRfc, self).__init__(graph)
+        self._last = self._last_nodes()
+
     def _last_nodes(self):
         """
         Return the dict of node names to the set of last elements up to
-        that node, and the last utterances by speakers
+        that node (included)
         """
-        nodes = self._graph.first_outermost_dus()
+        nodes = self._nodes
         contexts = Context.for_edus(self._graph.doc)
         doc_speakers = frozenset(ctx.speaker()
             for ctx in contexts.values())
 
         current_last = dict()
-        res = dict()
+        last_nodes = dict()
         for node in nodes:
             anno_node = self._graph.annotation(node)
-            res[node] = frozenset(current_last[speaker]
-                for speaker in doc_speakers
-                if speaker in current_last)
-
             for speaker in speakers(contexts, anno_node):
                 current_last[speaker] = node
 
-        return res, current_last
+            last_nodes[node] = frozenset(current_last[speaker]
+                for speaker in doc_speakers
+                if speaker in current_last)
 
-    def frontier(self):
-        """
-        Return the list of nodes on the right frontier of a graph.
-        """
-        graph = self._graph
-        nodes = graph.first_outermost_dus()
-        points = self._frontier_points(nodes)
+        return last_nodes
 
-        lasts = list(self._last_nodes()[1].values())
-
-        if nodes:
-            res = []
-            for last in lasts:
-                res.extend(self._build_right_frontier(points, last))
-            return res
-        else:
-            return []
-
-    def violations(self):
-        '''
-        Return a list of relation instance names, corresponding to the
-        RF violations for the given graph.
-
-        You'll need a stac graph object to interpret these names with.
-
-        :rtype: [string]
-        '''
-        graph = self._graph
-        nodes = graph.first_outermost_dus()
-        res = list()
-        if len(nodes) < 2:
-            return res
-
-        lasts, _ = self._last_nodes()
-        points = self._frontier_points(nodes)
-        nexts = itr.islice(nodes, 1, None)
-        for node_tgt in nexts:
-            for lnk in graph.links(node_tgt):
-                if not self._is_incoming_to(node_tgt, lnk):
-                    continue
-                # Attachment source
-                node_src = graph.links(lnk)[0]
-                for last in lasts[node_tgt]:
-                    if self._is_on_right_frontier(points, last, node_src):
-                        # node_src belongs to some RF
-                        break
-                else:
-                    # node_src doesn't belong to any RF
-                    res.append(lnk)
-        return res
+    def _build_frontier(self, last):
+        seen = set()
+        for speaker_last in self._last[last]:
+            for point in self._build_frontier_from(speaker_last):
+                if point in seen:
+                    break
+                yield point
+                seen.add(point)
