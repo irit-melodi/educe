@@ -102,24 +102,23 @@ class BasicRfc(object):
         * points to it with a subordinating relation
         * includes it as a CDU member
         """
-        graph = self._graph
+        gra = self._graph
 
         points = dict()
         for node1 in nodes:
             # Computing neighbors of node1
-            candidates = list()
-            for lnk in graph.links(node1):
+            neighbors = list()
+            for lnk in gra.links(node1):
                 if (self._is_incoming_to(node1, lnk) and
-                        is_subordinating(graph.annotation(lnk))):
+                        is_subordinating(gra.annotation(lnk))):
                     # N2 -S> N1
-                    node2 = graph.links(lnk)[0]
-                    candidates.append(node2)
-                elif graph.is_cdu(lnk):
+                    node2 = gra.links(lnk)[0]
+                    neighbors.append(node2)
+                elif gra.is_cdu(lnk):
                     # N2 = [...N1...]
-                    node2 = graph.mirror(lnk)
-                    candidates.append(node2)
-            points[node1] = candidates
-
+                    node2 = gra.mirror(lnk)
+                    neighbors.append(node2)
+            points[node1] = neighbors
         return points
 
     def frontier(self):
