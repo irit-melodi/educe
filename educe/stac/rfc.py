@@ -53,24 +53,30 @@ class BasicRfc(object):
     '''
     def __init__(self, graph):
         self._graph = graph
+        self._nodes = graph.first_outermost_dus()
+        self._points = self._frontier_points(self._nodes)
 
-    def _build_right_frontier(self, points, last):
+    def _build_frontier(self, last):
+        return self._build_frontier_from(last)
+
+    def _build_frontier_from(self, origin):
         """
         Given a dictionary mapping each node to its closest
-        right frontier node, generate a path up that frontier.
+        right frontier nodes and a start node, generate a path
+        up that frontier.
         """
         seen = set()
-        candidates = collections.deque([last])
+        candidates = collections.deque([origin])
         while candidates:
             current = candidates.popleft()
             if current in seen:
                 continue
             seen.add(current)
             yield current
-            if current in points:
-                candidates.extend(points[current])
+            if current in self._points:
+                candidates.extend(self._points[current])
 
-    def _is_on_right_frontier(self, points, last, node):
+    def _is_on_frontier(self, last, node):
         """
         Return True if node is on the right frontier as
         represented by the pair points/last.
@@ -78,7 +84,7 @@ class BasicRfc(object):
         This uses `build_frontier`
         """
         return any(fnode == node for fnode in
-                   self._build_right_frontier(points, last))
+                   self._build_frontier(last))
 
     def _is_incoming_to(self, node, lnk):
         'true if a given link has the given node as target'
@@ -120,14 +126,10 @@ class BasicRfc(object):
         """
         Return the list of nodes on the right frontier of a whole graph
         """
-        graph = self._graph
-        nodes = graph.first_outermost_dus()
-        points = self._frontier_points(nodes)
-        if nodes:
-            last = nodes[-1]
-            return list(self._build_right_frontier(points, last))
-        else:
+        if not self._nodes:
             return []
+        last = self._nodes[-1]
+        return list(self._build_frontier(last))
 
     def violations(self):
         '''
@@ -139,21 +141,21 @@ class BasicRfc(object):
         :rtype: [string]
         '''
         graph = self._graph
-        nodes = graph.first_outermost_dus()
-        res = list()
+        nodes = self._nodes
         if len(nodes) < 2:
-            return res
+            return list()
 
-        points = self._frontier_points(nodes)
+        violations = list()
         nexts = itr.islice(nodes, 1, None)
         for last, node1 in zip(nodes, nexts):
             for lnk in graph.links(node1):
                 if not self._is_incoming_to(node1, lnk):
                     continue
                 node2 = graph.links(lnk)[0]
-                if not self._is_on_right_frontier(points, last, node2):
-                    res.append(lnk)
-        return res
+                if not self._is_on_frontier(last, node2):
+                    violations.append(lnk)
+
+        return violations
 
 
 class ThreadedRfc(BasicRfc):

@@ -84,9 +84,8 @@ def process_doc_power(corpus, key, strip=False):
         sorted_edus = [n for n in sorted_nodes if n in dia_edu_nodes]
         for name, method in rfc_methods[1:]:
             rfc = method(dia_graph)
-            f_points = rfc._frontier_points(sorted_nodes)
             for i, last in enumerate(sorted_edus):
-                frontier = rfc._build_right_frontier(f_points, last)
+                frontier = rfc._build_frontier(last)
                 frontier = list(n for n in frontier if dia_graph.is_edu(n))
                 # Corner case: backwards links
                 frontier = list(n for n in frontier if
