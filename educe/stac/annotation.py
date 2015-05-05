@@ -320,9 +320,11 @@ def twin(corpus, anno, stage='units'):
     stage and need to get its 'units' stage equvialent to have its
     dialogue act.
 
-    :param twin_doc: unit-level document to fish twin from (None if you
-    want educe to search for it in the corpus; NB: corpus can be None if
-    you supply this)
+    Parameters
+    ----------
+    twin_doc
+        unit-level document to fish twin from (None if you want educe to search
+        for it in the corpus; NB: corpus can be None if you supply this)
     """
     if anno.origin is None:
         raise Exception('Annotation origin must be set')

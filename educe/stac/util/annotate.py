@@ -42,9 +42,11 @@ def annotate(txt, annotations, inserts=None):
     chat corpus, you might use newlines to indicate turn
     boundaries and square brackets for segments.
 
-    :param inserts
-    :type  inserts a dictionary from annotation type to pair of
-           its opening/closing bracket
+    Parameters
+    ----------
+    inserts
+        inserts a dictionary from annotation type to pair of
+        its opening/closing bracket
 
     FIXME: this needs to become a standard educe utility,
     maybe as part of the educe.annotation layer?
