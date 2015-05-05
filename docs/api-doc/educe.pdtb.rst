@@ -32,18 +32,18 @@ educe.pdtb.parse module
     :undoc-members:
     :show-inheritance:
 
-educe.pdtb.ptb module
----------------------
+educe.pdtb.pdtbx module
+-----------------------
 
-.. automodule:: educe.pdtb.ptb
+.. automodule:: educe.pdtb.pdtbx
     :members:
     :undoc-members:
     :show-inheritance:
 
-educe.pdtb.xml_ module
-----------------------
+educe.pdtb.ptb module
+---------------------
 
-.. automodule:: educe.pdtb.xml_
+.. automodule:: educe.pdtb.ptb
     :members:
     :undoc-members:
     :show-inheritance:
