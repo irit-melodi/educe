@@ -1,6 +1,11 @@
 educe.stac.learning package
 ===========================
 
+.. automodule:: educe.stac.learning
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Submodules
 ----------
 
@@ -29,10 +34,3 @@ educe.stac.learning.features module
     :show-inheritance:
 
 
-Module contents
----------------
-
-.. automodule:: educe.stac.learning
-    :members:
-    :undoc-members:
-    :show-inheritance:

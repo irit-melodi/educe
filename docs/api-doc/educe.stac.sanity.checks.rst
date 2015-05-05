@@ -1,6 +1,11 @@
 educe.stac.sanity.checks package
 ================================
 
+.. automodule:: educe.stac.sanity.checks
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Submodules
 ----------
 
@@ -37,10 +42,3 @@ educe.stac.sanity.checks.type_err module
     :show-inheritance:
 
 
-Module contents
----------------
-
-.. automodule:: educe.stac.sanity.checks
-    :members:
-    :undoc-members:
-    :show-inheritance:

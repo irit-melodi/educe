@@ -1,6 +1,11 @@
 educe.external package
 ======================
 
+.. automodule:: educe.external
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Submodules
 ----------
 
@@ -45,10 +50,3 @@ educe.external.stanford_xml_reader module
     :show-inheritance:
 
 
-Module contents
----------------
-
-.. automodule:: educe.external
-    :members:
-    :undoc-members:
-    :show-inheritance:

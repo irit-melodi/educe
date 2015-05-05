@@ -1,6 +1,11 @@
 educe package
 =============
 
+.. automodule:: educe
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Subpackages
 -----------
 
@@ -65,10 +70,3 @@ educe.util module
     :show-inheritance:
 
 
-Module contents
----------------
-
-.. automodule:: educe
-    :members:
-    :undoc-members:
-    :show-inheritance:

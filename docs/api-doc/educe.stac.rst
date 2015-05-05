@@ -1,6 +1,11 @@
 educe.stac package
 ==================
 
+.. automodule:: educe.stac
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Subpackages
 -----------
 
@@ -88,10 +93,3 @@ educe.stac.rfc module
     :show-inheritance:
 
 
-Module contents
----------------
-
-.. automodule:: educe.stac
-    :members:
-    :undoc-members:
-    :show-inheritance:

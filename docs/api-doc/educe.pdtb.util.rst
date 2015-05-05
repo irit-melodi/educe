@@ -1,6 +1,11 @@
 educe.pdtb.util package
 =======================
 
+.. automodule:: educe.pdtb.util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Submodules
 ----------
 
@@ -21,10 +26,3 @@ educe.pdtb.util.features module
     :show-inheritance:
 
 
-Module contents
----------------
-
-.. automodule:: educe.pdtb.util
-    :members:
-    :undoc-members:
-    :show-inheritance:
