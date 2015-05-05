@@ -5,13 +5,20 @@ Specification for mini-language
 Source string is parsed line by line, data type depends on first character
 Uppercase letters are speakers, lowercase letters are units
 EDU names are arranged following alphabetical order (does NOT apply to CDUs)
-Please arrange the lines in that order
-# : speaker line
-    # Aabce Bdg Cfh
-any lowercase : CDU line (top-level last)
-    y(eg) x(wyz)
-S or C : relation line
-    Sabd bf ceCh
+Please arrange the lines in that order:
+
+* # : speaker line ::
+
+     # Aabce Bdg Cfh
+
+* any lowercase : CDU line (top-level last) ::
+
+     y(eg) x(wyz)
+
+* S or C : relation line ::
+
+     Sabd bf ceCh
+
 anything else : skip as comment
 """
 
