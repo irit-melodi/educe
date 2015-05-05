@@ -3,28 +3,10 @@ Feature extraction library functions for PDTB corpus
 """
 
 from collections import namedtuple
-import copy
-import itertools
-import os
-import re
 
-from educe.learning.keys import Key, KeyGroup, MergedKeyGroup, ClassKeyGroup
-import educe.pdtb
-from educe.stac.util.features import tune_for_csv, treenode, CorpusConsistencyException
+from educe.learning.keys import KeyGroup, MergedKeyGroup
 
 # pylint: disable=too-many-public-methods
-
-# ---------------------------------------------------------------------
-# features
-# ---------------------------------------------------------------------
-
-
-def _kg(*args):
-    """
-    Shorthand for KeyGroup, just to save on some indentation
-    """
-    return KeyGroup(*args)
-
 
 # ---------------------------------------------------------------------
 # feature extraction
@@ -72,47 +54,12 @@ class SingleArgSubgroup(KeyGroup):
         raise NotImplementedError("fill should be implemented by a subclass")
 
 
-# TODO - what could we use for meta features for the arguments here?
-class SingleArgSubgroup_Meta(SingleArgSubgroup):
-    """
-    arg-identification features
-    """
-    def __init__(self):
-        desc = self.__doc__.strip()
-        keys =\
-            [Key.meta("id",
-                      "some sort of unique identifier for the EDU")]
-        super(SingleArgSubgroup_Meta, self).__init__(desc, keys)
-
-    def fill(self, current, arg, target=None):
-        vec = self if target is None else target
-        vec["id"] = spans_to_str(arg.span)
-
-
-class SingleArgSubgroup_Debug(SingleArgSubgroup):
-    """
-    debug features
-    """
-    def __init__(self):
-        desc = self.__doc__.strip()
-        keys = [Key.meta("text", "EDU text [debug only]")]
-        super(SingleArgSubgroup_Debug, self).__init__(desc, keys)
-
-    def fill(self, current, arg, target=None):
-        vec = self if target is None else target
-        doc = current.doc
-        arg_span = arg.text_span()
-        vec["text"] = tune_for_csv(doc.text(arg_span))
-
-
 class SingleArgKeys(MergedKeyGroup):
     """
     Features for a single EDU
     """
     def __init__(self, inputs):
-        groups = [SingleArgSubgroup_Meta()]
-        if inputs.debug:
-            groups.append(SingleArgSubgroup_Debug())
+        groups = []
         super(SingleArgKeys, self).__init__("single arg features",
                                             groups)
 
@@ -150,29 +97,12 @@ class RelSubgroup(KeyGroup):
         raise NotImplementedError("fill should be implemented by a subclass")
 
 
-class RelSubgroup_Debug(RelSubgroup):
-    "debug features"
-
-    def __init__(self):
-        desc = self.__doc__.strip()
-        keys = [Key.meta("text",
-                         "text from DU1 start to DU2 end [debug only]")]
-        super(RelSubgroup_Debug, self).__init__(desc, keys)
-
-    def fill(self, current, rel, target=None):
-        vec = self if target is None else target
-        doc = current.doc
-        vec["text"] = None  # TODO
-
-
 class RelSubGroup_Core(RelSubgroup):
     "core features"
 
     def __init__(self):
         desc = self.__doc__.strip()
-        keys =\
-            [Key.meta("document", "document the relation appears in"),
-             Key.meta("id", "id for this relation")]
+        keys = []
         super(RelSubGroup_Core, self).__init__(desc, keys)
 
     def fill(self, current, rel, target=None):
@@ -187,36 +117,11 @@ class RelKeys(MergedKeyGroup):
     """
     def __init__(self, inputs):
         groups = [RelSubGroup_Core()]
-        if inputs.debug:
-            groups.append(RelSubgroup_Debug())
-
         self.arg1 = SingleArgKeys(inputs)
         self.arg2 = SingleArgKeys(inputs)
 
         super(RelKeys, self).__init__("relation features",
                                       groups)
-
-    def csv_headers(self, htype):
-        if htype in [HeaderType.OLD_CSV, HeaderType.NAME]:
-            return super(RelKeys, self).csv_headers(htype) +\
-                    [h + "_Arg1" for h in self.arg1.csv_headers(htype)] +\
-                    [h + "_Arg2" for h in self.arg2.csv_headers(htype)]
-        else:
-            return super(RelKeys, self).csv_headers(htype) +\
-                    self.arg1.csv_headers(htype) +\
-                    self.arg2.csv_headers(htype)
-
-
-    def csv_values(self):
-        return super(RelKeys, self).csv_values() +\
-            self.arg1.csv_values() +\
-            self.arg2.csv_values()
-
-    def help_text(self):
-        lines = [super(RelKeys, self).help_text(),
-                 "",
-                 self.arg1.help_text()]
-        return "\n".join(lines)
 
     def fill(self, current, rel, target=None):
         "See `RelSubgroup`"
