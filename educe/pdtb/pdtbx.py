@@ -17,10 +17,6 @@ Informal DTD:
     * text in `<text>` elements with usual XML escaping conventions
     * args in `<arg>`  elements in order (arg1 before arg2)
     * implicitRelations can have multiple connectives
-
-Note that this is named `xml_` (with an underscore on the end) only because
-naming it `xml` seems to create some kind of import cycle with the package
-`xml.etree.ElementTree` which we use here
 """
 
 import xml.etree.cElementTree as ET # python 2.5 and later
