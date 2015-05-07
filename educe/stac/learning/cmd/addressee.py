@@ -12,9 +12,9 @@ from __future__ import print_function
 
 from educe.stac import postag, corenlp
 from educe.stac.annotation import is_edu
+from educe.stac.context import sorted_first_widest
 from educe.util import\
     add_corpus_filters, fields_without, mk_is_interesting
-from educe.stac.util.context import sorted_first_widest
 import educe.corpus
 import educe.glozz
 import educe.learning.keys

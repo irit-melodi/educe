@@ -8,14 +8,14 @@ import copy
 import unittest
 
 from educe import stac
-import educe.stac.graph as egr
+from educe.stac.context import Context
 from educe.stac.tests import\
     FakeEDU, FakeCDU, FakeRelInst, FakeDocument, FakeKey,\
     graph_ids
+import educe.stac.graph as egr
 
 from .checks.annotation import is_cross_dialogue
 from .checks.graph import is_puncture
-from ..util.context import Context
 
 
 class SanityCheckerTest(unittest.TestCase):

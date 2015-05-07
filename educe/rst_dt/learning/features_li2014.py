@@ -8,6 +8,7 @@ Computational Linguistics (Vol. 1, pp. 25-35).
 http://www.aclweb.org/anthology/P/P14/P14-1003.pdf
 """
 
+from collections import Counter
 import re
 
 from educe.internalutil import treenode
@@ -84,8 +85,10 @@ def extract_single_pos(edu_info):
     if tags:
         yield ('ptb_pos_tag_first', tags[0])
         yield ('ptb_pos_tag_last', tags[-1])
-        for tag in tags:
-            yield ('POS', tag)
+        # nb of occurrences of each POS tag in this EDU
+        tag_cnt = Counter(tags)
+        for tag, occ in tag_cnt.items():
+            yield ('POS_' + tag, occ)
 
 
 SINGLE_LENGTH = [
@@ -205,8 +208,9 @@ def extract_single_syntax(edu_info):
     """syntactic features for the EDU"""
     syn_labels = get_syntactic_labels(edu_info)
     if syn_labels is not None:
-        for syn_label in syn_labels:
-            yield ('SYN', syn_label)
+        syn_cnt = Counter(syn_labels)
+        for syn_lbl, occ in syn_cnt.items():
+            yield ('SYN_' + syn_lbl, occ)
 
 
 # TODO: features on semantic similarity
@@ -462,3 +466,47 @@ def build_pair_feature_extractor():
     feat_extractor = _extract_all
     # return header and extractor
     return header, feat_extractor
+
+
+def product_features(feats_g, feats_d, feats_gd):
+    """Generate features by taking the product of features.
+
+    Parameters
+    ----------
+    feats_g: dict(feat_name, feat_val)
+        features of the gov EDU
+    feats_d: dict(feat_name, feat_val)
+        features of the dep EDU
+    feats_gd: dict(feat_name, feat_val)
+        features of the (gov, dep) edge
+
+    Returns
+    -------
+    pf: dict(feat_name, feat_val)
+        product features
+    """
+    pf = dict()
+    return pf
+
+
+def combine_features(feats_g, feats_d, feats_gd):
+    """Generate features by taking a (linear) combination of features.
+
+    I suspect these do not have a great impact, if any, on results.
+
+    Parameters
+    ----------
+    feats_g: dict(feat_name, feat_val)
+        features of the gov EDU
+    feats_d: dict(feat_name, feat_val)
+        features of the dep EDU
+    feats_gd: dict(feat_name, feat_val)
+        features of the (gov, dep) edge
+
+    Returns
+    -------
+    cf: dict(feat_name, feat_val)
+        combined features
+    """
+    cf = dict()
+    return cf

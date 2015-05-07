@@ -1,6 +1,11 @@
 educe.learning package
 ======================
 
+.. automodule:: educe.learning
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Submodules
 ----------
 
@@ -61,10 +66,3 @@ educe.learning.vocabulary_format module
     :show-inheritance:
 
 
-Module contents
----------------
-
-.. automodule:: educe.learning
-    :members:
-    :undoc-members:
-    :show-inheritance:

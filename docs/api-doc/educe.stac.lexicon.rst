@@ -1,6 +1,11 @@
 educe.stac.lexicon package
 ==========================
 
+.. automodule:: educe.stac.lexicon
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Submodules
 ----------
 
@@ -29,10 +34,3 @@ educe.stac.lexicon.wordclass module
     :show-inheritance:
 
 
-Module contents
----------------
-
-.. automodule:: educe.stac.lexicon
-    :members:
-    :undoc-members:
-    :show-inheritance:

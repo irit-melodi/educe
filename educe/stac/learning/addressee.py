@@ -11,7 +11,7 @@ EDU addressee prediction
 from itertools import takewhile
 
 from educe.stac.annotation import is_edu
-from educe.stac.util.context import Context
+from educe.stac.context import Context
 from .features import players_for_doc
 
 

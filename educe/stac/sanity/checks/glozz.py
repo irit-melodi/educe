@@ -8,9 +8,9 @@ import copy
 import sys
 
 from educe import stac
-from educe.util import (concat_l)
-from educe.stac.util.context import (sorted_first_widest)
+from educe.stac.context import (sorted_first_widest)
 from educe.stac.corpus import (twin_key)
+from educe.util import (concat_l)
 
 from .. import html as h
 from ..common import (ContextItem,

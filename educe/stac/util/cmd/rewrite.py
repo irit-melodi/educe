@@ -12,8 +12,8 @@ from ..args import\
     add_usual_input_args,\
     read_corpus,\
     get_output_dir, announce_output_dir
-from ..context import sorted_first_widest
 from ..output import save_document
+from educe.stac.context import sorted_first_widest
 
 
 def _sans_modified_by(anno):

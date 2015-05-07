@@ -423,7 +423,7 @@ class Graph(gr.hypergraph, AttrsMixin):
         elif self.has_node(x):
             return self.node_attributes_dict(x)
         else:
-            raise Exception('Tried to get attributes of non-existing object ' + x)
+            raise Exception('Tried to get attributes of non-existing object ' + str(x))
 
     def relations(self):
         """

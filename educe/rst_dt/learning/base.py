@@ -177,9 +177,9 @@ class DocumentPlusPreprocessor(object):
         # raw words (temporary)
         res['raw_words'] = []
         # tokens
-        res['tokens'] = []
-        res['tags'] = []
-        res['words'] = []
+        res['tokens'] = []  # TODO: __START__ / __START__ ?
+        res['tags'] = []  # TODO: __START__ ?
+        res['words'] = []  # TODO: __START__ ?
         res['tok_beg'] = 0  # EXPERIMENTAL
         res['tok_end'] = 0  # EXPERIMENTAL
         # sentence

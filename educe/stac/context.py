@@ -4,9 +4,9 @@ information about it
 """
 
 import warnings
-from ..annotation import is_edu, is_cdu, is_turn
-from ..annotation import speaker as anno_speaker
-from ..graph import WrappedToken, EnclosureGraph
+from .annotation import is_edu, is_cdu, is_turn
+from .annotation import speaker as anno_speaker
+from .graph import WrappedToken, EnclosureGraph
 
 
 # TODO: refactor with educe.stac.graph
@@ -115,7 +115,11 @@ class Context(object):
         """
         Return a dictionary of context objects for each EDU in the document
 
-        :rtype dict(educe.glozz.Unit, Context)
+        Returns
+        -------
+        contexts: dict(educe.glozz.Unit, Context)
+
+            A dictionary with a context For each EDU in the document
         """
         if postags:
             egraph = EnclosureGraph(doc, postags)
@@ -136,7 +140,11 @@ class Context(object):
         Does not include the possibility of including postags in the
         context
 
-        :rtype dict(educe.glozz.Unit, Context)
+        Returns
+        -------
+        contexts: dict(educe.glozz.Unit, Context)
+
+            A dictionary with a context For each EDU in the corpus
         """
         contexts = {}
         for key in corpus:

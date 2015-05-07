@@ -10,10 +10,10 @@ from collections import namedtuple
 import copy
 import sys
 
+from educe.stac.context import (edus_in_span)
 import educe.stac
 
 from ..annotate import show_diff, annotate_doc
-from ..context import (edus_in_span)
 from ..glozz import (TimestampCache, set_anno_author, set_anno_date)
 from ..args import\
     add_usual_input_args,\

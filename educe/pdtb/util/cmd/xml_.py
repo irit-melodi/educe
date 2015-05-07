@@ -7,8 +7,7 @@ Convert to our PDTBX format
 
 from __future__ import print_function
 
-import educe.pdtb.xml_ as pdtbx
-
+from educe.pdtb import pdtbx
 from ..args import\
     add_usual_input_args, add_usual_output_args,\
     get_output_dir, mk_output_path,\

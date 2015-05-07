@@ -1,6 +1,11 @@
 educe.rst_dt.learning package
 =============================
 
+.. automodule:: educe.rst_dt.learning
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Submodules
 ----------
 
@@ -53,10 +58,3 @@ educe.rst_dt.learning.features_li2014 module
     :show-inheritance:
 
 
-Module contents
----------------
-
-.. automodule:: educe.rst_dt.learning
-    :members:
-    :undoc-members:
-    :show-inheritance:

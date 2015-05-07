@@ -92,10 +92,10 @@ def get_output_dir(args):
 
     1. If `--output` is given explicitly, we'll just use/create that
     2. If the subcommand supports `--overwrite`, and the user specifies it
-    on the command line, the output directory may well be the original
-    corpus dir (*gulp*! Better use version control!)
+       on the command line, the output directory may well be the original
+       corpus dir (*gulp*! Better use version control!)
     3. OK just make a temporary directory. Later on, you'll probably want
-    to call `announce_output_dir`.
+       to call `announce_output_dir`.
     """
     if args.output:
         if os.path.isfile(args.output):
@@ -135,13 +135,14 @@ def add_usual_input_args(parser,
     Sometimes your subcommand may require slightly different output
     arguments, in which case, just don't call this function.
 
-    :param doc_subdoc_required force user to supply --doc/--subdoc
-           for this subcommand (note you'll need to add stage/anno
-           yourself)
-    :type doc_subdoc_required bool
-
-    :param help_suffix appended to --doc/--subdoc help strings
-    :type help_suffix string
+    Parameters
+    ----------
+    doc_subdoc_required (bool)
+        force user to supply --doc/--subdoc
+        for this subcommand (note you'll need to add stage/anno
+        yourself)
+    help_suffix (string)
+        appended to --doc/--subdoc help strings
     """
     parser.add_argument('corpus', metavar='DIR',
                         nargs='?',

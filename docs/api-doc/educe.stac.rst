@@ -1,6 +1,11 @@
 educe.stac package
 ==================
 
+.. automodule:: educe.stac
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Subpackages
 -----------
 
@@ -19,6 +24,14 @@ educe.stac.annotation module
 ----------------------------
 
 .. automodule:: educe.stac.annotation
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+educe.stac.context module
+-------------------------
+
+.. automodule:: educe.stac.context
     :members:
     :undoc-members:
     :show-inheritance:
@@ -43,6 +56,14 @@ educe.stac.document_plus module
 -------------------------------
 
 .. automodule:: educe.stac.document_plus
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+educe.stac.fake_graph module
+----------------------------
+
+.. automodule:: educe.stac.fake_graph
     :members:
     :undoc-members:
     :show-inheritance:
@@ -72,10 +93,3 @@ educe.stac.rfc module
     :show-inheritance:
 
 
-Module contents
----------------
-
-.. automodule:: educe.stac
-    :members:
-    :undoc-members:
-    :show-inheritance:

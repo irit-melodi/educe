@@ -1,6 +1,11 @@
 educe.stac.sanity package
 =========================
 
+.. automodule:: educe.stac.sanity
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Subpackages
 -----------
 
@@ -44,10 +49,3 @@ educe.stac.sanity.report module
     :show-inheritance:
 
 
-Module contents
----------------
-
-.. automodule:: educe.stac.sanity
-    :members:
-    :undoc-members:
-    :show-inheritance:

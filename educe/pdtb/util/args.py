@@ -33,7 +33,7 @@ def get_output_dir(args):
 
     1. If `--output` is given explicitly, we'll just use/create that
     2. OK just make a temporary directory. Later on, you'll probably want
-    to call `announce_output_dir`.
+       to call `announce_output_dir`.
     """
     if args.output:
         if os.path.isfile(args.output):

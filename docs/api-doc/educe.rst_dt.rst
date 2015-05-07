@@ -1,6 +1,11 @@
 educe.rst_dt package
 ====================
 
+.. automodule:: educe.rst_dt
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Subpackages
 -----------
 
@@ -93,10 +98,3 @@ educe.rst_dt.text module
     :show-inheritance:
 
 
-Module contents
----------------
-
-.. automodule:: educe.rst_dt
-    :members:
-    :undoc-members:
-    :show-inheritance:
