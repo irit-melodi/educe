@@ -145,13 +145,14 @@ class BasicRfc(object):
             return list()
 
         violations = list()
-        nexts = itr.islice(nodes, 1, None)
-        for last, node1 in zip(nodes, nexts):
-            for lnk in graph.links(node1):
-                if not self._is_incoming_to(node1, lnk):
+        for i, new_node in enumerate(nodes):
+            last_node = nodes[i-1] if i>0 else None
+            for lnk in graph.links(new_node):
+                if not self._is_incoming_to(new_node, lnk):
                     continue
-                node2 = graph.links(lnk)[0]
-                if not self._is_on_frontier(last, node2):
+                src_node = graph.links(lnk)[0]
+                if (last_node is None
+                    or not self._is_on_frontier(last_node, src_node)):
                     violations.append(lnk)
 
         return violations
