@@ -12,7 +12,7 @@ from tabulate import tabulate
 from collections import defaultdict, Counter
 
 import educe.stac
-import educe.stac.util.context as context
+import educe.stac.context as context
 import educe.stac.graph as graph
 from educe.util import (
     add_corpus_filters, fields_without)
