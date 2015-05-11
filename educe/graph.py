@@ -450,6 +450,22 @@ class Graph(gr.hypergraph, AttrsMixin):
         return frozenset(e for e in self.hyperedges()
                          if self.is_cdu(e))
 
+    def rel_links(self, edge):
+        """
+        Given an edge in the graph, return a tuple of its source and
+        target nodes.
+
+        If the edge has only a single link, we assume it's a loop and
+        return the same value for both
+        """
+        links = self.links(edge)
+        if len(links) == 2:
+            return tuple(links)
+        elif len(links) == 1:
+            return links[0], links[0]
+        else:
+            raise Exception("confused by relation edge with 3+ links")
+
     def containing_cdu(self, node):
         """
         Given an EDU (or CDU, or relation instance), return immediate

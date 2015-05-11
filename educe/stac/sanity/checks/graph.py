@@ -30,10 +30,6 @@ BACKWARDS_WHITELIST = ["Conditional"]
 
 def rel_link_item(doc, contexts, gra, rel):
     "return ReportItem for a graph relation"
-    links = gra.links(rel)
-    if len(links) != 2:
-        raise Exception(("Confused: %s does not have exactly 2 :"
-                         "links %s") % (rel, links))
     return RelationItem(doc, contexts, gra.annotation(rel), [])
 
 
@@ -46,7 +42,7 @@ def search_graph_edus(inputs, k, gra, pred):
     contexts = inputs.contexts[k]
     edu_names = {gra.annotation(name):name for name in gra.edus()}
     sorted_edus = sorted_first_widest(edu_names.keys())
-    return [UnitItem(doc, contexts, gra.annotation(x))
+    return [UnitItem(doc, contexts, x)
             for x in sorted_edus if pred(gra, contexts, edu_names[x])]
 
 
@@ -129,6 +125,31 @@ def is_arrow_inversion(gra, _, rel):
     span1 = gra.annotation(node1).text_span()
     span2 = gra.annotation(node2).text_span()
     return is_rel and span1 > span2
+
+
+def is_dupe_rel(gra, _, rel):
+    """
+    Relation instance for which there are relation instances
+    between the same source/target DUs (regardless of direction)
+    """
+    src, tgt = gra.links(rel)
+    return any(x != rel and
+               (gra.rel_links(x) == (src, tgt) or
+                gra.rel_links(x) == (tgt, src))
+               for x in gra.links(src)
+               if stac.is_relation_instance(gra.annotation(x)))
+
+
+def is_non2sided_rel(gra, _, rel):
+    """
+    Relation instance which does not have exactly a source and
+    target link in the graph
+
+    How this can possibly happen is a mystery
+    """
+    anno = gra.annotation(rel)
+    return (stac.is_relation_instance(anno) and
+            len(gra.links(rel)) != 2)
 
 
 def is_weird_qap(gra, _, rel):
@@ -272,8 +293,8 @@ def is_disconnected(gra, contexts, node):
         first_turn_pref = stac.split_turn_text(first_turn_text)[0]
         first_turn_start = first_turn_span.char_start + len(first_turn_pref)
         rel_links = [x for x in gra.links(node) if gra.is_relation(x)]
-        has_incoming = any(node == gra.links(x)[1] for x in rel_links)
-        has_outgoing_whitelist = any(node == gra.links(r)[0] and
+        has_incoming = any(node == gra.rel_links(x)[1] for x in rel_links)
+        has_outgoing_whitelist = any(node == gra.rel_links(r)[0] and
                                      rel_type(r) in BACKWARDS_WHITELIST
                                      for r in rel_links)
         is_at_start = edu.text_span().char_start == first_turn_start
@@ -329,6 +350,9 @@ def run(inputs, k):
     squawk('EDU in more than one CDU',
            search_graph_cdu_overlap(inputs, k, graph))
 
+    squawk('multiple relation instances between the same DU pair',
+           search_graph_relations(inputs, k, graph, is_dupe_rel))
+
     squawk('Speaker Acknowledgement to self',
            search_graph_relations(inputs, k, graph, is_weird_ack))
 
@@ -350,6 +374,10 @@ def run(inputs, k):
     simplified_graph.strip_cdus(sloppy=True)
     simplified_inputs.contexts =\
         {k: horrible_context_kludge(graph, simplified_graph, contexts)}
+
+    squawk('bizarre relation instance (causes loop after CDUs stripped)',
+           search_graph_relations(inputs, k, simplified_graph,
+                                  is_non2sided_rel))
 
     quibble('non dialogue-initial EDUs without incoming links',
             search_graph_edus(simplified_inputs, k,
