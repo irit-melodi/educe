@@ -131,6 +131,18 @@ def is_arrow_inversion(gra, _, rel):
     return is_rel and span1 > span2
 
 
+def is_dupe_rel(gra, _, rel):
+    """
+    Relation instance for which there are relation instances
+    between the same source/target DUs (regardless of direction)
+    """
+    src, tgt = gra.links(rel)
+    return any(x != rel and
+               (gra.links(x) == [src, tgt] or gra.links(x) == [tgt, src])
+               for x in gra.links(src)
+               if stac.is_relation_instance(gra.annotation(x)))
+
+
 def is_weird_qap(gra, _, rel):
     """
     Relation in a graph that represent a question answer pair
@@ -328,6 +340,9 @@ def run(inputs, k):
 
     squawk('EDU in more than one CDU',
            search_graph_cdu_overlap(inputs, k, graph))
+
+    squawk('multiple relation instances between the same DU',
+           search_graph_relations(inputs, k, graph, is_dupe_rel))
 
     squawk('Speaker Acknowledgement to self',
            search_graph_relations(inputs, k, graph, is_weird_ack))
