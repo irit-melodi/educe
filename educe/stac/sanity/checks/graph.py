@@ -30,10 +30,6 @@ BACKWARDS_WHITELIST = ["Conditional"]
 
 def rel_link_item(doc, contexts, gra, rel):
     "return ReportItem for a graph relation"
-    links = gra.links(rel)
-    if len(links) != 2:
-        raise Exception(("Confused: %s does not have exactly 2 :"
-                         "links %s") % (rel, links))
     return RelationItem(doc, contexts, gra.annotation(rel), [])
 
 
@@ -141,6 +137,18 @@ def is_dupe_rel(gra, _, rel):
                (gra.links(x) == [src, tgt] or gra.links(x) == [tgt, src])
                for x in gra.links(src)
                if stac.is_relation_instance(gra.annotation(x)))
+
+
+def is_non2sided_rel(gra, _, rel):
+    """
+    Relation instance which does not have exactly a source and
+    target link in the graph
+
+    How this can possibly happen is a mystery
+    """
+    anno = gra.annotation(rel)
+    return (stac.is_relation_instance(anno) and
+            len(gra.links(rel)) != 2)
 
 
 def is_weird_qap(gra, _, rel):
@@ -365,6 +373,10 @@ def run(inputs, k):
     simplified_graph.strip_cdus(sloppy=True)
     simplified_inputs.contexts =\
         {k: horrible_context_kludge(graph, simplified_graph, contexts)}
+
+    squawk('bizarre relation instance (causes loop after CDUs stripped)',
+           search_graph_relations(inputs, k, simplified_graph,
+                                  is_non2sided_rel))
 
     quibble('non dialogue-initial EDUs without incoming links',
             search_graph_edus(simplified_inputs, k,
