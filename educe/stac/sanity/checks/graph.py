@@ -350,7 +350,7 @@ def run(inputs, k):
     squawk('EDU in more than one CDU',
            search_graph_cdu_overlap(inputs, k, graph))
 
-    squawk('multiple relation instances between the same DU',
+    squawk('multiple relation instances between the same DU pair',
            search_graph_relations(inputs, k, graph, is_dupe_rel))
 
     squawk('Speaker Acknowledgement to self',
