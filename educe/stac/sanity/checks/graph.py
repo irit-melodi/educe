@@ -284,8 +284,8 @@ def is_disconnected(gra, contexts, node):
         first_turn_pref = stac.split_turn_text(first_turn_text)[0]
         first_turn_start = first_turn_span.char_start + len(first_turn_pref)
         rel_links = [x for x in gra.links(node) if gra.is_relation(x)]
-        has_incoming = any(node == gra.links(x)[1] for x in rel_links)
-        has_outgoing_whitelist = any(node == gra.links(r)[0] and
+        has_incoming = any(node == gra.rel_links(x)[1] for x in rel_links)
+        has_outgoing_whitelist = any(node == gra.rel_links(r)[0] and
                                      rel_type(r) in BACKWARDS_WHITELIST
                                      for r in rel_links)
         is_at_start = edu.text_span().char_start == first_turn_start
