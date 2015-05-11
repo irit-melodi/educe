@@ -134,7 +134,8 @@ def is_dupe_rel(gra, _, rel):
     """
     src, tgt = gra.links(rel)
     return any(x != rel and
-               (gra.links(x) == [src, tgt] or gra.links(x) == [tgt, src])
+               (gra.rel_links(x) == (src, tgt) or
+                gra.rel_links(x) == (tgt, src))
                for x in gra.links(src)
                if stac.is_relation_instance(gra.annotation(x)))
 
