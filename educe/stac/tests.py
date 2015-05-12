@@ -378,17 +378,16 @@ class BasicRfcTest(unittest.TestCase):
         self.assertNotIn(lg.get_edge('a', 'd'), violations)
         self.assertNotIn(lg.get_edge('b', 'd'), violations)
 
-    def test_first_incoming(self):
-        """ a -> b -> a (backwards link violation)"""
-        lg, graph = mk_graphs('#Aab / Saba')
-        violations = self.violations(graph)
-        self.assertIn(lg.get_edge('b', 'a'), violations)
-
     def test_backwards(self):
-        """ a -> b -> c -> b (backwards link violation)"""
-        lg, graph = mk_graphs('#Aabc / Sabc Scb')
-        violations = self.violations(graph)
-        self.assertIn(lg.get_edge('c', 'b'), violations)
+        """ a -> b -> c -> b and b -> c -> b
+        Both are backwards link violations
+        """
+        l1, g1 = mk_graphs('#Aabc / Sabc Scb')
+        l2, g2 = mk_graphs('#Aab / Saba')
+        violations1 = self.violations(g1)
+        violations2 = self.violations(g2)
+        self.assertIn(l1.get_edge('c', 'b'), violations1)
+        self.assertIn(l2.get_edge('c', 'b'), violations2)
 
 class ThreadedRfcTest(BasicRfcTest):
     def violations(self, graph):
