@@ -1,6 +1,6 @@
 
-Educe
-=====
+PDTB
+====
 
 `Educe <http://kowey.github.io/educe>`__ is a library for working with a
 variety of discourse corpora. This tutorial aims to show what using
