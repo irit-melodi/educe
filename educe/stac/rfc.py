@@ -65,6 +65,7 @@ class BasicRfc(object):
         up that frontier.
         """
         seen = set()
+        points = self._points
         candidates = collections.deque([origin])
         while candidates:
             current = candidates.popleft()
@@ -72,8 +73,8 @@ class BasicRfc(object):
                 continue
             seen.add(current)
             yield current
-            if current in self._points:
-                candidates.extend(self._points[current])
+            if current in points:
+                candidates.extend(points[current])
 
     def _is_on_frontier(self, last, node):
         """
