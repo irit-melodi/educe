@@ -1,6 +1,6 @@
 
-Educe
-=====
+RST-DT
+======
 
 `Educe <http://kowey.github.io/educe>`__ is a library for working with a
 variety of discourse corpora. This tutorial aims to show what using
@@ -11,7 +11,7 @@ Installation
 
 .. code:: shell
 
-    git clone https://github.com/kowey/educe.git
+    git clone https://github.com/irit-melodi/educe.git
     cd educe
     pip install -r requirements.txt
 
