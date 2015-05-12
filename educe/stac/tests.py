@@ -383,7 +383,7 @@ class BasicRfcTest(unittest.TestCase):
         Both are backwards link violations
         """
         l1, g1 = mk_graphs('#Aabc / Sabc Scb')
-        l2, g2 = mk_graphs('#Aab / Saba')
+        l2, g2 = mk_graphs('#Abc / Sbcb')
         violations1 = self.violations(g1)
         violations2 = self.violations(g2)
         self.assertIn(l1.get_edge('c', 'b'), violations1)
