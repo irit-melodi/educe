@@ -12,7 +12,7 @@ Contents:
    :maxdepth: 2
 
    tutorial
-   api-doc/modules
+   api-doc/educe
 
 Indices and tables
 ==================
