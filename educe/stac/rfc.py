@@ -56,17 +56,21 @@ class BasicRfc(object):
         self._points = self._frontier_points(self._nodes)
 
     def _build_frontier(self, last):
-        return self._build_frontier_from(last)
+        """
+        Return the frontier points of the graph with the given
+        node as last.
+        """
+        return self._build_frontier_from([last])
 
-    def _build_frontier_from(self, origin):
+    def _build_frontier_from(self, starts):
         """
         Given a dictionary mapping each node to its closest
-        right frontier nodes and a start node, generate a path
+        right frontier nodes and start nodes, generate a path
         up that frontier.
         """
         seen = set()
         points = self._points
-        candidates = collections.deque([origin])
+        candidates = collections.deque(starts)
         while candidates:
             current = candidates.popleft()
             if current in seen:
@@ -123,7 +127,7 @@ class BasicRfc(object):
 
     def frontier(self):
         """
-        Return the list of nodes on the right frontier of a whole graph
+        Return the list of nodes on the right frontier of the whole graph
         """
         if not self._nodes:
             return []
@@ -192,10 +196,8 @@ class ThreadedRfc(BasicRfc):
         return last_nodes
 
     def _build_frontier(self, last):
-        seen = set()
-        for speaker_last in self._last[last]:
-            for point in self._build_frontier_from(speaker_last):
-                if point in seen:
-                    break
-                yield point
-                seen.add(point)
+        """
+        Return the frontier points of the graph with
+        the given node as last.
+        """
+        return self._build_frontier_from(self._last[last])
