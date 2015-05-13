@@ -116,7 +116,7 @@ class BasicRfc(object):
                 if (self._is_incoming_to(node1, lnk) and
                         is_subordinating(gra.annotation(lnk))):
                     # N2 -S> N1
-                    node2 = gra.links(lnk)[0]
+                    node2, _ = gra.rel_links(lnk)
                     neighbors.append(node2)
                 elif gra.is_cdu(lnk):
                     # N2 = [...N1...]
@@ -154,7 +154,7 @@ class BasicRfc(object):
             for lnk in graph.links(new_node):
                 if not self._is_incoming_to(new_node, lnk):
                     continue
-                src_node = graph.links(lnk)[0]
+                src_node, _ = graph.rel_links(lnk)
                 if (last_node is None
                     or not self._is_on_frontier(last_node, src_node)):
                     violations.append(lnk)
