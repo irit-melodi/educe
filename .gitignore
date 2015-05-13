@@ -18,7 +18,6 @@ socl-season[1,2]
 
 # tutorials
 .ipynb_checkpoints/
-tutorials/*.html
 
 # Syphinx
 _build

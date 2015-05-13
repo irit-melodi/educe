@@ -66,21 +66,16 @@ def read_corpus_with_unannotated(args, verbose=True):
     """
     Read the section of the corpus specified in the command line arguments.
     """
-    is_interesting1 = educe.util.mk_is_interesting(args)
     reader = educe.stac.Reader(args.corpus)
-    anno_files1 = reader.filter(reader.files(), is_interesting1)
-    # we only want to read the unannotated stuff if we also have other
-    # normal interesting matches (useful if annotator is forced)
-    if anno_files1:
-        args2 = copy.deepcopy(args)
-        args2.stage = 'unannotated'
-        args2.annotator = None
-        is_interesting2 = educe.util.mk_is_interesting(args2)
-        is_interesting = lambda x: is_interesting1(x) or is_interesting2(x)
-        anno_files = reader.filter(reader.files(), is_interesting)
-        return reader.slurp(anno_files, verbose)
-    else:
-        sys.exit("No matching files")
+    all_files = reader.files()
+    is_interesting = educe.util.mk_is_interesting(args)
+    anno_files = reader.filter(all_files, is_interesting)
+    unannotated_twins = frozenset(educe.stac.twin_key(k, 'unannotated')
+                                  for k in anno_files)
+    for key in unannotated_twins:
+        if key in all_files:
+            anno_files[key] = all_files[key]
+    return reader.slurp(anno_files, verbose=verbose)
 
 
 def get_output_dir(args):

@@ -50,7 +50,12 @@ apidoc: $(APIDOCDIR)/educe.rst
 $(APIDOCDIR)/educe.rst: $(SOURCE_FILES)
 	cd ..; bash etc/redo-api-doc
 
-html: apidoc
+tutorial: stac.rst stac-ex1.rst rst-dt.rst pdtb.rst
+
+%.rst : %.ipynb
+	ipython nbconvert --to rst $(<)
+
+html: tutorial apidoc
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
