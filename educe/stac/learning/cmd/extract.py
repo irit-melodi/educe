@@ -84,9 +84,7 @@ def main_single(args):
     (single edus only)
     """
     inputs = features.read_corpus_inputs(args)
-    stage = 'unannotated'  # dialogue extract will hunt down
-                           # any unit level annotations that
-                           # go with this if possible
+    stage = 'unannotated' if args.parsing else 'units'
     dialogues = list(mk_high_level_dialogues(inputs, stage))
     # these paths should go away once we switch to a proper dumper
     out_file = fp.join(args.output, fp.basename(args.corpus))
