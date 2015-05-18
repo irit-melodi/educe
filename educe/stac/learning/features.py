@@ -41,7 +41,7 @@ import educe.util
 
 from ..annotation import turn_id
 from ..lexicon.wordclass import Lexicon
-from ..document_plus import (Dialogue, EDU, ROOT, FakeRootEDU)
+from ..fusion import (Dialogue, EDU, ROOT, FakeRootEDU)
 
 
 class CorpusConsistencyException(Exception):
@@ -1258,7 +1258,10 @@ def _fuse_edus(dialogue_doc, unit_doc):
 
 
 def _mk_high_level_dialogues(current):
-    """:rtype: iterable(:pyclass:`educe.stac.document_plus.Dialogue`)
+    """
+    Returns
+    -------
+    iterator of `educe.stac.fusion.Dialogue`
     """
     doc = current.doc
     # first pass: create the EDU objects
