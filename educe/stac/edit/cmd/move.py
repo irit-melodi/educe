@@ -14,12 +14,12 @@ import sys
 from educe.annotation import Span
 import educe.stac
 
-from ..annotate import show_diff
-from ..args import\
+from educe.stac.util.annotate import show_diff
+from educe.stac.util.args import\
     add_usual_input_args, add_usual_output_args,\
     get_output_dir, announce_output_dir
-from ..doc import compute_renames, move_portion
-from ..output import save_document
+from educe.stac.util.doc import compute_renames, move_portion
+from educe.stac.util.output import save_document
 
 
 def is_target(args):

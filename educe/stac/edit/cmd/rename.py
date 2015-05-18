@@ -8,13 +8,13 @@ Rename an annotation
 from __future__ import print_function
 import sys
 
-from ..args import\
+from educe.stac.util.args import\
     add_usual_input_args, add_usual_output_args,\
     read_corpus, get_output_dir, announce_output_dir,\
     anno_id
-from ..doc import compute_renames, evil_set_id
-from ..glozz import anno_id_from_tuple, anno_id_to_tuple
-from ..output import save_document
+from educe.stac.util.doc import compute_renames, evil_set_id
+from educe.stac.util.glozz import anno_id_from_tuple, anno_id_to_tuple
+from educe.stac.util.output import save_document
 
 
 def _is_match(wanted):

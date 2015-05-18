@@ -1,0 +1,40 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# pylint: disable=invalid-name
+# We have a script here, not a module, so it's ok to have
+# a funny name
+# pylint: enable=invalid-name
+
+# Author: Eric Kow
+# License: CeCILL (French BSD3-like)
+
+"""
+STAC project Swiss-Army knife (editing)
+"""
+
+from argparse import ArgumentParser
+
+from educe.stac.edit.cmd import SUBCOMMANDS
+from educe.stac.util.args import check_easy_settings
+from educe.util import add_subcommand
+
+
+def main():
+    "stac-edit main"
+
+    psr = ArgumentParser(description='STAC batch editor')
+    subparsers = psr.add_subparsers(help='sub-command help')
+
+    for module in SUBCOMMANDS:
+        subparser = add_subcommand(subparsers, module)
+        module.config_argparser(subparser)
+
+    psr.add_argument('--verbose', '-v',
+                     action='count',
+                     default=0)
+    args = psr.parse_args()
+    check_easy_settings(args)
+    args.func(args)
+
+main()

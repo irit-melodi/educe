@@ -12,16 +12,16 @@ import sys
 from educe.annotation import Span
 from educe.glozz import GlozzException
 
-from ..annotate import annotate_doc
-from ..args import\
+from educe.stac.util.annotate import annotate_doc
+from educe.stac.util.args import\
     add_usual_input_args, add_usual_output_args, anno_id,\
     add_commit_args,\
     read_corpus,\
     get_output_dir, announce_output_dir
-from ..glozz import\
+from educe.stac.util.glozz import\
     anno_id_from_tuple, anno_id_to_tuple,\
     get_turn, is_dialogue
-from ..output import save_document
+from educe.stac.util.output import save_document
 
 
 def _get_annotation_with_id(sought_tuple, annotations):

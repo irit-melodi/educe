@@ -10,21 +10,20 @@ import sys
 
 import educe.stac
 
-from ..annotate import show_diff
-from ..args import\
-    add_usual_input_args, add_usual_output_args,\
-    get_output_dir, announce_output_dir
-from ..output import save_document
-from ..doc import\
+from educe.stac.util.annotate import show_diff
+from educe.stac.util.args import\
+    (add_usual_input_args,
+     add_usual_output_args,
+     announce_output_dir,
+     get_output_dir)
+from educe.stac.util.output import save_document
+from educe.stac.util.doc import\
     compute_renames, move_portion
-from ..cmd.move import is_requested
+from .move import is_requested
 
 # ---------------------------------------------------------------------
 # command and options
 # ---------------------------------------------------------------------
-
-NAME = 'insert'
-
 
 def config_argparser(parser):
     """

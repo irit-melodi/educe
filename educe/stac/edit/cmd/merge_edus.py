@@ -13,18 +13,20 @@ import sys
 from educe.stac.context import (edus_in_span)
 import educe.stac
 
-from ..annotate import show_diff, annotate_doc
-from ..glozz import (TimestampCache, set_anno_author, set_anno_date)
-from ..args import\
+from educe.stac.util.annotate import show_diff, annotate_doc
+from educe.stac.util.glozz import (TimestampCache,
+                                   set_anno_author,
+                                   set_anno_date)
+from educe.stac.util.args import\
     add_usual_input_args,\
     add_usual_output_args,\
     add_commit_args,\
     read_corpus_with_unannotated,\
     get_output_dir, announce_output_dir,\
     comma_span
-from ..doc import\
+from educe.stac.util.doc import\
     narrow_to_span, enclosing_span, retarget
-from ..output import save_document
+from educe.stac.util.output import save_document
 from .split_edu import\
     _AUTHOR, _SPLIT_PREFIX
 

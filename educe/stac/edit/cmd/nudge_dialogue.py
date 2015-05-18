@@ -13,13 +13,13 @@ import sys
 from educe.annotation import Span
 import educe.stac as st
 
-from ..annotate import show_diff, annotate_doc
-from ..args import\
+from educe.stac.util.annotate import show_diff, annotate_doc
+from educe.stac.util.args import\
     add_usual_input_args, add_usual_output_args,\
     add_commit_args,\
     read_corpus, get_output_dir, announce_output_dir
-from ..doc import narrow_to_span
-from ..output import save_document
+from educe.stac.util.doc import narrow_to_span
+from educe.stac.util.output import save_document
 
 
 def _mini_diff(k, args, old_doc, new_doc, span):

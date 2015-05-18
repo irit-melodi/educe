@@ -13,19 +13,19 @@ import sys
 import educe.annotation
 import educe.stac
 
-from ..annotate import show_diff, annotate_doc
-from ..glozz import\
+from educe.stac.util.annotate import show_diff, annotate_doc
+from educe.stac.util.glozz import\
     TimestampCache, set_anno_author, set_anno_date,\
     anno_id_from_tuple
-from ..args import\
+from educe.stac.util.args import\
     add_usual_input_args, add_usual_output_args,\
     add_commit_args,\
     read_corpus_with_unannotated,\
     get_output_dir, announce_output_dir,\
     comma_span
-from ..doc import\
+from educe.stac.util.doc import\
     narrow_to_span, enclosing_span, retarget
-from ..output import save_document
+from educe.stac.util.output import save_document
 
 
 NAME = 'split-edu'
