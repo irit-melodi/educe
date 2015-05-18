@@ -1412,6 +1412,8 @@ def _fuse_corpus(corpus):
     for key in corpus:
         if key.stage == 'unannotated':
             corpus[key] = _fuse_edus(corpus[key], corpus[key])
+        elif key.stage == 'units':
+            corpus[key] = _fuse_edus(corpus[key], corpus[key])
         elif key.stage == 'discourse':
             ukey = twin_key(key, 'units')
             corpus[key] = _fuse_edus(corpus[key], corpus[ukey])
