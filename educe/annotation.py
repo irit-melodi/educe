@@ -170,6 +170,7 @@ class Span(object):
         Return a span that stretches from the beginning to the end
         of all the spans in the list
         """
+        spans = list(spans)
         big_start = min(x.char_start for x in spans)
         big_end = max(x.char_end for x in spans)
         return Span(big_start, big_end)
