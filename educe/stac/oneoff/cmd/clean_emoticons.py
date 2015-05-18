@@ -40,7 +40,7 @@ def config_argparser(parser):
                         help='corpus dir')
     # don't allow stage control
     add_corpus_filters(parser, fields=fields_without(["stage"]))
-    add_usual_output_args(parser)
+    add_usual_output_args(parser, default_overwrite=True)
     parser.set_defaults(func=main)
 
 
@@ -178,7 +178,7 @@ def main(args):
     corpus = read_corpus_with_unannotated(args)
     postags = educe.stac.postag.read_tags(corpus, args.corpus)
     tcache = TimestampCache()
-    output_dir = get_output_dir(args)
+    output_dir = get_output_dir(args, default_overwrite=True)
 
     families = collections.defaultdict(list)
     discourse_subcorpus = {}
