@@ -11,7 +11,6 @@ from __future__ import print_function
 import copy
 import sys
 
-from educe.annotation import Span
 import educe.stac
 
 from educe.stac.util.annotate import show_diff

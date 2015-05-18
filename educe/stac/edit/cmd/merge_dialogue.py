@@ -154,7 +154,7 @@ def commit_msg(args, corpus, k, sought):
     we are about to do (has to be run before merging happens)
     """
     doc = corpus[k]
-    dstr = ", ".join(map(anno_id_from_tuple, sought))
+    dstr = ", ".join(anno_id_from_tuple(x) for x in sought)
     dialogues = [_get_annotation_with_id(d, doc.units) for d in sought]
     if dialogues:
         title_fmt = u"{doc}_{subdoc}: merge dialogues{hint}"
@@ -190,7 +190,7 @@ def main(args):
             if len(sought) < 2:
                 sys.exit("Must specify at least two dialogues")
             print("Merging dialogues: " +
-                  ", ".join(map(anno_id_from_tuple, sought)),
+                  ", ".join(anno_id_from_tuple(x) for x in sought),
                   file=sys.stderr)
         except GlozzException as oops:
             sys.exit(str(oops))

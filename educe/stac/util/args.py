@@ -7,7 +7,6 @@ Command line options
 
 from __future__ import print_function
 import argparse
-import copy
 import glob
 import os
 import sys

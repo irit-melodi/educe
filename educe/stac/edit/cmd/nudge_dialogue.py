@@ -114,14 +114,14 @@ def _nudge_dialogue(doc, tid, direction):
     """
     prev_turn, turn, next_turn = \
         _window1(lambda x: st.turn_id(x) == tid,
-                 filter(st.is_turn, doc.units))
+                 [x for x in doc.units if st.is_turn(x)])
     if not turn:
         sys.exit("Could not find turn %d" % tid)
 
     tspan = turn.text_span()
     prev_dialogue, dialogue, next_dialogue = \
         _window1(lambda x: x.text_span().encloses(tspan),
-                 filter(st.is_dialogue, doc.units))
+                 [x for x in doc.units if st.is_dialogue(x)])
 
     if direction == "up":
         return _nudge_up(turn, dialogue, next_turn, prev_dialogue)

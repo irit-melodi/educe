@@ -32,7 +32,7 @@ def _has_named_annotation(target, doc):
     """
     Return True if the given document has the target annotation
     """
-    return bool(filter(_is_match(target), doc.annotations()))
+    return any(_is_match(target)(x) for x in  doc.annotations())
 
 
 def _get_target(args, source, corpus):
@@ -64,7 +64,7 @@ def _rename_in_doc(source, target, doc):
 
     NB: modifies doc
     """
-    matches = list(filter(_is_match(source), doc.annotations()))
+    matches = [x for x in doc.annotations() if _is_match(source)(x)]
     pretty_source = anno_id_from_tuple(source)
     pretty_target = anno_id_from_tuple(target)
     target_author, target_date = target
