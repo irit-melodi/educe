@@ -70,7 +70,7 @@ def sorted_turns(doc):
     """
     Turn annotations in a document, sorted by text span
     """
-    return sorted_first_widest(filter(educe.stac.is_turn, doc.units))
+    return sorted_first_widest(x for x in doc.units if educe.stac.is_turn(x))
 
 
 def absorb_emoticon(doc, stamp, penult, last):
@@ -163,7 +163,7 @@ def family_banner(doc, subdoc, keys):
             return k.stage
 
     fam = "%s [%s]" % (doc, subdoc)
-    members = ", ".join(map(show_member, keys))
+    members = ", ".join(show_member(x) for x in keys)
 
     return "========== %s =========== (%s)" % (fam, members)
 
