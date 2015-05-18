@@ -119,9 +119,9 @@ def _actually_split(tcache, doc, spans, edu):
                                   frozenset(),
                                   frozenset(),
                                   'Complex_discourse_unit',
-                                  {'author': _AUTHOR,
-                                   'creation-date': str(cdu_stamp)},
-                                  metadata={})
+                                  {},
+                                  metadata={'author': _AUTHOR,
+                                            'creation-date': str(cdu_stamp)})
     cdu.fleshout(new_edus)
 
     want_cdu = retarget(doc, edu.local_id(), cdu)
