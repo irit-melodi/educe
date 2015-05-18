@@ -52,14 +52,25 @@ class BasicRfc(object):
     '''
     def __init__(self, graph):
         self._graph = graph
+        self._nodes = graph.first_outermost_dus()
+        self._points = self._frontier_points(self._nodes)
 
-    def _build_right_frontier(self, points, last):
+    def _build_frontier(self, last):
+        """
+        Return the frontier points of the graph with the given
+        node as last.
+        """
+        return self._build_frontier_from([last])
+
+    def _build_frontier_from(self, starts):
         """
         Given a dictionary mapping each node to its closest
-        right frontier node, generate a path up that frontier.
+        right frontier nodes and start nodes, generate a path
+        up that frontier.
         """
         seen = set()
-        candidates = collections.deque([last])
+        points = self._points
+        candidates = collections.deque(starts)
         while candidates:
             current = candidates.popleft()
             if current in seen:
@@ -69,7 +80,7 @@ class BasicRfc(object):
             if current in points:
                 candidates.extend(points[current])
 
-    def _is_on_right_frontier(self, points, last, node):
+    def _is_on_frontier(self, last, node):
         """
         Return True if node is on the right frontier as
         represented by the pair points/last.
@@ -77,7 +88,7 @@ class BasicRfc(object):
         This uses `build_frontier`
         """
         return any(fnode == node for fnode in
-                   self._build_right_frontier(points, last))
+                   self._build_frontier(last))
 
     def _is_incoming_to(self, node, lnk):
         'true if a given link has the given node as target'
@@ -95,38 +106,33 @@ class BasicRfc(object):
         * points to it with a subordinating relation
         * includes it as a CDU member
         """
-        graph = self._graph
+        gra = self._graph
 
         points = dict()
         for node1 in nodes:
             # Computing neighbors of node1
-            candidates = list()
-            for lnk in graph.links(node1):
+            neighbors = list()
+            for lnk in gra.links(node1):
                 if (self._is_incoming_to(node1, lnk) and
-                        is_subordinating(graph.annotation(lnk))):
+                        is_subordinating(gra.annotation(lnk))):
                     # N2 -S> N1
-                    node2 = graph.links(lnk)[0]
-                    candidates.append(node2)
-                elif graph.is_cdu(lnk):
+                    node2, _ = gra.rel_links(lnk)
+                    neighbors.append(node2)
+                elif gra.is_cdu(lnk):
                     # N2 = [...N1...]
-                    node2 = graph.mirror(lnk)
-                    candidates.append(node2)
-            points[node1] = candidates
-
+                    node2 = gra.mirror(lnk)
+                    neighbors.append(node2)
+            points[node1] = neighbors
         return points
 
     def frontier(self):
         """
-        Return the list of nodes on the right frontier of a whole graph
+        Return the list of nodes on the right frontier of the whole graph
         """
-        graph = self._graph
-        nodes = graph.first_outermost_dus()
-        points = self._frontier_points(nodes)
-        if nodes:
-            last = nodes[-1]
-            return list(self._build_right_frontier(points, last))
-        else:
+        if not self._nodes:
             return []
+        last = self._nodes[-1]
+        return list(self._build_frontier(last))
 
     def violations(self):
         '''
@@ -138,21 +144,22 @@ class BasicRfc(object):
         :rtype: [string]
         '''
         graph = self._graph
-        nodes = graph.first_outermost_dus()
-        res = list()
+        nodes = self._nodes
         if len(nodes) < 2:
-            return res
+            return list()
 
-        points = self._frontier_points(nodes)
-        nexts = itr.islice(nodes, 1, None)
-        for last, node1 in zip(nodes, nexts):
-            for lnk in graph.links(node1):
-                if not self._is_incoming_to(node1, lnk):
+        violations = list()
+        for i, new_node in enumerate(nodes):
+            last_node = nodes[i-1] if i>0 else None
+            for lnk in graph.links(new_node):
+                if not self._is_incoming_to(new_node, lnk):
                     continue
-                node2 = graph.links(lnk)[0]
-                if not self._is_on_right_frontier(points, last, node2):
-                    res.append(lnk)
-        return res
+                src_node, _ = graph.rel_links(lnk)
+                if (last_node is None
+                    or not self._is_on_frontier(last_node, src_node)):
+                    violations.append(lnk)
+
+        return violations
 
 
 class ThreadedRfc(BasicRfc):
@@ -161,76 +168,36 @@ class ThreadedRfc(BasicRfc):
 
         1. X is the textual last utterance of any speaker => RF(X)
     '''
+    def __init__(self, graph):
+        super(ThreadedRfc, self).__init__(graph)
+        self._last = self._last_nodes()
+
     def _last_nodes(self):
         """
         Return the dict of node names to the set of last elements up to
-        that node, and the last utterances by speakers
+        that node (included)
         """
-        nodes = self._graph.first_outermost_dus()
+        nodes = self._nodes
         contexts = Context.for_edus(self._graph.doc)
         doc_speakers = frozenset(ctx.speaker()
             for ctx in contexts.values())
 
         current_last = dict()
-        res = dict()
+        last_nodes = dict()
         for node in nodes:
             anno_node = self._graph.annotation(node)
-            res[node] = frozenset(current_last[speaker]
-                for speaker in doc_speakers
-                if speaker in current_last)
-
             for speaker in speakers(contexts, anno_node):
                 current_last[speaker] = node
 
-        return res, current_last
+            last_nodes[node] = frozenset(current_last[speaker]
+                for speaker in doc_speakers
+                if speaker in current_last)
 
-    def frontier(self):
+        return last_nodes
+
+    def _build_frontier(self, last):
         """
-        Return the list of nodes on the right frontier of a graph.
+        Return the frontier points of the graph with
+        the given node as last.
         """
-        graph = self._graph
-        nodes = graph.first_outermost_dus()
-        points = self._frontier_points(nodes)
-
-        lasts = list(self._last_nodes()[1].values())
-
-        if nodes:
-            res = []
-            for last in lasts:
-                res.extend(self._build_right_frontier(points, last))
-            return res
-        else:
-            return []
-
-    def violations(self):
-        '''
-        Return a list of relation instance names, corresponding to the
-        RF violations for the given graph.
-
-        You'll need a stac graph object to interpret these names with.
-
-        :rtype: [string]
-        '''
-        graph = self._graph
-        nodes = graph.first_outermost_dus()
-        res = list()
-        if len(nodes) < 2:
-            return res
-
-        lasts, _ = self._last_nodes()
-        points = self._frontier_points(nodes)
-        nexts = itr.islice(nodes, 1, None)
-        for node_tgt in nexts:
-            for lnk in graph.links(node_tgt):
-                if not self._is_incoming_to(node_tgt, lnk):
-                    continue
-                # Attachment source
-                node_src = graph.links(lnk)[0]
-                for last in lasts[node_tgt]:
-                    if self._is_on_right_frontier(points, last, node_src):
-                        # node_src belongs to some RF
-                        break
-                else:
-                    # node_src doesn't belong to any RF
-                    res.append(lnk)
-        return res
+        return self._build_frontier_from(self._last[last])
