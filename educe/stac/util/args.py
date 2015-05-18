@@ -12,6 +12,7 @@ import os
 import sys
 import tempfile
 
+from educe.stac.corpus import METAL_STR
 import educe.annotation
 import educe.stac
 import educe.util
@@ -43,6 +44,9 @@ def check_easy_settings(args):
             sys.exit("I don't know about any document called " + args.doc)
 
     guess_report = "{corpus} --doc \"{doc}\""
+    if args.annotator is None:
+        args.annotator = METAL_STR
+        guess_report += ' --annotator "{}"'.format(args.annotator)
 
     print("Guessing convenience settings:", file=sys.stderr)
     print(guess_report.format(**args.__dict__), file=sys.stderr)
