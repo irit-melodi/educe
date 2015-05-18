@@ -27,7 +27,10 @@ from educe.external.parser import\
 from educe.learning.keys import (MagicKey, Key, KeyGroup, MergedKeyGroup)
 from educe.stac import postag, corenlp
 from educe.stac.annotation import speaker, addressees, is_relation_instance
-from educe.stac.context import Context, enclosed, edus_in_span
+from educe.stac.context import (Context,
+                                enclosed,
+                                edus_in_span,
+                                merge_turn_stars)
 from educe.stac.corpus import (twin_key)
 from educe.learning.csv import tune_for_csv
 from educe.learning.util import tuple_feature, underscore
@@ -1218,7 +1221,8 @@ def _fuse_edus(dialogue_doc, unit_doc):
     Return a copy of the document, where all EDUs have been converted
     to higher level merged EDUs
     """
-    doc = copy.deepcopy(dialogue_doc)
+    doc = merge_turn_stars(dialogue_doc)
+
     # first pass: create the EDU objects
     annos = sorted([x for x in doc.units if educe.stac.is_edu(x)],
                    key=lambda x: x.span)
@@ -1249,7 +1253,7 @@ def _fuse_edus(dialogue_doc, unit_doc):
                 schema.units.remove(anno)
                 schema.units.append(edu)
 
-    # third pass: flesh out the EDUs with contextual info
+    # fourth pass: flesh out the EDUs with contextual info
     # now the EDUs should be work as contexts too
     contexts = Context.for_edus(doc)
     for edu in edus:
@@ -1433,12 +1437,15 @@ def read_corpus_inputs(args):
     anno_files = reader.filter(reader.files(),
                                mk_is_interesting(args, args.single))
     corpus = reader.slurp(anno_files, verbose=True)
-    _fuse_corpus(corpus)
 
     if not args.ignore_cdus:
         strip_cdus(corpus)
     postags = postag.read_tags(corpus, args.corpus)
     parses = corenlp.read_results(corpus, args.corpus)
+    # NOTE: fusion has to happen after pos tag reading because
+    # turns get merged into turn*, whereas pos tags and parses
+    # are based on turns
+    _fuse_corpus(corpus)
 
     for lex in LEXICONS:
         lex.read(args.resources)

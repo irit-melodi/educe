@@ -3,8 +3,13 @@ The dialogue and turn surrounding an EDU along with some convenient
 information about it
 """
 
+import copy
+import itertools as itr
 import warnings
-from .annotation import is_edu, is_cdu, is_turn
+
+from educe.annotation import Span
+from .annotation import (is_edu, is_cdu, is_dialogue, is_turn,
+                         split_turn_text)
 from .annotation import speaker as anno_speaker
 from .graph import WrappedToken, EnclosureGraph
 
@@ -25,6 +30,58 @@ def sorted_first_widest(nodes):
         else:
             return None
     return sorted(nodes, key=lambda x: from_span(x.text_span()))
+
+
+def _blank_out(text, rejects):
+    """Return a copy of a text with the indicated regions replaced
+    by spaces
+    """
+    if not rejects:
+        return text
+    before = 0
+    text2 = ""
+    for left, right in rejects:
+        text2 += text[before:left]
+        text2 += ' ' * (right - left)
+        before = right
+    text2 += text[before:]
+    assert len(text2) == len(text)
+    return text2
+
+
+def merge_turn_stars(doc):
+    """Return a copy of the document in which consecutive turns
+    by the same speaker have been merged.
+
+    Merging is done by taking the first turn in grouping of
+    consecutive speaker turns, and stretching its span over all
+    the subsequent turns.
+
+    Additionally turn prefix text (containing turn numbers and
+    speakers) from the removed turns are stripped out.
+    """
+    def prefix_span(turn):
+        "given a turn annotation, return the span of its prefix"
+        prefix, _ = split_turn_text(doc.text(turn.text_span()))
+        start = turn.text_span().char_start
+        return start, start + len(prefix)
+
+    doc = copy.deepcopy(doc)
+    dialogues = sorted([x for x in doc.units if is_dialogue(x)],
+                       key=lambda x: x.text_span())
+    rejects = [] # spans for the "deleted" turns' prefixes
+    for dia in dialogues:
+        dia_turns = sorted(turns_in_span(doc, dia.text_span()),
+                           key=lambda x: x.text_span())
+        for _, turns in itr.groupby(dia_turns, anno_speaker):
+            turns = list(turns)
+            tstar = turns[0]
+            tstar.span = Span.merge_all(x.text_span() for x in turns)
+            rejects.extend(turns[1:])
+            for anno in turns[1:]:
+                doc.units.remove(anno)
+    doc._text = _blank_out(doc._text, [prefix_span(x) for x in rejects])
+    return doc
 
 # ---------------------------------------------------------------------
 # contexts
