@@ -44,7 +44,12 @@ def check_easy_settings(args):
             sys.exit("I don't know about any document called " + args.doc)
 
     guess_report = "{corpus} --doc \"{doc}\""
-    if 'annotator' in args.__dict__ and args.annotator is None:
+    want_unanno = ('stage' in args.__dict__ and
+                   args.stage is not None and
+                   'unannotated'.startswith(args.stage))
+    if ('annotator' in args.__dict__ and
+            not want_unanno and
+            args.annotator is None):
         args.annotator = METAL_STR
         guess_report += ' --annotator "{}"'.format(args.annotator)
 
