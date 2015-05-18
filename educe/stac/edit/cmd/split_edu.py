@@ -50,7 +50,7 @@ def config_argparser(parser):
                         required=True,
                         nargs='+',
                         help='Desired output spans (must cover original EDU)')
-    add_usual_output_args(parser)
+    add_usual_output_args(parser, default_overwrite=True)
     add_commit_args(parser)
     parser.set_defaults(func=main)
 
@@ -213,7 +213,7 @@ def main(args):
     """
     corpus = read_corpus_with_unannotated(args)
     tcache = TimestampCache()
-    output_dir = get_output_dir(args)
+    output_dir = get_output_dir(args, default_overwrite=True)
     commit_info = None
     for k in corpus:
         old_doc = corpus[k]

@@ -146,7 +146,7 @@ def config_argparser(parser):
     are to be added.
     """
     add_usual_input_args(parser, doc_subdoc_required=True)
-    add_usual_output_args(parser)
+    add_usual_output_args(parser, default_overwrite=True)
     add_commit_args(parser)
     parser.add_argument('turn', metavar='TURN', type=int,
                         help='turn number')
@@ -182,7 +182,7 @@ def main(args):
     `config_argparser`
     """
     corpus = read_corpus(args, verbose=True)
-    output_dir = get_output_dir(args)
+    output_dir = get_output_dir(args, default_overwrite=True)
 
     for k in corpus:
         print(k)

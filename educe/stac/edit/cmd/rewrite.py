@@ -61,7 +61,7 @@ def config_argparser(parser):
     parser_mutex.add_argument('--overwrite-input', action='store_true',
                               help='save results back to input dir')
     parser.add_argument('--output', '-o', metavar='DIR',
-                        help='output directory (default mktemp)')
+                        help='output directory (default overwrite!)')
     parser.set_defaults(func=main)
 
 
@@ -73,7 +73,7 @@ def main(args):
     `config_argparser`
     """
     corpus = read_corpus(args, verbose=True)
-    output_dir = get_output_dir(args)
+    output_dir = get_output_dir(args, default_overwrite=True)
     for k in corpus:
         doc = corpus[k]
         if args.diff_friendly:

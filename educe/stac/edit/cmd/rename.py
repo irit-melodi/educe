@@ -104,7 +104,7 @@ def config_argparser(parser):
     are to be added.
     """
     add_usual_input_args(parser, doc_subdoc_required=True)
-    add_usual_output_args(parser)
+    add_usual_output_args(parser, default_overwrite=True)
     parser.add_argument('--stage', metavar='STAGE',
                         choices=['discourse', 'units', 'unannotated'])
     parser.add_argument('--annotator', metavar='STRING')
@@ -128,7 +128,7 @@ def main(args):
             sys.exit("--annotator is required unless --stage is unannotated")
         elif args.stage == 'unannotated' and args.annotator:
             sys.exit("--annotator is forbidden if --stage is unannotated")
-    output_dir = get_output_dir(args)
+    output_dir = get_output_dir(args, default_overwrite=True)
     corpus = read_corpus(args, verbose=True)
 
     source = args.source

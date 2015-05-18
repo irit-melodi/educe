@@ -34,7 +34,7 @@ def config_argparser(parser):
     """
     add_usual_input_args(parser, doc_subdoc_required=True,
                          help_suffix='to insert into')
-    add_usual_output_args(parser)
+    add_usual_output_args(parser, default_overwrite=True)
     parser.add_argument('insert', metavar='DIR',
                         help='dir with just one pair of .aa/.ac files')
     parser.add_argument('start', metavar='INT', type=int,
@@ -49,7 +49,7 @@ def main(args):
     You shouldn't need to call this yourself if you're using
     `config_argparser`
     """
-    output_dir = get_output_dir(args)
+    output_dir = get_output_dir(args, default_overwrite=True)
 
     src_reader = educe.stac.LiveInputReader(args.insert)
     src_corpus = src_reader.slurp(src_reader.files())

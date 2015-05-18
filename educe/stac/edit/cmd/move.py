@@ -75,7 +75,7 @@ def config_argparser(parser):
     """
     add_usual_input_args(parser, doc_subdoc_required=True,
                          help_suffix='to move from')
-    add_usual_output_args(parser)
+    add_usual_output_args(parser, default_overwrite=True)
     parser.add_argument('start', metavar='INT', type=int,
                         help='Text span start')
     parser.add_argument('end', metavar='INT', type=int,
@@ -91,7 +91,7 @@ def main(args):
     You shouldn't need to call this yourself if you're using
     `config_argparser`
     """
-    output_dir = get_output_dir(args)
+    output_dir = get_output_dir(args, default_overwrite=True)
     if args.start != 0:
         sys.exit("Sorry, only know how to deal with start=0 at the moment")
 

@@ -74,7 +74,7 @@ def config_argparser(parser):
     are to be added.
     """
     add_usual_input_args(parser, doc_subdoc_required=True)
-    add_usual_output_args(parser)
+    add_usual_output_args(parser, default_overwrite=True)
     add_commit_args(parser)
     parser.add_argument('start', metavar='INT', type=int,
                         help='text span start')
@@ -161,7 +161,7 @@ def main(args):
     """
     _screen_args(args)
     corpus = read_corpus(args, verbose=True)
-    output_dir = get_output_dir(args)
+    output_dir = get_output_dir(args, default_overwrite=True)
 
     old_span = Span(args.start, args.end)
     new_span = Span(args.start + args.nudge_start,

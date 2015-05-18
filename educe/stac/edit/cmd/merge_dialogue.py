@@ -134,7 +134,7 @@ def config_argparser(parser):
     """
     add_usual_input_args(parser, doc_subdoc_required=True,
                          help_suffix='in which to merge')
-    add_usual_output_args(parser)
+    add_usual_output_args(parser, default_overwrite=True)
     parser_mutex = parser.add_mutually_exclusive_group(required=True)
     parser_mutex.add_argument('--dialogues',
                               metavar='ANNO_ID', type=anno_id,
@@ -182,7 +182,7 @@ def main(args):
 
     if not args.turns and len(args.dialogues) < 2:
         sys.exit("Must specify at least two dialogues")
-    output_dir = get_output_dir(args)
+    output_dir = get_output_dir(args, default_overwrite=True)
     corpus = read_corpus(args, verbose=True)
     if args.turns:
         try:
