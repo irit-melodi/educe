@@ -5,7 +5,8 @@ stac-edit subcommands
 # Author: Eric Kow
 # License: CeCILL-B (French BSD3)
 
-from . import (insert,
+from . import (delete_anno,
+               insert,
                merge_dialogue,
                merge_edus,
                move,
@@ -22,6 +23,7 @@ from . import (insert,
 SUBCOMMAND_SECTIONS =\
     [('Editing',
       [rename,
+       delete_anno,
        rewrite,
        merge_dialogue,
        merge_edus,
