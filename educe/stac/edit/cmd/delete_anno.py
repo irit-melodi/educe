@@ -36,7 +36,9 @@ def _delete_in_doc(del_id, doc):
     matches = [x for x in doc.annotations() if not is_ok(x)]
 
     if not matches:
-        sys.exit("No annotations found with id %s" % pretty_id)
+        print("Skipping... no annotations found with id %s" % pretty_id,
+              file=sys.stderr)
+        return
     elif len(matches) > 1:
         sys.exit("Huh?! More than one annotation with id %s" % pretty_id)
 
