@@ -1213,7 +1213,7 @@ def _id_pair(pair):
     return edu1.identifier(), edu2.identifier()
 
 
-def _fuse_edus(dialogue_doc, unit_doc):
+def _fuse_edus(dialogue_doc, unit_doc, postags):
     """
     Return a copy of the document, where all EDUs have been converted
     to higher level merged EDUs
@@ -1251,7 +1251,7 @@ def _fuse_edus(dialogue_doc, unit_doc):
 
     # third pass: flesh out the EDUs with contextual info
     # now the EDUs should be work as contexts too
-    contexts = Context.for_edus(doc)
+    contexts = Context.for_edus(doc, postags=postags)
     for edu in edus:
         edu.fleshout(contexts[edu])
     return doc
@@ -1406,17 +1406,17 @@ def mk_is_interesting(args, single):
         return educe.util.mk_is_interesting(args, preselected=preselected)
 
 
-def _fuse_corpus(corpus):
+def _fuse_corpus(corpus, postags):
     "Merge any dialogue/unit level documents together"
     to_delete = []
     for key in corpus:
         if key.stage == 'unannotated':
-            corpus[key] = _fuse_edus(corpus[key], corpus[key])
+            corpus[key] = _fuse_edus(corpus[key], corpus[key], postags[key])
         elif key.stage == 'units':
-            corpus[key] = _fuse_edus(corpus[key], corpus[key])
+            corpus[key] = _fuse_edus(corpus[key], corpus[key], postags[key])
         elif key.stage == 'discourse':
             ukey = twin_key(key, 'units')
-            corpus[key] = _fuse_edus(corpus[key], corpus[ukey])
+            corpus[key] = _fuse_edus(corpus[key], corpus[ukey], postags[key])
             to_delete.append(ukey)
     for key in to_delete:
         del corpus[key]
@@ -1430,12 +1430,12 @@ def read_corpus_inputs(args):
     anno_files = reader.filter(reader.files(),
                                mk_is_interesting(args, args.single))
     corpus = reader.slurp(anno_files, verbose=True)
-    _fuse_corpus(corpus)
 
     if not args.ignore_cdus:
         strip_cdus(corpus)
     postags = postag.read_tags(corpus, args.corpus)
     parses = corenlp.read_results(corpus, args.corpus)
+    _fuse_corpus(corpus, postags)
 
     for lex in LEXICONS:
         lex.read(args.resources)
