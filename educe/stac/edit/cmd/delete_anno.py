@@ -107,6 +107,6 @@ def main(args):
         doc = corpus[key]
         _delete_in_doc(args.anno_id, doc)
         save_document(output_dir, key, doc)
-    pretty_id = anno_id_from_tuple(anno_id)
+    pretty_id = anno_id_from_tuple(args.anno_id)
     print("Deleted %s" % pretty_id, file=sys.stderr)
     announce_output_dir(output_dir)
