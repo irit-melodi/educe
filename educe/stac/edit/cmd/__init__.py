@@ -21,16 +21,17 @@ from . import (delete_anno,
 # a feature, or write our own formatter class, or just abuse the command
 # epilog
 SUBCOMMAND_SECTIONS =\
-    [('Editing',
+    [('Annotation ids',
       [rename,
        delete_anno,
-       rewrite,
-       merge_dialogue,
+       rewrite]),
+     ('Boundaries',
+      [merge_dialogue,
        merge_edus,
        split_edu,
        nudge,
        nudge_dialogue]),
-     ('Advanced editing',
+     ('Block editing',
       [insert,
        move])]
 
