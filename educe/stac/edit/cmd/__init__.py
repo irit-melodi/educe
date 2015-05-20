@@ -14,6 +14,7 @@ from . import (delete_anno,
                nudge_dialogue,
                rename,
                rewrite,
+               split_dialogue,
                split_edu)
 
 # at the time of this writing argparse doesn't support a way to group
@@ -28,6 +29,7 @@ SUBCOMMAND_SECTIONS =\
      ('Boundaries',
       [merge_dialogue,
        merge_edus,
+       split_dialogue,
        split_edu,
        nudge,
        nudge_dialogue]),
