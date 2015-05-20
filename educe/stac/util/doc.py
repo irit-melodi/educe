@@ -337,7 +337,7 @@ def move_portion(renames, src_doc, tgt_doc,
     middle = rename_ids(renames,
                         shift_annotations(snipped, len(prefix_text)))
 
-    if tgt_split > 0:
+    if tgt_split >= 0:
         new_tgt_doc = shift_annotations(tgt_doc, len(middle_text),
                                         point=tgt_split)
     else:
