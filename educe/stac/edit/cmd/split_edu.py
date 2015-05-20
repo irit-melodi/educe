@@ -10,6 +10,7 @@ from collections import namedtuple
 import copy
 import sys
 
+from educe.annotation import Span
 import educe.annotation
 import educe.stac
 
@@ -24,7 +25,7 @@ from educe.stac.util.args import\
     get_output_dir, announce_output_dir,\
     comma_span
 from educe.stac.util.doc import\
-    narrow_to_span, enclosing_span, retarget
+    narrow_to_span, retarget
 from educe.stac.util.output import save_document
 
 
@@ -113,7 +114,7 @@ def _actually_split(tcache, doc, spans, edu):
         edu2.span = span
         doc.units.append(edu2)
 
-    cdu_stamp = tcache.get(enclosing_span(spans))
+    cdu_stamp = tcache.get(Span.merge_all(spans))
     cdu = educe.annotation.Schema(anno_id_from_tuple((_AUTHOR, cdu_stamp)),
                                   frozenset(new_edus),
                                   frozenset(),
@@ -135,7 +136,7 @@ def _split_edu(tcache, k, doc, spans):
     Find the edu covered by these spans and do the split
     """
     # seek edu
-    big_span = enclosing_span(spans)
+    big_span = Span.merge_all(spans)
     matches = [x for x in doc.units
                if x.text_span() == big_span and educe.stac.is_edu(x)]
     if not matches and k.stage != 'discourse':
@@ -218,7 +219,7 @@ def main(args):
     for k in corpus:
         old_doc = corpus[k]
         new_doc = copy.deepcopy(old_doc)
-        span = enclosing_span(args.spans)
+        span = Span.merge_all(args.spans)
         _split_edu(tcache, k, new_doc, args.spans)
         diffs = _mini_diff(k, old_doc, new_doc, span)
         print("\n".join(diffs).encode('utf-8'), file=sys.stderr)

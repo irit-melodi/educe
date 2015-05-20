@@ -19,7 +19,7 @@ from educe.stac.util.args import\
      add_commit_args,
      comma_span,
      read_corpus, get_output_dir, announce_output_dir)
-from educe.stac.util.doc import narrow_to_span, enclosing_span
+from educe.stac.util.doc import narrow_to_span
 from educe.stac.util.output import save_document
 
 
@@ -32,8 +32,7 @@ def _enclosing_turn_span(doc, span):
         "enclosing turn"
         return educe.stac.is_turn(anno) and anno.text_span().encloses(span)
     spans = [span] + [u.text_span() for u in doc.units if is_match(u)]
-    return Span(min(x.char_start for x in spans),
-                max(x.char_end for x in spans))
+    return Span.merge_all(spans)
 
 
 def _is_nudge(offset):
@@ -181,7 +180,7 @@ def main(args):
                   file=sys.stderr)
         save_document(output_dir, k, new_doc)
         # for commit message generation
-        span = enclosing_span([old_span, new_span])
+        span = old_span.merge(new_span)
         commit_info = CommitInfo(key=k,
                                  before=old_doc,
                                  after=new_doc,

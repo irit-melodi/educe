@@ -10,6 +10,7 @@ from collections import namedtuple
 import copy
 import sys
 
+from educe.annotation import (Span)
 from educe.stac.context import (edus_in_span)
 import educe.stac
 
@@ -25,7 +26,7 @@ from educe.stac.util.args import\
     get_output_dir, announce_output_dir,\
     comma_span
 from educe.stac.util.doc import\
-    narrow_to_span, enclosing_span, retarget
+    narrow_to_span, retarget
 from educe.stac.util.output import save_document
 from .split_edu import\
     _AUTHOR, _SPLIT_PREFIX
@@ -78,7 +79,7 @@ def _actually_merge(tcache, edus, doc):
     if not edus:
         return
     new_edu = copy.deepcopy(edus[0])
-    new_edu.span = enclosing_span([x.text_span() for x in edus])
+    new_edu.span = Span.merge_all(x.text_span() for x in edus)
     stamp = tcache.get(new_edu.span)
     set_anno_date(new_edu, stamp)
     set_anno_author(new_edu, _AUTHOR)
@@ -117,7 +118,7 @@ def _merge_edus(tcache, span, doc):
     if not edus:
         sys.exit("No EDUs in span %s" % span)
 
-    espan = enclosing_span([x.text_span() for x in edus])
+    espan = Span.merge_all(x.text_span() for x in edus)
     if espan != span:
         sys.exit("EDUs in do not cover full span %s [only %s]" %
                  (span, espan))
