@@ -101,6 +101,7 @@ def main(args):
     for src_k in src_corpus:
         tgt_k = copy.copy(src_k)
         tgt_k.subdoc = args.target
+        print(src_k, tgt_k, file=sys.stderr)
         if tgt_k not in tgt_corpus:
             sys.exit("Uh-oh! we don't have %s in the corpus" % tgt_k)
         else:
