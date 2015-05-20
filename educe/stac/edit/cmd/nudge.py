@@ -15,9 +15,10 @@ import educe.stac
 
 from educe.stac.util.annotate import show_diff, annotate_doc
 from educe.stac.util.args import\
-    add_usual_input_args, add_usual_output_args,\
-    add_commit_args,\
-    read_corpus, get_output_dir, announce_output_dir
+    (add_usual_input_args, add_usual_output_args,
+     add_commit_args,
+     comma_span,
+     read_corpus, get_output_dir, announce_output_dir)
 from educe.stac.util.doc import narrow_to_span, enclosing_span
 from educe.stac.util.output import save_document
 
@@ -76,10 +77,8 @@ def config_argparser(parser):
     add_usual_input_args(parser, doc_subdoc_required=True)
     add_usual_output_args(parser, default_overwrite=True)
     add_commit_args(parser)
-    parser.add_argument('start', metavar='INT', type=int,
-                        help='text span start')
-    parser.add_argument('end', metavar='INT', type=int,
-                        help='text span end')
+    parser.add_argument('span', metavar='INT,INT', type=comma_span,
+                        help='text span')
     parser.add_argument('nudge_start', metavar='INT', type=int,
                         help='adjust start [-1 to 1]')
     parser.add_argument('nudge_end', metavar='INT', type=int,
@@ -163,9 +162,9 @@ def main(args):
     corpus = read_corpus(args, verbose=True)
     output_dir = get_output_dir(args, default_overwrite=True)
 
-    old_span = Span(args.start, args.end)
-    new_span = Span(args.start + args.nudge_start,
-                    args.end + args.nudge_end)
+    old_span = args.span
+    new_span = Span(old_span.char_start + args.nudge_start,
+                    old_span.char_end + args.nudge_end)
     for k in corpus:
         old_doc = corpus[k]
         new_doc = copy.deepcopy(old_doc)
