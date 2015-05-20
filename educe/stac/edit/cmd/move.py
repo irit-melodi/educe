@@ -15,9 +15,11 @@ import educe.stac
 
 from educe.stac.util.annotate import show_diff
 from educe.stac.util.args import\
-    add_usual_input_args, add_usual_output_args,\
-    get_output_dir, announce_output_dir
-from educe.stac.util.doc import compute_renames, move_portion
+    (add_usual_input_args, add_usual_output_args,
+     comma_span,
+     get_output_dir, announce_output_dir)
+from educe.stac.util.doc import\
+    (compute_renames, move_portion, split_doc)
 from educe.stac.util.output import save_document
 
 
@@ -75,10 +77,8 @@ def config_argparser(parser):
     add_usual_input_args(parser, doc_subdoc_required=True,
                          help_suffix='to move from')
     add_usual_output_args(parser, default_overwrite=True)
-    parser.add_argument('start', metavar='INT', type=int,
-                        help='Text span start')
-    parser.add_argument('end', metavar='INT', type=int,
-                        help='Text span end')
+    parser.add_argument('span', metavar='INT,INT', type=comma_span,
+                        help='Text span')
     parser.add_argument('target', metavar='SUBDOC')
     parser.set_defaults(func=main)
 
@@ -91,8 +91,8 @@ def main(args):
     `config_argparser`
     """
     output_dir = get_output_dir(args, default_overwrite=True)
-    if args.start != 0:
-        sys.exit("Sorry, only know how to deal with start=0 at the moment")
+    start = args.span.char_start
+    end = args.span.char_end
 
     src_corpus = read_source_corpus(args)
     tgt_corpus = read_target_corpus(args)
@@ -107,8 +107,20 @@ def main(args):
         else:
             src_doc = src_corpus[src_k]
             tgt_doc = tgt_corpus[tgt_k]
-            new_src_doc, new_tgt_doc =\
-                move_portion(renames, src_doc, tgt_doc, args.end)
+            if start == 0:
+                new_src_doc, new_tgt_doc =\
+                    move_portion(renames, src_doc, tgt_doc,
+                                 src_split=end,
+                                 tgt_split=-1)
+            elif end == src_doc.text_span().char_end:
+                new_src_doc, src_doc2 = split_doc(src_doc, start)
+                _, new_tgt_doc =\
+                    move_portion(renames, src_doc2, tgt_doc,
+                                 src_split=-1,
+                                 tgt_split=0)
+            else:
+                sys.exit("Sorry, can only move to the start or to the "
+                         "end of a document at the moment")
             diffs = ["======= TO %s   ========" % tgt_k,
                      show_diff(tgt_doc, new_tgt_doc),
                      "^------ FROM %s" % src_k,
