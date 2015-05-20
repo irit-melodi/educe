@@ -226,12 +226,16 @@ def split_doc(doc, middle):
 
     leftovers = [x for x in doc.annotations()
                  if straddles(middle, x.text_span())]
+
     if leftovers:
-        oops = "Can't split document [{0}] at {1}".format(doc.origin, middle) +\
-               " because it is straddled by following annotations:\n" +\
-               "\n".join(map(str, leftovers)) +\
-               "\nEither split at a different place, or remove the annotations"
-        raise StacDocException(oops)
+        oops = ("Can't split document [{origin}] at {middle} because it is "
+                "straddled by the following annotations:\n"
+                "{annotations}\n"
+                "Either split at a different place or remove the annotations")
+        leftovers = [' * %s %s' % (x.text_span(), x) for x in leftovers]
+        raise StacDocException(oops.format(origin=doc.origin,
+                                           middle=middle,
+                                           annotations='\n'.join(leftovers)))
 
     prefix = Span(0, middle)
     suffix = Span(middle, doc_len)
