@@ -16,9 +16,11 @@ from educe.annotation import Unit, Span
 from educe.util import concat_l
 import educe.stac
 
-from .glozz import\
-    anno_id_from_tuple,\
-    anno_author, anno_date, set_anno_date
+from .glozz import (anno_id_from_tuple,
+                    anno_id_to_tuple,
+                    anno_author,
+                    anno_date,
+                    set_anno_date)
 
 
 class StacDocException(Exception):
@@ -253,6 +255,17 @@ def rename_ids(renames, doc):
     Return a deep copy of a document, with ids reassigned
     according to the renames dictionary
     """
+    def adjust(pointer):
+        """Given an annotation id string, return its rename
+        if applicable, else the string
+        """
+        author, date = anno_id_to_tuple(pointer)
+        if author in renames and date in renames[author]:
+            date2 = renames[author][date]
+            return anno_id_from_tuple((author, date2))
+        else:
+            return pointer
+
     doc2 = copy.deepcopy(doc)
     for anno in doc2.annotations():
         author = anno_author(anno)
@@ -261,6 +274,15 @@ def rename_ids(renames, doc):
             new_date = renames[author][date]
             set_anno_date(anno, new_date)
             evil_set_id(anno, author, new_date)
+
+    # adjust pointers
+    for anno in doc2.relations:
+        anno.span.t1 = adjust(anno.span.t1)
+        anno.span.t2 = adjust(anno.span.t2)
+    for anno in doc2.schemas:
+        anno.units = set(adjust(x) for x in anno.units)
+        anno.relations = set(adjust(x) for x in anno.relations)
+        anno.schemas = set(adjust(x) for x in anno.schemas)
     return doc2
 
 
