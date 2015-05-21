@@ -17,17 +17,6 @@ from educe.stac.util.glozz import anno_id_from_tuple, anno_id_to_tuple
 from educe.stac.util.output import save_document
 
 
-def _is_match(wanted):
-    """
-    Given an annotation id, return a predicate that checks if
-    an annotation id matches
-    """
-    def pred(anno):
-        "curried second arg"
-        return anno_id_to_tuple(anno.local_id()) == wanted
-    return pred
-
-
 def _has_named_annotation(target, doc):
     """
     Return True if the given document has the target annotation
