@@ -67,7 +67,7 @@ def _tweak_presplit(tcache, doc, spans):
                    if x.text_span() == span and educe.stac.is_edu(x)]
         if not matches:
             raise Exception("No matches found for %s in %s" %
-                            (span, doc.origin), file=sys.stderr)
+                            (span, doc.origin))
         edu = matches[0]
         old_id = edu.local_id()
         new_id = anno_id_from_tuple((_AUTHOR, tcache.get(span)))
