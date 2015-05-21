@@ -93,8 +93,8 @@ def get_output_dir(args, default_overwrite=False):
     We try the following in order:
 
     1. If `--output` is given explicitly, we'll just use/create that
-    2. If `default_overwrite` is True, or the the subcommand supports
-       `--overwrite`, and the user specifies it on the command line,
+    2. If `default_overwrite` is True, or the user specifies `--overwrite`
+       on the command line (provided the command supports it),
        the output directory may well be the original corpus dir
        (*gulp*! Better use version control!)
     3. OK just make a temporary directory. Later on, you'll probably want
