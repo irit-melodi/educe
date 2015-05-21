@@ -14,25 +14,13 @@ from educe.stac.util.glozz import anno_id_from_tuple, anno_id_to_tuple
 from educe.stac.util.output import save_document
 
 
-
-def _is_match(wanted):
-    """
-    Given an annotation id, return a predicate that checks if
-    an annotation id matches
-    """
-    def pred(anno):
-        "curried second arg"
-        return anno_id_to_tuple(anno.local_id()) == wanted
-    return pred
-
-
 def _delete_in_doc(del_id, doc):
     """Delete the annotations with the given id in the given document
 
     NB: modifies doc
     """
     pretty_id = anno_id_from_tuple(del_id)
-    is_ok = lambda x: not _is_match(del_id)(x)
+    is_ok = lambda x: anno_id_to_tuple(x.local_id()) != del_id
     matches = [x for x in doc.annotations() if not is_ok(x)]
 
     if not matches:
