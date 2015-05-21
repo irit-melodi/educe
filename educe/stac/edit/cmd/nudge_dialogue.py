@@ -88,9 +88,10 @@ def _nudge_down(turn, dialogue, prev_turn, next_dialogue):
 
 
 def _window1(pred, annos):
-    """
-    Return window of prev, match, next, where next is the item matching
-    the predicate.  All values could be None
+    """Return window of prev, match, next, where match is the item matching
+    the predicate.
+
+    All values could be None:
 
     * prev None if match is the first item
     * match None if no match (prev/next should by rights be None too)
