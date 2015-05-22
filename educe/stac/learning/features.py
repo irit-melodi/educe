@@ -30,6 +30,7 @@ from educe.stac.annotation import speaker, addressees, is_relation_instance
 from educe.stac.context import (Context,
                                 enclosed,
                                 edus_in_span,
+                                turns_in_span,
                                 merge_turn_stars)
 from educe.stac.corpus import (twin_key)
 from educe.learning.csv import tune_for_csv
@@ -1024,8 +1025,7 @@ class PairSubgroup_Gap(PairSubgroup):
         # spans for the turns that come between the two edus
         turns_between_span = Span(edu1.turn.text_span().char_end,
                                   edu2.turn.text_span().char_start)
-        turns_between = enclosed(turns_between_span,
-                                 (t for t in doc.units if t.type == 'Turn'))
+        turns_between = turns_in_span(doc, turns_between_span)
 
         inner_edus = edus_in_span(doc, big_span)
         if edu1.identifier() != ROOT: # not present anyway
