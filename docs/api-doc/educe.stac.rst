@@ -52,18 +52,18 @@ educe.stac.corpus module
     :undoc-members:
     :show-inheritance:
 
-educe.stac.document_plus module
--------------------------------
-
-.. automodule:: educe.stac.document_plus
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 educe.stac.fake_graph module
 ----------------------------
 
 .. automodule:: educe.stac.fake_graph
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+educe.stac.fusion module
+------------------------
+
+.. automodule:: educe.stac.fusion
     :members:
     :undoc-members:
     :show-inheritance:
