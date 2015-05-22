@@ -32,7 +32,8 @@ from __future__ import print_function
 import itertools as itr
 
 from educe.annotation import (Span, Unit)
-from educe.stac.annotation import (is_edu, speaker)
+from educe.stac.annotation import (is_edu, speaker, twin_from)
+from educe.stac.context import (Context, merge_turn_stars)
 
 ROOT = 'ROOT'
 "distinguished fake EDU id for machine learning applications"
@@ -197,3 +198,47 @@ class _FakeRootEDU(object):
 # pylint: disable=invalid-name
 FakeRootEDU = _FakeRootEDU()
 # pylint: enable=invalid-name
+
+
+def fuse_edus(discourse_doc, unit_doc, postags):
+    """Return a copy of the discourse level doc, merging info
+    from both the discourse and units stage.
+
+    Any unit annotations which happen to be EDUs will be converted
+    to higher level EDUs
+    """
+    doc = merge_turn_stars(discourse_doc)
+
+    # first pass: create the EDU objects
+    annos = sorted([x for x in doc.units if is_edu(x)],
+                   key=lambda x: x.span)
+    replacements = {}
+    for anno in annos:
+        unit_anno = None if unit_doc is None else twin_from(unit_doc, anno)
+        edu = EDU(doc, anno, unit_anno)
+        replacements[anno] = edu
+
+    # second pass: rewrite doc so that annotations that corresponds
+    # to EDUs are replacement by their higher-level equivalents
+    edus = []
+    for anno in annos:
+        edu = replacements[anno]
+        edus.append(edu)
+        doc.units.remove(anno)
+        doc.units.append(edu)
+        for rel in doc.relations:
+            if rel.source == anno:
+                rel.source = edu
+            if rel.target == anno:
+                rel.target = edu
+        for schema in doc.schemas:
+            if anno in schema.units:
+                schema.units.remove(anno)
+                schema.units.append(edu)
+
+    # fourth pass: flesh out the EDUs with contextual info
+    # now the EDUs should be work as contexts too
+    contexts = Context.for_edus(doc, postags=postags)
+    for edu in edus:
+        edu.fleshout(contexts[edu])
+    return doc

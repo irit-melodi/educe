@@ -27,11 +27,9 @@ from educe.external.parser import\
 from educe.learning.keys import (MagicKey, Key, KeyGroup, MergedKeyGroup)
 from educe.stac import postag, corenlp
 from educe.stac.annotation import speaker, addressees, is_relation_instance
-from educe.stac.context import (Context,
-                                enclosed,
+from educe.stac.context import (enclosed,
                                 edus_in_span,
-                                turns_in_span,
-                                merge_turn_stars)
+                                turns_in_span)
 from educe.stac.corpus import (twin_key)
 from educe.learning.csv import tune_for_csv
 from educe.learning.util import tuple_feature, underscore
@@ -45,7 +43,8 @@ import educe.util
 
 from ..annotation import turn_id
 from ..lexicon.wordclass import Lexicon
-from ..fusion import (Dialogue, EDU, ROOT, FakeRootEDU)
+from ..fusion import (Dialogue, ROOT, FakeRootEDU,
+                      fuse_edus)
 
 
 class CorpusConsistencyException(Exception):
@@ -1216,51 +1215,6 @@ def _id_pair(pair):
     return edu1.identifier(), edu2.identifier()
 
 
-def _fuse_edus(dialogue_doc, unit_doc, postags):
-    """
-    Return a copy of the document, where all EDUs have been converted
-    to higher level merged EDUs
-    """
-    doc = merge_turn_stars(dialogue_doc)
-
-    # first pass: create the EDU objects
-    annos = sorted([x for x in doc.units if educe.stac.is_edu(x)],
-                   key=lambda x: x.span)
-    replacements = {}
-    for anno in annos:
-        unit_anno = None if unit_doc is None\
-            else educe.stac.twin_from(unit_doc, anno)
-        edu = EDU(doc,
-                  anno,
-                  unit_anno)
-        replacements[anno] = edu
-
-    # second pass: rewrite doc so that annotations that corresponds
-    # to EDUs are replacement by their higher-level equivalents
-    edus = []
-    for anno in annos:
-        edu = replacements[anno]
-        edus.append(edu)
-        doc.units.remove(anno)
-        doc.units.append(edu)
-        for rel in doc.relations:
-            if rel.source == anno:
-                rel.source = edu
-            if rel.target == anno:
-                rel.target = edu
-        for schema in doc.schemas:
-            if anno in schema.units:
-                schema.units.remove(anno)
-                schema.units.append(edu)
-
-    # fourth pass: flesh out the EDUs with contextual info
-    # now the EDUs should be work as contexts too
-    contexts = Context.for_edus(doc, postags=postags)
-    for edu in edus:
-        edu.fleshout(contexts[edu])
-    return doc
-
-
 def _mk_high_level_dialogues(current):
     """
     Returns
@@ -1418,12 +1372,12 @@ def _fuse_corpus(corpus, postags):
     to_delete = []
     for key in corpus:
         if key.stage == 'unannotated':
-            corpus[key] = _fuse_edus(corpus[key], corpus[key], postags[key])
+            corpus[key] = fuse_edus(corpus[key], corpus[key], postags[key])
         elif key.stage == 'units':
-            corpus[key] = _fuse_edus(corpus[key], corpus[key], postags[key])
+            corpus[key] = fuse_edus(corpus[key], corpus[key], postags[key])
         elif key.stage == 'discourse':
             ukey = twin_key(key, 'units')
-            corpus[key] = _fuse_edus(corpus[key], corpus[ukey], postags[key])
+            corpus[key] = fuse_edus(corpus[key], corpus[ukey], postags[key])
             to_delete.append(ukey)
     for key in to_delete:
         del corpus[key]
