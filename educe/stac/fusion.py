@@ -32,7 +32,7 @@ from __future__ import print_function
 import itertools as itr
 
 from educe.annotation import (Span, Unit)
-from educe.stac.annotation import (is_edu, speaker, twin_from)
+from educe.stac.annotation import (is_edu, speaker, turn_id, twin_from)
 from educe.stac.context import (Context, merge_turn_stars)
 
 ROOT = 'ROOT'
@@ -160,7 +160,7 @@ class EDU(Unit):
 
         :rtype int
         """
-        return self.turn.identifier()
+        return self._doc.global_id('t' + str(turn_id(self.turn)))
 # pylint: enable=too-many-instance-attributes
 
 
