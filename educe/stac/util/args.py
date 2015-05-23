@@ -7,12 +7,12 @@ Command line options
 
 from __future__ import print_function
 import argparse
-import copy
 import glob
 import os
 import sys
 import tempfile
 
+from educe.stac.corpus import METAL_STR
 import educe.annotation
 import educe.stac
 import educe.util
@@ -44,6 +44,14 @@ def check_easy_settings(args):
             sys.exit("I don't know about any document called " + args.doc)
 
     guess_report = "{corpus} --doc \"{doc}\""
+    want_unanno = ('stage' in args.__dict__ and
+                   args.stage is not None and
+                   'unannotated'.startswith(args.stage))
+    if ('annotator' in args.__dict__ and
+            not want_unanno and
+            args.annotator is None):
+        args.annotator = METAL_STR
+        guess_report += ' --annotator "{}"'.format(args.annotator)
 
     print("Guessing convenience settings:", file=sys.stderr)
     print(guess_report.format(**args.__dict__), file=sys.stderr)
@@ -78,17 +86,17 @@ def read_corpus_with_unannotated(args, verbose=True):
     return reader.slurp(anno_files, verbose=verbose)
 
 
-def get_output_dir(args):
-    """
-    Return the output directory specified on (or inferred from) the command
-    line arguments, *creating it if necessary*.
+def get_output_dir(args, default_overwrite=False):
+    """Return the output dir specified or inferred from command
+    line args.
 
     We try the following in order:
 
     1. If `--output` is given explicitly, we'll just use/create that
-    2. If the subcommand supports `--overwrite`, and the user specifies it
-       on the command line, the output directory may well be the original
-       corpus dir (*gulp*! Better use version control!)
+    2. If `default_overwrite` is True, or the user specifies `--overwrite`
+       on the command line (provided the command supports it),
+       the output directory may well be the original corpus dir
+       (*gulp*! Better use version control!)
     3. OK just make a temporary directory. Later on, you'll probably want
        to call `announce_output_dir`.
     """
@@ -100,7 +108,8 @@ def get_output_dir(args):
         elif not os.path.isdir(args.output):
             os.makedirs(args.output)
         return args.output
-    elif "overwrite_input" in args.__dict__ and args.overwrite_input:
+    elif (default_overwrite or
+          ("overwrite_input" in args.__dict__ and args.overwrite_input)):
         return args.corpus
     else:
         return tempfile.mkdtemp()
@@ -156,14 +165,16 @@ def add_usual_input_args(parser,
         educe.util.add_corpus_filters(parser)
 
 
-def add_usual_output_args(parser):
+def add_usual_output_args(parser, default_overwrite=False):
     """
     Augment a subcommand argparser with typical output arguments,
     Sometimes your subcommand may require slightly different output
     arguments, in which case, just don't call this function.
     """
+    default = '(default {})'.format('overwrite!' if default_overwrite
+                                    else 'mktemp')
     parser.add_argument('--output', '-o', metavar='DIR',
-                        help='output directory (default mktemp)')
+                        help='output directory ' + default)
     parser.add_argument('--overwrite-input', action='store_true',
                         help='save results back to input dir')
 

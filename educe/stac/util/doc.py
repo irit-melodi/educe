@@ -16,9 +16,11 @@ from educe.annotation import Unit, Span
 from educe.util import concat_l
 import educe.stac
 
-from .glozz import\
-    anno_id_from_tuple,\
-    anno_author, anno_date, set_anno_date
+from .glozz import (anno_id_from_tuple,
+                    anno_id_to_tuple,
+                    anno_author,
+                    anno_date,
+                    set_anno_date)
 
 
 class StacDocException(Exception):
@@ -177,18 +179,6 @@ def compute_renames(avoid, incoming):
     return renames
 
 
-def enclosing_span(spans):
-    """
-    Return a span that stretches from one end of a collection of spans
-    to the other end.
-    """
-    if len(spans) < 1:
-        raise ValueError("must have at least one span")
-
-    return Span(min(x.char_start for x in spans),
-                max(x.char_end for x in spans))
-
-
 def narrow_to_span(doc, span):
     """
     Return a deep copy of a document with only the text and
@@ -236,12 +226,16 @@ def split_doc(doc, middle):
 
     leftovers = [x for x in doc.annotations()
                  if straddles(middle, x.text_span())]
+
     if leftovers:
-        oops = "Can't split document [{0}] at {1}".format(doc.origin, middle) +\
-               " because it is straddled by following annotations:\n" +\
-               "\n".join(map(str, leftovers)) +\
-               "\nEither split at a different place, or remove the annotations"
-        raise StacDocException(oops)
+        oops = ("Can't split document [{origin}] at {middle} because it is "
+                "straddled by the following annotations:\n"
+                "{annotations}\n"
+                "Either split at a different place or remove the annotations")
+        leftovers = [' * %s %s' % (x.text_span(), x) for x in leftovers]
+        raise StacDocException(oops.format(origin=doc.origin,
+                                           middle=middle,
+                                           annotations='\n'.join(leftovers)))
 
     prefix = Span(0, middle)
     suffix = Span(middle, doc_len)
@@ -253,6 +247,17 @@ def rename_ids(renames, doc):
     Return a deep copy of a document, with ids reassigned
     according to the renames dictionary
     """
+    def adjust(pointer):
+        """Given an annotation id string, return its rename
+        if applicable, else the string
+        """
+        author, date = anno_id_to_tuple(pointer)
+        if author in renames and date in renames[author]:
+            date2 = renames[author][date]
+            return anno_id_from_tuple((author, date2))
+        else:
+            return pointer
+
     doc2 = copy.deepcopy(doc)
     for anno in doc2.annotations():
         author = anno_author(anno)
@@ -261,6 +266,15 @@ def rename_ids(renames, doc):
             new_date = renames[author][date]
             set_anno_date(anno, new_date)
             evil_set_id(anno, author, new_date)
+
+    # adjust pointers
+    for anno in doc2.relations:
+        anno.span.t1 = adjust(anno.span.t1)
+        anno.span.t2 = adjust(anno.span.t2)
+    for anno in doc2.schemas:
+        anno.units = set(adjust(x) for x in anno.units)
+        anno.relations = set(adjust(x) for x in anno.relations)
+        anno.schemas = set(adjust(x) for x in anno.schemas)
     return doc2
 
 
@@ -323,7 +337,7 @@ def move_portion(renames, src_doc, tgt_doc,
     middle = rename_ids(renames,
                         shift_annotations(snipped, len(prefix_text)))
 
-    if tgt_split > 0:
+    if tgt_split >= 0:
         new_tgt_doc = shift_annotations(tgt_doc, len(middle_text),
                                         point=tgt_split)
     else:

@@ -8,11 +8,11 @@ Read and write back without changing anything else; potentially reformats XML
 
 import copy
 
-from ..args import\
+from educe.stac.util.args import\
     add_usual_input_args,\
     read_corpus,\
     get_output_dir, announce_output_dir
-from ..output import save_document
+from educe.stac.util.output import save_document
 from educe.stac.context import sorted_first_widest
 
 
@@ -36,7 +36,7 @@ def _diff_friendly(annos):
     requested, but in order for that to work we have to to eliminate spurious
     diffs that would obscure the interesting bits.
     """
-    return sorted_first_widest(map(_sans_modified_by, annos))
+    return sorted_first_widest(_sans_modified_by(x) for x in  annos)
 
 # ---------------------------------------------------------------------
 # command and args
@@ -61,7 +61,7 @@ def config_argparser(parser):
     parser_mutex.add_argument('--overwrite-input', action='store_true',
                               help='save results back to input dir')
     parser.add_argument('--output', '-o', metavar='DIR',
-                        help='output directory (default mktemp)')
+                        help='output directory (default overwrite!)')
     parser.set_defaults(func=main)
 
 
@@ -73,7 +73,7 @@ def main(args):
     `config_argparser`
     """
     corpus = read_corpus(args, verbose=True)
-    output_dir = get_output_dir(args)
+    output_dir = get_output_dir(args, default_overwrite=True)
     for k in corpus:
         doc = corpus[k]
         if args.diff_friendly:

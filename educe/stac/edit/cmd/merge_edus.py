@@ -10,21 +10,24 @@ from collections import namedtuple
 import copy
 import sys
 
+from educe.annotation import (Span)
 from educe.stac.context import (edus_in_span)
 import educe.stac
 
-from ..annotate import show_diff, annotate_doc
-from ..glozz import (TimestampCache, set_anno_author, set_anno_date)
-from ..args import\
+from educe.stac.util.annotate import show_diff, annotate_doc
+from educe.stac.util.glozz import (TimestampCache,
+                                   set_anno_author,
+                                   set_anno_date)
+from educe.stac.util.args import\
     add_usual_input_args,\
     add_usual_output_args,\
     add_commit_args,\
     read_corpus_with_unannotated,\
     get_output_dir, announce_output_dir,\
     comma_span
-from ..doc import\
-    narrow_to_span, enclosing_span, retarget
-from ..output import save_document
+from educe.stac.util.doc import\
+    narrow_to_span, retarget
+from educe.stac.util.output import save_document
 from .split_edu import\
     _AUTHOR, _SPLIT_PREFIX
 
@@ -48,7 +51,7 @@ def config_argparser(parser):
     parser.add_argument('--span', metavar='SPAN', type=comma_span,
                         required=True,
                         help='eg. 347,363')
-    add_usual_output_args(parser)
+    add_usual_output_args(parser, default_overwrite=True)
     add_commit_args(parser)
     parser.set_defaults(func=main)
 
@@ -76,7 +79,7 @@ def _actually_merge(tcache, edus, doc):
     if not edus:
         return
     new_edu = copy.deepcopy(edus[0])
-    new_edu.span = enclosing_span([x.text_span() for x in edus])
+    new_edu.span = Span.merge_all(x.text_span() for x in edus)
     stamp = tcache.get(new_edu.span)
     set_anno_date(new_edu, stamp)
     set_anno_author(new_edu, _AUTHOR)
@@ -115,7 +118,7 @@ def _merge_edus(tcache, span, doc):
     if not edus:
         sys.exit("No EDUs in span %s" % span)
 
-    espan = enclosing_span([x.text_span() for x in edus])
+    espan = Span.merge_all(x.text_span() for x in edus)
     if espan != span:
         sys.exit("EDUs in do not cover full span %s [only %s]" %
                  (span, espan))
@@ -189,7 +192,7 @@ def main(args):
     """
     corpus = read_corpus_with_unannotated(args)
     tcache = TimestampCache()
-    output_dir = get_output_dir(args)
+    output_dir = get_output_dir(args, default_overwrite=True)
     commit_info = None
     for k in corpus:
         old_doc = corpus[k]

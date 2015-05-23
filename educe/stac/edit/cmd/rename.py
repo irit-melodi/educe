@@ -8,31 +8,21 @@ Rename an annotation
 from __future__ import print_function
 import sys
 
-from ..args import\
+from educe.stac.util.args import\
     add_usual_input_args, add_usual_output_args,\
     read_corpus, get_output_dir, announce_output_dir,\
     anno_id
-from ..doc import compute_renames, evil_set_id
-from ..glozz import anno_id_from_tuple, anno_id_to_tuple
-from ..output import save_document
-
-
-def _is_match(wanted):
-    """
-    Given an annotation id, return a predicate that checks if
-    an annotation id matches
-    """
-    def pred(anno):
-        "curried second arg"
-        return anno_id_to_tuple(anno.local_id()) == wanted
-    return pred
+from educe.stac.util.doc import compute_renames, evil_set_id
+from educe.stac.util.glozz import anno_id_from_tuple, anno_id_to_tuple
+from educe.stac.util.output import save_document
 
 
 def _has_named_annotation(target, doc):
     """
     Return True if the given document has the target annotation
     """
-    return bool(filter(_is_match(target), doc.annotations()))
+    return any(anno_id_to_tuple(x.local_id()) == target
+               for x in  doc.annotations())
 
 
 def _get_target(args, source, corpus):
@@ -64,7 +54,8 @@ def _rename_in_doc(source, target, doc):
 
     NB: modifies doc
     """
-    matches = list(filter(_is_match(source), doc.annotations()))
+    matches = [x for x in doc.annotations() if
+               anno_id_to_tuple(x.local_id()) == source]
     pretty_source = anno_id_from_tuple(source)
     pretty_target = anno_id_from_tuple(target)
     target_author, target_date = target
@@ -104,7 +95,7 @@ def config_argparser(parser):
     are to be added.
     """
     add_usual_input_args(parser, doc_subdoc_required=True)
-    add_usual_output_args(parser)
+    add_usual_output_args(parser, default_overwrite=True)
     parser.add_argument('--stage', metavar='STAGE',
                         choices=['discourse', 'units', 'unannotated'])
     parser.add_argument('--annotator', metavar='STRING')
@@ -128,7 +119,7 @@ def main(args):
             sys.exit("--annotator is required unless --stage is unannotated")
         elif args.stage == 'unannotated' and args.annotator:
             sys.exit("--annotator is forbidden if --stage is unannotated")
-    output_dir = get_output_dir(args)
+    output_dir = get_output_dir(args, default_overwrite=True)
     corpus = read_corpus(args, verbose=True)
 
     source = args.source

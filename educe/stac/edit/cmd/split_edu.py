@@ -10,22 +10,23 @@ from collections import namedtuple
 import copy
 import sys
 
+from educe.annotation import Span
 import educe.annotation
 import educe.stac
 
-from ..annotate import show_diff, annotate_doc
-from ..glozz import\
+from educe.stac.util.annotate import show_diff, annotate_doc
+from educe.stac.util.glozz import\
     TimestampCache, set_anno_author, set_anno_date,\
     anno_id_from_tuple
-from ..args import\
+from educe.stac.util.args import\
     add_usual_input_args, add_usual_output_args,\
     add_commit_args,\
     read_corpus_with_unannotated,\
     get_output_dir, announce_output_dir,\
     comma_span
-from ..doc import\
-    narrow_to_span, enclosing_span, retarget
-from ..output import save_document
+from educe.stac.util.doc import\
+    narrow_to_span, retarget
+from educe.stac.util.output import save_document
 
 
 NAME = 'split-edu'
@@ -50,7 +51,7 @@ def config_argparser(parser):
                         required=True,
                         nargs='+',
                         help='Desired output spans (must cover original EDU)')
-    add_usual_output_args(parser)
+    add_usual_output_args(parser, default_overwrite=True)
     add_commit_args(parser)
     parser.set_defaults(func=main)
 
@@ -66,7 +67,7 @@ def _tweak_presplit(tcache, doc, spans):
                    if x.text_span() == span and educe.stac.is_edu(x)]
         if not matches:
             raise Exception("No matches found for %s in %s" %
-                            (span, doc.origin), file=sys.stderr)
+                            (span, doc.origin))
         edu = matches[0]
         old_id = edu.local_id()
         new_id = anno_id_from_tuple((_AUTHOR, tcache.get(span)))
@@ -113,15 +114,15 @@ def _actually_split(tcache, doc, spans, edu):
         edu2.span = span
         doc.units.append(edu2)
 
-    cdu_stamp = tcache.get(enclosing_span(spans))
+    cdu_stamp = tcache.get(Span.merge_all(spans))
     cdu = educe.annotation.Schema(anno_id_from_tuple((_AUTHOR, cdu_stamp)),
                                   frozenset(new_edus),
                                   frozenset(),
                                   frozenset(),
                                   'Complex_discourse_unit',
-                                  {'author': _AUTHOR,
-                                   'creation-date': str(cdu_stamp)},
-                                  metadata={})
+                                  {},
+                                  metadata={'author': _AUTHOR,
+                                            'creation-date': str(cdu_stamp)})
     cdu.fleshout(new_edus)
 
     want_cdu = retarget(doc, edu.local_id(), cdu)
@@ -135,7 +136,7 @@ def _split_edu(tcache, k, doc, spans):
     Find the edu covered by these spans and do the split
     """
     # seek edu
-    big_span = enclosing_span(spans)
+    big_span = Span.merge_all(spans)
     matches = [x for x in doc.units
                if x.text_span() == big_span and educe.stac.is_edu(x)]
     if not matches and k.stage != 'discourse':
@@ -213,12 +214,12 @@ def main(args):
     """
     corpus = read_corpus_with_unannotated(args)
     tcache = TimestampCache()
-    output_dir = get_output_dir(args)
+    output_dir = get_output_dir(args, default_overwrite=True)
     commit_info = None
     for k in corpus:
         old_doc = corpus[k]
         new_doc = copy.deepcopy(old_doc)
-        span = enclosing_span(args.spans)
+        span = Span.merge_all(args.spans)
         _split_edu(tcache, k, new_doc, args.spans)
         diffs = _mini_diff(k, old_doc, new_doc, span)
         print("\n".join(diffs).encode('utf-8'), file=sys.stderr)

@@ -11,6 +11,7 @@ Subpackages
 
 .. toctree::
 
+    educe.stac.edit
     educe.stac.learning
     educe.stac.lexicon
     educe.stac.oneoff
