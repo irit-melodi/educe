@@ -158,7 +158,7 @@ class Context(object):
             oops = "Was expecting exactly one %s for edu %s" %\
                 (typ, edu.identifier()) +\
                 ", but got %d\nSurrounders found: %s" %\
-                (len(matches), [str(x) for x in surrounders])
+                (len(matches), [x.identifier() for x in surrounders])
             if matches:
                 warnings.warn(oops)
                 return matches[0]
