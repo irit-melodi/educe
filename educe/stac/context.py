@@ -99,22 +99,37 @@ class Context(object):
     somewhat richer notion of context, including things
     like a sentence count, etc.
 
-    * turn     - the turn surrounding this EDU
-    * turn_edus - the EDUs in the this turn
-    * dialogue - the dialogue surrounding this EDU
-    * dialogue_turns - all the turns in the dialogue surrounding this EDU
-                       (non-empty, sorted by first-widest span)
-    * doc_turns - all the turns in the document
-    * tokens   - (may not be present): tokens contained within this EDU
-
+    Parameters
+    ----------
+    turn:
+        the turn surrounding this EDU
+    tstar:
+        the tstar turn surrounding this EDU (a tstar turn
+        is a sort of virtual turn made by merging consecutive
+        turns in a dialogue that have the same speaker)
+    turn_edus:
+        the EDUs in the this turn
+    dialogue:
+        the dialogue surrounding this EDU
+    dialogue_turns:
+        all the turns in the dialogue surrounding this EDU
+        (non-empty, sorted by first-widest span)
+    doc_turns:
+        all the turns in the document
+    tokens:
+        (may not be present): tokens contained within this EDU
     """
     # pylint: disable=too-many-arguments
     def __init__(self,
-                 turn, turn_edus,
-                 dialogue, dialogue_turns,
+                 turn,
+                 tstar,
+                 turn_edus,
+                 dialogue,
+                 dialogue_turns,
                  doc_turns,
                  tokens=None):
         self.turn = turn
+        self.tstar = tstar
         self.turn_edus = turn_edus
         self.dialogue = dialogue
         self.dialogue_turns = dialogue_turns
@@ -151,12 +166,13 @@ class Context(object):
                 raise Exception(oops)
 
     @classmethod
-    def _for_edu(cls, enclosure, doc_turns, edu):
+    def _for_edu(cls, enclosure, doc_turns, doc_tstars, edu):
         """
         Extract the context for a single EDU, but with the benefit of an
         enclosure graph to avoid repeatedly combing over objects
         """
         turn = cls._the(edu, enclosure.outside(edu), 'Turn')
+        tstar = cls._the(edu, doc_tstars, 'Turn')
         t_edus = [x for x in enclosure.inside(turn) if is_edu(x)]
         assert t_edus
         dialogue = cls._the(edu, enclosure.outside(turn), 'Dialogue')
@@ -164,9 +180,12 @@ class Context(object):
         assert d_turns
         tokens = [wrapped.token for wrapped in enclosure.inside(edu)
                   if isinstance(wrapped, WrappedToken)]
-        return cls(turn, sorted_first_widest(t_edus),
-                   dialogue, sorted_first_widest(d_turns),
-                   sorted_first_widest(doc_turns),
+        return cls(turn=turn,
+                   tstar=tstar,
+                   turn_edus=sorted_first_widest(t_edus),
+                   dialogue=dialogue,
+                   dialogue_turns=sorted_first_widest(d_turns),
+                   doc_turns=sorted_first_widest(doc_turns),
                    tokens=tokens)
 
     @classmethod
@@ -185,6 +204,8 @@ class Context(object):
         else:
             egraph = EnclosureGraph(doc)
         doc_turns = [x for x in doc.units if is_turn(x)]
+        tstar_doc = merge_turn_stars(doc)
+        tstars = [x for x in tstar_doc.units if is_turn(x)]
         contexts = {}
         for edu in doc.units:
             if not is_edu(edu):
