@@ -172,7 +172,7 @@ class Context(object):
         enclosure graph to avoid repeatedly combing over objects
         """
         turn = cls._the(edu, enclosure.outside(edu), 'Turn')
-        tstar = cls._the(edu, doc_tstars, 'Turn')
+        tstar = cls._the(edu, containing(edu.text_span(), doc_tstars), 'Turn')
         t_edus = [x for x in enclosure.inside(turn) if is_edu(x)]
         assert t_edus
         dialogue = cls._the(edu, enclosure.outside(turn), 'Dialogue')

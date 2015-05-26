@@ -29,11 +29,12 @@ feature-extraction
 # pylint: disable=too-few-public-methods
 
 from __future__ import print_function
+import copy
 import itertools as itr
 
 from educe.annotation import (Span, Unit)
 from educe.stac.annotation import (is_edu, speaker, turn_id, twin_from)
-from educe.stac.context import (Context, merge_turn_stars)
+from educe.stac.context import (Context)
 
 ROOT = 'ROOT'
 "distinguished fake EDU id for machine learning applications"
@@ -99,6 +100,7 @@ class EDU(Unit):
                                   discourse_anno.origin)
         # to be fleshed out
         self.turn = None
+        self.tstar = None
         self.turn_edus = None
         self.dialogue = None
         self.dialogue_turns = None
@@ -110,6 +112,7 @@ class EDU(Unit):
         second phase of EDU initialisation; fill out contextual info
         """
         self.turn = context.turn
+        self.tstar = context.tstar
         self.turn_edus = context.turn_edus
         self.dialogue = context.dialogue
         self.dialogue_turns = context.dialogue_turns
@@ -160,7 +163,7 @@ class EDU(Unit):
 
         :rtype int
         """
-        return self._doc.global_id('t' + str(turn_id(self.turn)))
+        return self._doc.global_id('t' + str(turn_id(self.tstar)))
 # pylint: enable=too-many-instance-attributes
 
 
@@ -207,7 +210,7 @@ def fuse_edus(discourse_doc, unit_doc, postags):
     Any unit annotations which happen to be EDUs will be converted
     to higher level EDUs
     """
-    doc = merge_turn_stars(discourse_doc)
+    doc = copy.deepcopy(discourse_doc)
 
     # first pass: create the EDU objects
     annos = sorted([x for x in doc.units if is_edu(x)],
