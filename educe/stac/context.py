@@ -204,7 +204,18 @@ class Context(object):
         else:
             egraph = EnclosureGraph(doc)
         doc_turns = [x for x in doc.units if is_turn(x)]
-        tstar_doc = merge_turn_stars(doc)
+        # pylint: disable=bare-except
+        # TODO: it would be nice if merge_turn_stars could return a
+        # smaller exception for its difficulties
+        try:
+            tstar_doc = merge_turn_stars(doc)
+        except:
+            # this comes up with artificial documents generated for test cases
+            # but it could also be an issue with incoherent documents
+            oops = "Could not merge turn stars for doc: %s" % doc.origin
+            warnings.warn(oops)
+            tstar_doc = doc
+        # pylint: enable=bare-except
         tstars = [x for x in tstar_doc.units if is_turn(x)]
         contexts = {}
         for edu in doc.units:
