@@ -80,7 +80,9 @@ def merge_turn_stars(doc):
             rejects.extend(turns[1:])
             for anno in turns[1:]:
                 doc.units.remove(anno)
+    # pylint: disable=protected-access
     doc._text = _blank_out(doc._text, [prefix_span(x) for x in rejects])
+    # pylint: enable=protected-access
     return doc
 
 # ---------------------------------------------------------------------
