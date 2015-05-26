@@ -3,6 +3,7 @@
 # meant to be run from educe root
 rm -rf docs/api-doc
 sphinx-apidoc educe --module-first -o docs/api-doc\
+        educe/*/edit/cmd\
         educe/*/util/cmd\
         educe/*/oneoff/cmd\
         educe/*/learning/cmd\

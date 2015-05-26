@@ -10,21 +10,20 @@ import sys
 
 import educe.stac
 
-from ..annotate import show_diff
-from ..args import\
-    add_usual_input_args, add_usual_output_args,\
-    get_output_dir, announce_output_dir
-from ..output import save_document
-from ..doc import\
+from educe.stac.util.annotate import show_diff
+from educe.stac.util.args import\
+    (add_usual_input_args,
+     add_usual_output_args,
+     announce_output_dir,
+     get_output_dir)
+from educe.stac.util.output import save_document
+from educe.stac.util.doc import\
     compute_renames, move_portion
-from ..cmd.move import is_requested
+from .move import is_requested
 
 # ---------------------------------------------------------------------
 # command and options
 # ---------------------------------------------------------------------
-
-NAME = 'insert'
-
 
 def config_argparser(parser):
     """
@@ -35,7 +34,7 @@ def config_argparser(parser):
     """
     add_usual_input_args(parser, doc_subdoc_required=True,
                          help_suffix='to insert into')
-    add_usual_output_args(parser)
+    add_usual_output_args(parser, default_overwrite=True)
     parser.add_argument('insert', metavar='DIR',
                         help='dir with just one pair of .aa/.ac files')
     parser.add_argument('start', metavar='INT', type=int,
@@ -50,7 +49,7 @@ def main(args):
     You shouldn't need to call this yourself if you're using
     `config_argparser`
     """
-    output_dir = get_output_dir(args)
+    output_dir = get_output_dir(args, default_overwrite=True)
 
     src_reader = educe.stac.LiveInputReader(args.insert)
     src_corpus = src_reader.slurp(src_reader.files())

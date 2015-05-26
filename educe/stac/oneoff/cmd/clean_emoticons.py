@@ -40,7 +40,7 @@ def config_argparser(parser):
                         help='corpus dir')
     # don't allow stage control
     add_corpus_filters(parser, fields=fields_without(["stage"]))
-    add_usual_output_args(parser)
+    add_usual_output_args(parser, default_overwrite=True)
     parser.set_defaults(func=main)
 
 
@@ -70,7 +70,7 @@ def sorted_turns(doc):
     """
     Turn annotations in a document, sorted by text span
     """
-    return sorted_first_widest(filter(educe.stac.is_turn, doc.units))
+    return sorted_first_widest(x for x in doc.units if educe.stac.is_turn(x))
 
 
 def absorb_emoticon(doc, stamp, penult, last):
@@ -163,7 +163,7 @@ def family_banner(doc, subdoc, keys):
             return k.stage
 
     fam = "%s [%s]" % (doc, subdoc)
-    members = ", ".join(map(show_member, keys))
+    members = ", ".join(show_member(x) for x in keys)
 
     return "========== %s =========== (%s)" % (fam, members)
 
@@ -178,7 +178,7 @@ def main(args):
     corpus = read_corpus_with_unannotated(args)
     postags = educe.stac.postag.read_tags(corpus, args.corpus)
     tcache = TimestampCache()
-    output_dir = get_output_dir(args)
+    output_dir = get_output_dir(args, default_overwrite=True)
 
     families = collections.defaultdict(list)
     discourse_subcorpus = {}

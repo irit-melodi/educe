@@ -12,16 +12,16 @@ import sys
 from educe.annotation import Span
 from educe.glozz import GlozzException
 
-from ..annotate import annotate_doc
-from ..args import\
+from educe.stac.util.annotate import annotate_doc
+from educe.stac.util.args import\
     add_usual_input_args, add_usual_output_args, anno_id,\
     add_commit_args,\
     read_corpus,\
     get_output_dir, announce_output_dir
-from ..glozz import\
+from educe.stac.util.glozz import\
     anno_id_from_tuple, anno_id_to_tuple,\
     get_turn, is_dialogue
-from ..output import save_document
+from educe.stac.util.output import save_document
 
 
 def _get_annotation_with_id(sought_tuple, annotations):
@@ -134,7 +134,7 @@ def config_argparser(parser):
     """
     add_usual_input_args(parser, doc_subdoc_required=True,
                          help_suffix='in which to merge')
-    add_usual_output_args(parser)
+    add_usual_output_args(parser, default_overwrite=True)
     parser_mutex = parser.add_mutually_exclusive_group(required=True)
     parser_mutex.add_argument('--dialogues',
                               metavar='ANNO_ID', type=anno_id,
@@ -154,7 +154,7 @@ def commit_msg(args, corpus, k, sought):
     we are about to do (has to be run before merging happens)
     """
     doc = corpus[k]
-    dstr = ", ".join(map(anno_id_from_tuple, sought))
+    dstr = ", ".join(anno_id_from_tuple(x) for x in sought)
     dialogues = [_get_annotation_with_id(d, doc.units) for d in sought]
     if dialogues:
         title_fmt = u"{doc}_{subdoc}: merge dialogues{hint}"
@@ -182,7 +182,7 @@ def main(args):
 
     if not args.turns and len(args.dialogues) < 2:
         sys.exit("Must specify at least two dialogues")
-    output_dir = get_output_dir(args)
+    output_dir = get_output_dir(args, default_overwrite=True)
     corpus = read_corpus(args, verbose=True)
     if args.turns:
         try:
@@ -190,7 +190,7 @@ def main(args):
             if len(sought) < 2:
                 sys.exit("Must specify at least two dialogues")
             print("Merging dialogues: " +
-                  ", ".join(map(anno_id_from_tuple, sought)),
+                  ", ".join(anno_id_from_tuple(x) for x in sought),
                   file=sys.stderr)
         except GlozzException as oops:
             sys.exit(str(oops))

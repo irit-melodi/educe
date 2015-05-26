@@ -13,13 +13,13 @@ import sys
 from educe.annotation import Span
 import educe.stac as st
 
-from ..annotate import show_diff, annotate_doc
-from ..args import\
+from educe.stac.util.annotate import show_diff, annotate_doc
+from educe.stac.util.args import\
     add_usual_input_args, add_usual_output_args,\
     add_commit_args,\
     read_corpus, get_output_dir, announce_output_dir
-from ..doc import narrow_to_span
-from ..output import save_document
+from educe.stac.util.doc import narrow_to_span
+from educe.stac.util.output import save_document
 
 
 def _mini_diff(k, args, old_doc, new_doc, span):
@@ -88,9 +88,10 @@ def _nudge_down(turn, dialogue, prev_turn, next_dialogue):
 
 
 def _window1(pred, annos):
-    """
-    Return window of prev, match, next, where next is the item matching
-    the predicate.  All values could be None
+    """Return window of prev, match, next, where match is the item matching
+    the predicate.
+
+    All values could be None:
 
     * prev None if match is the first item
     * match None if no match (prev/next should by rights be None too)
@@ -114,14 +115,14 @@ def _nudge_dialogue(doc, tid, direction):
     """
     prev_turn, turn, next_turn = \
         _window1(lambda x: st.turn_id(x) == tid,
-                 filter(st.is_turn, doc.units))
+                 [x for x in doc.units if st.is_turn(x)])
     if not turn:
         sys.exit("Could not find turn %d" % tid)
 
     tspan = turn.text_span()
     prev_dialogue, dialogue, next_dialogue = \
         _window1(lambda x: x.text_span().encloses(tspan),
-                 filter(st.is_dialogue, doc.units))
+                 [x for x in doc.units if st.is_dialogue(x)])
 
     if direction == "up":
         return _nudge_up(turn, dialogue, next_turn, prev_dialogue)
@@ -146,7 +147,7 @@ def config_argparser(parser):
     are to be added.
     """
     add_usual_input_args(parser, doc_subdoc_required=True)
-    add_usual_output_args(parser)
+    add_usual_output_args(parser, default_overwrite=True)
     add_commit_args(parser)
     parser.add_argument('turn', metavar='TURN', type=int,
                         help='turn number')
@@ -182,7 +183,7 @@ def main(args):
     `config_argparser`
     """
     corpus = read_corpus(args, verbose=True)
-    output_dir = get_output_dir(args)
+    output_dir = get_output_dir(args, default_overwrite=True)
 
     for k in corpus:
         print(k)

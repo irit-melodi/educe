@@ -30,7 +30,7 @@ def config_argparser(parser):
                         nargs='?',
                         help='corpus dir')
     add_corpus_filters(parser, fields=fields_without(["stage"]))
-    add_usual_output_args(parser)
+    add_usual_output_args(parser, default_overwrite=True)
     parser.set_defaults(func=main)
 
 # not the same as educe.stac.annotation
@@ -47,10 +47,10 @@ def main(args):
 
     corpus = read_corpus(args,
                          preselected={"stage": ["units"]})
-    output_dir = get_output_dir(args)
+    output_dir = get_output_dir(args, default_overwrite=True)
     for k in corpus:
         doc = corpus[k]
-        for edu in filter(educe.stac.is_edu, doc.units):
+        for edu in [x for x in doc.units if educe.stac.is_edu(x)]:
             etypes = frozenset(educe.stac.split_type(edu))
             etypes2 = frozenset(RENAMES.get(t, t) for t in etypes)
             if etypes != etypes2:

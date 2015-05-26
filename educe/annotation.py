@@ -171,6 +171,8 @@ class Span(object):
         of all the spans in the list
         """
         spans = list(spans)
+        if len(spans) < 1:
+            raise ValueError("must have at least one span")
         big_start = min(x.char_start for x in spans)
         big_end = max(x.char_end for x in spans)
         return Span(big_start, big_end)
