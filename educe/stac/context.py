@@ -141,7 +141,7 @@ class Context(object):
             oops = "Was expecting exactly one %s for edu %s" %\
                 (typ, edu.identifier()) +\
                 ", but got %d\nSurrounders found: %s" %\
-                (len(matches), map(str, surrounders))
+                (len(matches), [str(x) for x in surrounders])
             if matches:
                 warnings.warn(oops)
                 return matches[0]
@@ -155,10 +155,10 @@ class Context(object):
         enclosure graph to avoid repeatedly combing over objects
         """
         turn = cls._the(edu, enclosure.outside(edu), 'Turn')
-        t_edus = list(filter(is_edu, enclosure.inside(turn)))
+        t_edus = [x for x in enclosure.inside(turn) if is_edu(x)]
         assert t_edus
         dialogue = cls._the(edu, enclosure.outside(turn), 'Dialogue')
-        d_turns = list(filter(is_turn, enclosure.inside(dialogue)))
+        d_turns = [x for x in enclosure.inside(dialogue) if is_turn(x)]
         assert d_turns
         tokens = [wrapped.token for wrapped in enclosure.inside(edu)
                   if isinstance(wrapped, WrappedToken)]
@@ -182,12 +182,12 @@ class Context(object):
             egraph = EnclosureGraph(doc, postags)
         else:
             egraph = EnclosureGraph(doc)
-        doc_turns = list(filter(is_turn, doc.units))
+        doc_turns = [x for x in doc.units if is_turn(x)]
         contexts = {}
-        for edu in filter(is_edu, doc.units):
-            contexts[edu] = cls._for_edu(egraph, doc_turns, edu)
-        return contexts
-
+        for edu in doc.units:
+            if not is_edu(edu):
+                continue
+            contexts[edu] = cls._for_edu(egraph, doc_turns, tstars, edu)
         return contexts
 
 
