@@ -135,7 +135,7 @@ def main_pairs(args):
     # scikit-convention
     feats = extract_pair_features(inputs, stage)
     vzer = KeyGroupVectorizer()
-    if args.parsing:
+    if args.parsing or args.vocabulary:
         vzer.vocabulary_ = load_vocabulary(args.vocabulary)
         X_gen = vzer.transform(feats)
     else:
