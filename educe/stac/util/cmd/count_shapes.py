@@ -75,7 +75,7 @@ def _main_lozenge_graph(args):
     for key in sorted(keys):
         gra = stacgraph.Graph.from_doc(corpus, key)
         if args.strip_cdus:
-            gra = gra.without_cdus()
+            gra = gra.without_cdus(sloppy=True)
         interesting = set()
         for node in gra.nodes():
             mloz = _maybe_lozenge(gra, node)
