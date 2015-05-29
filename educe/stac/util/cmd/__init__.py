@@ -9,6 +9,7 @@ stac-util subcommands
 # (we have a command called filter)
 from . import (count,
                count_rfc,
+               count_shapes,
                filter,
                filter_graph,
                graph,
@@ -23,6 +24,7 @@ SUBCOMMAND_SECTIONS =\
       [text,
        count,
        count_rfc,
+       count_shapes,
        graph]),
      ('Filters',
       [filter,
