@@ -162,9 +162,15 @@ class EDU(Unit):
         return self._anno.identifier()
 
     def subgrouping(self):
-        """What abstract subgrouping the EDU is in
+        """What abstract subgrouping the EDU is in (here: turn stars)
 
-        :rtype int
+        See also
+        --------
+        educe.stac.context.merge_turn_stars
+
+        Return
+        ------
+        subgrouping: string
         """
         return self._doc.global_id('t' + str(turn_id(self.tstar)))
 # pylint: enable=too-many-instance-attributes
