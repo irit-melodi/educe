@@ -76,8 +76,8 @@ class Dialogue(object):
 class EDU(Unit):
     """STAC EDU
 
-    A STAC EDU merges information from the unit and discourse-level
-    unit-level annotations so that you can ignore the distinction
+    A STAC EDU merges information from the unit and discourse
+    annotation stages so that you can ignore the distinction
     between the two annotation stages.
 
     It also tries to be usable as a drop-in substitute for both
