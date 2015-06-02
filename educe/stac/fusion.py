@@ -64,12 +64,15 @@ class Dialogue(object):
         for _, edu in i_edus:
             yield (fakeroot, edu)
         for num1, edu1 in i_edus:
-            # pylint: disable=cell-var-from-loop
-            is_before = lambda x: x[0] <= num1
-            # pylint: enable=cell-var-from-loop
+            def is_before(num2, _):
+                'true if we have seen the EDU already'
+                # pylint: disable=cell-var-from-loop
+                return num2 <= num1
+                # pylint: enable=cell-var-from-loop
             for _, edu2 in itr.dropwhile(is_before, i_edus):
                 yield (edu1, edu2)
                 yield (edu2, edu1)
+
 
 # pylint: disable=too-many-instance-attributes
 # we're trying to cover a lot of ground here
