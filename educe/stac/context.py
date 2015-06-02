@@ -177,9 +177,24 @@ class Context(object):
 
     @classmethod
     def _for_edu(cls, enclosure, doc_turns, doc_tstars, edu):
-        """
-        Extract the context for a single EDU, but with the benefit of an
+        """Extract the context for a single EDU, but with the benefit of an
         enclosure graph to avoid repeatedly combing over objects
+
+        Parameters
+        ----------
+        enclosure: EnclosureGraph
+
+        doc_turns: [Unit]
+            All turn-level annotations within a document. This is somewhat
+            redundant with the enclosure graph, but perhaps more convenient
+
+        doc_tstars: [Unit]
+            All turn star annotations within a document. Turn stars are not
+            native to the document and have to be computed separately.
+            For example, the will not be part of the enclosure graph
+            unless you apply a merge_turn_stars on it.
+
+        edu: Unit
         """
         turn = cls._the(edu, enclosure.outside(edu), 'Turn')
         tstar = cls._the(edu, containing(edu.text_span(), doc_tstars), 'Turn')
