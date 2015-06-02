@@ -34,7 +34,17 @@ def sorted_first_widest(nodes):
 
 def _blank_out(text, rejects):
     """Return a copy of a text with the indicated regions replaced
-    by spaces
+    by spaces.
+
+    The resulting text has the same length as the initial one.
+
+    Parameters
+    ----------
+    text: string
+
+    rejects: [(int,int)]
+        A list of (start, end) spans indicating indices for regions
+        that should be replaced with spaces
     """
     if not rejects:
         return text
