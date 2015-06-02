@@ -64,9 +64,10 @@ class Dialogue(object):
         for _, edu in i_edus:
             yield (fakeroot, edu)
         for num1, edu1 in i_edus:
-            def is_before(num2, _):
+            def is_before(numedu2):
                 'true if we have seen the EDU already'
                 # pylint: disable=cell-var-from-loop
+                num2 = numedu2[0]
                 return num2 <= num1
                 # pylint: enable=cell-var-from-loop
             for _, edu2 in itr.dropwhile(is_before, i_edus):
