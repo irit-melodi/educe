@@ -29,6 +29,13 @@ def _maybe_lozenge(gra, node):
     If the given node looks like the start of a lozenge, return all of
     the nodes participating in the lozenge. If not, return None
 
+    Parameters
+    ----------
+    gra: educe.stac.graph.Graph
+
+    node: string
+        hypergraph node name
+
     Returns
     -------
     nodes: set(string)
