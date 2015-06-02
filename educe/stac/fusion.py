@@ -216,8 +216,28 @@ def fuse_edus(discourse_doc, unit_doc, postags):
     """Return a copy of the discourse level doc, merging info
     from both the discourse and units stage.
 
-    Any unit annotations which happen to be EDUs will be converted
-    to higher level EDUs
+    All EDUs will be converted to higher level EDUs.
+
+    Notes
+    -----
+    * The discourse stage is primary in that we work by going over what EDUs
+      we find in the discourse stage and trying to enhance them with
+      information we find on their units-level equivalents. Sometimes (rarely
+      but it happens) annotations can go out of synch.  EDUs missing on the
+      units stage will be silently ignored (we try to make do without them).
+      EDUs that were introduced on the units stage but not percolated to
+      discourse will also be ignored.
+
+    * We rely on annotation ids to match EDUs from both stages; it's up to you
+      to ensure that the annotations are really in synch.
+
+    * This does not constitute a full merge of the documents. For a full merge,
+      you would have to bring over other annotations such as Resources,
+      `Preference`, `Anaphor`, `Several_resources`, taking care all the while
+      to ensure there are no timestamp clashes with pre-existing annotations
+      (it's unlikely but best be on the safe side if you ever find yourself
+      with automatically generated annotations, where all bets are off
+      time-stamp wise).
     """
     doc = copy.deepcopy(discourse_doc)
 
