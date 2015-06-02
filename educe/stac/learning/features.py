@@ -1372,8 +1372,21 @@ def _fuse_corpus(corpus, postags):
     to_delete = []
     for key in corpus:
         if key.stage == 'unannotated':
+            # slightly abusive use of fuse_edus to just get the effect of
+            # having EDUs that behave like contexts
+            #
+            # context: feature extraction for live mode dialogue acts
+            # extraction, so by definition we don't have a units stage
             corpus[key] = fuse_edus(corpus[key], corpus[key], postags[key])
         elif key.stage == 'units':
+            # similar Context-only abuse of fuse-edus (here, we have a units
+            # stage but no dialogue to make use of)
+            #
+            # context: feature extraction for
+            # - live mode discourse parsing (by definition we don't have a
+            #   discourse stage yet, but we might have a units stage
+            #   inferred earlier in the parsing pipeline)
+            # - dialogue act annotation from corpus
             corpus[key] = fuse_edus(corpus[key], corpus[key], postags[key])
         elif key.stage == 'discourse':
             ukey = twin_key(key, 'units')
