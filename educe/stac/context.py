@@ -79,7 +79,7 @@ def merge_turn_stars(doc):
     doc = copy.deepcopy(doc)
     dialogues = sorted([x for x in doc.units if is_dialogue(x)],
                        key=lambda x: x.text_span())
-    rejects = [] # spans for the "deleted" turns' prefixes
+    rejects = []  # spans for the "deleted" turns' prefixes
     for dia in dialogues:
         dia_turns = sorted(turns_in_span(doc, dia.text_span()),
                            key=lambda x: x.text_span())
