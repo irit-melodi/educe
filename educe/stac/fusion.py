@@ -29,10 +29,12 @@ feature-extraction
 # pylint: disable=too-few-public-methods
 
 from __future__ import print_function
+import copy
 import itertools as itr
 
 from educe.annotation import (Span, Unit)
-from educe.stac.annotation import (is_edu, speaker)
+from educe.stac.annotation import (is_edu, speaker, turn_id, twin_from)
+from educe.stac.context import (Context)
 
 ROOT = 'ROOT'
 "distinguished fake EDU id for machine learning applications"
@@ -62,20 +64,23 @@ class Dialogue(object):
         for _, edu in i_edus:
             yield (fakeroot, edu)
         for num1, edu1 in i_edus:
-            # pylint: disable=cell-var-from-loop
-            is_before = lambda x: x[0] <= num1
-            # pylint: enable=cell-var-from-loop
+            def is_before(num2, _):
+                'true if we have seen the EDU already'
+                # pylint: disable=cell-var-from-loop
+                return num2 <= num1
+                # pylint: enable=cell-var-from-loop
             for _, edu2 in itr.dropwhile(is_before, i_edus):
                 yield (edu1, edu2)
                 yield (edu2, edu1)
+
 
 # pylint: disable=too-many-instance-attributes
 # we're trying to cover a lot of ground here
 class EDU(Unit):
     """STAC EDU
 
-    A STAC EDU merges information from the unit and discourse-level
-    unit-level annotations so that you can ignore the distinction
+    A STAC EDU merges information from the unit and discourse
+    annotation stages so that you can ignore the distinction
     between the two annotation stages.
 
     It also tries to be usable as a drop-in substitute for both
@@ -98,6 +103,7 @@ class EDU(Unit):
                                   discourse_anno.origin)
         # to be fleshed out
         self.turn = None
+        self.tstar = None
         self.turn_edus = None
         self.dialogue = None
         self.dialogue_turns = None
@@ -109,6 +115,7 @@ class EDU(Unit):
         second phase of EDU initialisation; fill out contextual info
         """
         self.turn = context.turn
+        self.tstar = context.tstar
         self.turn_edus = context.turn_edus
         self.dialogue = context.dialogue
         self.dialogue_turns = context.dialogue_turns
@@ -155,11 +162,17 @@ class EDU(Unit):
         return self._anno.identifier()
 
     def subgrouping(self):
-        """What abstract subgrouping the EDU is in
+        """What abstract subgrouping the EDU is in (here: turn stars)
 
-        :rtype int
+        See also
+        --------
+        educe.stac.context.merge_turn_stars
+
+        Return
+        ------
+        subgrouping: string
         """
-        return self.turn.identifier()
+        return self._doc.global_id('t' + str(turn_id(self.tstar)))
 # pylint: enable=too-many-instance-attributes
 
 
@@ -197,3 +210,67 @@ class _FakeRootEDU(object):
 # pylint: disable=invalid-name
 FakeRootEDU = _FakeRootEDU()
 # pylint: enable=invalid-name
+
+
+def fuse_edus(discourse_doc, unit_doc, postags):
+    """Return a copy of the discourse level doc, merging info
+    from both the discourse and units stage.
+
+    All EDUs will be converted to higher level EDUs.
+
+    Notes
+    -----
+    * The discourse stage is primary in that we work by going over what EDUs
+      we find in the discourse stage and trying to enhance them with
+      information we find on their units-level equivalents. Sometimes (rarely
+      but it happens) annotations can go out of synch.  EDUs missing on the
+      units stage will be silently ignored (we try to make do without them).
+      EDUs that were introduced on the units stage but not percolated to
+      discourse will also be ignored.
+
+    * We rely on annotation ids to match EDUs from both stages; it's up to you
+      to ensure that the annotations are really in synch.
+
+    * This does not constitute a full merge of the documents. For a full merge,
+      you would have to bring over other annotations such as Resources,
+      `Preference`, `Anaphor`, `Several_resources`, taking care all the while
+      to ensure there are no timestamp clashes with pre-existing annotations
+      (it's unlikely but best be on the safe side if you ever find yourself
+      with automatically generated annotations, where all bets are off
+      time-stamp wise).
+    """
+    doc = copy.deepcopy(discourse_doc)
+
+    # first pass: create the EDU objects
+    annos = sorted([x for x in doc.units if is_edu(x)],
+                   key=lambda x: x.span)
+    replacements = {}
+    for anno in annos:
+        unit_anno = None if unit_doc is None else twin_from(unit_doc, anno)
+        edu = EDU(doc, anno, unit_anno)
+        replacements[anno] = edu
+
+    # second pass: rewrite doc so that annotations that corresponds
+    # to EDUs are replacement by their higher-level equivalents
+    edus = []
+    for anno in annos:
+        edu = replacements[anno]
+        edus.append(edu)
+        doc.units.remove(anno)
+        doc.units.append(edu)
+        for rel in doc.relations:
+            if rel.source == anno:
+                rel.source = edu
+            if rel.target == anno:
+                rel.target = edu
+        for schema in doc.schemas:
+            if anno in schema.units:
+                schema.units.remove(anno)
+                schema.units.append(edu)
+
+    # fourth pass: flesh out the EDUs with contextual info
+    # now the EDUs should be work as contexts too
+    contexts = Context.for_edus(doc, postags=postags)
+    for edu in edus:
+        edu.fleshout(contexts[edu])
+    return doc

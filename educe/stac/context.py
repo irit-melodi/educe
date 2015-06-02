@@ -3,8 +3,13 @@ The dialogue and turn surrounding an EDU along with some convenient
 information about it
 """
 
+import copy
+import itertools as itr
 import warnings
-from .annotation import is_edu, is_cdu, is_turn
+
+from educe.annotation import Span
+from .annotation import (is_edu, is_cdu, is_dialogue, is_turn,
+                         split_turn_text)
 from .annotation import speaker as anno_speaker
 from .graph import WrappedToken, EnclosureGraph
 
@@ -26,6 +31,70 @@ def sorted_first_widest(nodes):
             return None
     return sorted(nodes, key=lambda x: from_span(x.text_span()))
 
+
+def _blank_out(text, rejects):
+    """Return a copy of a text with the indicated regions replaced
+    by spaces.
+
+    The resulting text has the same length as the initial one.
+
+    Parameters
+    ----------
+    text: string
+
+    rejects: [(int,int)]
+        A list of (start, end) spans indicating indices for regions
+        that should be replaced with spaces
+    """
+    if not rejects:
+        return text
+    before = 0
+    text2 = ""
+    for left, right in rejects:
+        text2 += text[before:left]
+        text2 += ' ' * (right - left)
+        before = right
+    text2 += text[before:]
+    assert len(text2) == len(text)
+    return text2
+
+
+def merge_turn_stars(doc):
+    """Return a copy of the document in which consecutive turns
+    by the same speaker have been merged.
+
+    Merging is done by taking the first turn in grouping of
+    consecutive speaker turns, and stretching its span over all
+    the subsequent turns.
+
+    Additionally turn prefix text (containing turn numbers and
+    speakers) from the removed turns are stripped out.
+    """
+    def prefix_span(turn):
+        "given a turn annotation, return the span of its prefix"
+        prefix, _ = split_turn_text(doc.text(turn.text_span()))
+        start = turn.text_span().char_start
+        return start, start + len(prefix)
+
+    doc = copy.deepcopy(doc)
+    dialogues = sorted([x for x in doc.units if is_dialogue(x)],
+                       key=lambda x: x.text_span())
+    rejects = []  # spans for the "deleted" turns' prefixes
+    for dia in dialogues:
+        dia_turns = sorted(turns_in_span(doc, dia.text_span()),
+                           key=lambda x: x.text_span())
+        for _, turns in itr.groupby(dia_turns, anno_speaker):
+            turns = list(turns)
+            tstar = turns[0]
+            tstar.span = Span.merge_all(x.text_span() for x in turns)
+            rejects.extend(turns[1:])
+            for anno in turns[1:]:
+                doc.units.remove(anno)
+    # pylint: disable=protected-access
+    doc._text = _blank_out(doc._text, [prefix_span(x) for x in rejects])
+    # pylint: enable=protected-access
+    return doc
+
 # ---------------------------------------------------------------------
 # contexts
 # ---------------------------------------------------------------------
@@ -40,22 +109,37 @@ class Context(object):
     somewhat richer notion of context, including things
     like a sentence count, etc.
 
-    * turn     - the turn surrounding this EDU
-    * turn_edus - the EDUs in the this turn
-    * dialogue - the dialogue surrounding this EDU
-    * dialogue_turns - all the turns in the dialogue surrounding this EDU
-                       (non-empty, sorted by first-widest span)
-    * doc_turns - all the turns in the document
-    * tokens   - (may not be present): tokens contained within this EDU
-
+    Parameters
+    ----------
+    turn:
+        the turn surrounding this EDU
+    tstar:
+        the tstar turn surrounding this EDU (a tstar turn
+        is a sort of virtual turn made by merging consecutive
+        turns in a dialogue that have the same speaker)
+    turn_edus:
+        the EDUs in the this turn
+    dialogue:
+        the dialogue surrounding this EDU
+    dialogue_turns:
+        all the turns in the dialogue surrounding this EDU
+        (non-empty, sorted by first-widest span)
+    doc_turns:
+        all the turns in the document
+    tokens:
+        (may not be present): tokens contained within this EDU
     """
     # pylint: disable=too-many-arguments
     def __init__(self,
-                 turn, turn_edus,
-                 dialogue, dialogue_turns,
+                 turn,
+                 tstar,
+                 turn_edus,
+                 dialogue,
+                 dialogue_turns,
                  doc_turns,
                  tokens=None):
         self.turn = turn
+        self.tstar = tstar
         self.turn_edus = turn_edus
         self.dialogue = dialogue
         self.dialogue_turns = dialogue_turns
@@ -84,7 +168,7 @@ class Context(object):
             oops = "Was expecting exactly one %s for edu %s" %\
                 (typ, edu.identifier()) +\
                 ", but got %d\nSurrounders found: %s" %\
-                (len(matches), map(str, surrounders))
+                (len(matches), [x.identifier() for x in surrounders])
             if matches:
                 warnings.warn(oops)
                 return matches[0]
@@ -92,22 +176,41 @@ class Context(object):
                 raise Exception(oops)
 
     @classmethod
-    def _for_edu(cls, enclosure, doc_turns, edu):
-        """
-        Extract the context for a single EDU, but with the benefit of an
+    def _for_edu(cls, enclosure, doc_turns, doc_tstars, edu):
+        """Extract the context for a single EDU, but with the benefit of an
         enclosure graph to avoid repeatedly combing over objects
+
+        Parameters
+        ----------
+        enclosure: EnclosureGraph
+
+        doc_turns: [Unit]
+            All turn-level annotations within a document. This is somewhat
+            redundant with the enclosure graph, but perhaps more convenient
+
+        doc_tstars: [Unit]
+            All turn star annotations within a document. Turn stars are not
+            native to the document and have to be computed separately.
+            For example, the will not be part of the enclosure graph
+            unless you apply a merge_turn_stars on it.
+
+        edu: Unit
         """
         turn = cls._the(edu, enclosure.outside(edu), 'Turn')
-        t_edus = list(filter(is_edu, enclosure.inside(turn)))
+        tstar = cls._the(edu, containing(edu.text_span(), doc_tstars), 'Turn')
+        t_edus = [x for x in enclosure.inside(turn) if is_edu(x)]
         assert t_edus
         dialogue = cls._the(edu, enclosure.outside(turn), 'Dialogue')
-        d_turns = list(filter(is_turn, enclosure.inside(dialogue)))
+        d_turns = [x for x in enclosure.inside(dialogue) if is_turn(x)]
         assert d_turns
         tokens = [wrapped.token for wrapped in enclosure.inside(edu)
                   if isinstance(wrapped, WrappedToken)]
-        return cls(turn, sorted_first_widest(t_edus),
-                   dialogue, sorted_first_widest(d_turns),
-                   sorted_first_widest(doc_turns),
+        return cls(turn=turn,
+                   tstar=tstar,
+                   turn_edus=sorted_first_widest(t_edus),
+                   dialogue=dialogue,
+                   dialogue_turns=sorted_first_widest(d_turns),
+                   doc_turns=sorted_first_widest(doc_turns),
                    tokens=tokens)
 
     @classmethod
@@ -125,34 +228,25 @@ class Context(object):
             egraph = EnclosureGraph(doc, postags)
         else:
             egraph = EnclosureGraph(doc)
-        doc_turns = list(filter(is_turn, doc.units))
+        doc_turns = [x for x in doc.units if is_turn(x)]
+        # pylint: disable=bare-except
+        # TODO: it would be nice if merge_turn_stars could return a
+        # smaller exception for its difficulties
+        try:
+            tstar_doc = merge_turn_stars(doc)
+        except:
+            # this comes up with artificial documents generated for test cases
+            # but it could also be an issue with incoherent documents
+            oops = "Could not merge turn stars for doc: %s" % doc.origin
+            warnings.warn(oops)
+            tstar_doc = doc
+        # pylint: enable=bare-except
+        tstars = [x for x in tstar_doc.units if is_turn(x)]
         contexts = {}
-        for edu in filter(is_edu, doc.units):
-            contexts[edu] = cls._for_edu(egraph, doc_turns, edu)
-        return contexts
-
-    @classmethod
-    def for_corpus(cls, corpus):
-        """
-        Return a dictionary of context objects for each EDU in all the
-        documents of the corpus.
-
-        Does not include the possibility of including postags in the
-        context
-
-        Returns
-        -------
-        contexts: dict(educe.glozz.Unit, Context)
-
-            A dictionary with a context For each EDU in the corpus
-        """
-        contexts = {}
-        for key in corpus:
-            doc = corpus[key]
-            egraph = EnclosureGraph(doc)
-            doc_turns = list(filter(is_turn, doc.units))
-            for edu in filter(is_edu, doc.units):
-                contexts[edu] = cls._for_edu(egraph, doc_turns, edu)
+        for edu in doc.units:
+            if not is_edu(edu):
+                continue
+            contexts[edu] = cls._for_edu(egraph, doc_turns, tstars, edu)
         return contexts
 
 

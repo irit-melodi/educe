@@ -14,11 +14,13 @@ from tabulate import tabulate
 from ..args import (add_usual_input_args,
                     read_corpus_with_unannotated)
 from ..doc import strip_fixme
+from educe.stac.context import (merge_turn_stars)
 from educe.util import concat
 import educe.stac
 
 # we have an order on this, so no dict
 SEGMENT_CATEGORIES = [("dialogue", educe.stac.is_dialogue),
+                      ("turn star", lambda x: x.type == 'Tstar'),
                       ("turn", educe.stac.is_turn),
                       ("edu", educe.stac.is_edu)]
 
@@ -285,6 +287,11 @@ def count_by_docname(corpus):
         dcounts.struct[kdoc]["subdoc"] += len(ksubdocs)
         for k in (k for k in unannotated_keys if k.doc == kdoc):
             doc = corpus[k]
+            tstar_doc = merge_turn_stars(doc)
+            for anno in tstar_doc.units:
+                if educe.stac.is_turn(anno):
+                    anno.type = 'Tstar'
+                    doc.units.append(anno)
             count_segments(doc, dcounts.struct[kdoc])
             for dlg in doc.units:
                 if not educe.stac.is_dialogue(dlg):
