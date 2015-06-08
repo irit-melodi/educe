@@ -12,14 +12,12 @@ of text interspersed with the original.
 from __future__ import print_function
 import copy
 import difflib
-import re
 import sys
 
-from educe.stac.context import (enclosed)
-from educe.util import mk_is_interesting
-import educe.stac
-
-from educe.stac.util.annotate import show_diff
+from educe.stac.oneoff.weave import\
+    (check_matches,
+     compute_updates,
+     shift_span)
 from educe.stac.util.args import\
     (add_usual_input_args, add_usual_output_args,
      get_output_dir, announce_output_dir,
@@ -29,11 +27,12 @@ from educe.stac.util.doc import\
     (evil_set_text,
      compute_renames, rename_ids,
      unannotated_key)
-
-from educe.stac.oneoff.weave import *
+from educe.util import mk_is_interesting
+import educe.stac
 
 
 def _preview_anno(doc, anno, max_width=50):
+    """Short text representation of an annotation"""
     span = anno.text_span()
     text = doc.text(span)
     if len(text) > max_width:
@@ -47,9 +46,8 @@ def _preview_anno(doc, anno, max_width=50):
 
 
 def _maybe_warn(warning, doc, annos):
-    '''
-    Emit a warning about a potentially problematic group of annotations
-    '''
+    """Emit a warning about a potentially problematic group of annotations
+    """
     if annos:
         oops = 'WARNING: ' + warning + ':\n'
         oops += '\n'.join(['    {}'.format(_preview_anno(doc, x))
@@ -58,12 +56,11 @@ def _maybe_warn(warning, doc, annos):
 
 
 def _hollow_out_nonplayer_text(src_doc):
-    '''
-    Return a version of the source text where all characters in nonplayer
+    """Return a version of the source text where all characters in nonplayer
     turns are replaced with a nonsense char (tab).
 
     This is to prevent spurious matching by the sequence matcher.
-    '''
+    """
     # we can't use the API one until we update it to account for the
     # fancy new identifiers
     non_player_spans = [x.text_span() for x in src_doc.units
@@ -93,10 +90,9 @@ def _hollow_out_nonplayer_text(src_doc):
 
 
 def _weave_docs(renames, src_doc, tgt_doc):
-    '''
-    Return a deep copy of the target document with combined
+    """Return a deep copy of the target document with combined
     annotations from both the original source and target
-    '''
+    """
 
     if renames:
         src_doc = rename_ids(renames, src_doc)
@@ -178,7 +174,7 @@ def read_augmented_corpus(args, verbose=True):
     """
     aug_args = copy.copy(args)
     aug_args.annotator = None
-    preselection = {'stage':['unannotated']}
+    preselection = {'stage': ['unannotated']}
     is_interesting = mk_is_interesting(aug_args,
                                        preselected=preselection)
     reader = educe.stac.Reader(args.augmented)
