@@ -82,7 +82,7 @@ class FileId:
 
         * document
         * subdocument
-        * stage
+        * (but not the stage!)
         * (but not the annotator!)
         * and the id from the XML file
 
@@ -92,7 +92,7 @@ class FileId:
         See also `position` as potentially a safer alternative to this
         (and what we mean by safer)
         """
-        parts = [self.doc, self.subdoc, self.stage, local_id]
+        parts = [self.doc, self.subdoc, local_id]
         return "_".join(p for p in parts if p is not None)
 
 class Reader:

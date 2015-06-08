@@ -1,6 +1,11 @@
 educe.rst_dt package
 ====================
 
+.. automodule:: educe.rst_dt
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Subpackages
 -----------
 
@@ -36,6 +41,14 @@ educe.rst_dt.deptree module
     :undoc-members:
     :show-inheritance:
 
+educe.rst_dt.document_plus module
+---------------------------------
+
+.. automodule:: educe.rst_dt.document_plus
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 educe.rst_dt.graph module
 -------------------------
 
@@ -60,6 +73,14 @@ educe.rst_dt.ptb module
     :undoc-members:
     :show-inheritance:
 
+educe.rst_dt.rst_wsj_corpus module
+----------------------------------
+
+.. automodule:: educe.rst_dt.rst_wsj_corpus
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 educe.rst_dt.sdrt module
 ------------------------
 
@@ -77,10 +98,3 @@ educe.rst_dt.text module
     :show-inheritance:
 
 
-Module contents
----------------
-
-.. automodule:: educe.rst_dt
-    :members:
-    :undoc-members:
-    :show-inheritance:

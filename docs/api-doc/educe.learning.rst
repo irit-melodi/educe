@@ -1,6 +1,11 @@
 educe.learning package
 ======================
 
+.. automodule:: educe.learning
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Submodules
 ----------
 
@@ -8,6 +13,22 @@ educe.learning.csv module
 -------------------------
 
 .. automodule:: educe.learning.csv
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+educe.learning.edu_input_format module
+--------------------------------------
+
+.. automodule:: educe.learning.edu_input_format
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+educe.learning.keygroup_vectorizer module
+-----------------------------------------
+
+.. automodule:: educe.learning.keygroup_vectorizer
     :members:
     :undoc-members:
     :show-inheritance:
@@ -20,6 +41,14 @@ educe.learning.keys module
     :undoc-members:
     :show-inheritance:
 
+educe.learning.svmlight_format module
+-------------------------------------
+
+.. automodule:: educe.learning.svmlight_format
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 educe.learning.util module
 --------------------------
 
@@ -28,11 +57,12 @@ educe.learning.util module
     :undoc-members:
     :show-inheritance:
 
+educe.learning.vocabulary_format module
+---------------------------------------
 
-Module contents
----------------
-
-.. automodule:: educe.learning
+.. automodule:: educe.learning.vocabulary_format
     :members:
     :undoc-members:
     :show-inheritance:
+
+

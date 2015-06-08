@@ -1,13 +1,33 @@
 educe.stac.sanity package
 =========================
 
+.. automodule:: educe.stac.sanity
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Subpackages
+-----------
+
+.. toctree::
+
+    educe.stac.sanity.checks
+
 Submodules
 ----------
 
-educe.stac.sanity.checks module
+educe.stac.sanity.common module
 -------------------------------
 
-.. automodule:: educe.stac.sanity.checks
+.. automodule:: educe.stac.sanity.common
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+educe.stac.sanity.html module
+-----------------------------
+
+.. automodule:: educe.stac.sanity.html
     :members:
     :undoc-members:
     :show-inheritance:
@@ -29,10 +49,3 @@ educe.stac.sanity.report module
     :show-inheritance:
 
 
-Module contents
----------------
-
-.. automodule:: educe.stac.sanity
-    :members:
-    :undoc-members:
-    :show-inheritance:

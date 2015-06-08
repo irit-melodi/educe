@@ -9,24 +9,15 @@ http://www.aclweb.org/anthology/P/P14/P14-1003.pdf
 """
 
 from collections import Counter
-from functools import wraps
 import re
 
 from educe.internalutil import treenode
-from educe.learning.keys import MagicKey
-from educe.learning.util import tuple_feature, space_join
-from .base import (SingleEduSubgroup, PairSubgroup,
-                   BaseSingleEduKeys, BasePairKeys,
-                   edu_feature,
-                   on_first_unigram, on_last_unigram,
-                   on_first_bigram, on_last_bigram,
-                   feat_grouping, feat_id, feat_start, feat_end,
-                   get_sentence, get_paragraph,
-                   lowest_common_parent)
+from educe.learning.keys import Substance
+from .base import lowest_common_parent, DocumentPlusPreprocessor
 
 
 # ---------------------------------------------------------------------
-# single EDU features
+# preprocess EDUs
 # ---------------------------------------------------------------------
 
 # filter tags and tokens as in Li et al.'s parser
@@ -34,766 +25,488 @@ TT_PATTERN = r'.*[a-zA-Z_0-9].*'
 TT_FILTER = re.compile(TT_PATTERN)
 
 
-def ptb_tokens_feature(wrapped):
+def token_filter_li2014(token):
+    """Token filter defined in Li et al.'s parser.
+
+    This filter only applies to tagged tokens.
     """
-    Lift a function from `[ptb_token] -> feature`
-    to `single_function_input -> feature`
-    """
-    @wraps(wrapped)
-    def inner(context, edu):
-        "([ptb_token] -> f) -> ((context, edu) -> f)"
-        tokens = context.ptb_tokens[edu]
-        if tokens is None:
-            return None
-        # filter tags and tokens as in Li et al.'s parser
-        tokens = [tt for tt in tokens
-                  if (TT_FILTER.match(tt.word) is not None and
-                      TT_FILTER.match(tt.tag) is not None)]
-        return wrapped(tokens)
-    return inner
+    return (TT_FILTER.match(token.word) is not None and
+            TT_FILTER.match(token.tag) is not None)
+
+
+def build_doc_preprocessor():
+    """Build the preprocessor for feature extraction in each EDU of doc"""
+    # TODO re-do in a better, more modular way
+    return DocumentPlusPreprocessor(token_filter_li2014).preprocess
 
 
 # ---------------------------------------------------------------------
-# single EDU features: concrete features
+# single EDU features
 # ---------------------------------------------------------------------
 
-# addSinglePOSFeature()
-
-@ptb_tokens_feature
-@on_first_unigram
-def ptb_pos_tag_first(token):
-    "POS tag for first PTB token in the EDU"
-    return token.tag
-
-
-@ptb_tokens_feature
-@on_last_unigram
-def ptb_pos_tag_last(token):
-    "POS tag for last PTB token in the EDU"
-    return token.tag
+SINGLE_WORD = [
+    ('ptb_word_first', Substance.DISCRETE),
+    ('ptb_word_last', Substance.DISCRETE),
+    ('ptb_word_first2', Substance.DISCRETE),
+    ('ptb_word_last2', Substance.DISCRETE)
+]
 
 
-# length
-@ptb_tokens_feature
-def num_tokens(tokens):
-    "number of distinct tokens in EDU text"
-    return len(tokens)
+def extract_single_word(edu_info):
+    """word features for the EDU"""
+    try:
+        words = edu_info['words']
+    except KeyError:
+        return
+
+    if words:
+        yield ('ptb_word_first', words[0])
+        yield ('ptb_word_last', words[-1])
+
+    if len(words) > 1:
+        yield ('ptb_word_first2', (words[0], words[1]))
+        yield ('ptb_word_last2', (words[-2], words[-1]))
 
 
-@ptb_tokens_feature
-def num_tokens_div5(tokens):
-    "number of distinct tokens in EDU text divided by 5"
-    return len(tokens)/5
+SINGLE_POS = [
+    ('ptb_pos_tag_first', Substance.DISCRETE),
+    ('ptb_pos_tag_last', Substance.DISCRETE),
+    ('POS', Substance.BASKET)
+]
 
 
-@ptb_tokens_feature
-@on_first_bigram
-def ptb_pos_tag_first2(token):
-    "POS tag for first two PTB tokens in the EDU"
-    # note: PTB tokens may not necessarily correspond to words
-    return token.tag
+def extract_single_pos(edu_info):
+    """POS features for the EDU"""
+    try:
+        tags = edu_info['tags']
+    except KeyError:
+        return
+
+    if tags:
+        yield ('ptb_pos_tag_first', tags[0])
+        yield ('ptb_pos_tag_last', tags[-1])
+        # nb of occurrences of each POS tag in this EDU
+        tag_cnt = Counter(tags)
+        for tag, occ in tag_cnt.items():
+            yield ('POS_' + tag, occ)
 
 
-@ptb_tokens_feature
-@on_last_bigram
-def ptb_pos_tag_last2(token):
-    "POS tag for last two PTB tokens in the EDU"
-    # note: PTB tokens may not necessarily correspond to words
-    return token.tag
+SINGLE_LENGTH = [
+    ('num_tokens', Substance.DISCRETE),
+    ('num_tokens_div5', Substance.DISCRETE)
+]
 
 
-# ngrams: words
+def extract_single_length(edu_info):
+    """Sentence features for the EDU"""
+    try:
+        words = edu_info['words']
+    except KeyError:
+        return
 
-@ptb_tokens_feature
-@on_first_unigram
-def ptb_word_first(token):
-    "first PTB word in the EDU"
-    return token.word
-
-
-@ptb_tokens_feature
-@on_last_unigram
-def ptb_word_last(token):
-    "last PTB word in the EDU"
-    return token.word
+    yield ('num_tokens', str(len(words)))
+    yield ('num_tokens_div5', str(len(words) / 5))
 
 
-@ptb_tokens_feature
-@on_first_bigram
-def ptb_word_first2(token):
-    "first two PTB words in the EDU"
-    return token.word
+# features on document structure
+
+SINGLE_SENTENCE = [
+    # offset
+    ('num_edus_from_sent_start', Substance.DISCRETE),
+    # revOffset
+    ('num_edus_to_sent_end', Substance.DISCRETE),
+    # sentenceID
+    ('sentence_id', Substance.DISCRETE),
+    # revSentenceID
+    ('num_edus_to_para_end', Substance.DISCRETE)
+]
 
 
-@ptb_tokens_feature
-@on_last_bigram
-def ptb_word_last2(token):
-    "last PTB words in the EDU"
-    return token.word
+def extract_single_sentence(edu_info):
+    """Sentence features for the EDU"""
+    try:
+        offset = edu_info['edu_idx_in_sent']
+        if offset is not None:
+            yield ('num_edus_from_sent_start', str(offset))
+
+        rev_offset = edu_info['edu_rev_idx_in_sent']
+        if rev_offset is not None:
+            yield ('num_edus_to_sent_end', str(rev_offset))
+
+        # position of sentence in doc
+        sent_id = edu_info['sent_idx']
+        if sent_id is not None:
+            yield ('sentence_id', str(sent_id))
+    except KeyError:
+        pass
+
+    try:
+        yield ('num_edus_to_para_end', str(edu_info['edu_rev_idx_in_para']))
+    except KeyError:
+        pass
 
 
-# sentence features
-
-def sentence_id(current, edu):
-    "id of sentence that contains edu"
-    sent = get_sentence(current, edu)
-    if sent is None:
-        return None
-    return sent.num
+SINGLE_PARA = [
+    ('paragraph_id', Substance.DISCRETE),
+    ('paragraph_id_div5', Substance.DISCRETE)
+]
 
 
-def num_edus_from_sent_start(current, edu):
-    "distance of edu in EDUs from sentence start"
-    sent = get_sentence(current, edu)
-    if sent is None:
-        return None
-    # find all EDUs that are in the same sentence as edu
-    edus = current.edus
-    edus_same_sent = [e for e in edus
-                      if get_sentence(current, e) == sent]
-    result = edus_same_sent.index(edu)
-    return result
+def extract_single_para(edu_info):
+    """paragraph features for the EDU"""
+    try:
+        para_idx = edu_info['para_idx']
+    except KeyError:
+        pass
+    else:
+        if para_idx is not None:
+            yield ('paragraph_id', str(para_idx))
+            yield ('paragraph_id_div5', str(para_idx / 5))
 
 
-def num_edus_to_sent_end(current, edu):
-    "distance of edu in EDUs to sentence end"
-    sent = get_sentence(current, edu)
-    if sent is None:
-        return None
-    # find all EDUs that are in the same sentence as edu
-    edus = current.edus
-    edus_same_sent = [e for e in edus
-                      if get_sentence(current, e) == sent]
-    result = list(reversed(edus_same_sent)).index(edu)
-    return result
-
-
-def num_edus_from_para_start(current, edu):
-    "distance of edu in EDUs from paragraph start"
-    para = get_paragraph(current, edu)
-    if para is None:
-        return None
-    # find all EDUs that are in the same paragraph as edu
-    edus = current.edus
-    edus_same_para = [e for e in edus
-                      if get_paragraph(current, e) == para]
-    result = edus_same_para.index(edu)
-    return result
-
-
-def num_edus_to_para_end(current, edu):
-    "distance of edu in EDUs to paragraph end"
-    para = get_paragraph(current, edu)
-    if para is None:
-        return None
-    # find all EDUs that are in the same paragraph as edu
-    edus = current.edus
-    edus_same_para = [e for e in edus
-                      if get_paragraph(current, e) == para]
-    result = list(reversed(edus_same_para)).index(edu)
-    return result
-
-
-# this is lineID in (Li et al. 2014)
-@edu_feature
-def num_edus_from_doc_start(edu):
-    "distance of edu in EDUs from document start"
-    return edu.num - 1  # EDU numbers are in [1..]
-
-
-def num_edus_to_doc_end(current, edu):
-    "distance of edu in EDUs to document end"
-    edus = current.edus
-    result = list(reversed(edus)).index(edu)
-    return result
-
-
-# paragraph features
-def paragraph_id(current, edu):
-    "id of paragraph that contains edu"
-    para = get_paragraph(current, edu)
-    if para is None:
-        return None
-    return para.num
-
-
-def paragraph_id_div5(current, edu):
-    "id of paragraph that contains edu, div5"
-    para = get_paragraph(current, edu)
-    if para is None:
-        return None
-    return para.num / 5
-
-# TODO: semantic similarity features
-
-
-# basket features
-
-@ptb_tokens_feature
-def ptb_pos_tags_in_edu(tokens):
-    "POS tag counts in an EDU (part of a basket feature)"
-    return Counter(t.tag for t in tokens) if tokens is not None else None
-
-
-def get_syntactic_labels(current, edu):
+# features on syntax
+# helper
+def get_syntactic_labels(edu_info):
     "Syntactic labels for this EDU"
     result = []
 
-    ptrees = current.ptb_trees[edu]
-    if ptrees is None:
+    try:
+        ptree = edu_info['ptree']
+    except KeyError:
         return None
-    # for each PTB tree, get the tree position of its leaves that are in the
-    # EDU
-    tpos_leaves_edu = ((ptree, [tpos_leaf
-                                for tpos_leaf in ptree.treepositions('leaves')
-                                if ptree[tpos_leaf].overlaps(edu)])
-                       for ptree in ptrees)
+
+    edu = edu_info['edu']
+
+    # get the tree position of the leaves of the syntactic tree that are in
+    # the EDU
+    tpos_leaves_edu = [tpos_leaf
+                       for tpos_leaf in ptree.treepositions('leaves')
+                       if ptree[tpos_leaf].overlaps(edu)]
     # for each span of syntactic leaves in this EDU
-    for ptree, leaves in tpos_leaves_edu:
-        tpos_parent = lowest_common_parent(leaves)
-        # for each leaf between leftmost and rightmost, add its ancestors
-        # up to the lowest common parent
-        for leaf in leaves:
-            for i in reversed(range(len(leaf))):
-                tpos_node = leaf[:i]
-                node = ptree[tpos_node]
-                node_lbl = treenode(node)
-                if tpos_node == tpos_parent:
-                    result.append('top_' + node_lbl)
-                    break
-                else:
-                    result.append(node_lbl)
-    return Counter(result)
-
-
-# ---------------------------------------------------------------------
-# pair EDU features
-# ---------------------------------------------------------------------
-
-def gather_sparse_features(current, edu1, edu2):
-    "Gather all sparse features in one (bulk) basket feature"
-    result = Counter()
-    # POS tags in each EDU
-    pos_tags_edu1 = ptb_pos_tags_in_edu(current, edu1)
-    if pos_tags_edu1 is not None:
-        for k, v in pos_tags_edu1.items():
-            result['POSF_'+k] = v
-    pos_tags_edu2 = ptb_pos_tags_in_edu(current, edu2)
-    if pos_tags_edu2 is not None:
-        for k, v in pos_tags_edu2.items():
-            result['POSS_'+k] = v
-    # syntactic labels in each EDU
-    if False:
-        syn_labs_edu1 = get_syntactic_labels(current, edu1)
-        if syn_labs_edu1 is not None:
-            for k, v in syn_labs_edu1.items():
-                result['SYNF_'+k] = v
-        syn_labs_edu2 = get_syntactic_labels(current, edu2)
-        if syn_labs_edu2 is not None:
-            for k, v in syn_labs_edu2.items():
-                result['SYNS_'+k] = v
-    # this should do the trick
+    tpos_parent = lowest_common_parent(tpos_leaves_edu)
+    # for each leaf between leftmost and rightmost, add its ancestors
+    # up to the lowest common parent
+    for leaf in tpos_leaves_edu:
+        for i in reversed(range(len(leaf))):
+            tpos_node = leaf[:i]
+            node = ptree[tpos_node]
+            node_lbl = treenode(node)
+            if tpos_node == tpos_parent:
+                result.append('top_' + node_lbl)
+                break
+            else:
+                result.append(node_lbl)
     return result
 
 
-# ngrams: POS
-
-@tuple_feature(space_join)
-def ptb_pos_tag_first_pairs(_, cache, edu):
-    "pair of the first POS in the two EDUs"
-    return cache[edu]["ptb_pos_tag_first"]
-
-
-# ngrams: words
-
-@tuple_feature(space_join)
-def ptb_word_first_pairs(_, cache, edu):
-    "pair of the first words in the two EDUs"
-    return cache[edu]["ptb_word_first"]
-
-
-@tuple_feature(space_join)
-def ptb_word_last_pairs(_, cache, edu):
-    "pair of the last words in the two EDUs"
-    return cache[edu]["ptb_word_last"]
-
-
-@tuple_feature(space_join)
-def ptb_word_first2_pairs(_, cache, edu):
-    "pair of the first bigrams in the two EDUs"
-    return cache[edu]["ptb_word_first2"]
-
-
-@tuple_feature(space_join)
-def ptb_word_last2_pairs(_, cache, edu):
-    "pair of the last bigrams in the two EDUs"
-    return cache[edu]["ptb_word_last2"]
-
-
-# length
-
-@tuple_feature(space_join)
-def num_tokens_div5_pair(_, cache, edu):
-    "pair of the length div 5 of the two EDUs"
-    return cache[edu]["num_tokens_div5"]
-
-
-def _minus_div5(nb1, nb2):
-    "(nb1-nb2)/5"
-    return (nb1-nb2)/5 if (nb1 is not None) and (nb2 is not None) else None
-
-
-@tuple_feature(_minus_div5)
-def num_tokens_diff_div5(_, cache, edu):
-    "difference of EDU length div5"
-    return cache[edu]["num_tokens"]
-
-
-# sentence
-
-def _same_or_not(x1, x2):
-    "returns whether x1 and x2 are the same or different"
-    if (x1 is None) or (x2 is None):
-        return None
-    elif x1 == x2:
-        return 'same'
-    else:
-        return 'different'
-
-
-@tuple_feature(_same_or_not)
-def same_bad_sentence(_, cache, edu):
-    "whose sentence comes first, of the two EDUs (bad segmentation)"
-    return cache[edu]["sentence_id"]
-
-
-# paragraph
-
-def _who_s_first(x1, x2):
-    "first if x1<x2, second if x2<x1, same if x1==x2"
-    if (x1 is None) or (x2 is None):
-        return None
-    elif x1 == x2:
-        return 'same'
-    elif x1 < x2:
-        return 'first'
-    else:
-        return 'second'
-
-
-@tuple_feature(_who_s_first)
-def first_paragraph(_, cache, edu):
-    "Whose paragraph comes first, of the two EDUs"
-    return cache[edu]["paragraph_id"]
-
-
-def _minus(nb1, nb2):
-    "nb1-nb2"
-    return (nb1 - nb2) if (nb1 is not None) and (nb2 is not None) else None
-
-
-@tuple_feature(_minus)
-def num_paragraphs_between(_, cache, edu):
-    "Num of paragraphs between the two EDUs"
-    return cache[edu]["paragraph_id"]
-
-
-def _minus_div3(nb1, nb2):
-    "(nb1-nb2)/3"
-    return ((nb1 - nb2) / 3 if (nb1 is not None) and (nb2 is not None)
-            else None)
-
-
-@tuple_feature(_minus_div3)
-def num_paragraphs_between_div3(_, cache, edu):
-    "Num of paragraphs between the two EDUs, div3"
-    return cache[edu]["paragraph_id"]
-
-
-# paragraph feats
-
-@tuple_feature(_minus)
-def offset_diff(_, cache, edu):
-    "difference between the two EDUs' offset"
-    return cache[edu]["num_edus_from_sent_start"]
-
-
-@tuple_feature(_minus)
-def rev_offset_diff(_, cache, edu):
-    "difference between the two EDUs' revOffset"
-    return cache[edu]["num_edus_to_sent_end"]
-
-
-@tuple_feature(_minus_div3)
-def offset_diff_div3(_, cache, edu):
-    "difference between the two EDUs' offset, div3"
-    return cache[edu]["num_edus_from_sent_start"]
-
-
-@tuple_feature(_minus_div3)
-def rev_offset_diff_div3(_, cache, edu):
-    "difference between the two EDUs' offset, div3"
-    return cache[edu]["num_edus_to_sent_end"]
-
-
-@tuple_feature(space_join)
-def offset_pair(_, cache, edu):
-    "offset pair"
-    return cache[edu]["num_edus_from_sent_start"]
-
-
-@tuple_feature(space_join)
-def rev_offset_pair(_, cache, edu):
-    "revOffset pair"
-    return cache[edu]["num_edus_to_sent_end"]
-
-
-def offset_div3_pair(current, cache, edu1, edu2):
-    "offset div 3 pair"
-    offset1 = cache[edu1]["num_edus_from_sent_start"]
-    offset2 = cache[edu2]["num_edus_from_sent_start"]
-    offset1_div3 = offset1 / 3 if offset1 is not None else None
-    offset2_div3 = offset2 / 3 if offset2 is not None else None
-    return '{0}_{1}'.format(offset1_div3, offset2_div3)
-
-
-def rev_offset_div3_pair(current, cache, edu1, edu2):
-    "revOffset div 3 pair"
-    rev_offset1 = cache[edu1]["num_edus_to_sent_end"]
-    rev_offset2 = cache[edu2]["num_edus_to_sent_end"]
-    rev_offset1_div3 = rev_offset1 / 3 if rev_offset1 is not None else None
-    rev_offset2_div3 = rev_offset2 / 3 if rev_offset2 is not None else None
-    return '{0}_{1}'.format(rev_offset1_div3, rev_offset2_div3)
-
-
-def line_id_diff(current, cache, edu1, edu2):
-    "difference between lineIDs"
-    line_id1 = num_edus_from_doc_start(current, edu1)
-    line_id2 = num_edus_from_doc_start(current, edu2)
-    return line_id1 - line_id2
-
-
-@tuple_feature(_minus)
-def sentence_id_diff(_, cache, edu):
-    "Number of sentences between the two EDUs"
-    return cache[edu]["sentence_id"]
-
-
-@tuple_feature(_minus_div3)
-def sentence_id_diff_div3(_, cache, edu):
-    "Number of sentences between the two EDUs div3"
-    return cache[edu]["sentence_id"]
-
-
-@tuple_feature(_minus)
-def rev_sentence_id_diff(_, cache, edu):
-    "Difference of rev_sentence_id of the two EDUs"
-    return cache[edu]["num_edus_to_para_end"]
-
-
-@tuple_feature(_minus_div3)
-def rev_sentence_id_diff_div3(_, cache, edu):
-    "Difference of rev_sentence_id of the two EDUs div3"
-    return cache[edu]["num_edus_to_para_end"]
-
-
-# ---------------------------------------------------------------------
-# single EDU key groups
-# ---------------------------------------------------------------------
-
-class SingleEduSubgroup_Meta(SingleEduSubgroup):
-    """
-    Basic EDU-identification features
-    """
-
-    _features = [
-        MagicKey.meta_fn(feat_id),
-        MagicKey.meta_fn(feat_start),
-        MagicKey.meta_fn(feat_end)
-    ]
-
-    def __init__(self):
-        desc = self.__doc__.strip()
-        super(SingleEduSubgroup_Meta, self).__init__(desc, self._features)
-
-
-class SingleEduSubgroup_Syntax(SingleEduSubgroup):
-    """
-    syntactic features for the EDU
-    """
-    _features = [
-        # MagicKey.discrete_fn(get_syntactic_labels)
-    ]
-
-    def __init__(self):
-        desc = self.__doc__.strip()
-        super(SingleEduSubgroup_Syntax, self).__init__(desc, self._features)
-
-
-class SingleEduSubgroup_Pos(SingleEduSubgroup):
-    """
-    POS features for the EDU
-    """
-    _features = [
-        # POS feats
-        MagicKey.discrete_fn(ptb_pos_tag_first),
-        MagicKey.discrete_fn(ptb_pos_tag_last),
-        # MagicKey.basket_fn(ptb_pos_tags_in_edu)
-    ]
-
-    def __init__(self):
-        desc = self.__doc__.strip()
-        super(SingleEduSubgroup_Pos, self).__init__(desc, self._features)
-
-
-class SingleEduSubgroup_Sentence(SingleEduSubgroup):
-    """
-    Sentence features for the EDU
-    """
-    _features = [
-        MagicKey.continuous_fn(num_edus_from_sent_start),  # offset
-        MagicKey.continuous_fn(num_edus_to_sent_end),  # revOffset
-        MagicKey.continuous_fn(sentence_id),  # sentenceID
-        MagicKey.continuous_fn(num_edus_to_para_end),  # revSentenceID (!?!)
-    ]
-
-    def __init__(self):
-        desc = self.__doc__.strip()
-        super(SingleEduSubgroup_Sentence, self).__init__(desc, self._features)
-
-
-class SingleEduSubgroup_Length(SingleEduSubgroup):
-    """
-    Sentence features for the EDU
-    """
-    _features = [
-        MagicKey.continuous_fn(num_tokens),
-        MagicKey.continuous_fn(num_tokens_div5)
-    ]
-
-    def __init__(self):
-        desc = self.__doc__.strip()
-        super(SingleEduSubgroup_Length, self).__init__(desc, self._features)
-
-
-class SingleEduSubgroup_Word(SingleEduSubgroup):
-    """
-    word features for the EDU
-    """
-    _features = [
-        MagicKey.discrete_fn(ptb_word_first),
-        MagicKey.discrete_fn(ptb_word_last),
-        MagicKey.discrete_fn(ptb_word_first2),
-        MagicKey.discrete_fn(ptb_word_last2),
-    ]
-
-    def __init__(self):
-        desc = self.__doc__.strip()
-        super(SingleEduSubgroup_Word, self).__init__(desc, self._features)
-
-
-class SingleEduSubgroup_Para(SingleEduSubgroup):
-    """
-    paragraph features for the EDU
-    """
-    _features = [
-        MagicKey.discrete_fn(paragraph_id),
-        MagicKey.discrete_fn(paragraph_id_div5)
-    ]
-
-    def __init__(self):
-        desc = self.__doc__.strip()
-        super(SingleEduSubgroup_Para, self).__init__(desc, self._features)
+SINGLE_SYNTAX = [
+    ('SYN', Substance.BASKET)
+]
+
+
+def extract_single_syntax(edu_info):
+    """syntactic features for the EDU"""
+    syn_labels = get_syntactic_labels(edu_info)
+    if syn_labels is not None:
+        syn_cnt = Counter(syn_labels)
+        for syn_lbl, occ in syn_cnt.items():
+            yield ('SYN_' + syn_lbl, occ)
+
+
+# TODO: features on semantic similarity
+
+def build_edu_feature_extractor():
+    """Build the feature extractor for single EDUs"""
+    feats = []
+    funcs = []
+
+    # word
+    feats.extend(SINGLE_WORD)
+    funcs.append(extract_single_word)
+    # pos
+    feats.extend(SINGLE_POS)
+    funcs.append(extract_single_pos)
+    # length
+    feats.extend(SINGLE_LENGTH)
+    funcs.append(extract_single_length)
+    # para
+    feats.extend(SINGLE_PARA)
+    funcs.append(extract_single_para)
+    # sent
+    feats.extend(SINGLE_SENTENCE)
+    funcs.append(extract_single_sentence)
+    # syntax (disabled)
+    # feats.extend(SINGLE_SYNTAX)
+    # funcs.append(extract_single_syntax)
+
+    def _extract_all(edu_info):
+        """inner helper because I am lost at sea here"""
+        # TODO do this in a cleaner manner
+        for fct in funcs:
+            for feat in fct(edu_info):
+                yield feat
+
+    # header
+    header = feats
+    # extractor
+    feat_extractor = _extract_all
+    # return header and extractor
+    return header, feat_extractor
 
 
 # ---------------------------------------------------------------------
 # EDU pairs
 # ---------------------------------------------------------------------
 
-class PairSubgroup_Core(PairSubgroup):
-    "core features"
-
-    _features = [
-        MagicKey.meta_fn(feat_grouping)
-    ]
-
-    def __init__(self):
-        desc = self.__doc__.strip()
-        super(PairSubgroup_Core, self).__init__(desc, self._features)
+PAIR_WORD = [
+    ('ptb_word_first_pairs', Substance.DISCRETE),
+    ('ptb_word_last_pairs', Substance.DISCRETE),
+    ('ptb_word_first2_pairs', Substance.DISCRETE),
+    ('ptb_word_last2_pairs', Substance.DISCRETE),
+]
 
 
-class PairSubgroup_Word(PairSubgroup):
-    "word tuple features"
+def extract_pair_word(edu_info1, edu_info2):
+    """word tuple features"""
+    try:
+        words1 = edu_info1['words']
+        words2 = edu_info2['words']
+    except KeyError:
+        return
 
-    _features = [
-        MagicKey.discrete_fn(ptb_word_first_pairs),
-        MagicKey.discrete_fn(ptb_word_last_pairs),
-        MagicKey.discrete_fn(ptb_word_first2_pairs),
-        MagicKey.discrete_fn(ptb_word_last2_pairs)
-    ]
+    # pairs of unigrams
+    if words1 and words2:
+        yield ('ptb_word_first_pairs', (words1[0], words2[0]))
+        yield ('ptb_word_last_pairs', (words1[-1], words2[-1]))
 
-    def __init__(self, inputs, sf_cache):
-        self.corpus = inputs.corpus
-        self.sf_cache = sf_cache
-        desc = self.__doc__.strip()
-        super(PairSubgroup_Word, self).__init__(desc, self._features)
-
-    def fill(self, current, edu1, edu2, target=None):
-        vec = self if target is None else target
-        for key in self.keys:
-            vec[key.name] = key.function(current, self.sf_cache, edu1, edu2)
-
-
-class PairSubgroup_Pos(PairSubgroup):
-    "POS tuple features"
-
-    _features = [
-        MagicKey.discrete_fn(ptb_pos_tag_first_pairs)
-    ]
-
-    def __init__(self, inputs, sf_cache):
-        self.corpus = inputs.corpus
-        self.sf_cache = sf_cache
-        desc = self.__doc__.strip()
-        super(PairSubgroup_Pos, self).__init__(desc, self._features)
-
-    def fill(self, current, edu1, edu2, target=None):
-        vec = self if target is None else target
-        for key in self.keys:
-            vec[key.name] = key.function(current, self.sf_cache, edu1, edu2)
+    # pairs of bigrams
+    if len(words1) > 1 and len(words2) > 1:
+        yield ('ptb_word_first2_pairs', (tuple(words1[:2]),
+                                         tuple(words2[:2])))
+        yield ('ptb_word_last2_pairs', (tuple(words1[-2:]),
+                                        tuple(words2[-2:])))
 
 
-class PairSubgroup_Para(PairSubgroup):
-    "Paragraph tuple features"
-
-    _features = [
-        MagicKey.discrete_fn(first_paragraph),
-        MagicKey.discrete_fn(num_paragraphs_between),
-        MagicKey.discrete_fn(num_paragraphs_between_div3)
-    ]
-
-    def __init__(self, inputs, sf_cache):
-        self.corpus = inputs.corpus
-        self.sf_cache = sf_cache
-        desc = self.__doc__.strip()
-        super(PairSubgroup_Para, self).__init__(desc, self._features)
-
-    def fill(self, current, edu1, edu2, target=None):
-        vec = self if target is None else target
-        for key in self.keys:
-            vec[key.name] = key.function(current, self.sf_cache, edu1, edu2)
+# pos
+PAIR_POS = [
+    ('ptb_pos_tag_first_pairs', Substance.DISCRETE),
+]
 
 
-class PairSubgroup_Sent(PairSubgroup):
-    "Sentence tuple features"
+def extract_pair_pos(edu_info1, edu_info2):
+    """POS tuple features"""
+    try:
+        tags1 = edu_info1['tags']
+        tags2 = edu_info2['tags']
+    except KeyError:
+        return
 
-    _features = [
-        MagicKey.discrete_fn(offset_diff),
-        MagicKey.discrete_fn(rev_offset_diff),
-        MagicKey.discrete_fn(offset_diff_div3),
-        MagicKey.discrete_fn(rev_offset_diff_div3),
-        MagicKey.discrete_fn(offset_pair),
-        MagicKey.discrete_fn(rev_offset_pair),
-        MagicKey.discrete_fn(offset_div3_pair),
-        MagicKey.discrete_fn(rev_offset_div3_pair),
-        MagicKey.discrete_fn(line_id_diff),  # !?! what's this?
-        MagicKey.discrete_fn(same_bad_sentence),
-        MagicKey.discrete_fn(sentence_id_diff),
-        MagicKey.discrete_fn(sentence_id_diff_div3),
-        MagicKey.discrete_fn(rev_sentence_id_diff),
-        MagicKey.discrete_fn(rev_sentence_id_diff_div3),
-    ]
-
-    def __init__(self, inputs, sf_cache):
-        self.corpus = inputs.corpus
-        self.sf_cache = sf_cache
-        desc = self.__doc__.strip()
-        super(PairSubgroup_Sent, self).__init__(desc, self._features)
-
-    def fill(self, current, edu1, edu2, target=None):
-        vec = self if target is None else target
-        for key in self.keys:
-            vec[key.name] = key.function(current, self.sf_cache, edu1, edu2)
+    if tags1 and tags2:
+        yield ('ptb_pos_tag_first_pairs', (tags1[0], tags2[0]))
 
 
-class PairSubgroup_Length(PairSubgroup):
-    "Sentence tuple features"
-
-    _features = [
-        MagicKey.discrete_fn(num_tokens_div5_pair),
-        MagicKey.discrete_fn(num_tokens_diff_div5)
-    ]
-
-    def __init__(self, inputs, sf_cache):
-        self.corpus = inputs.corpus
-        self.sf_cache = sf_cache
-        desc = self.__doc__.strip()
-        super(PairSubgroup_Length, self).__init__(desc, self._features)
-
-    def fill(self, current, edu1, edu2, target=None):
-        vec = self if target is None else target
-        for key in self.keys:
-            vec[key.name] = key.function(current, self.sf_cache, edu1, edu2)
+PAIR_LENGTH = [
+    ('num_tokens_div5_pair', Substance.DISCRETE),
+    ('num_tokens_diff_div5', Substance.DISCRETE)
+]
 
 
-class PairSubgroup_Basket(PairSubgroup):
+def extract_pair_length(edu_info1, edu_info2):
+    """Sentence tuple features"""
+    try:
+        words1 = edu_info1['words']
+        words2 = edu_info2['words']
+    except KeyError:
+        return
+
+    num_toks1 = len(words1)
+    num_toks2 = len(words2)
+
+    yield ('num_tokens_div5_pair', (num_toks1 / 5, num_toks2 / 5))
+    yield ('num_tokens_diff_div5', str((num_toks1 - num_toks2) / 5))
+
+
+PAIR_PARA = [
+    ('first_paragraph', Substance.DISCRETE),
+    ('num_paragraphs_between', Substance.DISCRETE),
+    ('num_paragraphs_between_div3', Substance.DISCRETE)
+]
+
+
+def extract_pair_para(edu_info1, edu_info2):
+    """Paragraph tuple features"""
+    try:
+        para_id1 = edu_info1['para_idx']
+        para_id2 = edu_info2['para_idx']
+    except KeyError:
+        return
+    if para_id1 is not None and para_id2 is not None:
+        if para_id1 < para_id2:
+            first_para = 'first'
+        elif para_id1 > para_id2:
+            first_para = 'second'
+        else:
+            first_para = 'same'
+        yield ('first_paragraph', first_para)
+
+        yield ('num_paragraphs_between', str(para_id1 - para_id2))
+        yield ('num_paragraphs_between_div3', str((para_id1 - para_id2) / 3))
+
+
+PAIR_SENT = [
+    ('offset_diff', Substance.DISCRETE),
+    ('rev_offset_diff', Substance.DISCRETE),
+    ('offset_diff_div3', Substance.DISCRETE),
+    ('rev_offset_diff_div3', Substance.DISCRETE),
+    ('offset_pair', Substance.DISCRETE),
+    ('rev_offset_pair', Substance.DISCRETE),
+    ('offset_div3_pair', Substance.DISCRETE),
+    ('rev_offset_div3_pair', Substance.DISCRETE),
+    ('line_id_diff', Substance.DISCRETE),
+    ('same_bad_sentence', Substance.DISCRETE),
+    ('sentence_id_diff', Substance.DISCRETE),
+    ('sentence_id_diff_div3', Substance.DISCRETE),
+    ('rev_sentence_id_diff', Substance.DISCRETE),
+    ('rev_sentence_id_diff_div3', Substance.DISCRETE)
+]
+
+
+def extract_pair_sent(edu_info1, edu_info2):
+    """Sentence tuple features"""
+    # offset features
+    try:
+        offset1 = edu_info1['edu_idx_in_sent']
+        offset2 = edu_info2['edu_idx_in_sent']
+    except KeyError:
+        pass
+    else:
+        if offset1 is not None and offset2 is not None:
+            yield ('offset_diff', str(offset1 - offset2))
+            yield ('offset_diff_div3', str((offset1 - offset2) / 3))
+            yield ('offset_pair', (offset1, offset2))
+            yield ('offset_div3_pair', (offset1 / 3, offset2 / 3))
+
+    # rev_offset features
+    try:
+        rev_offset1 = edu_info1['edu_rev_idx_in_sent']
+        rev_offset2 = edu_info2['edu_rev_idx_in_sent']
+    except KeyError:
+        pass
+    else:
+        if rev_offset1 is not None and offset2 is not None:
+            yield ('rev_offset_diff', str(rev_offset1 - rev_offset2))
+            yield ('rev_offset_diff_div3', str((rev_offset1 - rev_offset2) / 3))
+            yield ('rev_offset_pair', (rev_offset1, rev_offset2))
+            yield ('rev_offset_div3_pair', (rev_offset1 / 3, rev_offset2 / 3))
+
+    # lineID: distance of edu in EDUs from document start
+    line_id1 = edu_info1['edu'].num - 1  # real EDU numbers are in [1..]
+    line_id2 = edu_info2['edu'].num - 1
+    yield ('line_id_diff', str(line_id1 - line_id2))
+
+    # sentenceID
+    sent_id1 = edu_info1['sent_idx']
+    sent_id2 = edu_info2['sent_idx']
+    if sent_id1 is not None and sent_id2 is not None:
+        yield ('same_sentence',
+               'same' if sent_id1 == sent_id2 else 'different')
+        yield ('sentence_id_diff', str(sent_id1 - sent_id2))
+        yield ('sentence_id_diff_div3', str((sent_id1 - sent_id2) / 3))
+
+    # revSentenceID
+    rev_sent_id1 = edu_info1['edu_rev_idx_in_para']
+    rev_sent_id2 = edu_info2['edu_rev_idx_in_para']
+    if rev_sent_id1 is not None and rev_sent_id2 is not None:
+        yield ('rev_sentence_id_diff', str(rev_sent_id1 - rev_sent_id2))
+        yield ('rev_sentence_id_diff_div3',
+               str((rev_sent_id1 - rev_sent_id2) / 3))
+
+
+def build_pair_feature_extractor():
+    """Build the feature extractor for pairs of EDUs
+
+    TODO: properly emit features on single EDUs ;
+    they are already stored in sf_cache, but under (slightly) different
+    names
     """
-    Sparse features
+    feats = []
+    funcs = []
+
+    # feature type: 1
+    feats.extend(PAIR_WORD)
+    funcs.append(extract_pair_word)
+    # 2
+    feats.extend(PAIR_POS)
+    funcs.append(extract_pair_pos)
+    # 3
+    feats.extend(PAIR_PARA)
+    funcs.append(extract_pair_para)
+    feats.extend(PAIR_SENT)
+    funcs.append(extract_pair_sent)
+    # 4
+    feats.extend(PAIR_LENGTH)
+    funcs.append(extract_pair_length)
+    # 5
+    # feats.extend(PAIR_SYNTAX)  # NotImplemented
+    # funcs.append(extract_pair_syntax)
+    # 6
+    # feats.extend(PAIR_SEMANTICS)  # NotImplemented
+    # funcs.append(extract_pair_semantics)
+
+    def _extract_all(edu_info1, edu_info2):
+        """inner helper because I am lost at sea here, again"""
+        # TODO do this in a cleaner manner
+        for fct in funcs:
+            for feat in fct(edu_info1, edu_info2):
+                yield feat
+
+    # header
+    header = feats
+    # extractor
+    feat_extractor = _extract_all
+    # return header and extractor
+    return header, feat_extractor
+
+
+def product_features(feats_g, feats_d, feats_gd):
+    """Generate features by taking the product of features.
+
+    Parameters
+    ----------
+    feats_g: dict(feat_name, feat_val)
+        features of the gov EDU
+    feats_d: dict(feat_name, feat_val)
+        features of the dep EDU
+    feats_gd: dict(feat_name, feat_val)
+        features of the (gov, dep) edge
+
+    Returns
+    -------
+    pf: dict(feat_name, feat_val)
+        product features
     """
-    _features = [
-        MagicKey.basket_fn(gather_sparse_features)
-    ]
-
-    def __init__(self):
-        desc = self.__doc__.strip()
-        super(PairSubgroup_Basket, self).__init__(desc, self._features)
+    pf = dict()
+    return pf
 
 
-# export feat groups
-class SingleEduKeys(BaseSingleEduKeys):
-    """Single EDU features"""
+def combine_features(feats_g, feats_d, feats_gd):
+    """Generate features by taking a (linear) combination of features.
 
-    def __init__(self, inputs):
-        groups = [
-            SingleEduSubgroup_Meta(),
-            SingleEduSubgroup_Word(),
-            SingleEduSubgroup_Pos(),
-            # SingleEduSubgroup_Syntax(),  # basket feature
-            SingleEduSubgroup_Length(),
-            SingleEduSubgroup_Para(),
-            SingleEduSubgroup_Sentence()
-        ]
-        # if inputs.debug:
-        #     groups.append(SingleEduSubgroup_Debug())
-        super(SingleEduKeys, self).__init__(inputs, groups)
+    I suspect these do not have a great impact, if any, on results.
 
+    Parameters
+    ----------
+    feats_g: dict(feat_name, feat_val)
+        features of the gov EDU
+    feats_d: dict(feat_name, feat_val)
+        features of the dep EDU
+    feats_gd: dict(feat_name, feat_val)
+        features of the (gov, dep) edge
 
-class PairKeys(BasePairKeys):
-    """Features on a pair of EDUs"""
-
-    def __init__(self, inputs, sf_cache=None):
-        groups = [
-            # meta
-            PairSubgroup_Core(),
-            # feature type: 1
-            PairSubgroup_Word(inputs, sf_cache),
-            # 2
-            PairSubgroup_Pos(inputs, sf_cache),
-            # 3
-            PairSubgroup_Para(inputs, sf_cache),
-            PairSubgroup_Sent(inputs, sf_cache),
-            # 4
-            PairSubgroup_Length(inputs, sf_cache),
-            # 5
-            # PairSubgroup_Syntax(),  # cf. basket
-            # 6
-            # PairSubgroup_Semantics(),
-            PairSubgroup_Basket()  # basket feats for POS and syntax
-        ]
-        # if inputs.debug:
-        #     groups.append(PairSubgroup_Debug())
-        super(PairKeys, self).__init__(inputs, groups, sf_cache)
-
-    def init_single_features(self, inputs):
-        """Init features defined on single EDUs"""
-        return SingleEduKeys(inputs)
+    Returns
+    -------
+    cf: dict(feat_name, feat_val)
+        combined features
+    """
+    cf = dict()
+    return cf

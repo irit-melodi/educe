@@ -7,9 +7,13 @@ stac-util subcommands
 
 # pylint: disable=redefined-builtin
 # (we have a command called filter)
-from . import (count, filter, filter_graph, graph, insert,
-               merge_dialogue, merge_edus, move, nudge, nudge_dialogue, rename,
-               rewrite, split_edu, text, tmp)
+from . import (count,
+               count_rfc,
+               count_shapes,
+               filter,
+               filter_graph,
+               graph,
+               text)
 
 # at the time of this writing argparse doesn't support a way to group
 # subcommands into sections, but maybe we can wait for it to grow such
@@ -19,21 +23,12 @@ SUBCOMMAND_SECTIONS =\
     [('Querying',
       [text,
        count,
-       graph,
-       filter_graph]),
-     ('Editing',
+       count_rfc,
+       count_shapes,
+       graph]),
+     ('Filters',
       [filter,
-       rename,
-       rewrite,
-       merge_dialogue,
-       merge_edus,
-       split_edu,
-       nudge,
-       nudge_dialogue]),
-     ('Advanced editing',
-      [insert,
-       move,
-       tmp])]
+       filter_graph])]
 
 SUBCOMMANDS = []
 for descr, section in SUBCOMMAND_SECTIONS:

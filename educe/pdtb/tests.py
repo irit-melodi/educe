@@ -5,7 +5,7 @@ import unittest
 import xml.etree.cElementTree as ET # python 2.5 and later
 
 import educe.pdtb.parse as p
-import educe.pdtb.xml_  as x
+import educe.pdtb.pdtbx as x
 from   educe.internalutil import indent_xml
 
 ex_txt="""#### Text ####

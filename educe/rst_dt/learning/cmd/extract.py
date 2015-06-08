@@ -9,38 +9,31 @@ Extract features to CSV files
 """
 
 from __future__ import print_function
-import codecs
-import csv
 import os
-import sys
+import itertools
 
 import educe.corpus
-import educe.learning.keys
 import educe.glozz
 import educe.stac
 import educe.util
+
+from educe.learning.svmlight_format import dump_svmlight_file
+from educe.learning.edu_input_format import (dump_all,
+                                             load_labels)
+from educe.learning.vocabulary_format import (dump_vocabulary,
+                                              load_vocabulary)
 from ..args import add_usual_input_args
-from ..base import read_corpus_inputs, extract_pair_features
+from ..doc_vectorizer import DocumentCountVectorizer, DocumentLabelExtractor
+from educe.rst_dt.corpus import RstDtParser
+from educe.rst_dt.ptb import PtbParser
+
 
 NAME = 'extract'
-
-
-def mk_csv_writer(keys, fstream):
-    """
-    start off csv writer for a given mode
-    """
-    csv_quoting = csv.QUOTE_MINIMAL
-    writer = educe.learning.keys.OrangeWriter(fstream,
-                                              keys,
-                                              quoting=csv_quoting)
-    writer.writeheader()
-    return writer
 
 
 # ----------------------------------------------------------------------
 # options
 # ----------------------------------------------------------------------
-
 
 def config_argparser(parser):
     """
@@ -63,6 +56,17 @@ def config_argparser(parser):
                         dest='verbose')
     parser.add_argument('--parsing', action='store_true',
                         help='Extract features for parsing')
+    parser.add_argument('--vocabulary',
+                        metavar='FILE',
+                        help='Use given vocabulary for feature output '
+                        '(when extracting test data, you may want to '
+                        'use the feature vocabulary from the training '
+                        'set ')
+    parser.add_argument('--labels',
+                        metavar='FILE',
+                        help='Read label set from given feature file '
+                        '(important when extracting test data)')
+
     parser.add_argument('--debug', action='store_true',
                         help='Emit fields used for debugging purposes')
     parser.add_argument('--experimental', action='store_true',
@@ -70,87 +74,110 @@ def config_argparser(parser):
                              '(currently none)')
     parser.set_defaults(func=main)
 
+
 # ---------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------
 
-
-def main_parsing_pairs(args):
-    """
-    Main to call when live data are passed in (--parsing). Live data are data
-    that we want to discourse parsing on, so we don't know if they are attached
-    or what the label is.
-
-    There used to be an expectation that live data was also flat data
-    (given with --live), but as of 2014-03-24, we are experimenting with
-    have hierarchical live data
-    """
-    feature_set = args.feature_set
-    inputs = read_corpus_inputs(args)
-    features_file = os.path.join(args.output, 'extracted-features.tab')
-    with codecs.open(features_file, 'wb') as ofile:
-        header = feature_set.PairKeys(inputs)
-        writer = mk_csv_writer(header, ofile)
-        feats = extract_pair_features(inputs,
-                                      feature_set=feature_set,
-                                      live=True)
-        for row, _ in feats:
-            writer.writerow(row)
-
-
-def _write_pairs(gen, r_ofile, p_ofile):
-    """
-    Given a generator of pairs and the relations/pairs output
-    file handles:
-
-    * use first row as header, then write the first row
-    * write the rest of the rows
-
-    If there are no rows, this will throw an StopIteration
-    exception
-    """
-    # first row
-    p_row0, r_row0 = gen.next()
-    p_writer = mk_csv_writer(p_row0, p_ofile)
-    r_writer = mk_csv_writer(r_row0, r_ofile)
-    p_writer.writerow(p_row0)
-    r_writer.writerow(r_row0)
-    # now the rest of them
-    for p_row, r_row in gen:
-        p_writer.writerow(p_row)
-        r_writer.writerow(r_row)
-
-
-def main_corpus_pairs(args):
-    """
-    The usual main. Extract feature vectors from the corpus
-    """
-    feature_set = args.feature_set
-    inputs = read_corpus_inputs(args)
-    of_bn = os.path.join(args.output, os.path.basename(args.corpus))
-    of_ext = '.tab'
-    if not os.path.exists(args.output):
-        os.makedirs(args.output)
-
-    relations_file = of_bn + '.relations' + of_ext
-    edu_pairs_file = of_bn + '.edu-pairs' + of_ext
-    with codecs.open(relations_file, 'wb') as r_ofile:
-        with codecs.open(edu_pairs_file, 'wb') as p_ofile:
-            gen = extract_pair_features(inputs, feature_set=feature_set)
-            try:
-                _write_pairs(gen, r_ofile, p_ofile)
-            except StopIteration:
-                # FIXME: I have a nagging feeling that we should properly
-                # support this by just printing a CSV header and nothing
-                # else, but I'm trying to minimise code paths and for now
-                # failing in this corner case feels like a lesser evil :-/
-                sys.exit("No features to extract!")
-
-
 def main(args):
     "main for feature extraction mode"
+    # retrieve parameters
+    feature_set = args.feature_set
+    live = args.parsing
 
-    if args.parsing:
-        main_parsing_pairs(args)
+    # RST data
+    rst_reader = RstDtParser(args.corpus, args, coarse_rels=True)
+    rst_corpus = rst_reader.corpus
+    # TODO: change educe.corpus.Reader.slurp*() so that they return an object
+    # which contains a *list* of FileIds and a *list* of annotations
+    # (see sklearn's Bunch)
+    # on creation of these lists, one can impose the list of names to be
+    # sorted so that the order in which docs are iterated is guaranteed
+    # to be always the same
+
+    # PTB data
+    ptb_parser = PtbParser(args.ptb)
+
+    # align EDUs with sentences, tokens and trees from PTB
+    def open_plus(doc):
+        """Open and fully load a document
+
+        doc is an educe.corpus.FileId
+        """
+        # create a DocumentPlus
+        doc = rst_reader.decode(doc)
+        # populate it with layers of info
+        # tokens
+        doc = ptb_parser.tokenize(doc)
+        # syn parses
+        doc = ptb_parser.parse(doc)
+        # disc segments
+        doc = rst_reader.segment(doc)
+        # disc parse
+        doc = rst_reader.parse(doc)
+        # pre-compute the relevant info for each EDU
+        doc = doc.align_with_doc_structure()
+        # logical order is align with tokens, then align with trees
+        # but aligning with trees first for the PTB enables
+        # to get proper sentence segmentation
+        doc = doc.align_with_trees()
+        doc = doc.align_with_tokens()
+        # dummy, fallback tokenization if there is no PTB gold or silver
+        doc = doc.align_with_raw_words()
+
+        return doc
+
+    # generate DocumentPluses
+    # TODO remove sorted() once educe.corpus.Reader is able
+    # to iterate over a stable (sorted) list of FileIds
+    docs = [open_plus(doc) for doc in sorted(rst_corpus)]
+    # instance generator
+    instance_generator = lambda doc: doc.all_edu_pairs()
+
+    # extract vectorized samples
+    if args.vocabulary is not None:
+        vocab = load_vocabulary(args.vocabulary)
+        vzer = DocumentCountVectorizer(instance_generator,
+                                       feature_set,
+                                       vocabulary=vocab)
+        X_gen = vzer.transform(docs)
     else:
-        main_corpus_pairs(args)
+        vzer = DocumentCountVectorizer(instance_generator,
+                                       feature_set,
+                                       min_df=5)
+        X_gen = vzer.fit_transform(docs)
+
+    # extract class label for each instance
+    if live:
+        y_gen = itertools.repeat(0)
+    elif args.labels is not None:
+        labelset = load_labels(args.labels)
+        labtor = DocumentLabelExtractor(instance_generator,
+                                        labelset=labelset)
+        labtor.fit(docs)
+        y_gen = labtor.transform(docs)
+    else:
+        labtor = DocumentLabelExtractor(instance_generator)
+        # y_gen = labtor.fit_transform(rst_corpus)
+        # fit then transform enables to get classes_ for the dump
+        labtor.fit(docs)
+        y_gen = labtor.transform(docs)
+
+    # dump instances to files
+    if not os.path.exists(args.output):
+        os.makedirs(args.output)
+    # data file
+    of_ext = '.sparse'
+    if live:
+        out_file = os.path.join(args.output, 'extracted-features' + of_ext)
+    else:
+        of_bn = os.path.join(args.output, os.path.basename(args.corpus))
+        out_file = '{}.relations{}'.format(of_bn, of_ext)
+
+    # dump
+    dump_all(X_gen, y_gen, out_file, labtor.labelset_, docs,
+             instance_generator)
+
+    # dump vocabulary
+    vocab_file = out_file + '.vocab'
+    dump_vocabulary(vzer.vocabulary_, vocab_file)

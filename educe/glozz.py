@@ -2,12 +2,11 @@
 # License: BSD3
 
 """
-The Glozz_ file format in `educe.annotation` form
+The `Glozz <http://www.glozz.org/>`__ file format
+in `educe.annotation` form
 
 You're likely most interested in
 `slurp_corpus` and `read_annotation_file`
-
-.. _Glozz: http://www.glozz.org/
 """
 
 from __future__ import print_function

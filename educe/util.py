@@ -5,7 +5,7 @@
 Miscellaneous utility functions
 """
 
-from itertools import chain
+from itertools import chain, groupby
 import re
 
 
@@ -139,3 +139,34 @@ def add_subcommand(subparsers, module):
     return subparsers.add_parser(module_name,
                                  help=module_help,
                                  epilog=module_epilog)
+
+
+# To rewrite using np.{ediff1d, where, ...} when we go full numpy
+def relative_indices(group_indices, reverse=False, valna=None):
+    """Generate a list of relative indices inside each group.
+    Missing (None) values are handled specifically: each missing
+    value is mapped to `valna`.
+
+    Parameters
+    ----------
+    reverse: boolean, optional
+        If True, compute indices relative to the end of each group.
+    valna: int or None, optional
+        Relative index for missing values.
+    """
+    if reverse:
+        group_indices = list(group_indices)
+        group_indices.reverse()
+
+    result = []
+    for group_idx, dup_values in groupby(group_indices):
+        if group_idx is None:
+            rel_indices = (valna for dup_value in dup_values)
+        else:
+            rel_indices = (rel_idx for rel_idx, dv in enumerate(dup_values))
+        result.extend(rel_indices)
+
+    if reverse:
+        result.reverse()
+
+    return result

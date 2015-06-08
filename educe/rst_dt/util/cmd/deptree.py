@@ -8,8 +8,8 @@ Convert to dependency tree representation
 from __future__ import print_function
 import os
 
+from educe.rst_dt.deptree import (RstDepTree)
 import educe.rst_dt
-from educe.rst_dt import deptree
 
 from ..args import\
     add_usual_input_args, add_usual_output_args,\
@@ -52,12 +52,11 @@ def convert(corpus, multinuclear, odir):
         with open(os.path.join(bin_dir, suffix), 'w') as fout:
             fout.write(str(stree))
 
-        dtree = deptree.relaxed_nuclearity_to_deptree(stree)
+        dtree = RstDepTree.from_simple_rst_tree(stree)
         with open(os.path.join(dt_dir, suffix), 'w') as fout:
             fout.write(str(dtree))
 
-        stree2 = deptree.relaxed_nuclearity_from_deptree(dtree,
-                                                         multinuclear)
+        stree2 = dtree.to_simple_rst_tree(multinuclear)
         with open(os.path.join(rst2_dir, suffix), 'w') as fout:
             fout.write(str(stree2))
 

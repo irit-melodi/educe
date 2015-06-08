@@ -91,6 +91,13 @@ COORDINATING_RELATIONS = \
      'Conditional',
      'Alternation']
 
+DIALOGUE_ACTS =\
+    ['Offer',
+     'Counteroffer',
+     'Accept',
+     'Refusal',
+     'Other']
+
 _F_ADDRESSEE = 'Addressee'
 
 
@@ -124,7 +131,7 @@ def turn_id(anno):
     annotation (or None if this information is missing).
     """
     tid_str = anno.features.get('Identifier')
-    return int(tid_str) if tid_str else None
+    return int(tid_str) if tid_str is not None else None
 
 
 def addressees(anno):
@@ -252,7 +259,7 @@ def is_subordinating(annotation):
     """
     See Relation typology above
     """
-    return isinstance(annotation, Schema) and\
+    return isinstance(annotation, Relation) and\
         annotation.type in SUBORDINATING_RELATIONS
 
 
@@ -260,7 +267,7 @@ def is_coordinating(annotation):
     """
     See Relation typology above
     """
-    return isinstance(annotation, Schema) and\
+    return isinstance(annotation, Relation) and\
         annotation.type in COORDINATING_RELATIONS
 
 
@@ -313,9 +320,11 @@ def twin(corpus, anno, stage='units'):
     stage and need to get its 'units' stage equvialent to have its
     dialogue act.
 
-    :param twin_doc: unit-level document to fish twin from (None if you
-    want educe to search for it in the corpus; NB: corpus can be None if
-    you supply this)
+    Parameters
+    ----------
+    twin_doc
+        unit-level document to fish twin from (None if you want educe to search
+        for it in the corpus; NB: corpus can be None if you supply this)
     """
     if anno.origin is None:
         raise Exception('Annotation origin must be set')

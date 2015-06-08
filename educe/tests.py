@@ -10,17 +10,17 @@ Tests for educe
 
 import unittest
 
-from educe.annotation import\
-    Span, RelSpan,\
-    Annotation,\
-    Unit, Relation, Schema, Document
+from educe.annotation import (Span, RelSpan,
+                              Annotation,
+                              Unit, Relation, Schema, Document)
 import educe.graph as educe
 from   educe.graph import EnclosureGraph
+from educe.util import relative_indices
+
 
 # ---------------------------------------------------------------------
 # spans
 # ---------------------------------------------------------------------
-
 
 class SpanTest(unittest.TestCase):
     "tests for educe.annotation.Span"
@@ -140,7 +140,6 @@ class EnclosureTest(unittest.TestCase):
         s2_4b = NullAnno(2,4,'b')
         s3_4  = NullAnno(3,4,'in')
         g = EnclosureGraph([s1_5, s2_4a, s2_4b, s3_4])
-        g.reduce()
         self.assertEqual([s2_4a, s2_4b], g.inside(s1_5))
         self.assertEqual([s3_4], g.inside(s2_4a))
         self.assertEqual([s3_4], g.inside(s2_4b))
@@ -151,7 +150,6 @@ class EnclosureTest(unittest.TestCase):
         s2_4 = NullAnno(2, 4)
         s3_5 = NullAnno(3, 5)
         g = EnclosureGraph([s3_4, s2_4, s3_5])
-        g.reduce()
         self.assertEqual([s3_4], g.inside(s3_5))
         self.assertEqual([s3_4], g.inside(s2_4))
         self.assertEqual([s2_4, s3_5], g.outside(s3_4))
@@ -164,7 +162,6 @@ class EnclosureTest(unittest.TestCase):
         s_2_4 = NullAnno(2,4)
         s_3_4 = NullAnno(3,4)
         g = EnclosureGraph([s_1_5, s_2_4, s_3_4])
-        g.reduce()
         self.assertEqual([s_2_4, s_3_4], g.inside(s_1_5))
         self.assertEqual([s_1_5], g.outside(s_2_4))
         self.assertEqual([s_1_5, s_2_4], g.outside(s_3_4))
@@ -337,3 +334,26 @@ class BasicGraphTest(unittest.TestCase):
         gr4   = gr.copy(nodeset=xset4)
         self.assertEqual(xset2,             gr4.edus())
         self.assertEqual(set(['X1', 'X2']), gr4.cdus())
+
+
+def test_relative_indices():
+    """Test for relative_indices"""
+    # first example: common case
+    example1 = [0, 1, 1, 1, 2, 3, 3]
+
+    rel_exa1 = [0, 0, 1, 2, 0, 0, 1]
+    assert relative_indices(example1) == rel_exa1
+
+    inv_exa1 = [0, 2, 1, 0, 0, 1, 0]
+    assert relative_indices(example1, reverse=True) == inv_exa1
+
+    # second example: case with None
+    # each None has relative index 'valna'
+    # so if valna=0, each None is considered to be a distinct subgroup
+    example2 = [None, 0, 1, 1, None, None]
+
+    rel_exa2 = [0, 0, 0, 1, 0, 0]
+    assert relative_indices(example2, valna=0) == rel_exa2
+
+    inv_exa2 = [0, 0, 1, 0, 0, 0]
+    assert relative_indices(example2, reverse=True, valna=0) == inv_exa2

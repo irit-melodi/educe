@@ -16,9 +16,9 @@ import itertools
 import textwrap
 
 from educe.annotation import Schema
+from educe.stac.context import sorted_first_widest
 from educe.util import concat_l
 import educe.stac
-from .context import sorted_first_widest
 
 DEFAULT_INSERTS = {'Turn': ('\n', ''),
                    'Dialogue': ('\n', ''),
@@ -42,9 +42,11 @@ def annotate(txt, annotations, inserts=None):
     chat corpus, you might use newlines to indicate turn
     boundaries and square brackets for segments.
 
-    :param inserts
-    :type  inserts a dictionary from annotation type to pair of
-           its opening/closing bracket
+    Parameters
+    ----------
+    inserts
+        inserts a dictionary from annotation type to pair of
+        its opening/closing bracket
 
     FIXME: this needs to become a standard educe utility,
     maybe as part of the educe.annotation layer?

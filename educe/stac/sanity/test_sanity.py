@@ -8,13 +8,14 @@ import copy
 import unittest
 
 from educe import stac
-import educe.stac.graph as egr
+from educe.stac.context import Context
 from educe.stac.tests import\
     FakeEDU, FakeCDU, FakeRelInst, FakeDocument, FakeKey,\
     graph_ids
+import educe.stac.graph as egr
 
-from .checks import is_cross_dialogue, is_puncture, containing_cdu_chain
-from ..util.context import Context
+from .checks.annotation import is_cross_dialogue
+from .checks.graph import is_puncture
 
 
 class SanityCheckerTest(unittest.TestCase):
@@ -142,7 +143,7 @@ class CduPunctureTest(SanityCheckerTest):
 
         mark = self.edu1_2.local_id()
         self.assertEqual(list(map(get_id, [c1, c2])),
-                         containing_cdu_chain(g, ids[mark]))
+                         g.containing_cdu_chain(ids[mark]))
 
     def test_enclosed(self):
         """

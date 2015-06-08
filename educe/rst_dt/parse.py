@@ -23,7 +23,7 @@ from .annotation import\
     RSTTreeException,\
     EDU, Node,\
     RSTContext, RSTTree, SimpleRSTTree
-from .text import parse_text
+from .rst_wsj_corpus import load_rst_wsj_corpus_text_file
 from ..external.postag import generic_token_spans
 from ..internalutil import treenode
 
@@ -218,12 +218,15 @@ def read_annotation_file(anno_filename, text_filename):
     Read a single RST tree
     """
     tree = None
-    with codecs.open(text_filename, 'r', 'utf-8') as stream:
-        text = stream.read()
-        text_annos = parse_text(text)
-        context = RSTContext(text, text_annos)
+
+    # read text file
+    text, sents, paras = load_rst_wsj_corpus_text_file(text_filename)
+    # use it as context for the RST tree
+    context = RSTContext(text, sents, paras)
+    # read RST tree
     with codecs.open(anno_filename, 'r', 'utf-8') as stream:
         tree = parse_rst_dt_tree(stream.read(), context)
+
     return tree
 
 

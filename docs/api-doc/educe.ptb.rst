@@ -1,6 +1,11 @@
 educe.ptb package
 =================
 
+.. automodule:: educe.ptb
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Submodules
 ----------
 
@@ -12,11 +17,12 @@ educe.ptb.annotation module
     :undoc-members:
     :show-inheritance:
 
+educe.ptb.head_finder module
+----------------------------
 
-Module contents
----------------
-
-.. automodule:: educe.ptb
+.. automodule:: educe.ptb.head_finder
     :members:
     :undoc-members:
     :show-inheritance:
+
+

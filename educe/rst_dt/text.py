@@ -15,6 +15,8 @@ Educe-style annotations for RST discourse treebank text
 objects (paragraphs and sentences)
 """
 
+import re
+
 from educe.annotation import Standoff, Span
 
 
@@ -68,30 +70,13 @@ class Sentence(Standoff):
         return cls(cls._lpad_num, cls._lpad_span)
 
 
-def parse_text(text):
+# helper function, formerly in learning.features
+def clean_edu_text(text):
     """
-    Return a sequence of Paragraph annotations from an RST text.
-    By convention:
-
-    * paragraphs are separated by double newlines
-    * sentences by single newlines
-
-    Note that this segmentation isn't particularly reliable, and
-    seems to cut at some abbreviations, like "Prof.". It shouldn't
-    be taken too seriously, but if you need some sort of rough
-    approximation, it may be helpful.
+    Strip metadata from EDU text and compress extraneous whitespace
     """
-    start = 0
-    sent_id = 0
-    output_paras = []
-    for para_id, paragraph in enumerate(text.split("\n\n")):
-        output_sentences = []
-        for sentence in paragraph.split("\n"):
-            end = start + len(sentence)
-            if end > start:
-                output_sentences.append(Sentence(sent_id, Span(start, end)))
-                sent_id += 1
-            start = end + 1  # newline
-        output_paras.append(Paragraph(para_id, output_sentences))
-        start += 1  # second newline
-    return output_paras
+    clean_text = text
+    clean_text = re.sub(r'(\.|,)*$', r'', clean_text)
+    clean_text = re.sub(r'^"', r'', clean_text)
+    clean_text = re.sub(r'\s+', ' ', clean_text)
+    return clean_text

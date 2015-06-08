@@ -1,4 +1,6 @@
-[![Build Status](https://secure.travis-ci.org/kowey/educe.png)](http://travis-ci.org/kowey/educe)
+[![Build Status](https://secure.travis-ci.org/irit-melodi/educe.png)](http://travis-ci.org/irit-melodi/educe)
+[![Documentation
+Status](https://readthedocs.org/projects/educe/badge/?version=latest)](https://readthedocs.org/projects/educe/?badge=latest)
 
 ## About
 
@@ -20,11 +22,11 @@ and tutorials
 
 ## See also
 
-* [API Documentation][docs]
+* [Documentation][docs]
 * [Attelo][attelo]: a discourse parser
 
-[attelo]: http://github.com/kowey/attelo
-[homepage]: http://kowey.github.io/educe
+[attelo]: http://github.com/irit-melodi/attelo
+[homepage]: http://irit-melodi.github.io/educe
 [stac]:  http://www.irit.fr/STAC/
 [glozz]: http://www.glozz.org/
-[docs]:  https://educe.readthedocs.org/en/latest/api-doc/educe.html
+[docs]:  https://educe.readthedocs.org

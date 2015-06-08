@@ -10,11 +10,10 @@ import collections
 import copy
 
 import educe.stac
-from educe.util import add_corpus_filters, fields_without
+import educe.stac.postag
+from educe.stac.context import sorted_first_widest
 from educe.stac.graph import EnclosureGraph
-
 from educe.stac.util.annotate import show_diff
-from educe.stac.util.context import sorted_first_widest
 from educe.stac.util.doc import retarget
 from educe.stac.util.glozz import\
     (TimestampCache, set_anno_author, set_anno_date)
@@ -23,6 +22,7 @@ from educe.stac.util.args import\
      read_corpus_with_unannotated,
      get_output_dir, announce_output_dir)
 from educe.stac.util.output import save_document
+from educe.util import add_corpus_filters, fields_without
 
 
 NAME = 'clean-emoticons'
@@ -35,10 +35,12 @@ def config_argparser(parser):
     You should create and pass in the subparser to which the flags
     are to be added.
     """
-    parser.add_argument('corpus', metavar='DIR', help='corpus dir')
+    parser.add_argument('corpus', metavar='DIR',
+                        nargs='?',
+                        help='corpus dir')
     # don't allow stage control
     add_corpus_filters(parser, fields=fields_without(["stage"]))
-    add_usual_output_args(parser)
+    add_usual_output_args(parser, default_overwrite=True)
     parser.set_defaults(func=main)
 
 
@@ -68,7 +70,7 @@ def sorted_turns(doc):
     """
     Turn annotations in a document, sorted by text span
     """
-    return sorted_first_widest(filter(educe.stac.is_turn, doc.units))
+    return sorted_first_widest(x for x in doc.units if educe.stac.is_turn(x))
 
 
 def absorb_emoticon(doc, stamp, penult, last):
@@ -161,7 +163,7 @@ def family_banner(doc, subdoc, keys):
             return k.stage
 
     fam = "%s [%s]" % (doc, subdoc)
-    members = ", ".join(map(show_member, keys))
+    members = ", ".join(show_member(x) for x in keys)
 
     return "========== %s =========== (%s)" % (fam, members)
 
@@ -176,7 +178,7 @@ def main(args):
     corpus = read_corpus_with_unannotated(args)
     postags = educe.stac.postag.read_tags(corpus, args.corpus)
     tcache = TimestampCache()
-    output_dir = get_output_dir(args)
+    output_dir = get_output_dir(args, default_overwrite=True)
 
     families = collections.defaultdict(list)
     discourse_subcorpus = {}

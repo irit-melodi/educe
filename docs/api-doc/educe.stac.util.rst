@@ -1,6 +1,11 @@
 educe.stac.util package
 =======================
 
+.. automodule:: educe.stac.util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Submodules
 ----------
 
@@ -16,14 +21,6 @@ educe.stac.util.args module
 ---------------------------
 
 .. automodule:: educe.stac.util.args
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-educe.stac.util.context module
-------------------------------
-
-.. automodule:: educe.stac.util.context
     :members:
     :undoc-members:
     :show-inheritance:
@@ -77,10 +74,3 @@ educe.stac.util.showscores module
     :show-inheritance:
 
 
-Module contents
----------------
-
-.. automodule:: educe.stac.util
-    :members:
-    :undoc-members:
-    :show-inheritance:

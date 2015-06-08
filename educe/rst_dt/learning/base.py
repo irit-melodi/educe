@@ -3,22 +3,9 @@ Basics for feature extraction
 """
 
 from __future__ import print_function
-from collections import namedtuple
+
 from functools import wraps
-import copy
-import itertools
-import os
-
-import educe.util
-from educe.internalutil import treenode, ifilter
-from educe.learning.keys import KeyGroup, MergedKeyGroup, HeaderType,\
-    ClassKeyGroup
-from educe.external.postag import Token
-from educe.rst_dt import (SimpleRSTTree, deptree, id_to_path,
-                          ptb as r_ptb)
-from educe.rst_dt.annotation import EDU
-from educe.rst_dt.text import Sentence, Paragraph
-
+import itertools as it
 
 class FeatureExtractionException(Exception):
     """
@@ -27,24 +14,6 @@ class FeatureExtractionException(Exception):
     """
     def __init__(self, msg):
         super(FeatureExtractionException, self).__init__(msg)
-
-
-# The comments on these named tuples can be docstrings in Python3,
-# or we can wrap the class, but eh...
-
-# Global resources and settings used to extract feature vectors
-FeatureInput = namedtuple('FeatureInput',
-                          ['corpus', 'ptb', 'debug'])
-
-# A document and relevant contextual information
-DocumentPlus = namedtuple('DocumentPlus',
-                          ['key',
-                           'edus',
-                           'rsttree',
-                           'deptree',
-                           'ptb_trees',  # only those that overlap
-                           'ptb_tokens',  # only those that overlap
-                           'surrounders'])
 
 
 # ---------------------------------------------------------------------
@@ -127,223 +96,13 @@ def on_last_bigram(wrapped):
     return inner
 
 
-# ---------------------------------------------------------------------
-# single EDU features: meta features
-# ---------------------------------------------------------------------
-
-@edu_feature
-def feat_start(edu):
-    "text span start"
-    return edu.text_span().char_start
-
-
-@edu_feature
-def feat_end(edu):
-    "text span end"
-    return edu.text_span().char_end
-
-
-@edu_feature
-def feat_id(edu):
-    "some sort of unique identifier for the EDU"
-    return edu.identifier()
-
-
-# ---------------------------------------------------------------------
-# pair of EDUs meta features
-# ---------------------------------------------------------------------
-
-def feat_grouping(current, edu1, edu2):
-    "which file in the corpus this pair appears in"
-    return os.path.basename(id_to_path(current.key))
-
-
-# ---------------------------------------------------------------------
-# single EDU key groups
-# ---------------------------------------------------------------------
-
-class SingleEduSubgroup(KeyGroup):
-    """
-    Abstract keygroup for subgroups of the merged SingleEduKeys.
-    We use these subgroup classes to help provide modularity, to
-    capture the idea that the bits of code that define a set of
-    related feature vector keys should go with the bits of code
-    that also fill them out
-    """
-    def __init__(self, description, keys):
-        super(SingleEduSubgroup, self).__init__(description, keys)
-
-    def fill(self, current, edu, target=None):
-        """
-        Fill out a vector's features (if the vector is None, then we
-        just fill out this group; but in the case of a merged key
-        group, you may find it desirable to fill out the merged
-        group instead)
-
-        This defaults to _magic_fill if you don't implement it.
-        """
-        self._magic_fill(current, edu, target)
-
-    def _magic_fill(self, current, edu, target=None):
-        """
-        Possible fill implementation that works on the basis of
-        features defined wholly as magic keys
-        """
-        vec = self if target is None else target
-        for key in self.keys:
-            vec[key.name] = key.function(current, edu)
-
-
-class BaseSingleEduKeys(MergedKeyGroup):
-    """Base class for single EDU features.
-
-    Warning: This class should not be used directly. Use derived classes
-    instead.
-    """
-    def __init__(self, inputs, feature_groups):
-        desc = "Single EDU features"
-        super(BaseSingleEduKeys, self).__init__(desc, feature_groups)
-
-    def fill(self, current, edu, target=None):
-        """
-        See `SingleEduSubgroup.fill`
-        """
-        vec = self if target is None else target
-        for group in self.groups:
-            group.fill(current, edu, vec)
-
-
-# ---------------------------------------------------------------------
-# EDU pairs
-# ---------------------------------------------------------------------
-
-class PairSubgroup(KeyGroup):
-    """
-    Abstract keygroup for subgroups of the merged PairKeys.
-    We use these subgroup classes to help provide modularity, to
-    capture the idea that the bits of code that define a set of
-    related feature vector keys should go with the bits of code
-    that also fill them out
-    """
-    def __init__(self, description, keys):
-        super(PairSubgroup, self).__init__(description, keys)
-
-    def fill(self, current, edu1, edu2, target=None):
-        """
-        Fill out a vector's features (if the vector is None, then we
-        just fill out this group; but in the case of a merged key
-        group, you may find it desirable to fill out the merged
-        group instead)
-
-        Defaults to _magic_fill if not defined
-        """
-        self._magic_fill(current, edu1, edu2, target)
-
-    def _magic_fill(self, current, edu1, edu2, target=None):
-        """
-        Possible fill implementation that works on the basis of
-        features defined wholly as magic keys
-        """
-        vec = self if target is None else target
-        for key in self.keys:
-            vec[key.name] = key.function(current, edu1, edu2)
-
-
-class BasePairKeys(MergedKeyGroup):
-    """Base class for EDU pair features.
-
-    Parameters
-    ----------
-
-    sf_cache :  dict(EDU, SingleEduKeys), optional (default=None)
-        Should only be None if you're just using this to generate help text.
-    """
-
-    def __init__(self, inputs, pair_feature_groups, sf_cache=None):
-        self.sf_cache = sf_cache
-
-        if sf_cache is None:
-            self.edu1 = self.init_single_features(inputs)
-            self.edu2 = self.init_single_features(inputs)
-        else:
-            self.edu1 = None  # will be filled out later
-            self.edu2 = None  # from the feature cache
-
-        desc = "pair features"
-        super(BasePairKeys, self).__init__(desc, pair_feature_groups)
-
-    def init_single_features(self, inputs):
-        """Init features defined on single EDUs"""
-        raise NotImplementedError()
-
-    def csv_headers(self, htype=False):
-        if htype in [HeaderType.OLD_CSV, HeaderType.NAME]:
-            return (super(BasePairKeys, self).csv_headers(htype) +
-                    [h + "_EDU1" for h in self.edu1.csv_headers(htype)] +
-                    [h + "_EDU2" for h in self.edu2.csv_headers(htype)])
-        else:
-            return (super(BasePairKeys, self).csv_headers(htype) +
-                    self.edu1.csv_headers(htype) +
-                    self.edu2.csv_headers(htype))
-
-    def csv_values(self):
-        return (super(BasePairKeys, self).csv_values() +
-                self.edu1.csv_values() +
-                self.edu2.csv_values())
-
-    def help_text(self):
-        lines = [super(BasePairKeys, self).help_text(),
-                 "",
-                 self.edu1.help_text()]
-        return "\n".join(lines)
-
-    def fill(self, current, edu1, edu2, target=None):
-        "See `PairSubgroup`"
-        vec = self if target is None else target
-        vec.edu1 = self.sf_cache[edu1]
-        vec.edu2 = self.sf_cache[edu2]
-        for group in self.groups:
-            group.fill(current, edu1, edu2, vec)
-
-
-# ---------------------------------------------------------------------
-# extraction generators
-# ---------------------------------------------------------------------
-
-def get_sentence(current, edu):
-    "get sentence surrounding this EDU"
-    # TODO do we need bounds-checking or lookup failure handling?
-    return current.surrounders[edu][1]
-
-
-def get_paragraph(current, edu):
-    "get paragraph surrounding this EDU"
-    # TODO do we need bounds-checking or lookup failure handling?
-    return current.surrounders[edu][0]
-
-
 # tree utils
-# TODO move to a more appropriate place
-def simplify_deptree(dtree):
-    """
-    Boil a dependency tree down into a dictionary from (edu, edu) to rel
-    """
-    relations = {}
-
-    def _simplify_deptree(tree):
-        "recursively fill the relations dict"
-        src = treenode(tree)
-        for kid in tree:
-            tgt = treenode(kid)
-            relations[(src.edu, tgt.edu)] = tgt.rel
-            _simplify_deptree(kid)
-
-    _simplify_deptree(dtree)
-    return relations
-
-
 def lowest_common_parent(treepositions):
-    """Find tree position of the lowest common parent of a list of nodes."""
+    """Find tree position of the lowest common parent of a list of nodes.
+
+    treepositions is a list of tree positions
+    see nltk.tree.Tree.treepositions()
+    """
     if not treepositions:
         return None
 
@@ -362,192 +121,136 @@ def lowest_common_parent(treepositions):
 # end of tree utils
 
 
-def containing(span):
-    """
-    span -> anno -> bool
+class DocumentPlusPreprocessor(object):
+    """Preprocessor for feature extraction on a DocumentPlus
 
-    if this annotation encloses the given span
-    """
-    return lambda x: x.text_span().encloses(span)
-
-
-def _filter0(pred, iterable):
-    """
-    First item that satisifies a predicate in a given
-    iterable, otherwise None
-    """
-    matches = ifilter(pred, iterable)
-    try:
-        return matches.next()
-    except StopIteration:
-        return None
-
-
-def _surrounding_text(edu):
-    """
-    Determine which paragraph and sentence (if any) surrounds
-    this EDU. Try to accomodate the occasional off-by-a-smidgen
-    error by folks marking these EDU boundaries, eg. original
-    text:
-
-    Para1: "Magazines are not providing us in-depth information on
-    circulation," said Edgar Bronfman Jr., .. "How do readers feel
-    about the magazine?...
-    Research doesn't tell us whether people actually do read the
-    magazines they subscribe to."
-
-    Para2: Reuben Mark, chief executive of Colgate-Palmolive, said...
-
-    Marked up EDU is wide to the left by three characters:
-    "
-
-    Reuben Mark, chief executive of Colgate-Palmolive, said...
-    """
-    if edu.is_left_padding():
-        sent = Sentence.left_padding()
-        para = Paragraph.left_padding([sent])
-        return para, sent
-    # normal case
-    espan = edu.text_span()
-    para = _filter0(containing(espan), edu.context.paragraphs)
-    # sloppy EDUs happen; try shaving off some characters
-    # if we can't find a paragraph
-    if para is None:
-        espan = copy.copy(espan)
-        espan.char_start += 1
-        espan.char_end -= 1
-        etext = edu.context.text(espan)
-        # kill left whitespace
-        espan.char_start += len(etext) - len(etext.lstrip())
-        etext = etext.lstrip()
-        # kill right whitespace
-        espan.char_end -= len(etext) - len(etext.rstrip())
-        etext = etext.rstrip()
-        # try again
-        para = _filter0(containing(espan), edu.context.paragraphs)
-
-    sent = _filter0(containing(espan), para.sentences) if para else None
-    return para, sent
-
-
-def _ptb_stuff(doc_ptb_trees, edu):
-    """
-    The PTB trees and tokens which are relevant to any given edu
-    """
-    if doc_ptb_trees is None:
-        return None, None
-    if edu.is_left_padding():
-        start_token = Token.left_padding()
-        ptb_tokens = [start_token]
-        ptb_trees = []
-    else:
-        ptb_trees = [t for t in doc_ptb_trees if t.overlaps(edu)]
-        all_tokens = itertools.chain.from_iterable(t.leaves()
-                                                   for t in ptb_trees)
-        ptb_tokens = [tok for tok in all_tokens if tok.overlaps(edu)]
-    return ptb_trees, ptb_tokens
-
-
-def preprocess(inputs, k):
-    """
-    Pre-process and bundle up a representation of the current document
-    """
-    rtree = SimpleRSTTree.from_rst_tree(inputs.corpus[k])
-
-    lpad = EDU.left_padding()
-    edus = [lpad]
-    edus.extend(rtree.leaves())
-    # update origin and context of left padding EDU (ugly)
-    lpad.set_context(edus[1].context)
-    lpad.set_origin(edus[1].origin)
-
-    # convert to deptree
-    dtree = deptree.relaxed_nuclearity_to_deptree(rtree, lpad)
-    # align with document structure
-    surrounders = {edu: _surrounding_text(edu) for edu in edus}
-    # align with syntactic structure
-    doc_ptb_trees = r_ptb.parse_trees(inputs.corpus, k, inputs.ptb)
-    ptb_trees = {}
-    ptb_tokens = {}
-    for edu in edus:
-        ptb_trees[edu], ptb_tokens[edu] = _ptb_stuff(doc_ptb_trees, edu)
-
-    return DocumentPlus(key=k,
-                        edus=edus,
-                        rsttree=rtree,
-                        deptree=dtree,
-                        ptb_trees=ptb_trees,
-                        ptb_tokens=ptb_tokens,
-                        surrounders=surrounders)
-
-
-def extract_pair_features(inputs, feature_set, live=False):
-    """
-    Return a pair of dictionaries, one for attachments
-    and one for relations
+    This pre-processor currently does not explicitly impute missing values,
+    but it probably should eventually.
+    As the ultimate output is features in a sparse format, the current
+    strategy amounts to imputing missing values as 0, which is most
+    certainly not optimal.
     """
 
-    for k in inputs.corpus:
-        current = preprocess(inputs, k)
-        edus = current.edus
-        # reduced dependency graph as dictionary (edu to [edu])
-        relations = simplify_deptree(current.deptree) if not live else {}
+    def __init__(self, token_filter=None):
+        """
+        token_filter is a function that returns True if a token should be
+        kept; if None is provided, all tokens are kept
+        """
+        if token_filter is None:
+            token_filter = lambda token: True
+        self.token_filter = token_filter
 
-        # single edu features
-        sf_cache = {}
-        for edu in edus:
-            sf_cache[edu] = feature_set.SingleEduKeys(inputs)
-            sf_cache[edu].fill(current, edu)
+    def preprocess(self, doc, strict=False):
+        """Preprocess a document and output basic features for each EDU.
 
-        # pairs
-        # the fake root cannot have any incoming edge
-        for epair in itertools.product(edus, edus[1:]):
-            edu1, edu2 = epair
-            if edu1 == edu2:
-                continue
-            vec = feature_set.PairKeys(inputs, sf_cache=sf_cache)
-            vec.fill(current, edu1, edu2)
+        Return a dict(EDU, (dict(basic_feat_name, basic_feat_val)))
 
-            if live:
-                yield vec, vec
-            else:
-                pairs_vec = ClassKeyGroup(vec)
-                pairs_vec.set_class(epair in relations)
-                rels_vec = ClassKeyGroup(vec)
-                rels_vec.set_class(relations[epair] if epair in relations
-                                   else 'UNRELATED')
+        TODO explicitly impute missing values, e.g. for (rev_)idxes_in_*
+        """
+        token_filter = self.token_filter
 
-                yield pairs_vec, rels_vec
+        edus = doc.edus
+        raw_words = doc.raw_words  # TEMPORARY
+        tokens = doc.tkd_tokens
+        trees = doc.tkd_trees
+        # mappings from EDU to other annotations
+        edu2raw_sent = doc.edu2raw_sent
+        edu2para = doc.edu2para
+        edu2sent = doc.edu2sent
+        edu2tokens = doc.edu2tokens
+        lex_heads = doc.lex_heads  # EXPERIMENTAL
+        
+        # pre-compute relative indices (in sent, para) in one iteration
+        # NB: moved to document_plus itself
+        idxes_in_sent = doc.edu2idx_in_sent
+        rev_idxes_in_sent = doc.edu2rev_idx_in_sent
 
+        idxes_in_para = doc.edu2idx_in_para
+        rev_idxes_in_para = doc.edu2rev_idx_in_para
 
-# ---------------------------------------------------------------------
-# input readers
-# ---------------------------------------------------------------------
+        result = dict()
 
+        # special case: left padding EDU
+        edu = edus[0]
+        res = dict()
+        res['edu'] = edu
+        # raw words (temporary)
+        res['raw_words'] = []
+        # tokens
+        res['tokens'] = []  # TODO: __START__ / __START__ ?
+        res['tags'] = []  # TODO: __START__ ?
+        res['words'] = []  # TODO: __START__ ?
+        res['tok_beg'] = 0  # EXPERIMENTAL
+        res['tok_end'] = 0  # EXPERIMENTAL
+        # sentence
+        res['edu_idx_in_sent'] = idxes_in_sent[0]
+        res['edu_rev_idx_in_sent'] = rev_idxes_in_sent[0]
+        res['sent_idx'] = 0
+        # para
+        res['edu_rev_idx_in_para'] = rev_idxes_in_para[0]
+        # aka paragraphID
+        res['para_idx'] = 0
+        # raw sent
+        res['raw_sent_idx'] = edu2raw_sent[0]
+        result[edu] = res
 
-def read_common_inputs(args, corpus, ptb):
-    """
-    Read the data that is common to live/corpus mode.
-    """
-    return FeatureInput(corpus, ptb, args.debug)
+        # regular EDUs
+        for edu_idx, edu in enumerate(edus[1:], start=1):
+            res = dict()
+            res['edu'] = edu
 
+            # raw words (temporary)
+            res['raw_words'] = raw_words[edu]
 
-def read_help_inputs(_):
-    """
-    Read the data (if any) that is needed just to produce
-    the help text
-    """
-    return FeatureInput(None, None, True)
+            # tokens
+            if tokens is not None:
+                tok_idcs = edu2tokens[edu_idx]
+                toks = [tokens[tok_idx] for tok_idx in tok_idcs]
+                if toks:
+                    filtd_toks = [tt for tt in toks if token_filter(tt)]
+                    res['tokens'] = filtd_toks
+                    res['tags'] = [tok.tag for tok in filtd_toks]
+                    res['words'] = [tok.word for tok in filtd_toks]
+                else:
+                    if strict:
+                        emsg = 'No token for EDU'
+                        print(list(enumerate(tokens)))
+                        print(tok_idcs)
+                        print(edu.text())
+                        raise ValueError(emsg)
+                    # maybe I should fill res with empty lists? unclear
 
+            # doc structure
 
-def read_corpus_inputs(args):
-    """
-    Read the data (if any) that is needed just to produce
-    training data
-    """
-    is_interesting = educe.util.mk_is_interesting(args)
-    reader = educe.rst_dt.Reader(args.corpus)
-    anno_files = reader.filter(reader.files(), is_interesting)
-    corpus = reader.slurp(anno_files, verbose=True)
-    ptb = r_ptb.reader(args.ptb)
-    return read_common_inputs(args, corpus, ptb)
+            # position of sentence containing EDU in doc
+            # aka sentence_id
+            res['sent_idx'] = edu2sent[edu_idx]
+
+            # position of EDU in sentence
+            # aka num_edus_from_sent_start aka offset
+            res['edu_idx_in_sent'] = idxes_in_sent[edu_idx]
+            # aka num_edus_to_sent_end aka revOffset
+            res['edu_rev_idx_in_sent'] = rev_idxes_in_sent[edu_idx]
+
+            # position of paragraph containing EDU in doc
+            # aka paragraphID
+            res['para_idx'] = edu2para[edu_idx]
+            # position of raw sentence
+            res['raw_sent_idx'] = edu2raw_sent[edu_idx]
+
+            # position of EDU in paragraph
+            # aka num_edus_to_para_end aka revSentenceID (?!)
+            # TODO: check for the 10th time if this is a bug in Li et al.'s
+            # parser
+            res['edu_rev_idx_in_para'] = rev_idxes_in_para[edu_idx]
+
+            # syntax
+            if len(trees) > 1:
+                tree_idx = edu2sent[edu_idx]
+                if tree_idx is not None:
+                    tree = trees[tree_idx]
+                    res['ptree'] = tree
+                    res['pheads'] = lex_heads[tree_idx]
+            result[edu] = res
+
+        return result

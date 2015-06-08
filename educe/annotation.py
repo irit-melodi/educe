@@ -16,6 +16,7 @@ some sort of graph representation of them
 # License: CeCILL-B (French BSD3)
 
 # pylint: disable=too-many-arguments, protected-access
+# pylint: disable=too-few-public-methods
 
 from itertools import chain
 
@@ -43,6 +44,9 @@ class Span(object):
 
     def __str__(self):
         return '(%d,%d)' % (self.char_start, self.char_end)
+
+    def __repr__(self):
+        return 'Span(%d, %d)' % (self.char_start, self.char_end)
 
     def __lt__(self, other):
         return self.char_start < other.char_start or\
@@ -166,23 +170,32 @@ class Span(object):
         Return a span that stretches from the beginning to the end
         of all the spans in the list
         """
+        spans = list(spans)
+        if len(spans) < 1:
+            raise ValueError("must have at least one span")
         big_start = min(x.char_start for x in spans)
         big_end = max(x.char_end for x in spans)
         return Span(big_start, big_end)
 
 
-# pylint: disable=too-few-public-methods, invalid-name
+# pylint: disable=invalid-name
 class RelSpan(object):
     """
     Which two units a relation connections.
     """
     def __init__(self, t1, t2):
         self.t1 = t1
+        "string: id of an annotation"
+
         self.t2 = t2
+        "string: id of an annotation"
 
     def __str__(self):
         return '%s -> %s' % (self.t1, self.t2)
-# pylint: enable=too-few-public-methods, invalid-name
+
+    def __repr__(self):
+        return 'RelSpan(%s, %s)' % (self.t1, self.t2)
+# pylint: enable=invalid-name
 
 
 # pylint: disable=no-self-use
@@ -363,13 +376,16 @@ class Relation(Annotation):
 
     Use the `source` and `target` field to grab these respective
     annotations, but note that they are only instantiated after
-    `fleshout` is called (when initialising a `Document`, any
-    relations and schemas within are also fleshed out)
+    `fleshout` is called (corpus slurping normally fleshes out
+    documents and thus their relations)
     """
     def __init__(self, rel_id, span, rtype, features, metadata=None):
         Annotation.__init__(self, rel_id, span, rtype, features, metadata)
         self.source = None  # to be defined in fleshout
+        'source annotation; will be defined by fleshout'
+
         self.target = None
+        'target annotation; will be defined by fleshout'
 
     def _members(self):
         return [self.source, self.target]
@@ -400,6 +416,10 @@ class Schema(Annotation):
 
     Use the `members` field to grab the annotations themselves.
     But note that it is only created when `fleshout` is called.
+
+    :type units: set(string)
+    :type relations: set(string)
+    :type schemas: set(string)
     """
     def __init__(self, rel_id, units, relations, schemas, stype,
                  features, metadata=None):
@@ -480,8 +500,10 @@ class Document(Standoff):
     def set_origin(self, origin):
         """
         If you have more than one document, it's a good idea to
-        set its origin to an `educe.corpus.file_id` so that you
+        set its origin to a file ID so that you
         can more reliably the annotations apart.
+
+        :type origin: :py:class:`educe.corpus.FileId`
         """
         self.origin = origin
         for anno in self.annotations():

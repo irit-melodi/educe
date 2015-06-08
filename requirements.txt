@@ -1,7 +1,2 @@
---allow-external pydot
---allow-external python-graph-core
---allow-external python-graph-dot
---allow-unverified pydot
---allow-unverified python-graph-core
---allow-unverified python-graph-dot
+git+https://github.com/nlhepler/pydot.git#egg=pydot
 -e .

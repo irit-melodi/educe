@@ -1,11 +1,17 @@
 educe.stac package
 ==================
 
+.. automodule:: educe.stac
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Subpackages
 -----------
 
 .. toctree::
 
+    educe.stac.edit
     educe.stac.learning
     educe.stac.lexicon
     educe.stac.oneoff
@@ -19,6 +25,14 @@ educe.stac.annotation module
 ----------------------------
 
 .. automodule:: educe.stac.annotation
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+educe.stac.context module
+-------------------------
+
+.. automodule:: educe.stac.context
     :members:
     :undoc-members:
     :show-inheritance:
@@ -39,6 +53,22 @@ educe.stac.corpus module
     :undoc-members:
     :show-inheritance:
 
+educe.stac.fake_graph module
+----------------------------
+
+.. automodule:: educe.stac.fake_graph
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+educe.stac.fusion module
+------------------------
+
+.. automodule:: educe.stac.fusion
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 educe.stac.graph module
 -----------------------
 
@@ -55,11 +85,12 @@ educe.stac.postag module
     :undoc-members:
     :show-inheritance:
 
+educe.stac.rfc module
+---------------------
 
-Module contents
----------------
-
-.. automodule:: educe.stac
+.. automodule:: educe.stac.rfc
     :members:
     :undoc-members:
     :show-inheritance:
+
+

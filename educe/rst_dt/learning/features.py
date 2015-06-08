@@ -2,396 +2,287 @@
 Feature extraction library functions for RST_DT corpus
 """
 
-from collections import Counter
-from functools import wraps
-import re
+from educe.learning.keys import Substance
+from .base import DocumentPlusPreprocessor
 
-from educe.learning.csv import tune_for_csv
-from educe.learning.keys import MagicKey
-from educe.learning.util import tuple_feature, underscore
-from .base import (SingleEduSubgroup, PairSubgroup,
-                   BaseSingleEduKeys, BasePairKeys,
-                   on_first_unigram, on_last_unigram,
-                   on_first_bigram, on_last_bigram,
-                   edu_feature, edu_pair_feature,
-                   feat_id, feat_start, feat_end,
-                   feat_grouping,
-                   get_sentence, get_paragraph)
+
+def build_doc_preprocessor():
+    """Build the preprocessor for feature extraction in each EDU of doc"""
+    return DocumentPlusPreprocessor().preprocess
 
 
 # ---------------------------------------------------------------------
 # single EDUs
 # ---------------------------------------------------------------------
 
-def clean_edu_text(text):
-    """
-    Strip metadata from EDU text and compress extraneous whitespace
-    """
-    clean_text = text
-    clean_text = re.sub(r'(\.|,)*$', r'', clean_text)
-    clean_text = re.sub(r'^"', r'', clean_text)
-    clean_text = re.sub(r'\s+', ' ', clean_text)
-    return clean_text
+# formerly Text subgroup
+# raw words aka not-PTB-tokens
+SINGLE_RAW_WORD = [
+    ('word_first', Substance.DISCRETE),
+    ('word_last', Substance.DISCRETE),
+    ('bigram_first', Substance.DISCRETE),
+    ('bigram_last', Substance.DISCRETE),
+    ('num_tokens', Substance.CONTINUOUS)
+]
 
 
-def clean_corpus_word(word):
-    """
-    Given a word from the corpus, return a slightly normalised
-    version of that word
-    """
-    return word.lower()
-
-
-def tokens_feature(wrapped):
-    """
-    Lift a function from `tokens -> feature` to
-    `single_function_input -> feature`
-    """
-    @edu_feature
-    @wraps(wrapped)
-    def inner(edu):
-        "(edu -> f) -> ((context, edu) -> f)"
-        tokens = [tune_for_csv(clean_corpus_word(x))
-                  for x in clean_edu_text(edu.text()).split()]
-        return wrapped(tokens)
-    return inner
-
-
-def ptb_tokens_feature(wrapped):
-    """
-    Lift a function from `[ptb_token] -> feature`
-    to `single_function_input -> feature`
-    """
-    @wraps(wrapped)
-    def inner(context, edu):
-        "([ptb_token] -> f) -> ((context, edu) -> f)"
-        tokens = context.ptb_tokens[edu]
-        return wrapped(tokens) if tokens is not None else None
-    return inner
-
-
-# ---------------------------------------------------------------------
-# single EDU features
-# ---------------------------------------------------------------------
-
-# not-PTB-tokens
-
-@tokens_feature
-@on_first_unigram
-def word_first(token):
-    "first word in the EDU (normalised)"
-    return token
-
-
-@tokens_feature
-@on_last_unigram
-def word_last(token):
-    "last word in the EDU (normalised)"
-    return token
-
-
-@tokens_feature
-@on_first_bigram
-def bigram_first(token):
-    "first two words in the EDU (normalised)"
-    return token
-
-
-@tokens_feature
-@on_last_bigram
-def bigram_last(token):
-    "first two words in the EDU (normalised)"
-    return token
-
-
-@tokens_feature
-def num_tokens(tokens):
-    "number of distinct tokens in EDU text"
-    return len(tokens)
+def extract_single_raw_word(edu_info):
+    """raw word features for the EDU"""
+    raw_words = edu_info['raw_words']
+    if raw_words:
+        yield ('word_first', raw_words[0])
+        yield ('word_last', raw_words[-1])
+    if len(raw_words) > 1:
+        yield ('bigram_first', (raw_words[0], raw_words[1]))
+        yield ('bigram_last', (raw_words[-2], raw_words[-1]))
+    yield ('num_tokens', len(raw_words))
 
 
 # PTB tokens
+# note: PTB tokens may not necessarily correspond to words
 
-@ptb_tokens_feature
-@on_first_unigram
-def ptb_pos_tag_first(token):
-    "POS tag for first PTB token in the EDU"
-    # note: PTB tokens may not necessarily correspond to words
-    return token.tag
-
-
-@ptb_tokens_feature
-@on_last_unigram
-def ptb_pos_tag_last(token):
-    "POS tag for last PTB token in the EDU"
-    # note: PTB tokens may not necessarily correspond to words
-    return token.tag
+SINGLE_PTB_TOKEN_WORD = [
+    ('ptb_word_first', Substance.DISCRETE),
+    ('ptb_word_last', Substance.DISCRETE),
+    ('ptb_word_first2', Substance.DISCRETE),
+    ('ptb_word_last2', Substance.DISCRETE)
+]
 
 
-@ptb_tokens_feature
-@on_first_unigram
-def ptb_word_first(token):
-    "first PTB word in the EDU"
-    return token.word
+def extract_single_ptb_token_word(edu_info):
+    """word features on PTB tokens for the EDU"""
+    try:
+        words = edu_info['words']
+    except KeyError:
+        return
+
+    if words:
+        yield ('ptb_word_first', words[0])
+        yield ('ptb_word_last', words[-1])
+
+    if len(words) > 1:
+        yield ('ptb_word_first2', (words[0], words[1]))
+        yield ('ptb_word_last2', (words[-2], words[-1]))
 
 
-@ptb_tokens_feature
-@on_last_unigram
-def ptb_word_last(token):
-    "last PTB word in the EDU"
-    return token.word
+SINGLE_PTB_TOKEN_POS = [
+    ('ptb_pos_tag_first', Substance.DISCRETE),
+    ('ptb_pos_tag_last', Substance.DISCRETE),
+    ('ptb_pos_tag_first2', Substance.DISCRETE),
+    ('ptb_pos_tag_last2', Substance.DISCRETE),
+]
 
 
-@ptb_tokens_feature
-@on_first_bigram
-def ptb_pos_tag_first2(token):
-    "POS tag for first two PTB tokens in the EDU"
-    # note: PTB tokens may not necessarily correspond to words
-    return token.tag
+def extract_single_ptb_token_pos(edu_info):
+    """POS features on PTB tokens for the EDU"""
+    try:
+        tags = edu_info['tags']
+    except KeyError:
+        return
+
+    if tags:
+        yield ('ptb_pos_tag_first', tags[0])
+        yield ('ptb_pos_tag_last', tags[-1])
+
+    if len(tags) > 1:
+        yield ('ptb_pos_tag_first2', (tags[0], tags[1]))
+        yield ('ptb_pos_tag_last2', (tags[-2], tags[-1]))
 
 
-@ptb_tokens_feature
-@on_last_bigram
-def ptb_pos_tag_last2(token):
-    "POS tag for last two PTB tokens in the EDU"
-    # note: PTB tokens may not necessarily correspond to words
-    return token.tag
+def build_edu_feature_extractor():
+    """Build the feature extractor for single EDUs"""
+    feats = []
+    funcs = []
 
+    # raw word
+    feats.extend(SINGLE_RAW_WORD)
+    funcs.append(extract_single_raw_word)
+    # PTB word
+    feats.extend(SINGLE_PTB_TOKEN_WORD)
+    funcs.append(extract_single_ptb_token_word)
+    # PTB pos
+    feats.extend(SINGLE_PTB_TOKEN_POS)
+    funcs.append(extract_single_ptb_token_pos)
 
-@ptb_tokens_feature
-@on_first_bigram
-def ptb_word_first2(token):
-    "first two PTB words in the EDU"
-    return token.word
+    def _extract_all(edu_info):
+        """inner helper because I am lost at sea here"""
+        # TODO do this in a cleaner manner
+        for fct in funcs:
+            for feat in fct(edu_info):
+                yield feat
 
-
-@ptb_tokens_feature
-@on_last_bigram
-def ptb_word_last2(token):
-    "last PTB words in the EDU"
-    return token.word
+    # header
+    header = feats
+    # extractor
+    feat_extractor = _extract_all
+    # return header and extractor
+    return header, feat_extractor
 
 
 # ---------------------------------------------------------------------
 # pair EDU features
 # ---------------------------------------------------------------------
 
-@edu_pair_feature
-def num_edus_between(edu1, edu2):
-    "number of EDUs between the two EDUs"
-    return abs(edu2.num - edu1.num) - 1
+PAIR_GAP = [
+    ('num_edus_between', Substance.CONTINUOUS),
+    ('same_paragraph', Substance.DISCRETE),
+    ('same_bad_sentence', Substance.DISCRETE),
+    ('same_ptb_sentence', Substance.DISCRETE)
+]
 
 
-def same_paragraph(current, edu1, edu2):
-    "if in the same paragraph"
-    para1 = get_paragraph(current, edu1)
-    para2 = get_paragraph(current, edu2)
-    return para1 is not None and para2 is not None and\
-        para1 == para2
+def extract_pair_gap(edu_info1, edu_info2):
+    """Document tuple features"""
+    edu_num1 = edu_info1['edu'].num
+    edu_num2 = edu_info2['edu'].num
+
+    edu_num_diff = abs(edu_num2 - edu_num1) - 1
+    yield ('num_edus_between', edu_num_diff)
+
+    try:
+        para_id1 = edu_info1['para_idx']
+        para_id2 = edu_info2['para_idx']
+    except KeyError:
+        pass
+    else:
+        same_para = (para_id1 is not None and
+                     para_id2 is not None and
+                     para_id1 == para_id2)
+        yield ('same_paragraph', same_para)
+
+    # same sentence, raw segmentation
+    raw_sent_id1 = edu_info1['raw_sent_idx']
+    raw_sent_id2 = edu_info2['raw_sent_idx']
+    same_bad_sent = (raw_sent_id1 is not None and
+                     raw_sent_id2 is not None and
+                     raw_sent_id1 == raw_sent_id2)
+    yield ('same_bad_sentence', same_bad_sent)
+
+    # same sentence, ptb segmentation
+    # FIXME fix behaviour for sentences with no gold segmentation,
+    # as then edu2sent = edu2raw_sent
+    sent_id1 = edu_info1['sent_idx']
+    sent_id2 = edu_info2['sent_idx']
+    same_ptb_sent = (sent_id1 is not None and
+                     sent_id2 is not None and
+                     sent_id1 == sent_id2)
+    yield ('same_ptb_sentence', same_ptb_sent)
 
 
-def same_bad_sentence(current, edu1, edu2):
-    "if in the same sentence (bad segmentation)"
-    sent1 = get_sentence(current, edu1)
-    sent2 = get_sentence(current, edu2)
-    return sent1 is not None and sent2 is not None and\
-        sent1 == sent2
+PAIR_RAW_WORD = [
+    ('word_first_pairs', Substance.DISCRETE),
+    ('word_last_pairs', Substance.DISCRETE),
+    ('bigram_first_pairs', Substance.DISCRETE),
+    ('bigram_last_pairs', Substance.DISCRETE),
+]
 
 
-def same_ptb_sentence(current, edu1, edu2):
-    "if in the same sentence (ptb segmentation)"
-    sents1 = current.ptb_trees[edu1]
-    sents2 = current.ptb_trees[edu2]
-    if sents1 is None or sents2 is None:
-        return False
-    has_overlap = bool([s for s in sents1 if s in sents2])
-    return has_overlap
+def extract_pair_raw_word(edu_info1, edu_info2):
+    """raw word features on EDU pairs"""
+    raw_words1 = edu_info1['raw_words']
+    raw_words2 = edu_info2['raw_words']
+
+    if raw_words1 and raw_words2:
+        yield ('word_first_pairs', (raw_words1[0], raw_words2[0]))
+        yield ('word_last_pairs', (raw_words1[-1], raw_words2[0]))
+
+    if len(raw_words1) > 1 and len(raw_words2) > 1:
+        yield ('bigram_first_pairs', ((raw_words1[0], raw_words1[1]),
+                                      (raw_words2[0], raw_words2[1])))
+        yield ('bigram_last_pairs', ((raw_words1[-2], raw_words1[-1]),
+                                     (raw_words2[-2], raw_words2[-1])))
 
 
-@tuple_feature(underscore)
-def word_first_pairs(_, cache, edu):
-    "pair of the first words in the two EDUs"
-    return cache[edu]["word_first"]
+PAIR_POS_TAGS = [
+    ('ptb_pos_tag_first_pairs', Substance.DISCRETE)
+]
 
 
-@tuple_feature(underscore)
-def word_last_pairs(_, cache, edu):
-    "pair of the last words in the two EDUs"
-    return cache[edu]["word_last"]
+def extract_pair_pos_tags(edu_info1, edu_info2):
+    """POS tag features on EDU pairs"""
+    try:
+        tags1 = edu_info1['tags']
+        tags2 = edu_info2['tags']
+    except KeyError:
+        return
+
+    if tags1 and tags2:
+        yield ('ptb_pos_tag_first_pairs', (tags1[0], tags2[0]))
 
 
-@tuple_feature(underscore)
-def bigram_first_pairs(_, cache, edu):
-    "pair of the first bigrams in the two EDUs"
-    return cache[edu]["bigram_first"]
+def build_pair_feature_extractor():
+    """Build the feature extractor for pairs of EDUs
 
-
-@tuple_feature(underscore)
-def bigram_last_pairs(_, cache, edu):
-    "pair of the last bigrams in the two EDUs"
-    return cache[edu]["bigram_last"]
-
-
-@tuple_feature(underscore)
-def ptb_pos_tag_first_pairs(_, cache, edu):
-    "pair of the first POS in the two EDUs"
-    return cache[edu]["ptb_pos_tag_first"]
-
-
-def ptb_pos_tags_in_first(current, edu1, _):
-    "demonstrator for use of basket features"
-    tokens = current.ptb_tokens[edu1]
-    return Counter(t.tag for t in tokens) if tokens is not None else None
-
-
-# ---------------------------------------------------------------------
-# single EDU key groups
-# ---------------------------------------------------------------------
-
-class SingleEduSubgroup_Meta(SingleEduSubgroup):
+    TODO: properly emit features on single EDUs ;
+    they are already stored in sf_cache, but under (slightly) different
+    names
     """
-    Basic EDU-identification features
+    feats = []
+    funcs = []
+
+    feats.extend(PAIR_GAP)
+    funcs.append(extract_pair_gap)
+
+    feats.extend(PAIR_RAW_WORD)
+    funcs.append(extract_pair_raw_word)
+
+    feats.extend(PAIR_POS_TAGS)
+    funcs.append(extract_pair_pos_tags)
+
+    def _extract_all(edu_info1, edu_info2):
+        """inner helper because I am lost at sea here, again"""
+        # TODO do this in a cleaner manner
+        for fct in funcs:
+            for feat in fct(edu_info1, edu_info2):
+                yield feat
+
+    # header
+    header = feats
+    # extractor
+    feat_extractor = _extract_all
+    # return header and extractor
+    return header, feat_extractor
+
+
+def product_features(feats_g, feats_d, feats_gd):
+    """Generate features by taking the product of features.
+
+    Parameters
+    ----------
+    feats_g: dict(feat_name, feat_val)
+        features of the gov EDU
+    feats_d: dict(feat_name, feat_val)
+        features of the dep EDU
+    feats_gd: dict(feat_name, feat_val)
+        features of the (gov, dep) edge
+
+    Returns
+    -------
+    pf: dict(feat_name, feat_val)
+        product features
     """
-
-    _features =\
-        [MagicKey.meta_fn(feat_id),
-         MagicKey.meta_fn(feat_start),
-         MagicKey.meta_fn(feat_end)]
-
-    def __init__(self):
-        desc = self.__doc__.strip()
-        super(SingleEduSubgroup_Meta, self).__init__(desc, self._features)
+    pf = dict()
+    return pf
 
 
-class SingleEduSubgroup_Text(SingleEduSubgroup):
+def combine_features(feats_g, feats_d, feats_gd):
+    """Generate features by taking a (linear) combination of features.
+
+    I suspect these do not have a great impact, if any, on results.
+
+    Parameters
+    ----------
+    feats_g: dict(feat_name, feat_val)
+        features of the gov EDU
+    feats_d: dict(feat_name, feat_val)
+        features of the dep EDU
+    feats_gd: dict(feat_name, feat_val)
+        features of the (gov, dep) edge
+
+    Returns
+    -------
+    cf: dict(feat_name, feat_val)
+        combined features
     """
-    Properties of the EDU text itself
-    """
-    _features =\
-        [MagicKey.discrete_fn(word_first),
-         MagicKey.discrete_fn(word_last),
-         MagicKey.discrete_fn(bigram_first),
-         MagicKey.discrete_fn(bigram_last),
-         MagicKey.continuous_fn(num_tokens)]
-
-    def __init__(self):
-        desc = self.__doc__.strip()
-        super(SingleEduSubgroup_Text, self).__init__(desc, self._features)
-
-
-class SingleEduSubgroup_Ptb(SingleEduSubgroup):
-    """
-    Penn Treebank properties for the EDU
-    """
-    _features =\
-        [MagicKey.discrete_fn(ptb_word_first),
-         MagicKey.discrete_fn(ptb_word_last),
-         MagicKey.discrete_fn(ptb_pos_tag_first),
-         MagicKey.discrete_fn(ptb_pos_tag_last),
-         MagicKey.discrete_fn(ptb_word_first2),
-         MagicKey.discrete_fn(ptb_word_last2),
-         MagicKey.discrete_fn(ptb_pos_tag_first2),
-         MagicKey.discrete_fn(ptb_pos_tag_last2)]
-
-    def __init__(self):
-        desc = self.__doc__.strip()
-        super(SingleEduSubgroup_Ptb, self).__init__(desc, self._features)
-
-
-
-# ---------------------------------------------------------------------
-# EDU pairs
-# ---------------------------------------------------------------------
-
-class PairSubGroup_Core(PairSubgroup):
-    "core features"
-
-    def __init__(self):
-        desc = self.__doc__.strip()
-        keys =\
-            [MagicKey.meta_fn(feat_grouping)]
-        super(PairSubGroup_Core, self).__init__(desc, keys)
-
-
-class PairSubgroup_Gap(PairSubgroup):
-    """
-    Features related to the combined surrounding context of the
-    two EDUs
-    """
-
-    def __init__(self):
-        desc = "the gap between EDUs"
-        keys =\
-            [MagicKey.continuous_fn(num_edus_between),
-             MagicKey.discrete_fn(same_paragraph),
-             MagicKey.discrete_fn(same_bad_sentence),
-             MagicKey.discrete_fn(same_ptb_sentence)]
-        super(PairSubgroup_Gap, self).__init__(desc, keys)
-
-
-# largely c/c'ed from educe.stac.learning.features
-class PairSubgroup_Tuple(PairSubgroup):
-    "artificial tuple features"
-
-    def __init__(self, inputs, sf_cache):
-        self.corpus = inputs.corpus
-        self.sf_cache = sf_cache
-        desc = self.__doc__.strip()
-        keys =\
-            [MagicKey.discrete_fn(word_first_pairs),
-             MagicKey.discrete_fn(word_last_pairs),
-             MagicKey.discrete_fn(bigram_first_pairs),
-             MagicKey.discrete_fn(bigram_last_pairs),
-             MagicKey.discrete_fn(ptb_pos_tag_first_pairs)]
-        super(PairSubgroup_Tuple, self).__init__(desc, keys)
-
-    def fill(self, current, edu1, edu2, target=None):
-        vec = self if target is None else target
-        for key in self.keys:
-            vec[key.name] = key.function(current, self.sf_cache, edu1, edu2)
-
-
-class PairSubgroup_Basket(PairSubgroup):
-    """
-    Sparse features
-    """
-    _features =\
-        [MagicKey.basket_fn(ptb_pos_tags_in_first)]
-
-    def __init__(self):
-        desc = self.__doc__.strip()
-        super(PairSubgroup_Basket, self).__init__(desc, self._features)
-
-
-# export groups
-class SingleEduKeys(BaseSingleEduKeys):
-    """Single EDU features"""
-
-    def __init__(self, inputs):
-        groups = [
-            SingleEduSubgroup_Meta(),
-            SingleEduSubgroup_Text(),
-            SingleEduSubgroup_Ptb()
-        ]
-        #if inputs.debug:
-        #    groups.append(SingleEduSubgroup_Debug())
-        super(SingleEduKeys, self).__init__(inputs, groups)
-
-
-class PairKeys(BasePairKeys):
-    """Features on a pair of EDUs"""
-
-    def __init__(self, inputs, sf_cache=None):
-        groups = [
-            PairSubGroup_Core(),
-            PairSubgroup_Gap(),
-            PairSubgroup_Tuple(inputs, sf_cache),
-            PairSubgroup_Basket()
-        ]
-        #if inputs.debug:
-        #    groups.append(PairSubgroup_Debug())
-        super(PairKeys, self).__init__(inputs, groups, sf_cache)
-
-    def init_single_features(self, inputs):
-        """Init features defined on single EDUs"""
-        return SingleEduKeys(inputs)
+    cf = dict()
+    return cf

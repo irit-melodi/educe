@@ -6,25 +6,27 @@ Show number of EDUs, turns, etc
 """
 
 from __future__ import print_function
-from collections import defaultdict
+from collections import defaultdict, namedtuple
+import copy
 
-import educe.stac
+from tabulate import tabulate
 
-from ..args import\
-    add_usual_input_args, add_usual_output_args,\
-    read_corpus_with_unannotated
+from ..args import (add_usual_input_args,
+                    read_corpus_with_unannotated)
 from ..doc import strip_fixme
-
-NAME = 'count'
+from educe.stac.context import (merge_turn_stars)
+from educe.util import concat
+import educe.stac
 
 # we have an order on this, so no dict
 SEGMENT_CATEGORIES = [("dialogue", educe.stac.is_dialogue),
+                      ("turn star", lambda x: x.type == 'Tstar'),
                       ("turn", educe.stac.is_turn),
                       ("edu", educe.stac.is_edu)]
 
 
-LINK_CATEGORIES = [("relation instance", educe.stac.is_relation_instance),
-                   ("CDU", educe.stac.is_cdu)]
+LINK_CATEGORIES = [("rel insts", educe.stac.is_relation_instance),
+                   ("CDUs", educe.stac.is_cdu)]
 
 
 # ---------------------------------------------------------------------
@@ -93,7 +95,7 @@ def count(doc,
             if pred(anno):
                 counts[cat] += 1
         if pred_extract is not None:
-            pred, extract = pred_extract
+            pred, extract = tuple(pred_extract)
             if pred(anno):
                 counts[extract(anno)] += 1
     return counts
@@ -101,6 +103,7 @@ def count(doc,
 
 def summary(counts,
             doc_counts=None,
+            title=None,
             keys=None,
             total=None):
     """
@@ -116,24 +119,53 @@ def summary(counts,
     want a final line for a total. If you set it to None,
     we use the default (true)
     """
+    doc_counts = doc_counts or {}
     if keys is None:
         keys = counts.keys()
 
-    def info(k):
-        "summary line for a given key"
-        if doc_counts is None:
-            return str(counts[k])
-        else:
-            dcounts = [doc_counts[d][k] for d in doc_counts]
+    dcount_keys = frozenset(concat(d.keys() for d in doc_counts.values()))
+    has_doc_counts = any(k in dcount_keys for k in keys)
+    rows = []
+    for key in keys:
+        row = [key, counts[key]]
+        if key in dcount_keys:
+            dcounts = [doc_counts[d][key] for d in doc_counts]
             mean, median = rounded_mean_median(dcounts)
-            return "%d (%d-%d per doc, mean %d, median %d)" %\
-                   (counts[k], min(dcounts), max(dcounts),
-                    mean, median)
-
-    lines = ["%s: %s" % (k, info(k)) for k in keys]
+            row += [min(dcounts),
+                    max(dcounts),
+                    mean,
+                    median]
+        elif has_doc_counts:
+            row += [None, None, None, None]
+        rows.append(row)
     if total is not False:
-        lines.append("TOTAL: %d" % sum(counts.values()))
-    return "\n".join(lines)
+        rows.append(["TOTAL", sum(counts.values())])
+        if has_doc_counts:
+            row += [None, None, None, None]
+
+    headers = [title or "", "total"]
+    if has_doc_counts:
+        headers += ["min", "max", "mean", "median"]
+    return tabulate(rows, headers=headers)
+
+
+def wide_summary(s_counts, keys=None):
+    """
+    Return a table of relation instance and CDU counts for each
+    section
+    """
+    rows = []
+    total = defaultdict(int)
+    keys = keys or list(frozenset(concat(d.keys() for d in s_counts.values())))
+    for section in s_counts:
+        row = [section]
+        for skey in keys:
+            row.append(s_counts[section][skey])
+            total[skey] += s_counts[section][skey]
+        rows.append(row)
+    rows.append(["all together"] + [total[x] for x in keys])
+    headers = ["annotator"] + keys
+    return tabulate(rows, headers=headers)
 
 
 def big_banner(string, width=60):
@@ -145,16 +177,6 @@ def big_banner(string, width=60):
 
     """
     return "\n".join([string, "=" * width, ""])
-
-
-def small_banner(string):
-    """
-    Convert a string into a small banner ::
-
-       foo
-       ---
-    """
-    return "\n".join([string, "-" * len(string)])
 
 
 def anno_subcorpus(corpus, annotator):
@@ -203,7 +225,7 @@ def hinted_type(anno):
     return rewrite(squish(tidy(educe.stac.split_type(anno))))
 
 
-def sectioned_summary(s_counts, total=None):
+def tall_summary(s_counts, total=None):
     """
     More elaborate version of summary in which we have a two layer
     dict with `section -> key -> int`
@@ -214,11 +236,151 @@ def sectioned_summary(s_counts, total=None):
             combined[key] += val
     lines = []
     for section in s_counts:
-        lines.append(small_banner(section))
-        lines.append(summary(s_counts[section], total=total))
+        lines.append(summary(s_counts[section],
+                             total=total,
+                             title=section))
         lines.append("")
-    lines.append(small_banner("all together"))
-    lines.append(summary(combined, total=total))
+    lines.append(summary(combined,
+                         total=total,
+                         title="all together"))
+    return "\n".join(lines)
+
+
+PerDoc = namedtuple("PerDoc",
+                    ["total", "struct"])
+
+PerAnno = namedtuple("PerAnno",
+                     ["struct", "acts", "rlabels", "links"])
+
+PerDialogue = namedtuple("PerDialogue",
+                         ["total", "struct"])
+
+
+def count_by_docname(corpus):
+    """
+    Return variety of counts by
+
+    * document name
+    * dialogue
+    * dialogue with more than one edu
+    """
+    def count_segments(doc, output):
+        "do segment counts; minor sugar"
+        count(doc, dict(SEGMENT_CATEGORIES),
+              counts=output)
+
+    unannotated_keys = [k for k in corpus if k.stage == "unannotated"]
+    dcounts = PerDoc(total=empty_counts(),
+                     struct=defaultdict(empty_counts))
+    gcounts = PerDialogue(total=empty_counts(),
+                          struct=defaultdict(empty_counts))
+    gcounts2 = PerDialogue(total=empty_counts(),
+                           struct=defaultdict(empty_counts))
+
+    for kdoc in frozenset(k.doc for k in unannotated_keys):
+        ksubdocs = frozenset(k.subdoc for k in unannotated_keys
+                             if k.doc == kdoc)
+        dcounts.total["doc"] += 1
+        dcounts.total["subdoc"] += len(ksubdocs)
+        # separate counts for each doc so that we can collect
+        # min/max/mean/median etc
+        dcounts.struct[kdoc]["subdoc"] += len(ksubdocs)
+        for k in (k for k in unannotated_keys if k.doc == kdoc):
+            doc = corpus[k]
+            tstar_doc = merge_turn_stars(doc)
+            for anno in tstar_doc.units:
+                if educe.stac.is_turn(anno):
+                    anno.type = 'Tstar'
+                    doc.units.append(anno)
+            count_segments(doc, dcounts.struct[kdoc])
+            for dlg in doc.units:
+                if not educe.stac.is_dialogue(dlg):
+                    continue
+                gdoc = copy.copy(doc)
+                gdoc.units = [x for x in doc.units if dlg.encloses(x)]
+                count_segments(gdoc, gcounts.struct[dlg])
+                count_segments(gdoc, gcounts.total)
+                if len([x for x in gdoc.units if educe.stac.is_edu(x)]) < 2:
+                    continue
+                # dialogues with more than one EDU
+                count_segments(gdoc, gcounts2.struct[dlg])
+                count_segments(gdoc, gcounts2.total)
+
+    for k in unannotated_keys:
+        count(corpus[k], dict(SEGMENT_CATEGORIES),
+              counts=dcounts.total)
+    return dcounts, gcounts, gcounts2
+
+
+def count_by_annotator(corpus):
+    """
+    Return variety of by-annotator counts
+    """
+    annotators = frozenset(k.annotator for k in corpus
+                           if k.annotator is not None)
+    acounts = PerAnno(struct=defaultdict(empty_counts),
+                      acts=defaultdict(empty_counts),
+                      rlabels=defaultdict(empty_counts),
+                      links=defaultdict(empty_counts))
+
+    for annotator in annotators:
+        units, discourse = anno_subcorpus(corpus, annotator)
+        for kdoc in frozenset(k.doc for k in discourse):
+            ksubdocs = frozenset(k.subdoc for k in discourse
+                                 if k.doc == kdoc)
+            acounts.struct[annotator]["doc"] += 1
+            acounts.struct[annotator]["subdoc"] += len(ksubdocs)
+        for k in units:
+            count(corpus[k], {},
+                  counts=acounts.acts[annotator],
+                  pred_extract=(educe.stac.is_edu, hinted_type))
+        for k in discourse:
+            count(corpus[k], dict(SEGMENT_CATEGORIES),
+                  counts=acounts.struct[annotator])
+            count(corpus[k], dict(LINK_CATEGORIES),
+                  counts=acounts.links[annotator])
+            count(corpus[k], {},
+                  counts=acounts.rlabels[annotator],
+                  pred_extract=(educe.stac.is_relation_instance,
+                                lambda x: x.type))
+    return acounts
+
+
+def report(dcounts, gcounts, gcounts2, acounts):
+    """
+    Return a full report of all our counts
+    """
+    keys = ["doc", "subdoc"] + [k for k, _ in SEGMENT_CATEGORIES]
+    lines = [big_banner("Document structure"),
+             summary(dcounts.total,
+                     title="per doc",
+                     doc_counts=dcounts.struct,
+                     keys=keys,
+                     total=False),
+             "",
+             summary(gcounts.total,
+                     title="per dialogue",
+                     doc_counts=gcounts.struct,
+                     keys=[k for k, _ in SEGMENT_CATEGORIES],
+                     total=False),
+             "",
+             summary(gcounts2.total,
+                     title="per dlg (2+ EDUs)",
+                     doc_counts=gcounts2.struct,
+                     keys=[k for k, _ in SEGMENT_CATEGORIES],
+                     total=False),
+             "",
+             wide_summary(acounts.struct,
+                          keys=keys),
+             "",
+             big_banner("Links"),
+             wide_summary(acounts.links),
+             "",
+             big_banner("Dialogue acts"),
+             tall_summary(acounts.acts),
+             "",
+             big_banner("Relation instances"),
+             tall_summary(acounts.rlabels)]
     return "\n".join(lines)
 
 
@@ -230,63 +392,6 @@ def main(args):
     `config_argparser`
     """
     corpus = read_corpus_with_unannotated(args, verbose=True)
-    unannotated_keys = [k for k in corpus if k.stage == "unannotated"]
-    annotators = frozenset(k.annotator for k in corpus
-                           if k.annotator is not None)
-    unanno_counts = empty_counts()
-    unanno_doc_counts = defaultdict(empty_counts)
-
-    for kdoc in frozenset(k.doc for k in unannotated_keys):
-        ksubdocs = frozenset(k.subdoc for k in unannotated_keys
-                             if k.doc == kdoc)
-        unanno_counts["doc"] += 1
-        unanno_counts["subdoc"] += len(ksubdocs)
-
-        # separate counts for each doc so that we can collect
-        # min/max/mean/median etc
-        unanno_doc_counts[kdoc]["subdoc"] += len(ksubdocs)
-        for k in (k for k in unannotated_keys if k.doc == kdoc):
-            count(corpus[k], dict(SEGMENT_CATEGORIES),
-                  counts=unanno_doc_counts[kdoc])
-
-    for k in unannotated_keys:
-        count(corpus[k], dict(SEGMENT_CATEGORIES),
-              counts=unanno_counts)
-
-    anno_acts = {}
-    anno_rlabels = {}
-    anno_links = {}
-    for annotator in annotators:
-        units, discourse = anno_subcorpus(corpus, annotator)
-        anno_acts[annotator] = empty_counts()
-        for k in units:
-            count(corpus[k], {},
-                  counts=anno_acts[annotator],
-                  pred_extract=(educe.stac.is_edu, hinted_type))
-        anno_links[annotator] = empty_counts()
-        anno_rlabels[annotator] = empty_counts()
-        for k in discourse:
-            count(corpus[k], dict(LINK_CATEGORIES),
-                  counts=anno_links[annotator])
-            count(corpus[k], {},
-                  counts=anno_rlabels[annotator],
-                  pred_extract=(educe.stac.is_relation_instance,
-                                lambda x: x.type))
-
-    keys = ["subdoc"] + [k for k, _ in SEGMENT_CATEGORIES]
-    lines = [big_banner("Document structure"),
-             summary(unanno_counts, keys=["doc"],
-                     total=False),
-             summary(unanno_counts,
-                     doc_counts=unanno_doc_counts,
-                     keys=keys, total=False),
-             "",
-             big_banner("Links"),
-             sectioned_summary(anno_links, total=False),
-             "",
-             big_banner("Dialogue acts"),
-             sectioned_summary(anno_acts),
-             "",
-             big_banner("Relation instances"),
-             sectioned_summary(anno_rlabels)]
-    print("\n".join(lines))
+    dcounts, gcounts, gcounts2 = count_by_docname(corpus)
+    acounts = count_by_annotator(corpus)
+    print(report(dcounts, gcounts, gcounts2, acounts))

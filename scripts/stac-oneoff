@@ -19,6 +19,7 @@ have a long-term use
 from argparse import ArgumentParser
 
 from educe.stac.oneoff.cmd import SUBCOMMANDS
+from educe.stac.util.args import check_easy_settings
 from educe.util import add_subcommand
 
 
@@ -36,6 +37,7 @@ def main():
                      action='count',
                      default=0)
     args = psr.parse_args()
+    check_easy_settings(args)
     args.func(args)
 
 main()
