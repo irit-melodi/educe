@@ -10,10 +10,6 @@ EDU addressee prediction
 
 from itertools import takewhile
 
-from educe.stac.annotation import is_edu
-from educe.stac.context import Context
-from .features import players_for_doc
-
 
 def is_punct(token):
     "True if the token is tagged as punctuation"
@@ -86,22 +82,3 @@ def guess_addressees_for_edu(contexts, players, edu):
         return players_suffix
     else:
         return None
-
-
-def guess_addressees(inputs, key):
-    """
-    Given a document, return a dictionary from edus to addressee
-    set ::
-
-        (FeatureInputs, FileId) -> Dict Unit (Set String)
-
-    Note that we distinguish between addressed to nobody
-    (empty set) and no-addressee (None); although in practice this
-    distinction may not be particularly useful
-    """
-    doc = inputs.corpus[key]
-    contexts = Context.for_edus(doc, inputs.postags[key])
-    players = players_for_doc(inputs.corpus, key.doc)
-    edus = filter(is_edu, doc.units)
-    return {x: guess_addressees_for_edu(contexts, players, x)
-            for x in edus}
