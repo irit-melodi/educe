@@ -14,10 +14,12 @@ from educe.stac.context import enclosed
 
 
 class WeaveException(Exception):
-    '''
+
+    """
     Unexpected alignment issues between the source and target
     document
-    '''
+    """
+
     def __init__(self, *args, **kw):
         super(WeaveException, self).__init__(*args, **kw)
 
@@ -27,9 +29,10 @@ class Updates(namedtuple('Updates',
                           'abnormal_src_only',
                           'abnormal_tgt_only',
                           'expected_src_only'])):
-    '''
-    Expected updates to the target document.  We expect to see
-    four types of annotation:
+
+    """Expected updates to the target document.
+
+    We expect to see four types of annotation:
 
     1. target annotations for which there exists a
        source annotation in the equivalent span
@@ -48,29 +51,30 @@ class Updates(namedtuple('Updates',
     5. source annotations that lie in between the matching bits of
        text
 
-
-    :param shift_if_ge: (case 1 and 2) shift points and offsets for characters
-                        in the target document (see `shift_spans`)
-    :type shift_if_ge: `Dict Int Int`
-    :param abnormal_tgt_only: (case 2) annotations that only occur
-                              in the target document (weird, found in matches)
-    :type abnormal_tgt_only: [Annotation]
-    :param abnormal_src_only: (case 4) annotations that only occur in the
-                              source document (weird, found in matches)
-    :type abnormal_src_only: [Annotation]
-    :param expected_src_only: (case 5) annotations that only occur in the
-                              source doc (ok, found in gaps)
-    :type expected_src_only: [Annotation]
-    '''
+    Parameters
+    ----------
+    shift_if_ge : dict(int, int)
+        (case 1 and 2) shift points and offsets for characters
+        in the target document (see `shift_spans`)
+    abnormal_tgt_only : [Annotation]
+        (case 2) annotations that only occur
+        in the target document (weird, found in matches)
+    abnormal_src_only: [Annotation]
+        (case 4) annotations that only occur in the
+        source document (weird, found in matches)
+    abnormal_src_only [Annotation]
+        (case 5) annotations that only occur in the
+        source doc (ok, found in gaps)
+    """
     def __new__(cls):
         return super(Updates, cls).__new__(cls, {}, [], [], [])
 
     def map(self, fun):
-        '''
+        """
         Return an `Updates` in which a function has been applied to
         all annotations in this one (eg. useful for previewing),
         and to all spans
-        '''
+        """
         supercls = super(Updates, Updates)
         return supercls.__new__(Updates,
                                 self.shift_if_ge,
@@ -84,12 +88,12 @@ class Updates(namedtuple('Updates',
 
 
 def src_gaps(matches):
-    '''
+    """
     Given matches between the source and target document, return the spaces
     between these matches as source offset and size (a bit like the matches).
     Note that we assume that the target document text is a subsequence of the
     source document.
-    '''
+    """
     gaps = []
     last_idx = 0
     for src, _, size in matches:
@@ -100,11 +104,11 @@ def src_gaps(matches):
 
 
 def tgt_gaps(matches):
-    '''
+    """
     Given matches between the source and target document, return the spaces
     between these matches as target offset and size (a bit like the matches).
     By rights this should be empty, but you never know
-    '''
+    """
     gaps = []
     last_idx = 0
     for _, tgt, size in matches:
@@ -115,12 +119,12 @@ def tgt_gaps(matches):
 
 
 def check_matches(tgt_doc, matches):
-    '''
+    """
     Check that the target document text is indeed a subsequence of
     the source document text (the source document is expected to be
     "augmented" version of the target with new text interspersed
     throughout)
-    '''
+    """
     tgt_text = tgt_doc.text()
 
     if not tgt_text:
@@ -144,27 +148,42 @@ def check_matches(tgt_doc, matches):
 
 
 def _units_between(doc, start, end):
-    '''
-    Unit-level annotations in a span defined by a starting point
-    and its width ::
+    """Unit-level annotations in a span defined by a starting point
+    and its width
 
-        (Document, Int, Int) -> [Annotation]
-    '''
+    Parameters
+    ----------
+    doc : Document
+    start : int
+    end : end
+
+    Returns
+    -------
+    annos
+        list of annotation objects
+    """
     return enclosed(Span(start, end), doc.units)
 
 
 def compute_updates(src_doc, tgt_doc, matches):
-    '''
-    Given matches between the source and target document,
-    return a dictionary of span updates along with any
-    source annotations that do not have an equivalent in
-    the target document ::
+    """Return updates that would need to be made on the target
+    document.
 
-        (Document, Document, [Match]) -> Updates
+    Given matches between the source and target document, return span
+    updates along with any source annotations that do not have an
+    equivalent in the target document (the latter may indicate that
+    resegmentation has taken place, or that there is some kind of problem)
 
-    (the latter may indicate that resegmentation has taken
-    place, or that there is some kind of problem)
-    '''
+    Parameters
+    ----------
+    src_doc : Document
+    tgt_doc : Document
+    matches : [Match]
+
+    Returns
+    -------
+    updates: Updates
+    """
     res = Updates()
 
     # case 2 and 5 (to be pruned below)
@@ -192,11 +211,10 @@ def compute_updates(src_doc, tgt_doc, matches):
 
 
 def shift_char(position, updates):
-    '''
+    """
     Given a character position an updates tuple, return a shifted over
-    position which reflects the update ::
+    position which reflects the update.
 
-        Int, Updates -> Int
 
     The basic idea that we have a set of "shift points" and their
     corresponding offsets. If a character position 'c' occurs after
@@ -205,7 +223,18 @@ def shift_char(position, updates):
 
     Our assumption here is that the update always consists in adding more
     text so offsets are always positive.
-    '''
+
+    Parameters
+    ----------
+    position: int
+        initial position
+    updates: Updates
+
+    Returns
+    -------
+    int
+        shifted position
+    """
     points = [x for x in updates.shift_if_ge if position >= x]
     offset = updates.shift_if_ge[max(points)] if points else 0
     assert offset >= 0
@@ -213,14 +242,23 @@ def shift_char(position, updates):
 
 
 def shift_span(span, updates):
-    '''
+    """
     Given a span and an updates tuple, return a Span
-    that is shifted over to reflect the updates ::
+    that is shifted over to reflect the updates
 
-        Span, Updates -> Span
+    Parameters
+    ----------
+    span: Span
+    updates: Updates
 
-    See `shift_char` for details on how this works
-    '''
+    Returns
+    -------
+    span: Span
+
+    See also
+    --------
+    shift_char: for details on how this works
+    """
     start = shift_char(span.char_start, updates)
     # this is to avoid spurious overstretching of the right
     # boundary of an annotation that buts up against the
