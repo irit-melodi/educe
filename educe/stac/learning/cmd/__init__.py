@@ -5,12 +5,8 @@ stac-learning subcommands
 # Author: Eric Kow
 # License: CeCILL-B (French BSD3)
 
-from . import (addressee,
-               extract,
-               res_nps,
-               weave)
+from . import (extract,
+               res_nps)
 
-SUBCOMMANDS = [addressee,
-               extract,
-               res_nps,
-               weave]
+SUBCOMMANDS = [extract,
+               res_nps]
