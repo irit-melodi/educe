@@ -15,6 +15,7 @@ import difflib
 import re
 import sys
 
+from educe.stac.context import (enclosed)
 from educe.util import mk_is_interesting
 import educe.stac
 
@@ -23,8 +24,6 @@ from educe.stac.util.args import\
     (add_usual_input_args, add_usual_output_args,
      get_output_dir, announce_output_dir,
      read_corpus_with_unannotated)
-from educe.stac.util.context import\
-    (enclosed)
 from educe.stac.util.output import save_document
 from educe.stac.util.doc import\
     (evil_set_text,

@@ -10,7 +10,7 @@ annotations over and shifting the text spans of any matching documents
 from collections import namedtuple
 
 from educe.annotation import Span
-from educe.stac.util.context import enclosed
+from educe.stac.context import enclosed
 
 
 class WeaveException(Exception):
