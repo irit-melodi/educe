@@ -1,6 +1,6 @@
 
-STAC example: Turns and resources
-=================================
+[STAC] Turns and resources
+==========================
 
 Suppose you wanted to find the following (an actual request from the
 STAC project)
@@ -69,8 +69,8 @@ helper functions ``is_turn`` and ``is_resource`` from ``educe.stac``
     import educe.stac
     
     ex_turns = [x for x in ex_doc.units if educe.stac.is_turn(x)]
-    ex_offers = [x for x in ex_doc.units if educe.stac.is_resource(x)
-                 and x.features['Status'] == 'Givable']
+    ex_resources = [x for x in ex_doc.units if educe.stac.is_resource(x)]
+    ex_offers = [x for x in ex_resources if x.features['Status'] == 'Givable']
     
     print("Example turns")
     print("-------------")
@@ -138,6 +138,23 @@ turns'
             kind = rsrc.features['Kind']
             print("\t".join(["", str(rsrc.text_span()), kind]))
 
+
+.. parsed-literal::
+
+    Turns and resources within
+    --------------------------
+    (959,1008)  stac_1368693191      [Turn        ] 201 : sabercat : can...or another sheep? or
+    	(999,1004)	sheep
+    (1009,1030) stac_1368693195      [Turn        ] 202 : sabercat : two?
+    	(1026,1029)	Anaphoric
+    (67,99)     stac_1368693101      [Turn        ] 153 : amycharl : clay preferably
+    	(84,88)	clay
+    (124,145)   stac_1368693107      [Turn        ] 155 : amycharl : ore?
+    	(141,144)	ore
+    (363,404)   stac_1368693135      [Turn        ] 171 : sabercat : want to trade for sheep?
+    	(398,403)	sheep
+
+
 3. But does the player own these resources?
 -------------------------------------------
 
@@ -164,6 +181,23 @@ information is stored in the turn features.
         # not to be confused with the resource annotations within the turn
         print('\t', parse_turn_resources(turn))
             
+
+
+.. parsed-literal::
+
+    Turns and player resources
+    --------------------------
+    (35,66)     stac_1368693098      [Turn        ] 152 : sabercat : yep, for what?
+    	 {'sheep': 5, 'wood': 2, 'ore': 2, 'wheat': 1, 'clay': 2}
+    (100,123)   stac_1368693104      [Turn        ] 154 : sabercat : no way
+    	 {'sheep': 5, 'wood': 2, 'ore': 2, 'wheat': 1, 'clay': 2}
+    (146,171)   stac_1368693110      [Turn        ] 156 : sabercat : could be
+    	 {'sheep': 5, 'wood': 2, 'ore': 2, 'wheat': 1, 'clay': 2}
+    (172,191)   stac_1368693113      [Turn        ] 157 : amycharl : :)
+    	 {'sheep': 1, 'wood': 0, 'ore': 3, 'wheat': 1, 'clay': 3}
+    (192,210)   stac_1368693116      [Turn        ] 160 : amycharl : ?
+    	 {'sheep': 1, 'wood': 1, 'ore': 2, 'wheat': 1, 'clay': 3}
+
 
 4. Putting it together: is this an honest offer?
 ------------------------------------------------
@@ -220,6 +254,23 @@ information is stored in the turn features.
             print(critique_offer(turn, offer))
 
 
+
+.. parsed-literal::
+
+    Turns and offers
+    ----------------
+     (959,1008)  stac_1368693191      [Turn        ] 201 : sabercat : can...or another sheep? or
+    	1/5 sheep | has some: True, enough: True
+     (1009,1030) stac_1368693195      [Turn        ] 202 : sabercat : two?
+    	2/None Anaphoric | has some: False, enough: True
+     (67,99)     stac_1368693101      [Turn        ] 153 : amycharl : clay preferably
+    	?/3 clay | has some: True, enough: n/a
+     (124,145)   stac_1368693107      [Turn        ] 155 : amycharl : ore?
+    	?/3 ore | has some: True, enough: n/a
+     (363,404)   stac_1368693135      [Turn        ] 171 : sabercat : want to trade for sheep?
+    	?/5 sheep | has some: True, enough: n/a
+
+
 5. What about those anaphors?
 -----------------------------
 
@@ -251,6 +302,23 @@ for simplicity that resource anaphora do not form chains.
                 offer = copy.copy(offer)
                 offer.features['Kind'] = kind
             print(critique_offer(turn, offer))
+
+
+.. parsed-literal::
+
+    Turns and offers (anaphors accounted for)
+    -----------------------------------------
+     (959,1008)  stac_1368693191      [Turn        ] 201 : sabercat : can...or another sheep? or
+    	1/5 sheep | has some: True, enough: True
+     (1009,1030) stac_1368693195      [Turn        ] 202 : sabercat : two?
+    	2/5 sheep | has some: True, enough: True
+     (67,99)     stac_1368693101      [Turn        ] 153 : amycharl : clay preferably
+    	?/3 clay | has some: True, enough: n/a
+     (124,145)   stac_1368693107      [Turn        ] 155 : amycharl : ore?
+    	?/3 ore | has some: True, enough: n/a
+     (363,404)   stac_1368693135      [Turn        ] 171 : sabercat : want to trade for sheep?
+    	?/5 sheep | has some: True, enough: n/a
+
 
 Conclusion
 ----------
