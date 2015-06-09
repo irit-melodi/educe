@@ -8,6 +8,5 @@ as iPython notebooks in the doc directory
    :maxdepth: 1
 
    stac
-   stac-ex-resource
    rst-dt
    pdtb
