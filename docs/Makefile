@@ -50,7 +50,7 @@ apidoc: $(APIDOCDIR)/educe.rst
 $(APIDOCDIR)/educe.rst: $(SOURCE_FILES)
 	cd ..; bash etc/redo-api-doc
 
-tutorial: stac.rst stac-ex1.rst rst-dt.rst pdtb.rst
+tutorial: stac.rst stac-ex-resource.rst rst-dt.rst pdtb.rst
 
 %.rst : %.ipynb
 	ipython nbconvert --to rst $(<)
