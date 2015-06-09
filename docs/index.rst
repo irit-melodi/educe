@@ -12,6 +12,7 @@ Contents:
    :maxdepth: 2
 
    tutorial
+   cookbook
    api-doc/educe
 
 Indices and tables
