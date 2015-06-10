@@ -21,6 +21,7 @@ STAC_GLOBS = frozenset([
     "data/pilot",
     "data/socl-season1",
     "data/socl-season2",
+    "data/TEST",
 ])
 
 
