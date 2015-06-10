@@ -17,9 +17,12 @@ import educe.annotation
 import educe.stac
 import educe.util
 
-STAC_GLOBS = {"data/pilot": "pilot*",
-              "data/socl-season1": "s1-league*-game*",
-              "data/socl-season2": "s2-*"}
+STAC_GLOBS = frozenset([
+    "data/pilot",
+    "data/socl-season1",
+    "data/socl-season2",
+    "data/TEST",
+])
 
 
 def check_easy_settings(args):
