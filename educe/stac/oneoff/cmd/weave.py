@@ -80,25 +80,27 @@ def _hollow_out_nonplayer_text(src_doc):
 
     # we can't use the API one until we update it to account for the
     # fancy new identifiers
-    non_player_spans = [x.text_span() for x in src_doc.units
-                        if x.type == 'NonplayerTurn']
+    np_spans = [x.text_span() for x in src_doc.units
+                if x.type == 'NonplayerTurn']
+
+    # merge consecutive nonplayer turns
     current = None
-    merged = []
-    for span in sorted(non_player_spans):
+    merged_np_spans = []
+    for span in sorted(np_spans):
         if not current:
             current = span
             continue
         elif span.char_start == current.char_end + 1:
             current = current.merge(span)
         else:
-            merged.append(current)
+            merged_np_spans.append(current)
             current = span
-    merged.append(current)
+    merged_np_spans.append(current)
 
     orig = src_doc.text()
     res = ''
     last = 0
-    for span in merged:
+    for span in merged_np_spans:
         res += orig[last:span.char_start]
         res += '\t' * (span.char_end - span.char_start)
         last = span.char_end
