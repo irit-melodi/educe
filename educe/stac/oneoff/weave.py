@@ -147,24 +147,6 @@ def check_matches(tgt_doc, matches):
                              'document')
 
 
-def _units_between(doc, start, end):
-    """Unit-level annotations in a span defined by a starting point
-    and its width
-
-    Parameters
-    ----------
-    doc : Document
-    start : int
-    end : end
-
-    Returns
-    -------
-    annos
-        list of annotation objects
-    """
-    return enclosed(Span(start, end), doc.units)
-
-
 def compute_updates(src_doc, tgt_doc, matches):
     """Return updates that would need to be made on the target
     document.
@@ -194,8 +176,8 @@ def compute_updates(src_doc, tgt_doc, matches):
     for src, tgt, size in matches:
         tgt_to_src = src - tgt
         res.shift_if_ge[tgt] = tgt_to_src  # case 1 and 2
-        src_annos = _units_between(src_doc, src, src + size)
-        tgt_annos = _units_between(tgt_doc, tgt, tgt + size)
+        src_annos = enclosed(Span(src, src + size), src_doc.units)
+        tgt_annos = enclosed(Span(tgt, tgt + size), tgt_doc.units)
         for src_anno in src_annos:
             res.expected_src_only.remove(src_anno)  # prune from case 5
             src_span = src_anno.text_span()
