@@ -9,7 +9,8 @@ stac-oneoff subcommands
 # (we have a command called filter)
 from . import (clean_emoticons,
                clean_schemas,
-               clean_dialogue_acts)
+               clean_dialogue_acts,
+               weave)
 
 # at the time of this writing argparse doesn't support a way to group
 # subcommands into sections, but maybe we can wait for it to grow such
@@ -19,7 +20,9 @@ SUBCOMMAND_SECTIONS =\
     [('Cleanups',
       [clean_emoticons,
        clean_schemas,
-       clean_dialogue_acts])]
+       clean_dialogue_acts]),
+     ('Invasive',
+      [weave])]
 
 SUBCOMMANDS = []
 for descr, section in SUBCOMMAND_SECTIONS:

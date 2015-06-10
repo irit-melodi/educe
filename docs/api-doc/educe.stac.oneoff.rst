@@ -6,3 +6,15 @@ educe.stac.oneoff package
     :undoc-members:
     :show-inheritance:
 
+Submodules
+----------
+
+educe.stac.oneoff.weave module
+------------------------------
+
+.. automodule:: educe.stac.oneoff.weave
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
