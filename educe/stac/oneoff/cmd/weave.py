@@ -41,7 +41,7 @@ def _preview_anno(doc, anno, max_width=50):
         snippet = text
     template = '{ty} {span} [{snippet}]'
     return template.format(ty=anno.type,
-                           span=anno.text_span(),
+                           span=span,
                            snippet=snippet)
 
 
