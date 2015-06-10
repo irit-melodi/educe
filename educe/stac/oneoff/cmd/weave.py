@@ -59,8 +59,25 @@ def _hollow_out_nonplayer_text(src_doc):
     """Return a version of the source text where all characters in nonplayer
     turns are replaced with a nonsense char (tab).
 
-    This is to prevent spurious matching by the sequence matcher.
+    Notes
+    -----
+    We use difflib's SequenceMatcher to compare the original (but annotated)
+    corpus against the augmented corpus containing nonplayer turns. This
+    gives us the ability to shift annotation spans into the appropriate
+    place within the augmented corpus. By rights the diff should yield only
+    inserts (of the nonplayer turns). But if the inserted text should happen
+    to have the same sorts of substrings as you might find in the rest of
+    corpus, the diff algorithm can be fooled.
     """
+    # docstring followup:
+    #
+    # That said, since we know exactly what things we expect to have inserted,
+    # it's not clear to me why we are using diff and not just computing the
+    # shifts off the nonplayer turns. Was I being lazy? Did I just not work
+    # out this was possible? Was I trying to be robust? It could also have
+    # something to do with managing the extra bits of whitespace around the
+    # new nonplayer turns.  To simplify...
+
     # we can't use the API one until we update it to account for the
     # fancy new identifiers
     non_player_spans = [x.text_span() for x in src_doc.units
