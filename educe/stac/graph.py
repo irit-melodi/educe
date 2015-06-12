@@ -228,7 +228,7 @@ class Graph(educe.graph.Graph):
         return self.sorted_first_outermost(dus)
 
     def _repr_dot_(self):
-        """Ipython magic: show Graphziz dot representation of the graph
+        """Ipython magic: show Graphviz dot representation of the graph
 
         Note that this does not ship with iPython but is used by our
         `_repr_svg_` implementation
