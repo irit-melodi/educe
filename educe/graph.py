@@ -97,6 +97,7 @@ Classes
 from __future__ import print_function
 import copy
 import collections
+import subprocess
 import textwrap
 
 import pydot
@@ -568,6 +569,27 @@ class Graph(gr.hypergraph, AttrsMixin):
     def _schema_edge(self, anno):
         return self._mk_edge(anno, 'CDU', anno.span, mirrored=True)
 
+    def _repr_dot_(self):
+        """Ipython magic: show Graphziz dot representation of the graph
+
+        Note that this does not ship with iPython but is used by our
+        `_repr_svg_` implementation
+        """
+        return DotGraph(self).to_string()
+
+    def _repr_svg_(self):
+        """Ipython magic: show SVG representation of the graph"""
+        dot_string = self._repr_dot_()
+        format = 'svg'
+        try:
+            process = subprocess.Popen(['dot', '-T%s' % format], stdin=subprocess.PIPE,
+                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except OSError:
+            raise Exception('Cannot find the dot binary from Graphviz package')
+        out, err = process.communicate(dot_string)
+        if err:
+            raise Exception('Cannot create %s representation by running dot from string\n:%s' % (format, dot_string))
+        return out
 
 # ---------------------------------------------------------------------
 # visualisation
