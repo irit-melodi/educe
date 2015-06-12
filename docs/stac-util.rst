@@ -106,7 +106,7 @@ Output for the above includes both a total count and a pers label count ::
     Acknowledgement              20        2        0
     ...
 
- stac-util count-shapes
+stac-util count-shapes
 ~~~~~~~~~~~~~~~~~~~~~~
 Count and draw the number of instances of shapes that we deem to be interesting
 (for now, this only means “lozenges”, but we may come up with other shapes in
