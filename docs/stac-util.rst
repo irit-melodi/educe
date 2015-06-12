@@ -15,7 +15,7 @@ of interest for corpus development work.
 
 stac-util
 ---------
-The stac-util kit provides some potentially useful queries on the corpus.
+The stac-util toolkit provides some potentially useful queries on the corpus.
 
 stac-util text
 ~~~~~~~~~~~~~~
@@ -116,7 +116,7 @@ the future, for example, instances of nodes with in-degree > 1) ::
         --output /tmp/graphs\
         data/socl-season1
 
-Aside from the graph below, this displays a per-document count along the with
+Aside from the graph below, this displays a per-document count along with
 the total ::
 
     s1-league2-game1 [14] discourse SILVER 1 (4)
