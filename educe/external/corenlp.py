@@ -47,8 +47,13 @@ class CoreNlpDocument(Standoff):
 
 class CoreNlpToken(postag.Token):
     """
-    A single token and its POS tag. Other information is stored in `features`
-    (eg. `x.features['lemma']`)
+    A single token and its POS tag.
+
+    Attributes
+    ----------
+    features: dict(string, string)
+        Additional info found by corenlp about the token
+        (eg. `x.features['lemma']`)
     """
     def __init__(self, t, offset, origin=None):
         extent  = t['extent']
