@@ -580,15 +580,14 @@ class Graph(gr.hypergraph, AttrsMixin):
     def _repr_svg_(self):
         """Ipython magic: show SVG representation of the graph"""
         dot_string = self._repr_dot_()
-        format = 'svg'
         try:
-            process = subprocess.Popen(['dot', '-T%s' % format], stdin=subprocess.PIPE,
+            process = subprocess.Popen(['dot', '-Tsvg'], stdin=subprocess.PIPE,
                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         except OSError:
             raise Exception('Cannot find the dot binary from Graphviz package')
         out, err = process.communicate(dot_string)
         if err:
-            raise Exception('Cannot create %s representation by running dot from string\n:%s' % (format, dot_string))
+            raise Exception('Cannot create svg representation by running dot from string\n:%s' % dot_string)
         return out
 
 # ---------------------------------------------------------------------
