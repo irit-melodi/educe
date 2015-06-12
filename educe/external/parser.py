@@ -34,9 +34,11 @@ class SearchableTree(nltk.Tree):
     def topdown(self, pred, prunable=None):
         """
         Searching from the top down, return the biggest subtrees for which the
-        predicate is True.  The optional prunable function can be used to
-        throw out subtrees for more efficient search (note that pred always
-        overrides prunable though).  Note that leaf nodes are ignored.
+        predicate is True (or empty list if none are found).
+
+        The optional prunable function can be used to throw out subtrees for
+        more efficient search (note that pred always overrides prunable
+        though).  Note that leaf nodes are ignored.
         """
         if pred(self):
             return [self]
@@ -49,12 +51,11 @@ class SearchableTree(nltk.Tree):
 
     def topdown_smallest(self, pred, prunable=None):
         """
-        Searching from the top down, return the smallest
-        subtrees for which the predicate is True.
+        Searching from the top down, return the smallest subtrees for which the
+        predicate is True (or empty list if none are found).
 
-        This is almost the same as `topdown`, except that
-        if a subtree matches, we check for smaller
-        matches in its subtrees.
+        This is almost the same as `topdown`, except that if a subtree matches,
+        we check for smaller matches in its subtrees.
 
         Note that leaf nodes are ignored.
         """
