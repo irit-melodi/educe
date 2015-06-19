@@ -158,10 +158,18 @@ class DocumentCountVectorizer(object):
                  feature_set,
                  max_df=1.0, min_df=1, max_features=None,
                  vocabulary=None,
-                 separator='='):
+                 separator='=',
+                 split_feat_space=None):
         """
-        instance_generator to enumerate the instances from a doc
-        feature_set is the feature set to use
+        Parameters
+        ----------
+        instance_generator: generator(instances)
+            generator to enumerate the instances from a doc
+        feature_set: class
+            which feature set to use
+        split_feat_space: string, optional
+            If not None, indicates the features on which the feature space
+            should be split. Possible values are 'dir', 'sent', 'dir_sent'.
         """
         # instance generator
         self.instance_generator = instance_generator
@@ -194,6 +202,8 @@ class DocumentCountVectorizer(object):
         self.vocabulary = vocabulary
         # separator for one-hot-encoding
         self.separator = separator
+        # NEW whether to split the feature space
+        self.split_feat_space = split_feat_space
 
     # document-level method
     def _extract_feature_vectors(self, doc):
@@ -208,6 +218,8 @@ class DocumentCountVectorizer(object):
         # NEW
         feat_prod = self.feature_set.product_features
         feat_comb = self.feature_set.combine_features
+        # NEW 2
+        split_feat_space = self.split_feat_space
         # end NEW
 
         # preprocess each EDU
@@ -247,6 +259,21 @@ class DocumentCountVectorizer(object):
             # add suffix to single EDU features
             feat_dict['EDU1'] = dict(re_emit(feat_dict['EDU1'].items(), '_EDU1'))
             feat_dict['EDU2'] = dict(re_emit(feat_dict['EDU2'].items(), '_EDU2'))
+
+            # split feat space
+            if split_feat_space:
+                # options are:
+                # * directionality of attachment
+                # * intra/inter-sentential,
+                # * intra/inter-sentential + attachment dir
+                fds = self.feature_set.split_feature_space(
+                    feat_dict['EDU1'],
+                    feat_dict['EDU2'],
+                    feat_dict['pair'],
+                    keep_original=False,
+                    split_criterion=split_feat_space)
+                feat_dict['EDU1'], feat_dict['EDU2'], feat_dict['pair'] = fds
+
             # convert to list
             feats = list(itertools.chain.from_iterable(
                 fd.items() for fd in feat_dict.values()))

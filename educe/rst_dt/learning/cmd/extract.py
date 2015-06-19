@@ -139,12 +139,14 @@ def main(args):
         vocab = load_vocabulary(args.vocabulary)
         vzer = DocumentCountVectorizer(instance_generator,
                                        feature_set,
-                                       vocabulary=vocab)
+                                       vocabulary=vocab,
+                                       split_feat_space='dir_sent')
         X_gen = vzer.transform(docs)
     else:
         vzer = DocumentCountVectorizer(instance_generator,
                                        feature_set,
-                                       min_df=5)
+                                       min_df=5,
+                                       split_feat_space='dir_sent')
         X_gen = vzer.fit_transform(docs)
 
     # extract class label for each instance
