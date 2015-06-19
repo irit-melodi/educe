@@ -227,6 +227,13 @@ class Graph(educe.graph.Graph):
         dus = list(filter(is_interesting_du,self.nodes()))
         return self.sorted_first_outermost(dus)
 
+    def _repr_dot_(self):
+        """Ipython magic: show Graphviz dot representation of the graph
+
+        Note that this does not ship with iPython but is used by our
+        `_repr_svg_` implementation
+        """
+        return DotGraph(self).to_string()
 
 class DotGraph(educe.graph.DotGraph):
     """
