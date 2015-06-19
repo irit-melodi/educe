@@ -690,3 +690,82 @@ def combine_features(feats_g, feats_d, feats_gd):
         pass
 
     return cf
+
+
+def split_feature_space(feats_g, feats_d, feats_gd, keep_original=False,
+                        split_criterion='dir'):
+    """Split feature space on a criterion.
+
+    Current supported criteria are:
+    * 'dir': directionality of attachment,
+    * 'sent': intra/inter-sentential,
+    * 'dir_sent': directionality + intra/inter-sentential.
+
+    Parameters
+    ----------
+    feats_g: dict(feat_name, feat_val)
+        features of the gov EDU
+    feats_d: dict(feat_name, feat_val)
+        features of the dep EDU
+    feats_gd: dict(feat_name, feat_val)
+        features of the (gov, dep) edge
+    keep_original: boolean, default=False
+        whether to keep or replace the original features with the derived
+        split features
+    split_criterion: string
+        feature(s) on which to split the feature space, options are
+        'dir' for directionality of attachment, 'sent' for intra/inter
+        sentential, 'dir_sent' for their conjunction
+
+    Returns
+    -------
+    feats_g, feats_d, feats_gd: (dict(feat_name, feat_val))
+        dicts of features with their copies
+
+    Notes
+    -----
+    This function should probably be generalized and moved to a more
+    relevant place.
+    """
+    suffix = ''
+
+    # intra/inter sentential
+    if split_criterion in ['sent', 'dir_sent']:
+        try:
+            intra_inter = ('intra' if feats_gd['same_sentence']
+                           else 'inter')
+        except KeyError:
+            pass
+        else:
+            suffix += '_' + intra_inter
+
+    # attachment dir
+    if split_criterion in ['dir', 'dir_sent']:
+        try:
+            attach_dir = feats_gd['attach_dir']
+        except KeyError:
+            pass
+        else:
+            suffix += '_' + attach_dir
+
+    if not suffix:
+        return feats_g, feats_d, feats_gd
+
+    # TODO find the right place and formulation for this, so as to
+    # minimize redundancy
+    if keep_original:
+        feats_g.update((fn + suffix, fv)
+                       for fn, fv in feats_g.items())
+        feats_d.update((fn + suffix, fv)
+                       for fn, fv in feats_d.items())
+        feats_gd.update((fn + suffix, fv)
+                        for fn, fv in feats_gd.items())
+    else:
+        feats_g = {(fn + suffix): fv
+                   for fn, fv in feats_g.items()}
+        feats_d = {(fn + suffix): fv
+                   for fn, fv in feats_d.items()}
+        feats_gd = {(fn + suffix): fv
+                    for fn, fv in feats_gd.items()}
+
+    return feats_g, feats_d, feats_gd
