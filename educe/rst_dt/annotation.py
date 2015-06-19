@@ -329,6 +329,59 @@ class SimpleRSTTree(SearchableTree, Standoff):
             kids = [cls._from_binary_rst_tree(kid) for kid in tree]
             return SimpleRSTTree(node, kids, tree.origin)
 
+    @classmethod
+    def to_binary_rst_tree(cls, tree, rel=None):
+        """
+        Build and return a binary `RSTTree` from a `SimpleRSTTree`.
+
+        This function is recursive, it essentially pushes the
+        relation label from the parent to the satellite child
+        (for mononuclear relations) or to all nucleus children
+        (for multinuclear relations).
+
+        Parameters
+        ----------
+        tree: SimpleRSTTree
+            SimpleRSTTree to convert
+
+        rel: string, optional
+            Relation that must decorate the root node of the output
+
+        Returns
+        -------
+        rtree: RSTTree
+            The (binary) RSTTree that corresponds to the given
+            SimpleRSTTree
+        """
+        if len(tree) == 1:
+            node = copy.copy(treenode(tree))
+            node.rel = rel
+            return RSTTree(node, tree, tree.origin)
+        else:
+            left = tree[0]
+            right = tree[1]
+            node = copy.copy(treenode(tree))
+            lnode = treenode(left)
+            rnode = treenode(right)
+            # standard RST trees mark relations on the satellite
+            # child (mononuclear relations) or on each nucleus
+            # child (multinuclear relations)
+            sat_idx = [i for i, kid in enumerate(tree)
+                       if treenode(kid).is_satellite()]
+            if sat_idx:
+                # mononuclear
+                kids = [(cls.to_binary_rst_tree(kid, rel=node.rel)
+                         if treenode(kid).is_satellite() else
+                         cls.to_binary_rst_tree(kid, rel='span'))
+                        for kid in tree]
+            else:
+                # multinuclear
+                kids = [cls.to_binary_rst_tree(kid, rel=node.rel)
+                        for kid in tree]
+            # update the rel in the current node
+            node.rel = rel
+            return RSTTree(node, kids, tree.origin)
+
 
 def _chain_to_binary(rel, kids):
     """
