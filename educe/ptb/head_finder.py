@@ -96,10 +96,27 @@ def _find_head_np(cnt_hws):
 
 
 def find_lexical_heads(tree):
-    """Find the lexical head at each node of a PTB tree."""
+    """Find the lexical head at each node of a constituency tree.
 
-    # result
-    head_word = {}  # dict(treepos, word)
+    The logic corresponds to Collins' head finding rules.
+
+    This is typically used to find the lexical head of each node of a
+    (clean) `educe.external.parser.ConstituencyTree` whose leaves are
+    `educe.external.postag.Token`.
+
+    Parameters
+    ----------
+    tree: `nltk.Tree` with `educe.external.postag.RawToken` leaves
+        PTB tree whose lexical heads we want
+
+    Returns
+    -------
+    head_word: dict(tuple(int), tuple(int))
+        Map each node of the constituency tree to its lexical head. Both
+        nodes are designated by their (NLTK) tree position (a.k.a. Gorn
+        address).
+    """
+    head_word = {}  # result mapping
 
     # recursive helper
     def _find_lexical_head_rec(treepos):
@@ -135,7 +152,7 @@ def find_lexical_heads(tree):
                     c_idx = c_idx - 2
                     hw = cnt_hws[c_idx]
 
-        else:  # must be a Token
+        else:  # must be an educe Token
             p_nt = subtree.tag
             hw = treepos
 
@@ -146,5 +163,4 @@ def find_lexical_heads(tree):
     treepos_root = ()
     root_nt, hw = _find_lexical_head_rec(treepos_root)
 
-    # return dict(treepos, word)
     return head_word
