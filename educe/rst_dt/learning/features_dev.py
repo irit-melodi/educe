@@ -139,6 +139,10 @@ def extract_single_sentence(edu_info):
         sent_id = edu_info['sent_idx']
         if sent_id is not None:
             yield ('sentence_id', sent_id)
+        # NEW position of sentence in doc, from the end
+        sent_rev_id = edu_info['sent_rev_idx']
+        if sent_rev_id is not None:
+            yield ('sentence_rev_id', sent_rev_id)
     except KeyError:
         pass
 
@@ -166,6 +170,14 @@ def extract_single_para(edu_info):
         if para_idx is not None:
             yield ('paragraph_id', para_idx)
             yield ('paragraph_id_div5', para_idx / 5)
+    # NEW position of paragraph in doc, from the end
+    try:
+        para_rev_idx = edu_info['para_rev_idx']
+    except KeyError:
+        pass
+    else:
+        if para_rev_idx is not None:
+            yield ('paragraph_rev_id', para_rev_idx)
 
 
 # syntactic features

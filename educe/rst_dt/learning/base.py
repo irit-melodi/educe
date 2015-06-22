@@ -153,6 +153,7 @@ class DocumentPlusPreprocessor(object):
         raw_words = doc.raw_words  # TEMPORARY
         tokens = doc.tkd_tokens
         trees = doc.tkd_trees
+        paragraphs = doc.paragraphs  # NEW
         # mappings from EDU to other annotations
         edu2raw_sent = doc.edu2raw_sent
         edu2para = doc.edu2para
@@ -186,10 +187,13 @@ class DocumentPlusPreprocessor(object):
         res['edu_idx_in_sent'] = idxes_in_sent[0]
         res['edu_rev_idx_in_sent'] = rev_idxes_in_sent[0]
         res['sent_idx'] = 0
+        res['sent_rev_idx'] = len(trees) - 1  # NEW
         # para
         res['edu_rev_idx_in_para'] = rev_idxes_in_para[0]
         # aka paragraphID
         res['para_idx'] = 0
+        res['para_rev_idx'] = (len(paragraphs) - 1 if paragraphs is not None
+                               else None)  # NEW
         # raw sent
         res['raw_sent_idx'] = edu2raw_sent[0]
         result[edu] = res
@@ -224,8 +228,9 @@ class DocumentPlusPreprocessor(object):
 
             # position of sentence containing EDU in doc
             # aka sentence_id
-            res['sent_idx'] = edu2sent[edu_idx]
-
+            sent_idx = edu2sent[edu_idx]
+            res['sent_idx'] = sent_idx
+            res['sent_rev_idx'] = len(trees) - 1 - sent_idx  # NEW
             # position of EDU in sentence
             # aka num_edus_from_sent_start aka offset
             res['edu_idx_in_sent'] = idxes_in_sent[edu_idx]
@@ -234,7 +239,11 @@ class DocumentPlusPreprocessor(object):
 
             # position of paragraph containing EDU in doc
             # aka paragraphID
-            res['para_idx'] = edu2para[edu_idx]
+            para_idx = edu2para[edu_idx]
+            res['para_idx'] = para_idx
+            res['para_rev_idx'] = (len(paragraphs) - 1 - para_idx
+                                   if paragraphs is not None
+                                   else None)  # NEW
             # position of raw sentence
             res['raw_sent_idx'] = edu2raw_sent[edu_idx]
 
