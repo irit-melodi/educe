@@ -14,7 +14,8 @@ from educe.external.postag import Token
 from educe.internalutil import treenode
 from educe.learning.keys import Substance
 from .base import lowest_common_parent, DocumentPlusPreprocessor
-
+from educe.stac.lexicon.pdtb_markers import (load_pdtb_markers_lexicon,
+                                             PDTB_MARKERS_FILE)
 
 # ---------------------------------------------------------------------
 # preprocess EDUs
@@ -68,6 +69,28 @@ def extract_single_word(edu_info):
     if len(words) > 1:
         yield ('ptb_word_first2', (words[0], words[1]))
         yield ('ptb_word_last2', (words[-2], words[-1]))
+
+
+#
+# NEW discourse markers
+#
+marker2rels = load_pdtb_markers_lexicon(PDTB_MARKERS_FILE)
+
+
+def extract_single_pdtb_markers(edu_info):
+    """Features on the presence of PDTB discourse markers in the EDU"""
+    try:
+        words = edu_info['words']
+    except KeyError:
+        return
+
+    if words:
+        for marker, rels in marker2rels.items():
+            if marker.appears_in(words):
+                yield ('pdtb_marker', str(marker))
+                for rel in rels:
+                    yield ('pdtb_marked_rel', rel)
+# end NEW
 
 
 SINGLE_POS = [
@@ -213,7 +236,7 @@ def find_edu_head(tree, hwords, wanted):
 SINGLE_SYNTAX = [
     ('SYN_hlabel', Substance.DISCRETE),
     ('SYN_hword', Substance.DISCRETE),
-#    ('SYN', Substance.BASKET),
+    # ('SYN', Substance.BASKET),
 ]
 
 
@@ -259,6 +282,9 @@ def build_edu_feature_extractor():
     # word
     feats.extend(SINGLE_WORD)
     funcs.append(extract_single_word)
+    # discourse markers
+    # feats.extend(SINGLE_PDTB_MARKERS)
+    funcs.append(extract_single_pdtb_markers)
     # pos
     feats.extend(SINGLE_POS)
     funcs.append(extract_single_pos)
@@ -342,7 +368,7 @@ def extract_pair_para(edu_info1, edu_info2):
         abs_para_dist = abs(para_id1 - para_id2)
         yield ('dist_para_abs', abs_para_dist)
 
-        if para_id1 < para_id2: # right attachment (gov before dep)
+        if para_id1 < para_id2:  # right attachment (gov before dep)
             yield ('dist_para_right', abs_para_dist)
         elif para_id1 > para_id2:
             yield ('dist_para_left', abs_para_dist)
@@ -486,8 +512,8 @@ def extract_pair_syntax(edu_info1, edu_info2):
         # EXPERIMENTAL
         #
         # EDU 2 > EDU 1
-        if (treepos_hn1 != () and
-            treepos_aw1 in tpos_words2):
+        if ((treepos_hn1 != () and
+             treepos_aw1 in tpos_words2)):
             # dominance relationship: 2 > 1
             yield ('SYN_dom_2', True)
             # attachment label and word
@@ -498,8 +524,8 @@ def extract_pair_syntax(edu_info1, edu_info2):
             yield ('SYN_hword', hword1)
 
         # EDU 1 > EDU 2
-        if (treepos_hn2 != () and
-            treepos_aw2 in tpos_words1):
+        if ((treepos_hn2 != () and
+             treepos_aw2 in tpos_words1)):
             # dominance relationship: 1 > 2
             yield ('SYN_dom_1', True)
             # attachment label and word

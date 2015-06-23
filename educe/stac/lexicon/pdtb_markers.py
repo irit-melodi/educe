@@ -20,6 +20,10 @@ for the "logical and" operator), it is ignored).
 from __future__ import print_function
 import codecs
 from collections import defaultdict
+from os.path import join, dirname
+
+
+PDTB_MARKERS_FILE = join(dirname(__file__), 'pdtb_markers.txt')
 
 
 class Multiword(object):
