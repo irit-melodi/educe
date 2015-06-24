@@ -1,7 +1,5 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+r"""Lexicon of discourse markers.
 
-"""
 Cheap and cheerful phrasal lexicon format used in the STAC project.
 Maps sequences of multiword expressions to relations they mark
 
@@ -16,37 +14,42 @@ One entry per line.  Sometimes you have split expressions, like
 that we are working with sequences of expressions, rather than
 single expressions).  Phrases can be associated with 0 to N
 relations (interpreted as disjunction; if `\wedge` appears (LaTeX
-for ⋀), it is ignored)
+for the "logical and" operator), it is ignored).
 """
 
 from __future__ import print_function
 import codecs
 from collections import defaultdict
-import sys
+from os.path import join, dirname
 
-class Multiword:
+
+PDTB_MARKERS_FILE = join(dirname(__file__), 'pdtb_markers.txt')
+
+
+class Multiword(object):
     """
     A sequence of tokens representing a multiword expression.
     """
     def __init__(self, words):
-        self.words = [ w.lower() for w in words ]
+        self.words = [w.lower() for w in words]
 
     def __str__(self):
         return " ".join(self.words)
 
+
 # TODO: We need to implement comparison/hashing functions so that objects with
 # same contents are treated as the same. I miss Haskell
-class Marker:
+class Marker(object):
     """
     A marker here is a sort of template consisting of multiword expressions
-    and holes, eg. "on the one hand, XXX, on the other hand YYY".  We
+    and holes, eg. "on the one hand, XXX, on the other hand YYY". We
     represent this is as a sequence of Multiword
     """
     def __init__(self, exprs):
         self.exprs = exprs
 
     def __str__(self):
-        return " ... ".join(map(str, self.exprs))
+        return " ... ".join(str(e) for e in self.exprs)
 
     def appears_in(self, words, sep='#####'):
         """
@@ -63,7 +66,7 @@ class Marker:
         tokens
         """
         sentence = sep.join(words).lower()
-        exprs    = frozenset(sep.join(e.words) for e in self.exprs)
+        exprs = frozenset(sep.join(e.words) for e in self.exprs)
         return all(sentence.find(e) >= 0 for e in exprs)
 
     @classmethod
@@ -82,59 +85,71 @@ class Marker:
         return False
 
 
-def read_entry(s):
-    """
-    Return a Marker and a set of relations
+def load_pdtb_markers_lexicon(filename):
+    """Load the lexicon of discourse markers from the PDTB.
+
+    Parameters
+    ----------
+    filename: string
+        Path to the lexicon
+
+    Returns
+    -------
+    markers: dict(Marker, list(string))
+        Discourse markers and the relations they signal
     """
     blacklist = frozenset(['\\wedge'])
-    fields    = [ x.strip() for x in s.split(';') ]
-    if len(fields) > 0 and len(fields) <= 2:
-        subexprs = []
-        for se in [ se.strip() for se in fields[0].split(':') ] :
-            subexprs.append(Multiword(se.split()))
-        exprs = Marker(subexprs)
-        if len(fields) == 2:
-            rels_ = fields[1].split()
-        else:
-            rels_ = []
-        rels = frozenset(rels_) - blacklist
-        return exprs, rels
+    marker2rels = dict()  # result
 
-    elif len(fields) == 1:
-        fields.append(None)
-    else:
-        raise Exception("Sorry, I didn't understand this PDTB marker lexicon entry: %s" % s)
+    with codecs.open(filename, 'r', 'utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            fields = [fld.strip() for fld in line.split(';')]
+            if len(fields) > 2:
+                raise ValueError("Cannot parse PDTB marker entry: %s" % line)
+            # first field: marker
+            subexprs = [Multiword(se.strip().split())
+                        for se in fields[0].split(':')]
+            marker = Marker(subexprs)
+            # second field (optional): possible signalled relations
+            if len(fields) == 2:
+                rels = frozenset(fields[1].split()) - blacklist
+            else:
+                rels = frozenset([])
+            # store mapping
+            marker2rels[marker] = rels
+    return marker2rels
 
-def read_entries(xs):
-    """
-    Return a dictionary mapping each relation to the set of markers that
-    indicate the presence of that relation
-    """
-    d_ = defaultdict(list)
-    for x_ in xs:
-        x = x_.strip()
-        if len(x) < 1: continue
-        marker, rels = read_entry(x)
-        for r in rels:
-            d_[r].append(marker)
-    return { k : frozenset(v) for k,v in d_.items() }
 
 def read_lexicon(filename):
-    """
-    Return a list of WordClass given a filename corresponding to a lexicon
-    we want to read
-    """
-    with codecs.open(filename, 'r', 'utf-8') as f:
-        return read_entries(f)
+    """Load the lexicon of discourse markers from the PDTB, by relation.
 
-if __name__=="__main__":
-    infile = sys.argv[1]
-    words  = sys.argv[2].split()
-    lex    = read_lexicon(infile)
-    rdict  = rel_to_markers(lex)
-    for marker, rels  in lex:
-        print(marker, ' => ', ', '.join(rels))
-    for k in rdict:
-        print(k)
-        for m in rdict[k]:
-            print(' ', '[%s]' % m, m.appears_in(words))
+    This calls `load_pdtb_markers_lexicon` but inverts the indexing to
+    map each relation to its possible discourse markers.
+
+    Note that, as an effect of this inversion, discourse markers whose
+    set of relations is left empty in the lexicon (possibly because they
+    are too ambiguous?) are absent from the inverted index.
+
+    Parameters
+    ----------
+    filename: string
+        Path to the lexicon
+
+    Returns
+    -------
+    relations: dict(string, frozenset(Marker))
+        Relations and their signalling discourse markers
+    """
+    rel2markers = defaultdict(list)
+    # compute the inverse mapping; marker2rels -> rel2markers
+    marker2rels = load_pdtb_markers_lexicon(filename)
+    for marker, rels in marker2rels.items():
+        for rel in rels:
+            rel2markers[rel].append(marker)
+    # store markers in a frozenset
+    relations = {rel: frozenset(markers)
+                 for rel, markers in rel2markers.items()}
+    return relations
