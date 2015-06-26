@@ -242,7 +242,8 @@ class DocumentPlusPreprocessor(object):
             para_idx = edu2para[edu_idx]
             res['para_idx'] = para_idx
             res['para_rev_idx'] = (len(paragraphs) - 1 - para_idx
-                                   if paragraphs is not None
+                                   if (paragraphs is not None and
+                                       para_idx is not None)
                                    else None)  # NEW
             # position of raw sentence
             res['raw_sent_idx'] = edu2raw_sent[edu_idx]
