@@ -5,7 +5,7 @@ Basics for feature extraction
 from __future__ import print_function
 
 from functools import wraps
-import itertools as it
+
 
 class FeatureExtractionException(Exception):
     """
@@ -160,7 +160,7 @@ class DocumentPlusPreprocessor(object):
         edu2sent = doc.edu2sent
         edu2tokens = doc.edu2tokens
         lex_heads = doc.lex_heads  # EXPERIMENTAL
-        
+
         # pre-compute relative indices (in sent, para) in one iteration
         # NB: moved to document_plus itself
         idxes_in_sent = doc.edu2idx_in_sent
@@ -230,7 +230,9 @@ class DocumentPlusPreprocessor(object):
             # aka sentence_id
             sent_idx = edu2sent[edu_idx]
             res['sent_idx'] = sent_idx
-            res['sent_rev_idx'] = len(trees) - 1 - sent_idx  # NEW
+            res['sent_rev_idx'] = (len(trees) - 1 - sent_idx
+                                   if sent_idx is not None
+                                   else None)  # NEW
             # position of EDU in sentence
             # aka num_edus_from_sent_start aka offset
             res['edu_idx_in_sent'] = idxes_in_sent[edu_idx]
