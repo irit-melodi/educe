@@ -327,6 +327,8 @@ class RstDepTree(object):
             The following strategies are currently implemented:
             - 'lllrrr': all left then right dependents,
             - 'rrrlll': all right then left dependents,
+            - 'lrlrlr': alternating directions, left first,
+            - 'rlrlrl': alternating directions, right first,
             - 'id': stable sort that keeps the original interleaving,
             as defined below.
 
@@ -363,6 +365,24 @@ class RstDepTree(object):
             elif strategy == 'rrrlll':
                 result = [right.pop() if right else left.pop()
                           for _ in targets]
+            elif strategy == 'lrlrlr':
+                # reverse lists of left and right modifiers
+                # these are queues (inside ... outside)
+                left_io = list(reversed(left))
+                right_io = list(reversed(right))
+                lrlrlr_gen = itertools.chain.from_iterable(
+                    itertools.izip_longest(left_io, right_io))
+                result = [x for x in lrlrlr_gen
+                          if x is not None]
+            elif strategy == 'rlrlrl':
+                # reverse lists of left and right modifiers
+                # these are queues (inside ... outside)
+                left_io = list(reversed(left))
+                right_io = list(reversed(right))
+                rlrlrl_gen = itertools.chain.from_iterable(
+                    itertools.izip_longest(right_io, left_io))
+                result = [x for x in rlrlrl_gen
+                          if x is not None]
             else:
                 raise RstDtException('Unknown transformation strategy ',
                                      '{stg}'.format(stg=strategy))
