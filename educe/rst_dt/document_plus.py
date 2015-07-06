@@ -41,10 +41,15 @@ class DocumentPlus(object):
 
     def __init__(self, key, grouping, rst_context):
         """
-        key is an educe.corpus.FileId
-        grouping designates the corresponding file in the corpus
-        rst_context is an RSTContext that encapsulates the text and raw
-            document structure
+        Parameters
+        ----------
+        key: educe.corpus.FileId
+            Unique identifier for this document
+        grouping: string
+            Path to the corresponding file in the corpus
+        rst_context: RSTContext
+            Encapsulating object for the text and raw document structure
+            (sentences and paragraphs)
         """
         # document identification
         self.key = key
@@ -308,8 +313,8 @@ class DocumentPlus(object):
 
         # regular EDUs
         for edu in edus[1:]:
-            tree_idcs = [tree_idx
-                         for tree_idx, tree in enumerate(syn_trees[1:], start=1)
+            tree_idcs = [t_idx
+                         for t_idx, tree in enumerate(syn_trees[1:], start=1)
                          if tree is not None and tree.overlaps(edu)]
 
             if len(tree_idcs) == 1:
@@ -330,6 +335,7 @@ class DocumentPlus(object):
                     emsg = ('Segmentation mismatch:',
                             'one EDU, more than one PTB tree')
                     print(edu)
+                    ptrees = [syn_trees[t_idx] for t_idx in tree_idcs]
                     for ptree in ptrees:
                         print('    ', [str(leaf) for leaf in ptree.leaves()])
                     raise ValueError(emsg)
