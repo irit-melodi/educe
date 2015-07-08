@@ -124,27 +124,32 @@ class RstDtParser(object):
     def decode(self, doc_key):
         """Decode a document from the RST-DT (gold)"""
         # create a DocumentPlus
-        # the RST tree is currently pivotal to get all the layers of info
-        orig_rsttree = self.corpus[doc_key]
-        # convert relation labels if needed
-        if self.rel_conv is not None:
-            orig_rsttree = self.rel_conv(orig_rsttree)
-        # the RST tree is backed by an RSTContext that contains the document
-        # text and structure (paragraphs and badly segmented sents)
-        rst_context = treenode(orig_rsttree).context
         # grouping is the document name
         grouping = os.path.basename(id_to_path(doc_key))
+        # the RST tree is currently pivotal to get all the layers of info,
+        # including the RSTContext that contains the document text and
+        # structure (paragraphs + poorly segmented sentences)
+        orig_rsttree = self.corpus[doc_key]
+        rst_context = treenode(orig_rsttree).context
         # finally...
         doc = DocumentPlus(doc_key, grouping, rst_context)
 
-        # TODO get EDUs here
+        # TODO get EDUs here rather than below (see dep tree)
         # edus = orig_rsttree.leaves()
         # doc.edus.extend(edus)
+
         # attach original RST tree
+        # convert relation labels if needed
+        if self.rel_conv is not None:
+            orig_rsttree = self.rel_conv(orig_rsttree)
         doc.orig_rsttree = orig_rsttree
 
         # convert to binary tree
         rsttree = SimpleRSTTree.from_rst_tree(orig_rsttree)
+        # NEW incorporate nuclearity into label
+        # TODO add a parameter (in init or this function) to trigger this
+        if False:
+            rsttree = SimpleRSTTree.incorporate_nuclearity_into_label(rsttree)
         doc.rsttree = rsttree
 
         # convert to dep tree

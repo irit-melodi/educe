@@ -330,6 +330,45 @@ class SimpleRSTTree(SearchableTree, Standoff):
             return SimpleRSTTree(node, kids, tree.origin)
 
     @classmethod
+    def incorporate_nuclearity_into_label(cls, tree):
+        """Integrate nuclearity of the children into each node's label.
+
+        Nuclearity of the children is incorporated in one of two forms,
+        NN for multi- and NS for mono-nuclear relations.
+
+        Parameters
+        ----------
+        tree: SimpleRSTTree
+            The tree of which we want a version with nuclearity incorporated
+
+        Returns
+        -------
+        mod_tree: SimpleRSTTree
+            The same tree but with the type of nuclearity incorporated
+
+        Note
+        ----
+        This is probably not the best way to provide this functionality.
+        In other words, refactoring is much needed here.
+        """
+        if len(tree) == 1:
+            node = copy.copy(treenode(tree))
+            return SimpleRSTTree(node, tree, tree.origin)
+        else:
+            node = copy.copy(treenode(tree))
+            # convenient string representation of what the children look like
+            # here one of NS, SN, NN
+            nscode = "".join(treenode(kid).nuclearity[0] for kid in tree)
+            assert nscode in frozenset(['NS', 'SN', 'NN'])
+            rel_sfx = 'NS' if nscode in ['NS', 'SN'] else 'NN'
+            # or rel_sfx = nscode if... to get the same 41 relations as Joty
+            node.rel = node.rel + '-' + rel_sfx
+            # recurse
+            kids = [cls.incorporate_nuclearity_into_label(kid)
+                    for kid in tree]
+            return SimpleRSTTree(node, kids, tree.origin)
+
+    @classmethod
     def to_binary_rst_tree(cls, tree, rel=None):
         """
         Build and return a binary `RSTTree` from a `SimpleRSTTree`.
