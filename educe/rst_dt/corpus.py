@@ -147,7 +147,8 @@ class RstDtParser(object):
         # convert to binary tree
         rsttree = SimpleRSTTree.from_rst_tree(orig_rsttree)
         # NEW incorporate nuclearity into label
-        if True:
+        # TODO add a parameter (in init or this function) to trigger this
+        if False:
             rsttree = SimpleRSTTree.incorporate_nuclearity_into_label(rsttree)
         doc.rsttree = rsttree
 
