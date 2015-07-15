@@ -38,7 +38,7 @@ class RstDepTree(object):
         _lpad = EDU.left_padding()
         self.edus = [_lpad] + edus
         # mapping from EDU num to idx
-        self.idx = {e.num: i for i, e in enumerate(edus, start=1)}
+        self.idx = {e.num: i for i, e in enumerate(self.edus)}
         # init tree structure
         nb_edus = len(self.edus)
         _dft_head = self.DEFAULT_HEAD

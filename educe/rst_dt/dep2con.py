@@ -1,4 +1,8 @@
 """Conversion between dependency and constituency trees.
+
+TODO
+----
+* [ ] refactor strategies
 """
 
 from collections import namedtuple
@@ -12,6 +16,193 @@ from ..internalutil import treenode
 _N = "Nucleus"
 _S = "Satellite"
 _R = "Root"
+
+
+class InsideOutAttachmentRanker(object):
+    """Rank modifiers, from the inside out on either side.
+
+    Given a dependency tree node and its children, return the list
+    of children but *stably* sorted to fulfill an inside-out
+    traversal on either side.
+
+    Let's back up a little bit for some background on this criterion.
+    We assume that dependency tree nodes can be characterised and
+    ordered by their position in the text. If we did such a thing, the
+    head node would sit somewhere between its children ::
+
+        lX, .., l2, l1, h, r1, r2, .., rY
+
+    An inside-out traversal is one in which moves strictly outward
+    from the centre node. Note that this does not imply any other
+    requirement on the order our traversal (particularly on left vs
+    right), so `h l1 l2 .. lX r1 r2, etc` is as much a valid
+    inside-outside traversal as `h l1 r1 l2 etc`; however,
+    `h l2 l1 etc` is right out.
+
+    The ranking is determined by a strategy. Currently implemented
+    strategies are:
+    - 'id': stable sort that keeps the original interleaving, as
+    defined below,
+    - 'lllrrr': all left then right dependents,
+    - 'rrrlll': all right then left dependents,
+    - 'lrlrlr': alternating directions, left first,
+    - 'rlrlrl': alternating directions, right first.
+
+    TRICKY SORTING! The current implementation of the 'id' strategy was
+    reached through a bit of trial and error, so you may want to modify
+    with caution.
+
+    Most of the trickiness in the 'id' strategy is in making this a
+    *stable* sort, ie. we want to preserve the original order of
+    the targets as much as possible because this allows us to have
+    round trip conversions from RST to DT and back. This essentially
+    means preserving the interleaving of left/right nodes. The basic
+    logic in the implementation is to traverse our target list as
+    a series of LEFT or RIGHT slots, filling the slots in an
+    inside-out order. So for example, if we saw a target list
+    `l3 r1 r3 l2 l1 r2`, we would treat it as the slots `L R R L L R`
+    and fill them out as `l1 r1 r2 l2 l3 r3`
+    """
+
+    def __init__(self, strategy='id'):
+        if strategy not in ['id',
+                            'lllrrr', 'rrrlll',
+                            'lrlrlr', 'rlrlrl',
+                            'closest-lr', 'closest-rl',
+                            'closest-intra-lr-inter-lr',
+                            'closest-intra-rl-inter-rl',
+                            'closest-intra-rl-inter-lr']:
+            raise ValueError('Unknown transformation strategy ',
+                             '{stg}'.format(stg=strategy))
+        self.strategy = strategy
+
+    def fit(self, X, y):
+        """Here a no-op."""
+        return self
+
+    def predict(self, X):
+        """Produce a ranking.
+
+        This keeps the alternation of left and right modifiers as it is
+        in `targets` but possibly re-orders dependents on either side to
+        guarantee inside-out traversal.
+
+        Parameters
+        ----------
+        X: list of triples (RstDepTree, EDU, list of EDUs)
+            Dependency tree, head EDU and its list of modifiers
+
+        Returns
+        -------
+        sorted_mods: list of EDUs
+            Sorted list of modifiers
+
+        Notes
+        -----
+        The '*intra*' strategies need to map each EDU to its surrounding
+        sentence. This is currently done by attaching to the RstDepTree
+        this mapping as a list, `sent_idx`.
+        Future versions should make this right.
+        """
+        strategy = self.strategy
+
+        sorted_mods = []
+        for (dtree, head, targets) in X:
+            sorted_nodes = sorted([head] + targets,
+                                  key=lambda x: dtree.edus[x].span.char_start)
+            centre = sorted_nodes.index(head)
+            # elements to the left and right of the node respectively
+            # these are stacks (outside ... inside)
+            left = sorted_nodes[:centre]
+            right = list(reversed(sorted_nodes[centre+1:]))
+
+            # special strategy: 'id' (we know the true targets)
+            if strategy == 'id':
+                result = [left.pop() if (tree in left) else right.pop()
+                          for tree in targets]
+
+            # strategies that try to guess the order of attachment
+            else:
+                if strategy == 'lllrrr':
+                    result = [left.pop() if left else right.pop()
+                              for _ in targets]
+
+                elif strategy == 'rrrlll':
+                    result = [right.pop() if right else left.pop()
+                              for _ in targets]
+
+                elif strategy == 'lrlrlr':
+                    # reverse lists of left and right modifiers
+                    # these are queues (inside ... outside)
+                    left_io = list(reversed(left))
+                    right_io = list(reversed(right))
+                    lrlrlr_gen = itertools.chain.from_iterable(
+                        itertools.izip_longest(left_io, right_io))
+                    result = [x for x in lrlrlr_gen
+                              if x is not None]
+
+                elif strategy == 'rlrlrl':
+                    # reverse lists of left and right modifiers
+                    # these are queues (inside ... outside)
+                    left_io = list(reversed(left))
+                    right_io = list(reversed(right))
+                    rlrlrl_gen = itertools.chain.from_iterable(
+                        itertools.izip_longest(right_io, left_io))
+                    result = [x for x in rlrlrl_gen
+                              if x is not None]
+
+                elif strategy == 'closest-rl':
+                    # take closest dependents first, take right over left to
+                    # break ties
+                    head_idx = dtree.idx[head]
+                    sort_key = lambda e: (abs(dtree.idx[e] - head_idx),
+                                          1 if dtree.idx[e] > head_idx else 2)
+                    result = sorted(targets, key=sort_key)
+
+                elif strategy == 'closest-lr':
+                    # take closest dependents first, take left over right to
+                    # break ties
+                    head_idx = dtree.idx[head]
+                    sort_key = lambda e: (abs(dtree.idx[e] - head_idx),
+                                          2 if dtree.idx[e] > head_idx else 1)
+                    result = sorted(targets, key=sort_key)
+
+                elif strategy == 'closest-intra-rl-inter-lr':
+                    # take closest dependents first, take right over left to
+                    # break ties
+                    head_idx = dtree.idx[head]
+                    sort_key = lambda e: (1 if dtree.sent_idx[dtree.idx[e]] == dtree.sent_idx[dtree.idx[head]] else 2,
+                                          abs(dtree.idx[e] - head_idx),
+                                          1 if ((dtree.idx[e] > head_idx and
+                                                 dtree.sent_idx[dtree.idx[e]] == dtree.sent_idx[dtree.idx[head]]) or
+                                                (dtree.idx[e] < head_idx and
+                                                 dtree.sent_idx[dtree.idx[e]] != dtree.sent_idx[dtree.idx[head]])) else 2)
+                    result = sorted(targets, key=sort_key)
+
+                elif strategy == 'closest-intra-rl-inter-rl':
+                    # take closest dependents first, take right over left to
+                    # break ties
+                    head_idx = dtree.idx[head]
+                    sort_key = lambda e: (1 if dtree.sent_idx[dtree.idx[e]] == dtree.sent_idx[dtree.idx[head]] else 2,
+                                          abs(dtree.idx[e] - head_idx),
+                                          1 if dtree.idx[e] > head_idx else 2)
+                    result = sorted(targets, key=sort_key)
+
+                elif strategy == 'closest-intra-lr-inter-lr':
+                    # take closest dependents first, take left over right to
+                    # break ties
+                    head_idx = dtree.idx[head]
+                    sort_key = lambda e: (1 if dtree.sent_idx[dtree.idx[e]] == dtree.sent_idx[dtree.idx[head]] else 2,
+                                          abs(dtree.idx[e] - head_idx),
+                                          2 if dtree.idx[e] > head_idx else 1)
+                    result = sorted(targets, key=sort_key)
+
+                else:
+                    raise RstDtException('Unknown transformation strategy ',
+                                         '{stg}'.format(stg=strategy))
+
+            sorted_mods.append(result)
+        return sorted_mods
 
 
 def deptree_to_simple_rst_tree(dtree, multinuclear, strategy='id'):
@@ -99,6 +290,8 @@ def deptree_to_simple_rst_tree(dtree, multinuclear, strategy='id'):
     (and so on, until all we have left is a single RST tree).
     """
 
+    attach_ranker = InsideOutAttachmentRanker(strategy)
+
     def tgt_nuclearity(rel):
         """
         The target of a dep tree link is normally the satellite
@@ -158,107 +351,6 @@ def deptree_to_simple_rst_tree(dtree, multinuclear, strategy='id'):
                         kids=[left, right])
         return res
 
-    def _sort_inside_out(head, targets, strategy='id'):
-        """
-        Given a dependency tree node and its children, return the list
-        of children but *stably* sorted to fulfill an inside-out
-        traversal on either side.
-
-        Let's back up a little bit for some background on this criterion.
-        We assume that dependency tree nodes can be characterised and
-        ordered by their position in the text. If we did such a thing, the
-        head node would sit somewhere between its children ::
-
-            lX, .., l2, l1, h, r1, r2, .., rY
-
-        An inside-out traversal is one in which moves strictly outward
-        from the centre node. Note that this does not imply any other
-        requirement on the order our traversal (particularly on left vs
-        right), so `h l1 l2 .. lX r1 r2, etc` is as much a valid
-        inside-outside traversal as `h l1 r1 l2 etc`; however,
-        `h l2 l1 etc` is right out.
-
-        The following strategies are currently implemented:
-        - 'lllrrr': all left then right dependents,
-        - 'rrrlll': all right then left dependents,
-        - 'lrlrlr': alternating directions, left first,
-        - 'rlrlrl': alternating directions, right first,
-        - 'id': stable sort that keeps the original interleaving,
-        as defined below.
-
-        TRICKY SORTING! The current implementation of the 'id' strategy was
-        reached through a bit of trial and error, so you may want to modify
-        with caution.
-
-        Most of the trickiness in the 'id' strategy is in making this a
-        *stable* sort, ie. we want to preserve the original order of
-        the targets as much as possible because this allows us to have
-        round trip conversions from RST to DT and back. This essentially
-        means preserving the interleaving of left/right nodes. The basic
-        logic in the implementation is to traverse our target list as
-        a series of LEFT or RIGHT slots, filling the slots in an
-        inside-out order. So for example, if we saw a target list
-        `l3 r1 r3 l2 l1 r2`, we would treat it as the slots `L R R L L R`
-        and fill them out as `l1 r1 r2 l2 l3 r3`
-        """
-        sorted_nodes = sorted([head] + targets,
-                              key=lambda x: dtree.edus[x].span.char_start)
-        centre = sorted_nodes.index(head)
-        # elements to the left and right of the node respectively
-        # these are stacks (outside ... inside)
-        left = sorted_nodes[:centre]
-        right = list(reversed(sorted_nodes[centre+1:]))
-
-        # built result according to strategy
-        if strategy == 'id':
-            result = [left.pop() if (tree in left) else right.pop()
-                      for tree in targets]
-        else:
-            # strategies that try to guess the order of attachment
-            if strategy == 'lllrrr':
-                result = [left.pop() if left else right.pop()
-                          for _ in targets]
-            elif strategy == 'rrrlll':
-                result = [right.pop() if right else left.pop()
-                          for _ in targets]
-            elif strategy == 'lrlrlr':
-                # reverse lists of left and right modifiers
-                # these are queues (inside ... outside)
-                left_io = list(reversed(left))
-                right_io = list(reversed(right))
-                lrlrlr_gen = itertools.chain.from_iterable(
-                    itertools.izip_longest(left_io, right_io))
-                result = [x for x in lrlrlr_gen
-                          if x is not None]
-            elif strategy == 'rlrlrl':
-                # reverse lists of left and right modifiers
-                # these are queues (inside ... outside)
-                left_io = list(reversed(left))
-                right_io = list(reversed(right))
-                rlrlrl_gen = itertools.chain.from_iterable(
-                    itertools.izip_longest(right_io, left_io))
-                result = [x for x in rlrlrl_gen
-                          if x is not None]
-            elif strategy == 'closest-rl':
-                # take closest dependents first, take right over left to
-                # break ties
-                head_idx = dtree.idx[head]
-                sort_key = lambda e: (abs(dtree.idx[e] - head_idx),
-                                      1 if dtree.idx[e] > head_idx else 2)
-                result = sorted(targets, key=sort_key)
-            elif strategy == 'closest-lr':
-                # take closest dependents first, take left over right to
-                # break ties
-                head_idx = dtree.idx[head]
-                sort_key = lambda e: (abs(dtree.idx[e] - head_idx),
-                                      2 if dtree.idx[e] > head_idx else 1)
-                result = sorted(targets, key=sort_key)
-            else:
-                raise RstDtException('Unknown transformation strategy ',
-                                     '{stg}'.format(stg=strategy))
-
-        return result
-
     def walk(ancestor, subtree, strategy):
         """
         The basic descent/ascent driver of our conversion algorithm.
@@ -291,7 +383,8 @@ def deptree_to_simple_rst_tree(dtree, multinuclear, strategy='id'):
         # rather than mapping, ie. we threading along a nested
         # RST tree as go from sibling to sibling
         targets = [t for _, t in dtree.deps[subtree]]
-        for tgt in _sort_inside_out(subtree, targets, strategy):
+        ranked_targets = attach_ranker.predict([(dtree, subtree, targets)])[0]
+        for tgt in ranked_targets:
             src = walk(src, tgt, strategy)
         # ancestor is None in the case of the root node
         return connect_trees(ancestor, src, rel) if ancestor else src
