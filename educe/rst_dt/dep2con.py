@@ -213,33 +213,49 @@ def deptree_to_simple_rst_tree(dtree, multinuclear, strategy='id'):
         if strategy == 'id':
             result = [left.pop() if (tree in left) else right.pop()
                       for tree in targets]
-        elif strategy == 'lllrrr':
-            result = [left.pop() if left else right.pop()
-                      for _ in targets]
-        elif strategy == 'rrrlll':
-            result = [right.pop() if right else left.pop()
-                      for _ in targets]
-        elif strategy == 'lrlrlr':
-            # reverse lists of left and right modifiers
-            # these are queues (inside ... outside)
-            left_io = list(reversed(left))
-            right_io = list(reversed(right))
-            lrlrlr_gen = itertools.chain.from_iterable(
-                itertools.izip_longest(left_io, right_io))
-            result = [x for x in lrlrlr_gen
-                      if x is not None]
-        elif strategy == 'rlrlrl':
-            # reverse lists of left and right modifiers
-            # these are queues (inside ... outside)
-            left_io = list(reversed(left))
-            right_io = list(reversed(right))
-            rlrlrl_gen = itertools.chain.from_iterable(
-                itertools.izip_longest(right_io, left_io))
-            result = [x for x in rlrlrl_gen
-                      if x is not None]
         else:
-            raise RstDtException('Unknown transformation strategy ',
-                                 '{stg}'.format(stg=strategy))
+            # strategies that try to guess the order of attachment
+            if strategy == 'lllrrr':
+                result = [left.pop() if left else right.pop()
+                          for _ in targets]
+            elif strategy == 'rrrlll':
+                result = [right.pop() if right else left.pop()
+                          for _ in targets]
+            elif strategy == 'lrlrlr':
+                # reverse lists of left and right modifiers
+                # these are queues (inside ... outside)
+                left_io = list(reversed(left))
+                right_io = list(reversed(right))
+                lrlrlr_gen = itertools.chain.from_iterable(
+                    itertools.izip_longest(left_io, right_io))
+                result = [x for x in lrlrlr_gen
+                          if x is not None]
+            elif strategy == 'rlrlrl':
+                # reverse lists of left and right modifiers
+                # these are queues (inside ... outside)
+                left_io = list(reversed(left))
+                right_io = list(reversed(right))
+                rlrlrl_gen = itertools.chain.from_iterable(
+                    itertools.izip_longest(right_io, left_io))
+                result = [x for x in rlrlrl_gen
+                          if x is not None]
+            elif strategy == 'closest-rl':
+                # take closest dependents first, take right over left to
+                # break ties
+                head_idx = dtree.idx[head]
+                sort_key = lambda e: (abs(dtree.idx[e] - head_idx),
+                                      1 if dtree.idx[e] > head_idx else 2)
+                result = sorted(targets, key=sort_key)
+            elif strategy == 'closest-lr':
+                # take closest dependents first, take left over right to
+                # break ties
+                head_idx = dtree.idx[head]
+                sort_key = lambda e: (abs(dtree.idx[e] - head_idx),
+                                      2 if dtree.idx[e] > head_idx else 1)
+                result = sorted(targets, key=sort_key)
+            else:
+                raise RstDtException('Unknown transformation strategy ',
+                                     '{stg}'.format(stg=strategy))
 
         return result
 
