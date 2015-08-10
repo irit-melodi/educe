@@ -14,6 +14,11 @@ from .annotation import EDU
 from ..internalutil import treenode
 
 
+NUC_N = "Nucleus"
+NUC_S = "Satellite"
+NUC_R = "Root"
+
+
 class RstDtException(Exception):
     """
     Exceptions related to conversion between RST and DT trees.
@@ -25,14 +30,17 @@ class RstDtException(Exception):
         super(RstDtException, self).__init__(msg)
 
 
+_ROOT_HEAD = 0
+_ROOT_LABEL = 'ROOT'
+
+DEFAULT_HEAD = _ROOT_HEAD
+DEFAULT_LABEL = _ROOT_LABEL
+DEFAULT_NUC = NUC_N
+DEFAULT_RANK = 0
+
+
 class RstDepTree(object):
     """RST dependency tree"""
-
-    _ROOT_HEAD = 0
-    _ROOT_LABEL = 'ROOT'
-
-    DEFAULT_HEAD = _ROOT_HEAD
-    DEFAULT_LABEL = _ROOT_LABEL
 
     def __init__(self, edus=[], origin=None):
         _lpad = EDU.left_padding()
@@ -41,14 +49,20 @@ class RstDepTree(object):
         self.idx = {e.num: i for i, e in enumerate(self.edus)}
         # init tree structure
         nb_edus = len(self.edus)
-        _dft_head = self.DEFAULT_HEAD
-        _dft_lbl = self.DEFAULT_LABEL
-        self.heads = [_dft_head for _ in range(nb_edus)]
-        self.labels = [_dft_lbl for _ in range(nb_edus)]
+        self.heads = [DEFAULT_HEAD for _ in range(nb_edus)]
+        self.labels = [DEFAULT_LABEL for _ in range(nb_edus)]
+        # NEW nuclearity and ranking of attachment
+        # first trial: ranks default to 0, nuclearity to S
+        self.nucs = [DEFAULT_NUC for _ in range(nb_edus)]
+        self.ranks = [DEFAULT_RANK for _ in range(nb_edus)]
+        # end NEW
         self.deps = [[] for _ in range(nb_edus)]
+
         # set special values for fake root
         self.heads[0] = -1
         self.labels[0] = None
+        self.nucs[0] = None
+        self.ranks[0] = -1
 
         # set fake root's origin and context to be the same as the first
         # real EDU's
@@ -65,20 +79,44 @@ class RstDepTree(object):
         self.edus.append(edu)
         self.idx[edu.num] = len(self.edus) - 1
         # set default values for the tree structure
-        self.heads.append(self.DEFAULT_HEAD)
-        self.labels.append(self.DEFAULT_LABEL)
+        self.heads.append(DEFAULT_HEAD)
+        self.labels.append(DEFAULT_LABEL)
+        self.nucs.append(DEFAULT_NUC)
+        self.ranks.append(DEFAULT_RANK)
         self.deps.append([])
 
-    def add_dependency(self, gov_num, dep_num, label=None):
-        """Add a dependency from EDU gov_num to EDU dep_num, labelled label."""
+    def add_dependency(self, gov_num, dep_num, label=None, nuc=NUC_S,
+                       rank=None):
+        """Add a dependency between two EDUs.
+
+        Parameters
+        ----------
+        gov_num: int
+            Number of the head EDU
+        dep_num: int
+            Number of the modifier EDU
+        label: string, optional
+            Label of the dependency
+        nuc: string, one of [NUC_S, NUC_N]
+            Nuclearity of the modifier
+        rank: integer, optional
+            Rank of the modifier in the order of attachment to the head.
+            `None` means it is not given declaratively and it is instead
+            inferred from the number of modifiers previously attached to
+            the head, through the previous state of ̀self.deps`.
+        """
         _idx_gov = self.idx[gov_num]
         _idx_dep = self.idx[dep_num]
         self.heads[_idx_dep] = _idx_gov
         self.labels[_idx_dep] = label
+        self.nucs[_idx_dep] = nuc
+        self.ranks[_idx_dep] = (rank if rank is not None
+                                else len(self.deps[_idx_gov]))
         self.deps[_idx_gov].append((label, _idx_dep))
 
     def get_dependencies(self):
         """Get the list of dependencies in this dependency tree.
+
         Each dependency is a 3-uple (gov, dep, label),
         gov and dep being EDUs.
         """
@@ -96,16 +134,16 @@ class RstDepTree(object):
 
     def set_root(self, root_num):
         """Designate an EDU as a real root of the RST tree structure"""
-        _idx_fake_root = self._ROOT_HEAD
+        _idx_fake_root = _ROOT_HEAD
         _idx_root = self.idx[root_num]
-        _lbl_root = self._ROOT_LABEL
+        _lbl_root = _ROOT_LABEL
         self.heads[_idx_root] = _idx_fake_root
         self.labels[_idx_root] = _lbl_root
         self.deps[_idx_fake_root].append((_lbl_root, _idx_root))
 
     def real_roots_idx(self):
         """Get the list of the indices of the real roots"""
-        return self.deps[self._ROOT_HEAD]
+        return self.deps[_ROOT_HEAD]
 
     def set_origin(self, origin):
         """Update the origin of this annotation"""
@@ -138,16 +176,20 @@ class RstDepTree(object):
                 if nscode == "NS":
                     head = lhead
                     child = rhead
+                    nuc_child = NUC_S
                 elif nscode == "SN":
                     head = rhead
                     child = lhead
+                    nuc_child = NUC_S
                 elif nscode == "NN":
                     head = lhead
                     child = rhead
+                    nuc_child = NUC_N
                 else:
                     raise RstDtException("Don't know how to handle %s trees" %
                                          nscode)
-                dtree.add_dependency(head, child, rel)
+                dtree.add_dependency(head, child, label=rel, nuc=nuc_child,
+                                     rank=None)
                 return head
 
         root = walk(rtree)  # populate tree structure in dtree and get its root

@@ -3,19 +3,17 @@
 TODO
 ----
 * [ ] refactor strategies
+* [ ] use label+nuclearity to help determine the order of attachment:
+      greedily take successive modifiers that belong to the same
+      underlying multinuclear relation
 """
 
 from collections import namedtuple
 import itertools
 
 from .annotation import SimpleRSTTree, Node
-from .deptree import RstDtException
+from .deptree import RstDtException, NUC_N, NUC_S, NUC_R
 from ..internalutil import treenode
-
-
-_N = "Nucleus"
-_S = "Satellite"
-_R = "Root"
 
 
 class InsideOutAttachmentRanker(object):
@@ -297,7 +295,7 @@ def deptree_to_simple_rst_tree(dtree, multinuclear, strategy='id'):
         The target of a dep tree link is normally the satellite
         unless the relation is marked multinuclear
         """
-        return _N if rel in multinuclear else _S
+        return NUC_N if rel in multinuclear else NUC_S
 
     def mk_leaf(edu):
         """
@@ -333,11 +331,11 @@ def deptree_to_simple_rst_tree(dtree, multinuclear, strategy='id'):
             raise RstDtException("Span %s overlaps with %s " %
                                  (src.span, tgt.span))
         elif src.span <= tgt.span:
-            left = parts_to_tree(_N, src)
+            left = parts_to_tree(NUC_N, src)
             right = parts_to_tree(tgt_nuc, tgt)
         else:
             left = parts_to_tree(tgt_nuc, tgt)
-            right = parts_to_tree(_N, src)
+            right = parts_to_tree(NUC_N, src)
 
         l_edu_span = treenode(left).edu_span
         r_edu_span = treenode(right).edu_span
@@ -397,7 +395,7 @@ def deptree_to_simple_rst_tree(dtree, multinuclear, strategy='id'):
         msg = ('Cannot convert RstDepTree to SimpleRSTTree, ',
                'multiple roots: {}'.format(roots))
         raise RstDtException(msg)
-    return parts_to_tree(_R, rparts)
+    return parts_to_tree(NUC_R, rparts)
 
 
 # pylint: disable=R0903, W0232
