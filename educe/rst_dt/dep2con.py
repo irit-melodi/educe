@@ -165,7 +165,7 @@ class InsideOutAttachmentRanker(object):
                                           2 if dtree.idx[e] > head_idx else 1)
                     result = sorted(targets, key=sort_key)
 
-                elif strategy == 'closest-intra-rl-inter-lr':
+                elif strategy == 'closest-intra-rl-inter-lr':  # current best
                     # take closest dependents first, take right over left to
                     # break ties
                     head_idx = dtree.idx[head]
