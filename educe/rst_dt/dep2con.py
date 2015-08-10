@@ -70,7 +70,7 @@ class InsideOutAttachmentRanker(object):
                             'closest-intra-lr-inter-lr',
                             'closest-intra-rl-inter-rl',
                             'closest-intra-rl-inter-lr']:
-            raise ValueError('Unknown transformation strategy ',
+            raise ValueError('Unknown transformation strategy '
                              '{stg}'.format(stg=strategy))
         self.strategy = strategy
 
@@ -165,39 +165,49 @@ class InsideOutAttachmentRanker(object):
                                           2 if dtree.idx[e] > head_idx else 1)
                     result = sorted(targets, key=sort_key)
 
-                elif strategy == 'closest-intra-rl-inter-lr':  # current best
-                    # take closest dependents first, take right over left to
-                    # break ties
-                    head_idx = dtree.idx[head]
-                    sort_key = lambda e: (1 if dtree.sent_idx[dtree.idx[e]] == dtree.sent_idx[dtree.idx[head]] else 2,
-                                          abs(dtree.idx[e] - head_idx),
-                                          1 if ((dtree.idx[e] > head_idx and
-                                                 dtree.sent_idx[dtree.idx[e]] == dtree.sent_idx[dtree.idx[head]]) or
-                                                (dtree.idx[e] < head_idx and
-                                                 dtree.sent_idx[dtree.idx[e]] != dtree.sent_idx[dtree.idx[head]])) else 2)
-                    result = sorted(targets, key=sort_key)
-
-                elif strategy == 'closest-intra-rl-inter-rl':
-                    # take closest dependents first, take right over left to
-                    # break ties
-                    head_idx = dtree.idx[head]
-                    sort_key = lambda e: (1 if dtree.sent_idx[dtree.idx[e]] == dtree.sent_idx[dtree.idx[head]] else 2,
-                                          abs(dtree.idx[e] - head_idx),
-                                          1 if dtree.idx[e] > head_idx else 2)
-                    result = sorted(targets, key=sort_key)
-
-                elif strategy == 'closest-intra-lr-inter-lr':
-                    # take closest dependents first, take left over right to
-                    # break ties
-                    head_idx = dtree.idx[head]
-                    sort_key = lambda e: (1 if dtree.sent_idx[dtree.idx[e]] == dtree.sent_idx[dtree.idx[head]] else 2,
-                                          abs(dtree.idx[e] - head_idx),
-                                          2 if dtree.idx[e] > head_idx else 1)
-                    result = sorted(targets, key=sort_key)
-
+                # strategies that depend on intra/inter-sentential info
+                # NB: the way sentential info is stored is expected to change
+                # at some point
                 else:
-                    raise RstDtException('Unknown transformation strategy ',
-                                         '{stg}'.format(stg=strategy))
+                    if not hasattr(dtree, 'sent_idx'):
+                        raise ValueError(('Strategy {stg} depends on '
+                                          'sentential information which is '
+                                          'missing here'
+                                          '').format(stg=strategy))
+
+                    if strategy == 'closest-intra-rl-inter-lr':  # current best
+                        # take closest dependents first, take right over left to
+                        # break ties
+                        head_idx = dtree.idx[head]
+                        sort_key = lambda e: (1 if dtree.sent_idx[dtree.idx[e]] == dtree.sent_idx[dtree.idx[head]] else 2,
+                                              abs(dtree.idx[e] - head_idx),
+                                              1 if ((dtree.idx[e] > head_idx and
+                                                     dtree.sent_idx[dtree.idx[e]] == dtree.sent_idx[dtree.idx[head]]) or
+                                                    (dtree.idx[e] < head_idx and
+                                                     dtree.sent_idx[dtree.idx[e]] != dtree.sent_idx[dtree.idx[head]])) else 2)
+                        result = sorted(targets, key=sort_key)
+
+                    elif strategy == 'closest-intra-rl-inter-rl':
+                        # take closest dependents first, take right over left to
+                        # break ties
+                        head_idx = dtree.idx[head]
+                        sort_key = lambda e: (1 if dtree.sent_idx[dtree.idx[e]] == dtree.sent_idx[dtree.idx[head]] else 2,
+                                              abs(dtree.idx[e] - head_idx),
+                                              1 if dtree.idx[e] > head_idx else 2)
+                        result = sorted(targets, key=sort_key)
+
+                    elif strategy == 'closest-intra-lr-inter-lr':
+                        # take closest dependents first, take left over right to
+                        # break ties
+                        head_idx = dtree.idx[head]
+                        sort_key = lambda e: (1 if dtree.sent_idx[dtree.idx[e]] == dtree.sent_idx[dtree.idx[head]] else 2,
+                                              abs(dtree.idx[e] - head_idx),
+                                              2 if dtree.idx[e] > head_idx else 1)
+                        result = sorted(targets, key=sort_key)
+
+                    else:
+                        raise RstDtException('Unknown transformation strategy'
+                                             ' {stg}'.format(stg=strategy))
 
             sorted_mods.append(result)
         return sorted_mods
