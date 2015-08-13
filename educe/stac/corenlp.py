@@ -173,7 +173,7 @@ def read_corenlp_result(doc, corenlp_doc, tid=None):
     doc: educe Document (?)
         The original document (?)
 
-    corenlp_doc: ?
+    corenlp_doc: educe.external.stanford_xml_reader.PreprocessingSource
         Object that contains all annotations for the document
 
     tid: turn id
@@ -181,7 +181,7 @@ def read_corenlp_result(doc, corenlp_doc, tid=None):
 
     Returns
     -------
-    core_nlp_doc: CoreNlpDocument
+    corenlp_doc: CoreNlpDocument
         A CoreNlpDocument containing all information.
     """
     def is_matching_turn(x):
