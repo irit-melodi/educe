@@ -26,6 +26,7 @@ from ..args import add_usual_input_args
 from ..doc_vectorizer import DocumentCountVectorizer, DocumentLabelExtractor
 from educe.rst_dt.corpus import RstDtParser
 from educe.rst_dt.ptb import PtbParser
+from educe.rst_dt.corenlp import CoreNlpParser
 
 
 NAME = 'extract'
@@ -42,6 +43,7 @@ def config_argparser(parser):
     add_usual_input_args(parser)
     parser.add_argument('corpus', metavar='DIR',
                         help='Corpus dir (eg. data/pilot)')
+    # TODO make optional and possibly exclusive from corenlp below
     parser.add_argument('ptb', metavar='DIR',
                         help='PTB directory (eg. PTBIII/parsed/wsj)')
     parser.add_argument('output', metavar='DIR',
@@ -66,6 +68,10 @@ def config_argparser(parser):
                         metavar='FILE',
                         help='Read label set from given feature file '
                         '(important when extracting test data)')
+    # NEW use CoreNLP's output for tokenization and syntax (+coref?)
+    parser.add_argument('--corenlp_out_dir', metavar='DIR',
+                        help='CoreNLP output directory')
+    # end NEW
 
     parser.add_argument('--debug', action='store_true',
                         help='Emit fields used for debugging purposes')
@@ -86,7 +92,13 @@ def main(args):
     live = args.parsing
 
     # RST data
-    rst_reader = RstDtParser(args.corpus, args, coarse_rels=True)
+    # fileX docs are currently not supported by CoreNLP
+    if args.corenlp_out_dir:
+        exclude_file_docs = True
+    else:
+        exclude_file_docs = False
+
+    rst_reader = RstDtParser(args.corpus, args, coarse_rels=True, exclude_file_docs=True)
     rst_corpus = rst_reader.corpus
     # TODO: change educe.corpus.Reader.slurp*() so that they return an object
     # which contains a *list* of FileIds and a *list* of annotations
@@ -95,8 +107,15 @@ def main(args):
     # sorted so that the order in which docs are iterated is guaranteed
     # to be always the same
 
-    # PTB data
-    ptb_parser = PtbParser(args.ptb)
+    # syntactic preprocessing
+    if args.corenlp_out_dir:
+        csyn_parser = CoreNlpParser(args.corenlp_out_dir)
+    else:
+        # TODO improve switch between gold and predicted syntax
+        # PTB data
+        csyn_parser = PtbParser(args.ptb)
+    # FIXME
+    print('offline syntactic preprocessing: ready')
 
     # align EDUs with sentences, tokens and trees from PTB
     def open_plus(doc):
@@ -108,9 +127,9 @@ def main(args):
         doc = rst_reader.decode(doc)
         # populate it with layers of info
         # tokens
-        doc = ptb_parser.tokenize(doc)
+        doc = csyn_parser.tokenize(doc)
         # syn parses
-        doc = ptb_parser.parse(doc)
+        doc = csyn_parser.parse(doc)
         # disc segments
         doc = rst_reader.segment(doc)
         # disc parse
