@@ -106,6 +106,16 @@ class RstDtParser(object):
 
     def __init__(self, corpus_dir, args, coarse_rels=False,
                  exclude_file_docs=False):
+        """
+        TODO
+
+        Parameters
+        ----------
+        ...
+
+        exclude_file_docs: boolean, default False
+            If True, ignore fileX files.
+        """
         # TODO: kill `args`
         self.reader = Reader(corpus_dir)
         # pre-load corpus
