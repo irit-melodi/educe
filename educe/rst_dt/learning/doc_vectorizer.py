@@ -286,6 +286,17 @@ class DocumentCountVectorizer(object):
                     f = '{}{}{}'.format(f, separator, str(v))
                     v = 1
                 elif isinstance(v, (str, unicode)):
+                    # NEW explicitly replace with regular spaces the
+                    # non-breaking spaces that appear in CoreNLP output
+                    # for fractions of a dollar in stock prices,
+                    # e.g. "100 3/32" ;
+                    # non-breaking spaces might appear elsewhere ;
+                    # svmlight format expects ascii characters so it makes
+                    # some sense to replace and convert to ascii here
+                    if isinstance(v, unicode):
+                        v2 = v.replace(u'\xa0', u' ')
+                        v = v2.encode('utf-8')
+                    # end NEW
                     f = '{}{}{}'.format(f, separator, v)
                     v = 1
                 oh_feats.append((f, v))

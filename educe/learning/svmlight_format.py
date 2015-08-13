@@ -26,6 +26,9 @@ def _dump_svmlight(X_gen, y_gen, f, comment):
         x = [(feat_id, feat_val) for feat_id, feat_val in x
              if feat_val != 0]
         # feature ids in libsvm are one-based, so feat_id + 1
+        # TODO use unicode all along, then encode to ascii at the last
+        # possible moment (aka here), e.g.
+        # s = u' '.join(...) ; f.write(... .encode('ascii'))
         s = ' '.join(value_pattern.format(fid=str(feat_id + 1), fv=feat_val)
                      for feat_id, feat_val in x)
         f.write(line_pattern.format(yi=yi, s=s))
