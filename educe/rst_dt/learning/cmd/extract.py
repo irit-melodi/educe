@@ -17,7 +17,6 @@ import educe.glozz
 import educe.stac
 import educe.util
 
-from educe.learning.svmlight_format import dump_svmlight_file
 from educe.learning.edu_input_format import (dump_all,
                                              load_labels)
 from educe.learning.vocabulary_format import (dump_vocabulary,
@@ -98,7 +97,8 @@ def main(args):
     else:
         exclude_file_docs = False
 
-    rst_reader = RstDtParser(args.corpus, args, coarse_rels=True, exclude_file_docs=True)
+    rst_reader = RstDtParser(args.corpus, args, coarse_rels=True,
+                             exclude_file_docs=exclude_file_docs)
     rst_corpus = rst_reader.corpus
     # TODO: change educe.corpus.Reader.slurp*() so that they return an object
     # which contains a *list* of FileIds and a *list* of annotations
@@ -109,7 +109,29 @@ def main(args):
 
     # syntactic preprocessing
     if args.corenlp_out_dir:
-        csyn_parser = CoreNlpParser(args.corenlp_out_dir)
+        # get the precise path to CoreNLP parses for the corpus currently used
+        # the folder layout of CoreNLP's output currently follows that of the
+        # corpus: RSTtrees-main-1.0/{TRAINING,TEST}, RSTtrees-double-1.0
+        # FIXME clean rewrite ; this could mean better modelling of the corpus
+        # subparts/versions, e.g. RST corpus have "version: 1.0", annotators
+        # "main" or "double"
+
+        # find the suffix of the path name that starts with RSTtrees-*
+        # FIXME find a cleaner way to do this ;
+        # should probably use pathlib, included in the standard lib
+        # for python >= 3.4
+        try:
+            rel_idx = (args.corpus).index('RSTtrees-WSJ-')
+        except ValueError:
+            # if no part of the path starts with "RSTtrees", keep the
+            # entire path (no idea whether this is good)
+            relative_corpus_path = args.corpus
+        else:
+            relative_corpus_path = args.corpus[rel_idx:]
+
+        corenlp_out_dir = os.path.join(args.corenlp_out_dir,
+                                       relative_corpus_path)
+        csyn_parser = CoreNlpParser(corenlp_out_dir)
     else:
         # TODO improve switch between gold and predicted syntax
         # PTB data
@@ -195,7 +217,7 @@ def main(args):
         of_bn = os.path.join(args.output, os.path.basename(args.corpus))
         out_file = '{}.relations{}'.format(of_bn, of_ext)
 
-    # dump
+    # dump EDUs and features in svmlight format
     dump_all(X_gen, y_gen, out_file, labtor.labelset_, docs,
              instance_generator)
 

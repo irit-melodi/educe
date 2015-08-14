@@ -11,7 +11,6 @@ from __future__ import print_function
 
 from collections import defaultdict
 import os.path
-from pprint import pprint  # DEBUG
 
 import nltk.tree
 
@@ -51,7 +50,7 @@ def read_corenlp_result(doc, corenlp_doc):
     Parameters
     ----------
     doc: educe.rst_dt.document_plus.DocumentPlus
-        The original document (currently not used, could be necessary to
+        The original document (currently unused, could be necessary to
         determine e.g. token offset for specific file formats ; if it
         never gets used, this function should probably to the generic
         default and moved to `educe.external.corenlp`).
@@ -153,10 +152,7 @@ class CoreNlpParser(object):
         if corenlp_out_name is None:
             return doc
 
-        # FIXME get subcorpus from caller: double, main/TRAINING, main/TEST
-        # and incorporate to path here
         fname = os.path.join(self.corenlp_out_dir,
-                             'RSTtrees-WSJ-double-1.0',
                              corenlp_out_name)
         if not os.path.exists(fname):
             raise ValueError('CoreNLP XML: no file {}'.format(fname))
@@ -177,10 +173,7 @@ class CoreNlpParser(object):
         if corenlp_out_name is None:
             return doc
 
-        # FIXME get subcorpus from caller: double, main/TRAINING, main/TEST
-        # and incorporate to path here
         fname = os.path.join(self.corenlp_out_dir,
-                             'RSTtrees-WSJ-double-1.0',
                              corenlp_out_name)
         if not os.path.exists(fname):
             raise ValueError('CoreNLP XML: no file {}'.format(fname))
