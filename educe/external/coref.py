@@ -14,9 +14,11 @@ Each mention contains a set of tokens.
 .. CoreNLP:       http://nlp.stanford.edu/software/corenlp.shtml
 """
 
-from   educe.annotation import Span, Standoff
+from educe.annotation import Standoff
+
 
 class Chain(Standoff):
+    """Chain of coreferences"""
     def __init__(self, mentions):
         Standoff.__init__(self)
         self.mentions = mentions
@@ -24,11 +26,13 @@ class Chain(Standoff):
     def _members(self):
         return self.mentions
 
+
 class Mention(Standoff):
+    """Mention of an entity"""
     def __init__(self, tokens, head, most_representative=False):
         Standoff.__init__(self)
         self.tokens = tokens
-        self.head   = head
+        self.head = head
         self.most_representative = most_representative
 
     def _members(self):

@@ -233,7 +233,7 @@ def transform_tree(tree, transformer):
                     for new_kid in (transform_tree(kid, transformer)
                                     for kid in tree)
                     if new_kid is not None]
-        new_tree = (Tree(tree.label(), new_kids)
+        new_tree = (type(tree)(tree.label(), new_kids)
                     if new_kids else None)
     else:
         new_tree = tree
