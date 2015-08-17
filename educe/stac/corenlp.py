@@ -231,7 +231,12 @@ def read_corenlp_result(doc, corenlp_doc, tid=None):
     for turn, sent in zip(turns, sentences):
         sid = sent['id']
         tokens_dict = educe_tokens[sid]
+        # FIXME tokens are probably not properly ordered because token ids
+        # are global ids, i.e. strings like "1-18" (sentence 1, token 18)
+        # which means basic sorting ranks "1-10" before "1-2"
+        # cf. educe.rst_dt.corenlp
         sorted_tokens = [tokens_dict[x] for x in sorted(tokens_dict.keys())]
+        # end FIXME
         tree = nltk.tree.Tree.fromstring(sent['parse'])
         educe_tree = ConstituencyTree.build(tree, sorted_tokens)
 

@@ -89,7 +89,10 @@ def read_corenlp_result(doc, corenlp_doc):
     for sent in sentences:
         sid = sent['id']
         tokens_dict = educe_tokens[sid]
-        sorted_tokens = [tokens_dict[x] for x in sorted(tokens_dict)]
+        # NEW extract local id to properly sort tokens
+        tok_local_id = lambda x: int(x[len(sid) + 1:])
+        sorted_tokens = [tokens_dict[x]
+                         for x in sorted(tokens_dict, key=tok_local_id)]
         # ctree
         tree = nltk.tree.Tree.fromstring(sent['parse'])
         educe_ctree = ConstituencyTree.build(tree, sorted_tokens)
