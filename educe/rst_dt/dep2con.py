@@ -300,13 +300,6 @@ def deptree_to_simple_rst_tree(dtree, multinuclear, strategy='id'):
 
     attach_ranker = InsideOutAttachmentRanker(strategy)
 
-    def tgt_nuclearity(rel):
-        """
-        The target of a dep tree link is normally the satellite
-        unless the relation is marked multinuclear
-        """
-        return NUC_N if rel in multinuclear else NUC_S
-
     def mk_leaf(edu):
         """
         Trivial partial tree for use when processing dependency
@@ -335,7 +328,9 @@ def deptree_to_simple_rst_tree(dtree, multinuclear, strategy='id'):
         Return a partial tree, assigning order and nuclearity to
         child trees
         """
-        tgt_nuc = tgt_nuclearity(rel)
+        # the target of a dep tree link is normally the satellite
+        # unless the relation is marked multinuclear
+        tgt_nuc = NUC_N if rel in multinuclear else NUC_S
 
         if src.span.overlaps(tgt.span):
             raise RstDtException("Span %s overlaps with %s " %
