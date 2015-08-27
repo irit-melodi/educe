@@ -53,19 +53,22 @@ class DummyNuclearityClassifier(object):
             Target nuclearity array for each EDU of each RstDepTree.
         """
         if self.strategy not in ["unamb_else_most_frequent",
-                                  "most_frequent_by_rel"]:
+                                 "most_frequent_by_rel"]:
             raise ValueError("Unknown strategy type.")
-        
+
+        # special processing: ROOT is considered multinuclear
+        multinuc_lbls = ['ROOT']
         if self.strategy == "unamb_else_most_frequent":
             # FIXME automatically get these from the training set
-            self.multinuc_lbls = ['joint', 'same-unit', 'textual']
+            multinuc_lbls.extend(['joint', 'same-unit', 'textual'])
 
         elif self.strategy == "most_frequent_by_rel":
-            self.multinuc_lbls = [rel_name for rel_name, mode_unuc
-                                  in get_most_frequent_unuc(
-                                      load_training_as_dataframe()
-                                  ).items()
-                                  if mode_unuc == 'NN']
+            multinuc_lbls.extend(rel_name for rel_name, mode_unuc
+                                 in get_most_frequent_unuc(
+                                     load_training_as_dataframe()
+                                 ).items()
+                                 if mode_unuc == 'NN')
+        self.multinuc_lbls = multinuc_lbls
 
         # FIXME properly implement fit for the different strategies
         return self
@@ -75,8 +78,11 @@ class DummyNuclearityClassifier(object):
         """
         y = []
         for dtree in X:
-            yi = [(NUC_N if rel in self.multinuc_lbls else NUC_S)
-                  for rel in dtree.labels]
+            # NB: we condition multinuclear relations on (i > head)
+            yi = [(NUC_N if (i > head and rel in self.multinuc_lbls)
+                   else NUC_S)
+                  for i, (head, rel)
+                  in enumerate(itertools.izip(dtree.heads, dtree.labels))]
             y.append(yi)
 
         return y
@@ -128,7 +134,7 @@ class InsideOutAttachmentRanker(object):
     and fill them out as `l1 r1 r2 l2 l3 r3`
     """
 
-    def __init__(self, strategy='id'):
+    def __init__(self, strategy='id', prioritize_same_unit=False):
         if strategy not in ['id',
                             'lllrrr', 'rrrlll',
                             'lrlrlr', 'rlrlrl',
@@ -136,9 +142,10 @@ class InsideOutAttachmentRanker(object):
                             'closest-intra-lr-inter-lr',
                             'closest-intra-rl-inter-rl',
                             'closest-intra-rl-inter-lr']:
-             raise ValueError('Unknown transformation strategy '
+            raise ValueError('Unknown transformation strategy '
                              '{stg}'.format(stg=strategy))
         self.strategy = strategy
+        self.prioritize_same_unit = prioritize_same_unit
 
     def fit(self, X, y):
         """Here a no-op."""
@@ -195,13 +202,34 @@ class InsideOutAttachmentRanker(object):
 
                 # strategies that try to guess the order of attachment
                 else:
+                    result = []
+                    head_idx = dtree.idx[head]
+
+                    if self.prioritize_same_unit:
+                        # gobble everything between the head and the rightmost
+                        # "same-unit"
+                        same_unit_tgts = [tgt for tgt in targets
+                                          if dtree.labels[tgt] == 'same-unit']
+                        if same_unit_tgts:
+                            # take first all dependents between the head
+                            # and the rightmost same-unit
+                            last_same_unit_tgt = same_unit_tgts[-1]
+                            priority_tgts = [tgt for tgt in targets
+                                             if (tgt > head_idx and
+                                                 tgt <= last_same_unit_tgt)]
+                            # prepend to the result
+                            result.extend(priority_tgts)
+                            # remove from the remaining targets
+                            targets = [tgt for tgt in targets
+                                       if tgt not in priority_tgts]
+
                     if strategy == 'lllrrr':
-                        result = [left.pop() if left else right.pop()
-                                  for _ in targets]
+                        result.extend(left.pop() if left else right.pop()
+                                      for _ in targets)
 
                     elif strategy == 'rrrlll':
-                        result = [right.pop() if right else left.pop()
-                                  for _ in targets]
+                        result.extend(right.pop() if right else left.pop()
+                                      for _ in targets)
 
                     elif strategy == 'lrlrlr':
                         # reverse lists of left and right modifiers
@@ -210,8 +238,8 @@ class InsideOutAttachmentRanker(object):
                         right_io = list(reversed(right))
                         lrlrlr_gen = itertools.chain.from_iterable(
                             itertools.izip_longest(left_io, right_io))
-                        result = [x for x in lrlrlr_gen
-                                  if x is not None]
+                        result.extend(x for x in lrlrlr_gen
+                                      if x is not None)
 
                     elif strategy == 'rlrlrl':
                         # reverse lists of left and right modifiers
@@ -220,24 +248,22 @@ class InsideOutAttachmentRanker(object):
                         right_io = list(reversed(right))
                         rlrlrl_gen = itertools.chain.from_iterable(
                             itertools.izip_longest(right_io, left_io))
-                        result = [x for x in rlrlrl_gen
-                                  if x is not None]
+                        result.extend(x for x in rlrlrl_gen
+                                      if x is not None)
 
                     elif strategy == 'closest-rl':
                         # take closest dependents first, take right over left to
                         # break ties
-                        head_idx = dtree.idx[head]
                         sort_key = lambda e: (abs(dtree.idx[e] - head_idx),
                                               1 if dtree.idx[e] > head_idx else 2)
-                        result = sorted(targets, key=sort_key)
+                        result.extend(sorted(targets, key=sort_key))
 
                     elif strategy == 'closest-lr':
                         # take closest dependents first, take left over right to
                         # break ties
-                        head_idx = dtree.idx[head]
                         sort_key = lambda e: (abs(dtree.idx[e] - head_idx),
                                               2 if dtree.idx[e] > head_idx else 1)
-                        result = sorted(targets, key=sort_key)
+                        result.extend(sorted(targets, key=sort_key))
 
                     # strategies that depend on intra/inter-sentential info
                     # NB: the way sentential info is stored is expected to change
@@ -252,39 +278,37 @@ class InsideOutAttachmentRanker(object):
                         if strategy == 'closest-intra-rl-inter-lr':  # current best
                             # take closest dependents first, take right over left to
                             # break ties
-                            head_idx = dtree.idx[head]
                             sort_key = lambda e: (1 if dtree.sent_idx[dtree.idx[e]] == dtree.sent_idx[dtree.idx[head]] else 2,
                                                   abs(dtree.idx[e] - head_idx),
                                                   1 if ((dtree.idx[e] > head_idx and
                                                          dtree.sent_idx[dtree.idx[e]] == dtree.sent_idx[dtree.idx[head]]) or
                                                         (dtree.idx[e] < head_idx and
                                                          dtree.sent_idx[dtree.idx[e]] != dtree.sent_idx[dtree.idx[head]])) else 2)
-                            result = sorted(targets, key=sort_key)
+                            result.extend(sorted(targets, key=sort_key))
 
-                        elif strategy == 'closest-intra-rl-inter-rl':
+                        elif strategy == 'closest-intra-rl-inter-rl':  # current used
                             # take closest dependents first, take right over left to
                             # break ties
-                            head_idx = dtree.idx[head]
-                            sort_key = lambda e: (1 if dtree.sent_idx[dtree.idx[e]] == dtree.sent_idx[dtree.idx[head]] else 2,
+                            sort_key = lambda e: (abs(dtree.sent_idx[dtree.idx[e]] - dtree.sent_idx[dtree.idx[head]]),
                                                   abs(dtree.idx[e] - head_idx),
                                                   1 if dtree.idx[e] > head_idx else 2)
-                            result = sorted(targets, key=sort_key)
+                            result.extend(sorted(targets, key=sort_key))
 
                         elif strategy == 'closest-intra-lr-inter-lr':
                             # take closest dependents first, take left over right to
                             # break ties
-                            head_idx = dtree.idx[head]
                             sort_key = lambda e: (1 if dtree.sent_idx[dtree.idx[e]] == dtree.sent_idx[dtree.idx[head]] else 2,
                                                   abs(dtree.idx[e] - head_idx),
                                                   2 if dtree.idx[e] > head_idx else 1)
-                            result = sorted(targets, key=sort_key)
+                            result.extend(sorted(targets, key=sort_key))
 
                         else:
                             raise RstDtException('Unknown transformation strategy'
                                                  ' {stg}'.format(stg=strategy))
 
                 # update array of ranks for this deptree
-                for i, tgt in enumerate(result):
+                # ranks are 1-based
+                for i, tgt in enumerate(result, start=1):
                     ranks[tgt] = i
 
             dt_ranks.append(ranks)
@@ -468,7 +492,7 @@ def deptree_to_simple_rst_tree(dtree):
         """
         rel = dtree.labels[subtree]
         nuc = dtree.nucs[subtree]
-        
+
         src = mk_leaf(dtree.edus[subtree])
         # descend into each child, but note that we are folding
         # rather than mapping, ie. we threading along a nested
