@@ -10,18 +10,20 @@ import sys
 
 PY3 = sys.version > '3'
 
-REQS = \
-    ['enum34',
-     'funcparserlib' if PY3 else 'funcparserlib == 0.3.6',
-     'pydot' if PY3 else 'pydot >= 1.0.28',
-     'python-graph-core',
-     'python-graph-dot',
-     'frozendict',
-     'sh',
-     'six',
-     'tabulate',
-     'nltk >= 3.0.0',
-     'soundex']
+REQS = [
+    'enum34',
+    'funcparserlib' if PY3 else 'funcparserlib == 0.3.6',
+    'pydot' if PY3 else 'pydot >= 1.0.28',
+    'python-graph-core',
+    'python-graph-dot',
+    'frozendict',
+    'sh',
+    'six',
+    'tabulate',
+    'nltk >= 3.0.0',
+    'soundex',
+    'pandas >= 0.16',
+]
 
 
 setup(name='educe',
