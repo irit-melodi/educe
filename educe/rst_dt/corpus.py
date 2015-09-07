@@ -23,11 +23,12 @@ from .annotation import SimpleRSTTree
 from .deptree import RstDepTree
 
 
+RELMAP_112_18_FILE = join(dirname(__file__), 'rst_112to18.txt')
+
+
 # ---------------------------------------------------------------------
 # Corpus
 # ---------------------------------------------------------------------
-
-
 class Reader(educe.corpus.Reader):
     """
     See `educe.corpus.Reader` for details
@@ -126,7 +127,7 @@ class RstDtParser(object):
         # setup label converter for the desired granularity
         # 'fine' means we don't change anything
         if coarse_rels:
-            relmap_file = join(dirname(__file__), 'rst_112to18.txt')
+            relmap_file = RELMAP_112_18_FILE
             self.rel_conv = RstRelationConverter(relmap_file).convert_tree
         else:
             self.rel_conv = None

@@ -12,21 +12,19 @@ import pandas as pd
 from educe.internalutil import treenode
 from educe.rst_dt.annotation import RSTTree
 from educe.rst_dt.corpus import (Reader as RstReader,
-                                 RstRelationConverter)
+                                 RstRelationConverter,
+                                 RELMAP_112_18_FILE)
 
 
 # RST corpus
 # TODO import CORPUS_DIR/CD_TRAIN e.g. from educe.rst_dt.rst_wsj_corpus
-CORPUS_DIR = os.path.join('/home/mathieu/travail/recherche/melodi/educe',
+CORPUS_DIR = os.path.join(os.path.dirname(__file__),
+                          '..', '..',
                           'data/rst_discourse_treebank/data',
                           'RSTtrees-WSJ-main-1.0/')
 CD_TRAIN = os.path.join(CORPUS_DIR, 'TRAINING')
 # relation converter (fine- to coarse-grained labels)
-# TODO same as above
-RELMAP_FILE = os.path.join('/home/mathieu/travail/recherche/melodi/educe',
-                           'educe', 'rst_dt',
-                           'rst_112to18.txt')
-REL_CONV = RstRelationConverter(RELMAP_FILE).convert_tree
+REL_CONV = RstRelationConverter(RELMAP_112_18_FILE).convert_tree
 
 
 def load_training_as_dataframe():
@@ -91,6 +89,14 @@ def load_training_as_dataframe():
 
 def get_most_frequent_unuc(df, verbose=False):
     """Get the most frequent undirected nuclearity for each relation.
+
+    Parameters
+    ----------
+    df: pandas.DataFrame
+        Relations present in the corpus
+
+    verbose: boolean, default: False
+        Trigger textual traces
 
     Returns
     -------
