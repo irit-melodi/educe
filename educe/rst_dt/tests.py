@@ -136,13 +136,13 @@ class RSTTest(unittest.TestCase):
         for lstr in lw_trees:
             rst1 = parse_lightweight_tree(lstr)
             dep = RstDepTree.from_simple_rst_tree(rst1)
-            rst2 = deptree_to_simple_rst_tree(dep, [])
+            rst2 = deptree_to_simple_rst_tree(dep)
             self.assertEqual(rst1, rst2, "round-trip on " + lstr)
 
         for name, tree in self._test_trees().items():
             rst1 = SimpleRSTTree.from_rst_tree(tree)
             dep = RstDepTree.from_simple_rst_tree(rst1)
-            rst2 = deptree_to_simple_rst_tree(dep, [])
+            rst2 = deptree_to_simple_rst_tree(dep)
             self.assertEqual(treenode(rst1).span,
                              treenode(rst2).span,
                              "span equality on " + name)
@@ -179,16 +179,16 @@ class RSTTest(unittest.TestCase):
             dep = RstDepTree.from_simple_rst_tree(rst1)
 
             dep_a = dep
-            rst2a = deptree_to_simple_rst_tree(dep_a, [])
+            rst2a = deptree_to_simple_rst_tree(dep_a)
             self.assertEqual(rst1, rst2a, "round-trip on " + lstr)
 
             dep_b = copy.deepcopy(dep)
-            dep_b.deps[0].reverse()
-            rst2b = deptree_to_simple_rst_tree(dep_b, [])
+            dep_b.deps(0).reverse()
+            rst2b = deptree_to_simple_rst_tree(dep_b)
 
             dep_c = copy.deepcopy(dep)
-            random.shuffle(dep_c.deps[0])
-            rst2c = deptree_to_simple_rst_tree(dep_c, [])
+            random.shuffle(dep_c.deps(0))
+            rst2c = deptree_to_simple_rst_tree(dep_c)
 
     def test_rst_to_dt_nuclearity_loss(self):
         """
@@ -222,10 +222,10 @@ class RSTTest(unittest.TestCase):
 
         # a little sanity check first
         dep0 = RstDepTree.from_simple_rst_tree(rst0)
-        rev0 = deptree_to_simple_rst_tree(dep0, ['r'])
+        rev0 = deptree_to_simple_rst_tree(dep0)  # was:, ['r'])
         self.assertEqual(rst0, rev0, "same structure " + nuked)  # sanity
 
         # now the real test
         dep1 = RstDepTree.from_simple_rst_tree(rst1)
-        rev1 = deptree_to_simple_rst_tree(dep1, ['r'])
+        rev1 = deptree_to_simple_rst_tree(dep1)  # was:, ['r'])
         # self.assertEqual(rst0, rev1, "same structure " + tricky)
