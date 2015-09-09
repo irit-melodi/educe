@@ -56,7 +56,6 @@ class RstDepTree(object):
         self.nucs = [DEFAULT_NUC for _ in range(nb_edus)]
         self.ranks = [DEFAULT_RANK for _ in range(nb_edus)]
         # end NEW
-        self.deps = [[] for _ in range(nb_edus)]
 
         # set special values for fake root
         self.heads[0] = -1
@@ -83,7 +82,6 @@ class RstDepTree(object):
         self.labels.append(DEFAULT_LABEL)
         self.nucs.append(DEFAULT_NUC)
         self.ranks.append(DEFAULT_RANK)
-        self.deps.append([])
 
     def add_dependency(self, gov_num, dep_num, label=None, nuc=NUC_S,
                        rank=None):
@@ -102,17 +100,20 @@ class RstDepTree(object):
         rank: integer, optional
             Rank of the modifier in the order of attachment to the head.
             `None` means it is not given declaratively and it is instead
-            inferred from the number of modifiers previously attached to
-            the head, through the previous state of ̀self.deps`.
+            inferred from the rank of modifiers previously attached to
+            the head.
         """
         _idx_gov = self.idx[gov_num]
         _idx_dep = self.idx[dep_num]
         self.heads[_idx_dep] = _idx_gov
         self.labels[_idx_dep] = label
         self.nucs[_idx_dep] = nuc
-        self.ranks[_idx_dep] = (rank if rank is not None
-                                else len(self.deps[_idx_gov]))
-        self.deps[_idx_gov].append((label, _idx_dep))
+        if rank is None:  # assign first free rank
+            # was: rank = len(self.deps[_idx_gov])
+            sisters = [i for i, hd in enumerate(self.heads)
+                       if hd == _idx_gov]
+            rank = max(self.ranks[i] for i in sisters) + 1
+        self.ranks[_idx_dep] = rank
 
     def get_dependencies(self):
         """Get the list of dependencies in this dependency tree.
@@ -139,11 +140,24 @@ class RstDepTree(object):
         _lbl_root = _ROOT_LABEL
         self.heads[_idx_root] = _idx_fake_root
         self.labels[_idx_root] = _lbl_root
-        self.deps[_idx_fake_root].append((_lbl_root, _idx_root))
+        self.nucs[_idx_root] = DEFAULT_NUC
+        # calculate rank (for a unique root, should always be 0)
+        sisters = [i for i, hd in  enumerate(self.heads)
+                   if hd == _idx_fake_root]
+        rank = max(self.ranks[i] for i in sisters) + 1
+        self.ranks[_idx_root] = rank
+
+    def deps(self, gov_idx):
+        """Get the ordered list of dependents of an EDU"""
+        # TODO a numpy version should be cleaner
+        ranked_deps = sorted((rk, i) for i, rk in enumerate(self.ranks)
+                             if self.heads[i] == gov_idx)
+        sorted_deps = [i for rk, i in ranked_deps]
+        return sorted_deps
 
     def real_roots_idx(self):
         """Get the list of the indices of the real roots"""
-        return self.deps[_ROOT_HEAD]
+        return self.deps(_ROOT_HEAD)
 
     def set_origin(self, origin):
         """Update the origin of this annotation"""
