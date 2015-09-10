@@ -568,7 +568,10 @@ def turn_follows_gap(_, edu):
     "if the EDU turn number is > 1 + previous turn"
     tid = turn_id(edu.turn)
     dialogue_tids = [turn_id(x) for x in edu.dialogue_turns]
-    return tid and tid - 1 in dialogue_tids and tid != min(dialogue_tids)
+    foll_gap = not(tid and
+                   tid - 1 in dialogue_tids and
+                   tid != min(dialogue_tids))
+    return foll_gap
 
 
 def speaker_started_the_dialogue(_, edu):
@@ -626,6 +629,20 @@ def num_edus_between(_current, gap, _edu1, _edu2):
 def num_speakers_between(_current, gap, _edu1, _edu2):
     "number of distinct speakers in intervening EDUs"
     return len(frozenset(speaker(t) for t in gap.turns_between))
+
+
+def num_nonling_tstars_between(_current, gap, _edu1, _edu2):
+    "number of non-linguistic turn-stars between EDUs"
+    tid1 = (turn_id(_edu1.turn) if _edu1 != FakeRootEDU else
+            min(turn_id(x) for x in _edu2.dialogue_turns) - 1)
+    tid2 = turn_id(_edu2.turn)
+    tids_span = [tid1] + [turn_id(t) for t in gap.turns_between] + [tid2]
+    nb_nonling_tstars = 0
+    for tid_i, tid_j in zip(tids_span[:-1], tids_span[1:]):
+        if tid_j - tid_i > 1:
+            nb_nonling_tstars += 1
+
+    return nb_nonling_tstars
 
 
 def has_inner_question(current, gap, _edu1, _edu2):
@@ -1011,6 +1028,7 @@ class PairSubgroup_Gap(PairSubgroup):
         keys =\
             [MagicKey.continuous_fn(num_edus_between),
              MagicKey.continuous_fn(num_speakers_between),
+             MagicKey.continuous_fn(num_nonling_tstars_between),
              MagicKey.discrete_fn(same_speaker),
              MagicKey.discrete_fn(same_turn),
              MagicKey.discrete_fn(has_inner_question)]
