@@ -80,7 +80,6 @@ class LexWrapper(object):
         self.classes = classes
         self.lexicon = None
 
-
     def read(self, lexdir):
         """
         Read and store the lexicon as a mapping from words to their
@@ -130,10 +129,10 @@ INQUIRER_CLASSES = ['Positiv',
                     'Region',  # related to Catan game?
                     'Route']   # related to Catan game
 
+
 # ---------------------------------------------------------------------
 # preprocessing
 # ---------------------------------------------------------------------
-
 def strip_cdus(corpus):
     """
     For all documents in a corpus, remove any CDUs and relink the
@@ -568,10 +567,10 @@ def turn_follows_gap(_, edu):
     "if the EDU turn number is > 1 + previous turn"
     tid = turn_id(edu.turn)
     dialogue_tids = [turn_id(x) for x in edu.dialogue_turns]
-    foll_gap = not(tid and
-                   tid - 1 in dialogue_tids and
-                   tid != min(dialogue_tids))
-    return foll_gap
+    follows_previous_or_edge = (tid and
+                                tid - 1 in dialogue_tids and
+                                tid != min(dialogue_tids))
+    return not follows_previous_or_edge
 
 
 def speaker_started_the_dialogue(_, edu):
@@ -973,10 +972,10 @@ class SingleEduKeys(MergedKeyGroup):
         for group in self.groups:
             group.fill(current, edu, vec)
 
+
 # ---------------------------------------------------------------------
 # EDU pairs
 # ---------------------------------------------------------------------
-
 class PairSubgroup(KeyGroup):
     """
     Abstract keygroup for subgroups of the merged PairKeys.
@@ -1045,7 +1044,7 @@ class PairSubgroup_Gap(PairSubgroup):
         turns_between = turns_in_span(doc, turns_between_span)
 
         inner_edus = edus_in_span(doc, big_span)
-        if edu1.identifier() != ROOT: # not present anyway
+        if edu1.identifier() != ROOT:  # not present anyway
             inner_edus.remove(edu1)
         if edu2.identifier() != ROOT:
             inner_edus.remove(edu2)
@@ -1371,14 +1370,12 @@ def mk_is_interesting(args, single):
         # ignore annotator filter for unannotated documents
         args1 = copy.copy(args)
         args1.annotator = None
-        is_interesting1 =\
-            educe.util.mk_is_interesting(args1,
-                                         preselected={'stage': ['unannotated']})
+        is_interesting1 = educe.util.mk_is_interesting(
+            args1, preselected={'stage': ['unannotated']})
         # but pay attention to it for units
         args2 = args
-        is_interesting2 =\
-            educe.util.mk_is_interesting(args2,
-                                         preselected={'stage': ['units']})
+        is_interesting2 = educe.util.mk_is_interesting(
+            args2, preselected={'stage': ['units']})
         return lambda x: is_interesting1(x) or is_interesting2(x)
     else:
         preselected = {"stage": ["discourse", "units"]}
@@ -1432,7 +1429,7 @@ def read_corpus_inputs(args):
     for lex in LEXICONS:
         lex.read(args.resources)
     pdtb_lex = read_pdtb_lexicon(args)
-    inq_lex = {} #_read_inquirer_lexicon(args)
+    inq_lex = {}  # _read_inquirer_lexicon(args)
 
     verbnet_entries = [VerbNetEntry(x, frozenset(vnet.lemmas(x)))
                        for x in VERBNET_CLASSES]
