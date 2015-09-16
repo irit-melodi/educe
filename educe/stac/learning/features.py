@@ -80,7 +80,6 @@ class LexWrapper(object):
         self.classes = classes
         self.lexicon = None
 
-
     def read(self, lexdir):
         """
         Read and store the lexicon as a mapping from words to their
@@ -130,10 +129,10 @@ INQUIRER_CLASSES = ['Positiv',
                     'Region',  # related to Catan game?
                     'Route']   # related to Catan game
 
+
 # ---------------------------------------------------------------------
 # preprocessing
 # ---------------------------------------------------------------------
-
 def strip_cdus(corpus):
     """
     For all documents in a corpus, remove any CDUs and relink the
@@ -568,7 +567,10 @@ def turn_follows_gap(_, edu):
     "if the EDU turn number is > 1 + previous turn"
     tid = turn_id(edu.turn)
     dialogue_tids = [turn_id(x) for x in edu.dialogue_turns]
-    return tid and tid - 1 in dialogue_tids and tid != min(dialogue_tids)
+    follows_previous_or_edge = (tid and
+                                tid - 1 in dialogue_tids and
+                                tid != min(dialogue_tids))
+    return not follows_previous_or_edge
 
 
 def speaker_started_the_dialogue(_, edu):
@@ -626,6 +628,20 @@ def num_edus_between(_current, gap, _edu1, _edu2):
 def num_speakers_between(_current, gap, _edu1, _edu2):
     "number of distinct speakers in intervening EDUs"
     return len(frozenset(speaker(t) for t in gap.turns_between))
+
+
+def num_nonling_tstars_between(_current, gap, _edu1, _edu2):
+    "number of non-linguistic turn-stars between EDUs"
+    tid1 = (turn_id(_edu1.turn) if _edu1 != FakeRootEDU else
+            min(turn_id(x) for x in _edu2.dialogue_turns) - 1)
+    tid2 = turn_id(_edu2.turn)
+    tids_span = [tid1] + [turn_id(t) for t in gap.turns_between] + [tid2]
+    nb_nonling_tstars = 0
+    for tid_i, tid_j in zip(tids_span[:-1], tids_span[1:]):
+        if tid_j - tid_i > 1:
+            nb_nonling_tstars += 1
+
+    return nb_nonling_tstars
 
 
 def has_inner_question(current, gap, _edu1, _edu2):
@@ -956,10 +972,10 @@ class SingleEduKeys(MergedKeyGroup):
         for group in self.groups:
             group.fill(current, edu, vec)
 
+
 # ---------------------------------------------------------------------
 # EDU pairs
 # ---------------------------------------------------------------------
-
 class PairSubgroup(KeyGroup):
     """
     Abstract keygroup for subgroups of the merged PairKeys.
@@ -1011,6 +1027,7 @@ class PairSubgroup_Gap(PairSubgroup):
         keys =\
             [MagicKey.continuous_fn(num_edus_between),
              MagicKey.continuous_fn(num_speakers_between),
+             MagicKey.continuous_fn(num_nonling_tstars_between),
              MagicKey.discrete_fn(same_speaker),
              MagicKey.discrete_fn(same_turn),
              MagicKey.discrete_fn(has_inner_question)]
@@ -1027,7 +1044,7 @@ class PairSubgroup_Gap(PairSubgroup):
         turns_between = turns_in_span(doc, turns_between_span)
 
         inner_edus = edus_in_span(doc, big_span)
-        if edu1.identifier() != ROOT: # not present anyway
+        if edu1.identifier() != ROOT:  # not present anyway
             inner_edus.remove(edu1)
         if edu2.identifier() != ROOT:
             inner_edus.remove(edu2)
@@ -1353,14 +1370,12 @@ def mk_is_interesting(args, single):
         # ignore annotator filter for unannotated documents
         args1 = copy.copy(args)
         args1.annotator = None
-        is_interesting1 =\
-            educe.util.mk_is_interesting(args1,
-                                         preselected={'stage': ['unannotated']})
+        is_interesting1 = educe.util.mk_is_interesting(
+            args1, preselected={'stage': ['unannotated']})
         # but pay attention to it for units
         args2 = args
-        is_interesting2 =\
-            educe.util.mk_is_interesting(args2,
-                                         preselected={'stage': ['units']})
+        is_interesting2 = educe.util.mk_is_interesting(
+            args2, preselected={'stage': ['units']})
         return lambda x: is_interesting1(x) or is_interesting2(x)
     else:
         preselected = {"stage": ["discourse", "units"]}
@@ -1414,7 +1429,7 @@ def read_corpus_inputs(args):
     for lex in LEXICONS:
         lex.read(args.resources)
     pdtb_lex = read_pdtb_lexicon(args)
-    inq_lex = {} #_read_inquirer_lexicon(args)
+    inq_lex = {}  # _read_inquirer_lexicon(args)
 
     verbnet_entries = [VerbNetEntry(x, frozenset(vnet.lemmas(x)))
                        for x in VERBNET_CLASSES]
