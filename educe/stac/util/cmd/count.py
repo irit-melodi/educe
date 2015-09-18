@@ -22,7 +22,13 @@ import educe.stac
 SEGMENT_CATEGORIES = [("dialogue", educe.stac.is_dialogue),
                       ("turn star", lambda x: x.type == 'Tstar'),
                       ("turn", educe.stac.is_turn),
-                      ("edu", educe.stac.is_edu)]
+                      # temporary workaround to exclude Tstars from being
+                      # considered as EDUs
+                      # TODO update educe.stac.{annotation,context} to
+                      # cleanly integrate Tstars
+                      # MM: I cannot make an informed decision about this yet
+                      ("edu", lambda x: (educe.stac.is_edu(x) and
+                                         x.type != 'Tstar'))]
 
 
 LINK_CATEGORIES = [("rel insts", educe.stac.is_relation_instance),

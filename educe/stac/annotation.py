@@ -67,7 +67,10 @@ import warnings
 from educe.annotation import Unit, Relation, Schema
 import educe.glozz as glozz
 
-STRUCTURE_TYPES = ['Turn', 'paragraph', 'dialogue', 'Dialogue']
+# TODO cleanly integrate 'Tstar' in one of the following ?
+STRUCTURE_TYPES = ['Turn', 'paragraph',
+                   'dialogue', 'Dialogue',  # TODO remove one or keep both?
+]
 RESOURCE_TYPES = ['default', 'Resource']
 PREFERENCE_TYPES = ['Preference']
 
