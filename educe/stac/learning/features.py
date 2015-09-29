@@ -573,6 +573,11 @@ def turn_follows_gap(_, edu):
     return not follows_previous_or_edge
 
 
+def speaker_id(_, edu):
+    """Get the speaker ID"""
+    return speaker(edu.turn)
+
+
 def speaker_started_the_dialogue(_, edu):
     "if the speaker for this EDU is the same as that of the\
  first turn in the dialogue"
@@ -921,19 +926,20 @@ class SingleEduSubgroup_Punct(SingleEduSubgroup):
 class SingleEduSubgroup_Chat(SingleEduSubgroup):
     """
     Single-EDU features based on the EDU's relationship with the
-    the chat structure (eg turns, dialogues).
+    chat structure (eg turns, dialogues).
     """
 
     def __init__(self):
         desc = "chat history features"
-        keys =\
-            [MagicKey.discrete_fn(speaker_started_the_dialogue),
-             MagicKey.discrete_fn(speaker_already_spoken_in_dialogue),
-             MagicKey.continuous_fn(speakers_first_turn_in_dialogue),
-             MagicKey.discrete_fn(turn_follows_gap),
-             MagicKey.continuous_fn(position_in_dialogue),
-             MagicKey.continuous_fn(position_in_game),
-             MagicKey.continuous_fn(edu_position_in_turn)]
+        keys = [
+            MagicKey.discrete_fn(speaker_id),
+            MagicKey.discrete_fn(speaker_started_the_dialogue),
+            MagicKey.discrete_fn(speaker_already_spoken_in_dialogue),
+            MagicKey.continuous_fn(speakers_first_turn_in_dialogue),
+            MagicKey.discrete_fn(turn_follows_gap),
+            MagicKey.continuous_fn(position_in_dialogue),
+            MagicKey.continuous_fn(position_in_game),
+            MagicKey.continuous_fn(edu_position_in_turn)]
         super(SingleEduSubgroup_Chat, self).__init__(desc, keys)
 
 
