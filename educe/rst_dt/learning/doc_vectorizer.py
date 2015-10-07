@@ -156,6 +156,7 @@ class DocumentCountVectorizer(object):
 
     def __init__(self, instance_generator,
                  feature_set,
+                 lecsie_data_dir=None,
                  max_df=1.0, min_df=1, max_features=None,
                  vocabulary=None,
                  separator='=',
@@ -167,6 +168,8 @@ class DocumentCountVectorizer(object):
             generator to enumerate the instances from a doc
         feature_set: class
             which feature set to use
+        lecsie_data_dir: string
+            Path to the directory containing LECSIE feature files
         split_feat_space: string, optional
             If not None, indicates the features on which the feature space
             should be split. Possible values are 'dir', 'sent', 'dir_sent'.
@@ -183,7 +186,8 @@ class DocumentCountVectorizer(object):
         self.sing_header = sing_header
         self.sing_extract = sing_extract
         # feature extractor for pairs of EDUs
-        pair_header, pair_extract = feature_set.build_pair_feature_extractor()
+        pair_header, pair_extract = feature_set.build_pair_feature_extractor(
+            lecsie_data_dir=lecsie_data_dir)
         self.pair_header = pair_header
         self.pair_extract = pair_extract
         # end EXPERIMENTAL

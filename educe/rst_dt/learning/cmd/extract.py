@@ -71,6 +71,10 @@ def config_argparser(parser):
     parser.add_argument('--corenlp_out_dir', metavar='DIR',
                         help='CoreNLP output directory')
     # end NEW
+    # NEW lecsie features
+    parser.add_argument('--lecsie_data_dir', metavar='DIR',
+                        help='LECSIE features directory')
+    # end NEW
 
     parser.add_argument('--debug', action='store_true',
                         help='Emit fields used for debugging purposes')
@@ -89,6 +93,9 @@ def main(args):
     # retrieve parameters
     feature_set = args.feature_set
     live = args.parsing
+
+    # NEW lecsie features
+    lecsie_data_dir = args.lecsie_data_dir
 
     # RST data
     # fileX docs are currently not supported by CoreNLP
@@ -180,12 +187,14 @@ def main(args):
         vocab = load_vocabulary(args.vocabulary)
         vzer = DocumentCountVectorizer(instance_generator,
                                        feature_set,
+                                       lecsie_data_dir=lecsie_data_dir,
                                        vocabulary=vocab,
                                        split_feat_space='dir_sent')
         X_gen = vzer.transform(docs)
     else:
         vzer = DocumentCountVectorizer(instance_generator,
                                        feature_set,
+                                       lecsie_data_dir=lecsie_data_dir,
                                        min_df=5,
                                        split_feat_space='dir_sent')
         X_gen = vzer.fit_transform(docs)

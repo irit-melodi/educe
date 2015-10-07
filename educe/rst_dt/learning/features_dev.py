@@ -9,6 +9,7 @@ import re
 import itertools
 
 from nltk.tree import Tree
+import numpy as np
 
 from educe.external.postag import Token
 from educe.internalutil import treenode
@@ -16,6 +17,9 @@ from educe.learning.keys import Substance
 from .base import lowest_common_parent, DocumentPlusPreprocessor
 from educe.stac.lexicon.pdtb_markers import (load_pdtb_markers_lexicon,
                                              PDTB_MARKERS_FILE)
+from educe.rst_dt.lecsie import (load_lecsie_feats,
+                                 LINE_FORMAT as LECSIE_LINE_FORMAT)
+
 
 # ---------------------------------------------------------------------
 # preprocess EDUs
@@ -320,6 +324,57 @@ def build_edu_feature_extractor():
 # EDU pairs
 # ---------------------------------------------------------------------
 
+# EXPERIMENTAL
+LECSIE_FEAT_NAMES = LECSIE_LINE_FORMAT[3:]
+
+class LecsieFeats(object):
+    """Extract Lecsie features from each pair of EDUs"""
+
+    def __init__(self, lecsie_data_dir):
+        # index by (doc_name, span1_beg, span1_end, span2_beg, span2_end)
+        # we linearly order the unordered pairs, for convenience later on
+        self._feats = {((entry[0], entry[1], entry[2], entry[3], entry[4])
+                        if entry[1] < entry[3] else
+                        (entry[0], entry[3], entry[4], entry[1], entry[2])):
+                       entry[5:]
+                       for entry in load_lecsie_feats(lecsie_data_dir)}
+
+    def fit(self, edu_pairs, y=None):
+        return self
+
+    def transform(self, edu_pairs):
+        lecsie_feats = self._feats
+        for edu_info1, edu_info2 in edu_pairs:
+            # retrieve doc name
+            doc1 = edu_info1['edu'].origin.doc
+            doc2 = edu_info2['edu'].origin.doc
+            assert doc1 == doc2
+            lecsie_doc_name = doc2[:-4] if doc2.endswith('.out') else doc2
+            # retrieve span for both EDUs
+            s1 = edu_info1['edu'].span
+            s1_beg = s1.char_start
+            s1_end = s1.char_end
+            num1 = edu_info1['edu'].num
+            s2 = edu_info2['edu'].span
+            s2_beg = s2.char_start
+            s2_end = s2.char_end
+            num2 = edu_info2['edu'].num
+            # lecsie features are defined on unordered pairs
+            # e.g. (e1, e2) and (e2, e1) have the same lecsie features
+            lecsie_key = ((lecsie_doc_name, s1_beg, s1_end, s2_beg, s2_end)
+                          if s1_beg < s2_beg else
+                          (lecsie_doc_name, s2_beg, s2_end, s1_beg, s1_end))
+            try:
+                pair_lfeats = lecsie_feats[lecsie_key]
+            except KeyError:
+                # silently skip
+                continue
+
+            for fn, fv in zip(LECSIE_FEAT_NAMES, pair_lfeats):
+                if not np.isnan(fv):
+                    yield (fn, fv)
+# end EXPERIMENTAL
+
 PAIR_DOC = [
     ('dist_edus_abs', Substance.CONTINUOUS),
     ('dist_edus_left', Substance.CONTINUOUS),
@@ -544,7 +599,7 @@ def extract_pair_syntax(edu_info1, edu_info2):
     # and EDU2 ?
 
 
-def build_pair_feature_extractor():
+def build_pair_feature_extractor(lecsie_data_dir=None):
     """Build the feature extractor for pairs of EDUs
 
     TODO: properly emit features on single EDUs ;
@@ -567,6 +622,10 @@ def build_pair_feature_extractor():
     # 6
     # feats.extend(PAIR_SEMANTICS)  # NotImplemented
     # funcs.append(extract_pair_semantics)
+    # LECSIE feats
+    if lecsie_data_dir is not None:
+        lecsie_feats = LecsieFeats(lecsie_data_dir)
+        funcs.append(lambda e1, e2: lecsie_feats.transform([(e1, e2)]))
 
     def _extract_all(edu_info1, edu_info2):
         """inner helper because I am lost at sea here, again"""
