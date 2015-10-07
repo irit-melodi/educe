@@ -42,10 +42,12 @@ from __future__ import print_function
 
 import os
 
-# python 2
-from urllib2 import urlopen
-# python 3 variant would be
-# from urllib.request import urlopen
+try:
+    # python 2
+    from urllib2 import urlopen
+except ImportError:
+    # python 3
+    from urllib.request import urlopen
 
 
 BASE_URL = 'http://metaoptimize.s3.amazonaws.com/brown-clusters-ACL2010/'
