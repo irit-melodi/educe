@@ -17,6 +17,8 @@ from ..doc import strip_fixme
 from educe.stac.context import (merge_turn_stars)
 from educe.util import concat
 import educe.stac
+# from educe.stac.sanity.common import is_default
+
 
 # we have an order on this, so no dict
 SEGMENT_CATEGORIES = [("dialogue", educe.stac.is_dialogue),
@@ -352,6 +354,77 @@ def count_by_annotator(corpus):
     return acounts
 
 
+# EXPERIMENTAL: CDU stuff
+def cdu_feats(anno):
+    """Get CDU features that are not immediate.
+
+    Returns
+    -------
+    nb_edus_tot: int
+        Total number of EDUs spanned by this CDU.
+
+    nb_cdus_imm: int
+        Number of CDUs immediately embedded in this CDU.
+
+    nb_cdus_tot: int
+        Total number of CDUs recursively embedded in this CDU.
+
+    max_lvl: int
+        Maximal degree of CDU nesting in this CDU.
+    """
+    nb_members = len(anno.members)
+    nb_cdus_imm = len([m for m in anno.members
+                       if educe.stac.is_cdu(m)])
+
+    nb_edus_tot = 0
+    nb_cdus_tot = 0
+    max_lvl = 0
+
+    cdus_to_expand = [(0, anno)]
+    while cdus_to_expand:
+        lvl, cur_cdu = cdus_to_expand.pop()
+        mem_lvl = lvl + 1
+        for member in cur_cdu.members:
+            if educe.stac.is_edu(member):
+                nb_edus_tot += 1
+            elif educe.stac.is_cdu(member):
+                nb_cdus_tot += 1
+                if mem_lvl > max_lvl:
+                    max_lvl = mem_lvl
+                cdus_to_expand.append((mem_lvl, member))
+            else:
+                raise ValueError('Unexpected type for a CDU member')
+    return nb_members, nb_cdus_imm, nb_cdus_tot, max_lvl, nb_edus_tot
+
+
+def cdu_statistics(corpus):
+    """
+    Return statistics on CDUs
+    """
+    annotators = frozenset(k.annotator for k in corpus
+                           if k.annotator is not None)
+
+    cdus = []
+    for annotator in annotators:
+        units, discourse = anno_subcorpus(corpus, annotator)
+        for k in discourse:
+            doc = corpus[k]
+            # document identifiers
+            doc_name = doc.origin.doc
+            subdoc_name = doc.origin.subdoc
+            # get length and depth of CDUs
+            for anno in doc.annotations():
+                if educe.stac.is_cdu(anno):
+                    row = [anno._anno_id, doc_name, subdoc_name, annotator]
+                    row.append(anno.type)
+                    row.extend(cdu_feats(anno))
+                    row = tuple(row)
+                    cdus.append(row)
+
+    return cdus
+# end EXPERIMENTAL: CDU stuff
+
+
 def report(dcounts, gcounts, gcounts2, acounts):
     """
     Return a full report of all our counts
@@ -401,3 +474,44 @@ def main(args):
     dcounts, gcounts, gcounts2 = count_by_docname(corpus)
     acounts = count_by_annotator(corpus)
     print(report(dcounts, gcounts, gcounts2, acounts))
+
+    # EXPERIMENTAL
+    print('\n')
+    cdu_stats = cdu_statistics(corpus)
+    # detailed info on CDUs
+    headers = ['CDUs', 'min', 'max', 'mean', 'median']
+    rows = []
+    # EDUs
+    nb_edus_tot = [cs[-1] for cs in cdu_stats]
+    mean_nb_edus_tot, median_nb_edus_tot = rounded_mean_median(nb_edus_tot)
+    min_nb_edus_tot = min(nb_edus_tot)
+    max_nb_edus_tot = max(nb_edus_tot)
+    rows.append(['# EDUs',
+                 min_nb_edus_tot, max_nb_edus_tot,
+                 mean_nb_edus_tot, median_nb_edus_tot])
+    # degree of nesting
+    max_lvls = [cs[-2] for cs in cdu_stats]
+    mean_lvl, median_lvl = rounded_mean_median(max_lvls)
+    min_max_lvl = min(max_lvls)
+    max_max_lvl = max(max_lvls)
+    rows.append(['deg. nesting',
+                 min_max_lvl, max_max_lvl,
+                 mean_lvl, median_lvl])
+    print(tabulate(rows, headers=headers))
+
+    # additional info
+    if False:
+        # empty CDUs: call stac-oneoff clean-schemas
+        empty_cdus = [cs for cs in cdu_stats
+                      if cs[-1] == 0]
+        if empty_cdus:
+            print('Empty CDUs !?')
+            print('\n'.join(str(cs)
+                            for cs in sorted(empty_cdus,
+                                             key=lambda c: (c[1], c[2]))))
+    if False:
+        # CDUs occurring at the same level (nb_cdus_tot > max_lvl)
+        same_lvl_cdus = [cs for cs in cdu_stats
+                         if cs[-3] > cs[-2]]
+        print(same_lvl_cdus)
+    # end EXPERIMENTAL
