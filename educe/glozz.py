@@ -283,9 +283,8 @@ def write_annotation_file(anno_filename, doc,
     """
     Write a GlozzDocument to XML in the given path
     """
-
     elem = doc.to_xml(settings=settings)
-    string1 = ET.tostring(elem, 'utf-8')
+    string1 = ET.tostring(elem, encoding='utf-8')
     # contortion 1: write, then read and print from minidom to match
     # whitespace on closing tags (we're trying to match glozz output
     # as much as possible so as to avoid introducing spurious
@@ -296,4 +295,7 @@ def write_annotation_file(anno_filename, doc,
     # closely matches Glozz
     with codecs.open(anno_filename, 'wb', 'utf-8') as fout:
         print(_GLOZZ_DECL, file=fout)
-        fout.write(string2[_MINIDOM_ZERO:])
+        # we have to decode('utf-8') first, because
+        # codecs expects Unicode strings to encode them to UTF-8
+        out_str = string2[_MINIDOM_ZERO:].decode('utf-8')
+        fout.write(out_str)
