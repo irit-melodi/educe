@@ -500,7 +500,7 @@ def main(args):
     print(tabulate(rows, headers=headers))
 
     # additional info
-    if False:
+    if True:
         # empty CDUs: call stac-oneoff clean-schemas
         empty_cdus = [cs for cs in cdu_stats
                       if cs[-1] == 0]
@@ -508,6 +508,15 @@ def main(args):
             print('Empty CDUs !?')
             print('\n'.join(str(cs)
                             for cs in sorted(empty_cdus,
+                                             key=lambda c: (c[1], c[2]))))
+
+        # CDUs with one member: call ???
+        mono_member_cdus = [cs for cs in cdu_stats
+                            if cs[-1] == 1]
+        if mono_member_cdus:
+            print('CDUs with a unique member !?')
+            print('\n'.join(str(cs)
+                            for cs in sorted(mono_member_cdus,
                                              key=lambda c: (c[1], c[2]))))
     if False:
         # CDUs occurring at the same level (nb_cdus_tot > max_lvl)
