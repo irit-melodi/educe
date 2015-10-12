@@ -422,6 +422,59 @@ def cdu_statistics(corpus):
                     cdus.append(row)
 
     return cdus
+
+
+def cdu_report(cdu_stats):
+    """Generate a string that contains reports on CDUs"""
+    # detailed info on CDUs
+    headers = ['CDUs', 'min', 'max', 'mean', 'median']
+    rows = []
+    # EDUs
+    nb_edus_tot = [cs[-1] for cs in cdu_stats]
+    mean_nb_edus_tot, median_nb_edus_tot = rounded_mean_median(nb_edus_tot)
+    min_nb_edus_tot = min(nb_edus_tot)
+    max_nb_edus_tot = max(nb_edus_tot)
+    rows.append(['# EDUs',
+                 min_nb_edus_tot, max_nb_edus_tot,
+                 mean_nb_edus_tot, median_nb_edus_tot])
+    # degree of nesting
+    max_lvls = [cs[-2] for cs in cdu_stats]
+    mean_lvl, median_lvl = rounded_mean_median(max_lvls)
+    min_max_lvl = min(max_lvls)
+    max_max_lvl = max(max_lvls)
+    rows.append(['deg. nesting',
+                 min_max_lvl, max_max_lvl,
+                 mean_lvl, median_lvl])
+    res = tabulate(rows, headers=headers)
+
+    # additional info
+    if True:
+        # empty CDUs: call stac-oneoff clean-schemas
+        empty_cdus = [cs for cs in cdu_stats
+                      if cs[-1] == 0]
+        if empty_cdus:
+            print('Empty CDUs !?')
+            print('\n'.join(str(cs)
+                            for cs in sorted(empty_cdus,
+                                             key=lambda c: (c[1], c[2]))))
+            print()
+        # CDUs with one member: call ???
+        mono_member_cdus = [cs for cs in cdu_stats
+                            if cs[-1] == 1]
+        if mono_member_cdus:
+            print('CDUs with a unique member !?')
+            print('\n'.join(str(cs)
+                            for cs in sorted(mono_member_cdus,
+                                             key=lambda c: (c[1], c[2]))))
+            print()
+    if False:
+        # CDUs occurring at the same level (nb_cdus_tot > max_lvl)
+        same_lvl_cdus = [cs for cs in cdu_stats
+                         if cs[-3] > cs[-2]]
+        print(same_lvl_cdus)
+        print()
+
+    return res
 # end EXPERIMENTAL: CDU stuff
 
 
@@ -476,51 +529,7 @@ def main(args):
     print(report(dcounts, gcounts, gcounts2, acounts))
 
     # EXPERIMENTAL
-    print('\n')
     cdu_stats = cdu_statistics(corpus)
-    # detailed info on CDUs
-    headers = ['CDUs', 'min', 'max', 'mean', 'median']
-    rows = []
-    # EDUs
-    nb_edus_tot = [cs[-1] for cs in cdu_stats]
-    mean_nb_edus_tot, median_nb_edus_tot = rounded_mean_median(nb_edus_tot)
-    min_nb_edus_tot = min(nb_edus_tot)
-    max_nb_edus_tot = max(nb_edus_tot)
-    rows.append(['# EDUs',
-                 min_nb_edus_tot, max_nb_edus_tot,
-                 mean_nb_edus_tot, median_nb_edus_tot])
-    # degree of nesting
-    max_lvls = [cs[-2] for cs in cdu_stats]
-    mean_lvl, median_lvl = rounded_mean_median(max_lvls)
-    min_max_lvl = min(max_lvls)
-    max_max_lvl = max(max_lvls)
-    rows.append(['deg. nesting',
-                 min_max_lvl, max_max_lvl,
-                 mean_lvl, median_lvl])
-    print(tabulate(rows, headers=headers))
-
-    # additional info
-    if True:
-        # empty CDUs: call stac-oneoff clean-schemas
-        empty_cdus = [cs for cs in cdu_stats
-                      if cs[-1] == 0]
-        if empty_cdus:
-            print('Empty CDUs !?')
-            print('\n'.join(str(cs)
-                            for cs in sorted(empty_cdus,
-                                             key=lambda c: (c[1], c[2]))))
-
-        # CDUs with one member: call ???
-        mono_member_cdus = [cs for cs in cdu_stats
-                            if cs[-1] == 1]
-        if mono_member_cdus:
-            print('CDUs with a unique member !?')
-            print('\n'.join(str(cs)
-                            for cs in sorted(mono_member_cdus,
-                                             key=lambda c: (c[1], c[2]))))
-    if False:
-        # CDUs occurring at the same level (nb_cdus_tot > max_lvl)
-        same_lvl_cdus = [cs for cs in cdu_stats
-                         if cs[-3] > cs[-2]]
-        print(same_lvl_cdus)
+    print('\n')
+    print(cdu_report(cdu_stats))
     # end EXPERIMENTAL
