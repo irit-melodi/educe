@@ -6,15 +6,16 @@ Show number of EDUs, turns, etc
 """
 
 from __future__ import print_function
-from collections import defaultdict, namedtuple
+from collections import Counter, defaultdict, namedtuple
 import copy
+import itertools
 
 from tabulate import tabulate
 
 from ..args import (add_usual_input_args,
                     read_corpus_with_unannotated)
 from ..doc import strip_fixme
-from educe.stac.context import (merge_turn_stars)
+from educe.stac.context import (Context, merge_turn_stars)
 from educe.util import concat
 import educe.stac
 # from educe.stac.sanity.common import is_default
@@ -295,11 +296,14 @@ def count_by_docname(corpus):
         dcounts.struct[kdoc]["subdoc"] += len(ksubdocs)
         for k in (k for k in unannotated_keys if k.doc == kdoc):
             doc = corpus[k]
+            # add Turn-stars to doc
+            # TODO encapsulate upstream
             tstar_doc = merge_turn_stars(doc)
             for anno in tstar_doc.units:
                 if educe.stac.is_turn(anno):
                     anno.type = 'Tstar'
                     doc.units.append(anno)
+            # end add Turn-stars
             count_segments(doc, dcounts.struct[kdoc])
             for dlg in doc.units:
                 if not educe.stac.is_dialogue(dlg):
@@ -354,7 +358,128 @@ def count_by_annotator(corpus):
     return acounts
 
 
-# EXPERIMENTAL: CDU stuff
+# EXPERIMENTAL: CDU and relation stuff
+def rel_feats(doc, ctxt, anno, debug=False):
+    """Get features for relations.
+
+    Parameters
+    ----------
+    doc:
+    ctxt:
+    anno:
+
+    Returns
+    -------
+    src_type: string
+        Type of the source discourse unit
+
+    tgt_type: string
+        Type of the target discourse unit
+
+    direction: string
+        Direction of the relation, i.e. left or right attachment
+
+    edu_dist: int
+        Distance in EDUs between source and target units.
+
+    tstar_dist: int
+        Distance in Turn-stars between source and target units.
+    """
+    # get all EDUs from document, sorted by their span
+    doc_edus = sorted([u for u in doc.units if educe.stac.is_edu(u)],
+                      key=lambda u: u.span)
+    # TODO doc_tstars = ...
+
+    src = anno.source
+    if educe.stac.is_cdu(src):
+        src_type = 'CDU'
+        src_edus = sorted(src.terminals(), key=lambda e: e.span)
+    elif educe.stac.is_edu(src):
+        src_type = 'EDU'
+        src_edus = [src]
+    else:
+        # covered by stac-check ("non-DU endpoints")
+        return []
+
+    tgt = anno.target
+    if educe.stac.is_cdu(tgt):
+        tgt_type = 'CDU'
+        tgt_edus = sorted(tgt.terminals(), key=lambda e: e.span)
+    elif educe.stac.is_edu(tgt):
+        tgt_type = 'EDU'
+        tgt_edus = [tgt]
+    else:
+        # covered by stac-check ("non-DU endpoints")
+        return []
+
+    # get the index of the EDUs in the interval between src and tgt
+    src_idc = [doc_edus.index(e) for e in src_edus]
+    tgt_idc = [doc_edus.index(e) for e in tgt_edus]
+
+    # error case covered at least partially by stac-check, either
+    # as "bizarre relation instance" or as "CDU punctures"
+    if set(src_idc).intersection(set(tgt_idc)):
+        if debug:
+            direction = 'messed up'
+            print('* {}: {} {}'.format(doc.origin, direction, anno.type))
+            print('\t' + ', '.join(['[{}] {}'.format(str(e.span),
+                                                     doc.text(e.span))
+                                    for e in src_edus]))
+            print('\t' + ', '.join(['[{}] {}'.format(str(e.span),
+                                                     doc.text(e.span))
+                                    for e in tgt_edus]))
+        return []
+
+    # src ... tgt
+    if src_idc[-1] < tgt_idc[0]:
+        direction = 'right'
+        fst_idc = src_idc
+        snd_idc = tgt_idc
+        interv_edus = doc_edus[(fst_idc[-1] + 1):snd_idc[0]]
+    # tgt ... src
+    elif tgt_idc[-1] < src_idc[0]:
+        direction = 'left'
+        fst_idc = tgt_idc
+        snd_idc = src_idc
+        interv_edus = doc_edus[(fst_idc[-1] + 1):snd_idc[0]]
+    # tgt and src are interwoven
+    else:
+        direction = 'interwoven'  # FIXME
+        src_tgt_idc = set(src_idc).union(tgt_idc)
+        interv_edus = []
+        gap_edus = [e for i, e in enumerate(doc_edus)
+                    if (i not in src_tgt_idc and
+                        i > min(src_tgt_idc) and
+                        i < max(src_tgt_idc))]
+        if debug:
+            print('* {}: {} {}'.format(doc.origin, direction, anno.type))
+            print('\t' + ', '.join(['[{}] {}'.format(str(e.span),
+                                                     doc.text(e.span))
+                                    for e in src_edus]))
+            print('\t' + ', '.join(['[{}] {}'.format(str(e.span),
+                                                     doc.text(e.span))
+                                    for e in tgt_edus]))
+            print('\t' + ', '.join(['[{}] {}'.format(str(e.span),
+                                                     doc.text(e.span))
+                                    for e in gap_edus]))
+    edu_dist = len(interv_edus) + 1
+
+    # turn-stars distance
+    src_tstars = [ctxt[e].tstar for e in src_edus]
+    tgt_tstars = [ctxt[e].tstar for e in tgt_edus]
+    interv_tstars = [ctxt[e].tstar for e in interv_edus]
+    # turn-stars from the interval that don't overlap with src nor tgt
+    skipped_tstars = set(interv_tstars) - set(src_tstars) - set(tgt_tstars)
+    # we define:
+    # * tstar_dist = 0  if (part of) src and tgt belong to the same tstar
+    # * tstar_dist = len(skipped_tstars) + 1 otherwise
+    tstar_dist = (len(skipped_tstars) + 1
+                  if not set(src_tstars).intersection(set(tgt_tstars))
+                  else 0)
+
+    return src_type, tgt_type, direction, edu_dist, tstar_dist
+
+
 def cdu_feats(anno):
     """Get CDU features that are not immediate.
 
@@ -394,34 +519,56 @@ def cdu_feats(anno):
                 cdus_to_expand.append((mem_lvl, member))
             else:
                 raise ValueError('Unexpected type for a CDU member')
+
+    # TODO new features:
+    # * nb_gaps: CDUs spans can be discontiguous
+    # * gap_max_len: max len of a gap (in #EDUs)
+    # * over_nb_turns: nb of turns this CDU (partly) spans over
+    # * over_nb_tstars: nb of tstars this CDU (partly) spans over
+
     return nb_members, nb_cdus_imm, nb_cdus_tot, max_lvl, nb_edus_tot
 
 
-def cdu_statistics(corpus):
+def cdu_rel_statistics(corpus):
     """
-    Return statistics on CDUs
+    Return statistics on CDUs and relations
     """
     annotators = frozenset(k.annotator for k in corpus
                            if k.annotator is not None)
 
     cdus = []
+    rels = []
     for annotator in annotators:
         units, discourse = anno_subcorpus(corpus, annotator)
         for k in discourse:
             doc = corpus[k]
-            # document identifiers
+            # TODO refactor Context to not be a dict(EDU, ...)
+            ctxt = Context.for_edus(doc)
+            # common "meta" features
             doc_name = doc.origin.doc
             subdoc_name = doc.origin.subdoc
-            # get length and depth of CDUs
-            for anno in doc.annotations():
-                if educe.stac.is_cdu(anno):
-                    row = [anno._anno_id, doc_name, subdoc_name, annotator]
-                    row.append(anno.type)
-                    row.extend(cdu_feats(anno))
-                    row = tuple(row)
-                    cdus.append(row)
 
-    return cdus
+            for anno in doc.annotations():
+                row = [
+                    # unique identifier
+                    anno._anno_id,
+                    # situation
+                    doc_name, subdoc_name, annotator,
+                    # type of annotation
+                    anno.type,
+                ]
+                # extract feats for CDUs and rels
+                if educe.stac.is_cdu(anno):
+                    feats = cdu_feats(anno)
+                    if feats:
+                        row.extend(feats)
+                        cdus.append(tuple(row))
+                elif educe.stac.is_relation_instance(anno):
+                    feats = rel_feats(doc, ctxt, anno)
+                    if feats:
+                        row.extend(feats)
+                        rels.append(tuple(row))
+    return cdus, rels
 
 
 def cdu_report(cdu_stats):
@@ -453,6 +600,7 @@ def cdu_report(cdu_stats):
         empty_cdus = [cs for cs in cdu_stats
                       if cs[-1] == 0]
         if empty_cdus:
+            print()
             print('Empty CDUs !?')
             print('\n'.join(str(cs)
                             for cs in sorted(empty_cdus,
@@ -462,6 +610,7 @@ def cdu_report(cdu_stats):
         mono_member_cdus = [cs for cs in cdu_stats
                             if cs[-1] == 1]
         if mono_member_cdus:
+            print()
             print('CDUs with a unique member !?')
             print('\n'.join(str(cs)
                             for cs in sorted(mono_member_cdus,
@@ -475,7 +624,47 @@ def cdu_report(cdu_stats):
         print()
 
     return res
-# end EXPERIMENTAL: CDU stuff
+
+
+def rel_report(rel_stats):
+    """Generate a string that contains reports on relations"""
+    # last fields: src_type, tgt_type, direction, edu_dist, tstar_dist
+
+    # detailed info on relations
+    headers = ['Relations', 'min', 'max', 'mean', 'median']
+    rows = []
+    # EDU dist
+    dist_edus = [cs[-2] for cs in rel_stats]
+    mean_dist_edus, median_dist_edus = rounded_mean_median(dist_edus)
+    min_dist_edus = min(dist_edus)
+    max_dist_edus = max(dist_edus)
+    rows.append(['dist. EDUs',
+                 min_dist_edus, max_dist_edus,
+                 mean_dist_edus, median_dist_edus])
+    # turn-star dist
+    dist_tstars = [cs[-1] for cs in rel_stats]
+    mean_dist_tstars, median_dist_tstars = rounded_mean_median(dist_tstars)
+    min_dist_tstars = min(dist_tstars)
+    max_dist_tstars = max(dist_tstars)
+    rows.append(['dist. Turn-stars',
+                 min_dist_tstars, max_dist_tstars,
+                 mean_dist_tstars, median_dist_tstars])
+    res = tabulate(rows, headers=headers)
+
+    # (src_type, tgt_type)
+    res += '\n\n'
+    src_tgt_type_cnt = Counter([(cs[-5], cs[-4])
+                                for cs in rel_stats])
+    headers = ['(src_type, tgt_type)', '#occ.']
+    rows = src_tgt_type_cnt.most_common()
+    res += tabulate(rows, headers=headers)
+
+    # TODO direction? + more detailed stats, possibly with pandas
+    # TODO write an pandas-based replacement for this "count" util
+
+    return res
+
+# end EXPERIMENTAL: CDU and relation stuff
 
 
 def report(dcounts, gcounts, gcounts2, acounts):
@@ -529,7 +718,9 @@ def main(args):
     print(report(dcounts, gcounts, gcounts2, acounts))
 
     # EXPERIMENTAL
-    cdu_stats = cdu_statistics(corpus)
-    print('\n')
+    print()
+    cdu_stats, rel_stats = cdu_rel_statistics(corpus)
     print(cdu_report(cdu_stats))
+    print()
+    print(rel_report(rel_stats))
     # end EXPERIMENTAL
