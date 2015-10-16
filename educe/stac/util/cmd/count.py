@@ -15,6 +15,7 @@ from tabulate import tabulate
 from ..args import (add_usual_input_args,
                     read_corpus_with_unannotated)
 from ..doc import strip_fixme
+from .pd_count import create_dfs
 from educe.stac.context import (Context, merge_turn_stars)
 from educe.util import concat
 import educe.stac
@@ -712,15 +713,54 @@ def main(args):
     You shouldn't need to call this yourself if you're using
     `config_argparser`
     """
-    corpus = read_corpus_with_unannotated(args, verbose=True)
-    dcounts, gcounts, gcounts2 = count_by_docname(corpus)
-    acounts = count_by_annotator(corpus)
-    print(report(dcounts, gcounts, gcounts2, acounts))
+    if False:
+        corpus = read_corpus_with_unannotated(args, verbose=True)
+        dcounts, gcounts, gcounts2 = count_by_docname(corpus)
+        acounts = count_by_annotator(corpus)
+        print(report(dcounts, gcounts, gcounts2, acounts))
 
-    # EXPERIMENTAL
-    print()
-    cdu_stats, rel_stats = cdu_rel_statistics(corpus)
-    print(cdu_report(cdu_stats))
-    print()
-    print(rel_report(rel_stats))
-    # end EXPERIMENTAL
+        # EXPERIMENTAL
+        print()
+        cdu_stats, rel_stats = cdu_rel_statistics(corpus)
+        print(cdu_report(cdu_stats))
+        print()
+        print(rel_report(rel_stats))
+        # end EXPERIMENTAL
+
+    # EXPERIMENTAL-ER
+    if True:
+        corpus = read_corpus_with_unannotated(args, verbose=True)
+        cdus, rels = create_dfs(corpus)
+
+        print('\n'.join([
+            big_banner('CDUs'),
+            tabulate(cdus.describe(), headers="keys"),
+            '',
+        ]))
+
+        print('\n'.join([
+            big_banner('Relations'),
+            tabulate(rels.describe(), headers="keys"),
+            '',
+        ]))
+
+        # print distribution of relations
+        # FIXME: new finds 1 SILVER/Elaboration in excess (79 vs 78)
+        print(big_banner('Relation instances'))
+        # for each annotator
+        rels_by_annotator = rels.groupby('annotator')
+        for name, group in rels_by_annotator:
+            headers = [name, 'total']
+            rows = group['type'].value_counts()
+            # add total row to match the old version of "count"
+            row_total = [('TOTAL', group['type'].count())]
+            print(tabulate(list(rows.iteritems()) + row_total,
+                           headers=headers))
+            print()
+        headers = ['all together', 'total']
+        rows = rels['type'].value_counts()
+        # add total row to match the old version of "count"
+        row_total = [('TOTAL', rels['type'].count())]
+        print(tabulate(list(rows.iteritems()) + row_total,
+                       headers=headers))
+    # end EXPERIMENTAL-ER
