@@ -22,7 +22,7 @@ REQS = [
     'tabulate',
     'nltk >= 3.0.0',
     'soundex',
-    'pandas >= 0.16',
+    'pandas >= 0.17',
 ]
 
 
