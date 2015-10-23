@@ -8,59 +8,59 @@
 Swiss-army-knife for working with glozz files
 """
 import argparse
-import codecs
-import collections
 import copy
 import os
 import os.path
-import re
-import sys
-import textwrap
 import xml.etree.ElementTree as ET
 
-from   educe import glozz, corpus, stac, util, graph
-from   educe.annotation import Span, Unit
-from   educe.internalutil import linebreak_xml
+from educe.annotation import Span, Unit
+from educe.glozz import (read_annotation_file, write_annotation_file,
+                         DEFAULT_OUTPUT_SETTINGS, hashcode)
+from educe.internalutil import linebreak_xml
+from educe.stac import (stac_output_settings,
+                        stac_unannotated_output_settings)
 from educe.stac.util.annotate import schema_text
+
 
 # ---------------------------------------------------------------------
 # utility functions
 # ---------------------------------------------------------------------
-
 def nub(xs):
     """
     First occurrence of each list member
     """
     ys = []
     for x in xs:
-        if x not in ys: ys.append(x)
+        if x not in ys:
+            ys.append(x)
     return ys
 
+
 def seek_ac_file(aa_file):
-    fbase,fext = os.path.splitext(aa_file)
+    fbase, fext = os.path.splitext(aa_file)
     if fext is None:
         ac_file = None
     else:
         ac_file = fbase + ".ac"
     return ac_file
 
+
 # ---------------------------------------------------------------------
 # dump
 # ---------------------------------------------------------------------
-
 def dump(filename, doc):
-    show_unit = lambda u:\
-        "{anno} | {text}".format(anno=u,
-                                 text=doc.text(u.text_span()))
-    show_schema = lambda x:\
-        "{anno} | {text}".format(anno=x,
-                                 text=schema_text(doc, x))
-    lines = ['############### %s units' % filename]\
-          + list(map(show_unit, doc.units))\
-          + ['############### %s relations' % filename]\
-          + list(map(str, doc.relations))\
-          + ['############### %s schema' % filename]\
-          + list(map(show_schema, doc.schemas))
+    show_unit = (lambda u:
+                 "{anno} | {text}".format(anno=u,
+                                          text=doc.text(u.text_span())))
+    show_schema = (lambda x:
+                   "{anno} | {text}".format(anno=x,
+                                            text=schema_text(doc, x)))
+    lines = (['############### %s units' % filename] +
+             list(map(show_unit, doc.units)) +
+             ['############### %s relations' % filename] +
+             list(map(str, doc.relations)) +
+             ['############### %s schema' % filename] +
+             list(map(show_schema, doc.schemas)))
 
     return "\n".join(lines)
 
@@ -68,18 +68,17 @@ def dump(filename, doc):
 def main_dump(args):
     for file in args.files:
         ac_file = seek_ac_file(file)
-        doc = glozz.read_annotation_file(file,ac_file)
+        doc = read_annotation_file(file, ac_file)
         print dump(file, doc).encode('utf-8')
         print ""
+
 
 # ---------------------------------------------------------------------
 # shift
 # ---------------------------------------------------------------------
-
-
 def shift_glozz_file(file, start, offset):
     ac_file = seek_ac_file(file)
-    doc = glozz.read_annotation_file(file, ac_file)
+    doc = read_annotation_file(file, ac_file)
 
     def shift(x):
         if isinstance(x, Unit):
@@ -104,55 +103,61 @@ def shift_glozz_file(file, start, offset):
 
 def glozz_write_settings(args):
     if args.format == 'stac-unannotated':
-        return stac.stac_unannotated_output_settings
+        return stac_unannotated_output_settings
     elif args.format == 'stac':
-        return stac.stac_output_settings
+        return stac_output_settings
     else:
-        return glozz.default_output_settings
+        return DEFAULT_OUTPUT_SETTINGS
 
 
 def main_shift(args):
     settings = glozz_write_settings(args)
     doc = shift_glozz_file(args.input, args.start, args.shift)
-    glozz.write_annotation_file(args.output, doc, settings=settings)
+    write_annotation_file(args.output, doc, settings=settings)
+
 
 # ---------------------------------------------------------------------
 # cut
 # ---------------------------------------------------------------------
-
 def cut_glozz_file(file, span, offset=0):
     ac_file = seek_ac_file(file)
-    doc = glozz.read_annotation_file(file,ac_file)
+    doc = read_annotation_file(file, ac_file)
+
     def shift(x):
         if offset != 0 and isinstance(x, Unit):
-            x2      = copy.copy(x)
+            x2 = copy.copy(x)
             x2.span = x.span.shift(offset)
             return x2
         else:
             return x
+
     def slice(xs):
-        return [ shift(x) for x in xs if span.encloses(x.text_span()) ]
+        return [shift(x) for x in xs if span.encloses(x.text_span())]
+
     doc2 = copy.copy(doc)
-    doc2.units     = slice(doc.units)
-    doc2.schemas   = slice(doc.schemas)
+    doc2.units = slice(doc.units)
+    doc2.schemas = slice(doc.schemas)
     doc2.relations = slice(doc.relations)
     return doc2
 
+
 def glozz_write_settings(args):
     if args.format == 'stac-unannotated':
-        return stac.stac_unannotated_output_settings
+        return stac_unannotated_output_settings
     elif args.format == 'stac':
-        return stac.stac_output_settings
+        return stac_output_settings
     else:
-        return glozz.default_output_settings
+        return DEFAULT_OUTPUT_SETTINGS
+
 
 def main_cut(args):
     settings = glozz_write_settings(args)
     span = Span(args.start, args.end)
-    doc  = cut_glozz_file(args.input, span, args.shift)
-    glozz.write_annotation_file(args.output, doc, settings=settings)
+    doc = cut_glozz_file(args.input, span, args.shift)
+    write_annotation_file(args.output, doc, settings=settings)
     if args.shift is None:  # NB: not the same as 0!
         args.shift = 1 - args.start
+
 
 # ---------------------------------------------------------------------
 # normalise
@@ -161,20 +166,22 @@ def main_cut(args):
 # rather than passing through the educe glozz reading mechanisms.
 # I probably wanted something as functionally simple as possible
 # ---------------------------------------------------------------------
-
 class NormSettings(object):
     def __init__(self, mode, start):
-        self.mode  = mode
+        self.mode = mode
         self.start = start
+
 
 default_settings = NormSettings('count', 1)
 
+
 def mk_new_dates(dates, settings=default_settings):
-    start        = settings.start
+    start = settings.start
     unique_dates = nub(dates)
 
     if settings.mode == 'zero':
-        return { str(v):'0' for v in unique_dates    }
+        return {str(v): '0' for v in unique_dates}
+
     if settings.mode == 'negonly':
         # only normalise negative dates (in count mode)
         # this is kind of obscure, and only really makes sense in
@@ -182,32 +189,33 @@ def mk_new_dates(dates, settings=default_settings):
         # were given negative ids to distinguish them from others
         pos_dates = [x for x in unique_dates if x >= 0]
         neg_dates = [x for x in unique_dates if x < 0]
-        pos_dict = { str(v):str(v)  for v in pos_dates }
-        neg_dict = { str(v):str(-i) for i,v in enumerate(neg_dates, start) }
+        pos_dict = {str(v): str(v) for v in pos_dates}
+        neg_dict = {str(v): str(-i) for i, v in enumerate(neg_dates, start)}
         return dict(pos_dict.items() + neg_dict.items())
     else:
-        return { str(v):str(i) for i,v in enumerate(unique_dates, start) }
+        return {str(v): str(i) for i, v in enumerate(unique_dates, start)}
+
 
 def tidy(filename, output, mode=None):
-    tree    = ET.parse(filename)
+    tree = ET.parse(filename)
 
     date_elems = tree.findall('.//creation-date')
     unit_elems = tree.findall('.//*[@id]')
 
-    dates     = [ int(x.text.strip()) for x in date_elems ]
-    unit_ids  = [ x.attrib['id'] for x in unit_elems ]
+    dates = [int(x.text.strip()) for x in date_elems]
+    unit_ids = [x.attrib['id'] for x in unit_elems]
 
     new_dates = mk_new_dates(dates, mode)
 
     def adjust_id(x):
         xparts = x.rsplit('_', 1)
-        date2  = new_dates[xparts[-1]]
+        date2 = new_dates[xparts[-1]]
         return '_'.join(xparts[:-1] + [date2])
 
-    new_ids = { x:adjust_id(x) for x in unit_ids }
+    new_ids = {x: adjust_id(x) for x in unit_ids}
 
     for x in date_elems:
-        old    = str(x.text.strip())
+        old = str(x.text.strip())
         x.text = new_dates[old]
     for x in unit_elems:
         old = x.attrib['id']
@@ -216,41 +224,46 @@ def tidy(filename, output, mode=None):
     linebreak_xml(tree.getroot())
     tree.write(output, encoding='utf-8', xml_declaration=True)
 
+
 def main_normalise(args):
-    if not os.path.exists(args.output): os.mkdir(args.output)
+    if not os.path.exists(args.output):
+        os.mkdir(args.output)
     settings = NormSettings(args.mode, args.start)
     for f in args.input:
         f2 = os.path.join(args.output, os.path.basename(f))
         tidy(f, f2, settings)
 
+
 # ---------------------------------------------------------------------
 # hashcode
 # ---------------------------------------------------------------------
-
 def main_hashcode(args):
     with open(args.input, 'rb') as f:
-        print glozz.hashcode(f)
+        print hashcode(f)
+
 
 # ---------------------------------------------------------------------
 # args
 # ---------------------------------------------------------------------
-
 arg_parser = argparse.ArgumentParser(description='Glozz Swiss Army Knife')
 subparsers = arg_parser.add_subparsers(help='sub-command help')
 
-ap_dump = subparsers.add_parser('dump', help='Dump glozz file in an ad-hoc debug format')
+ap_dump = subparsers.add_parser('dump',
+                                help='Dump glozz file in an ad-hoc debug format')
 ap_dump.set_defaults(func=main_dump)
 ap_dump.add_argument('files', nargs='*')
 
-ap_cut = subparsers.add_parser('cut', help='Select a slice of glozz anotations from text span')
+ap_cut = subparsers.add_parser('cut',
+                               help='Select a slice of glozz anotations from text span')
 ap_cut.add_argument('input', metavar='FILE', help='Glozz aa file')
-ap_cut.add_argument('--format', choices=['default', 'stac', 'stac-unannotated'])
+ap_cut.add_argument('--format', choices=['default', 'stac',
+                                         'stac-unannotated'])
 ap_cut.add_argument('--shift', type=int, nargs='?',
                     default=0,
                     help='shift spans by this offset (default 0; unspecified:1-start)')
 ap_cut.add_argument('start', type=int,
                     help='Character offset of left of included window')
-ap_cut.add_argument( 'end', type=int,
+ap_cut.add_argument('end', type=int,
                     help='Character offset of right of included window')
 ap_cut.add_argument('output', metavar='FILE',
                     help='Output file')
@@ -258,7 +271,8 @@ ap_cut.set_defaults(func=main_cut)
 
 ap_shift = subparsers.add_parser('shift', help='Bump offsets in a glozz file')
 ap_shift.add_argument('input', metavar='FILE', help='Glozz aa file')
-ap_shift.add_argument('--format', choices=['default', 'stac', 'stac-unannotated'])
+ap_shift.add_argument('--format', choices=['default', 'stac',
+                                           'stac-unannotated'])
 ap_shift.add_argument('--shift', type=int, required=True,
                       help='shift spans by this offset')
 ap_shift.add_argument('start', type=int,
@@ -267,21 +281,23 @@ ap_shift.add_argument('output', metavar='FILE',
                       help='Output file')
 ap_shift.set_defaults(func=main_shift)
 
-ap_norm = subparsers.add_parser('normalise', help='Renumber Glozz ids/dates for comparability (use with care!)')
-ap_norm.add_argument('input', metavar='FILES', nargs = '+')
+ap_norm = subparsers.add_parser('normalise',
+                                help='Renumber Glozz ids/dates for comparability (use with care!)')
+ap_norm.add_argument('input', metavar='FILES', nargs='+')
 ap_norm.add_argument('--output', metavar='DIR',
                      action='store',
                      required=True,
                      help='Output directory')
-ap_norm.add_argument('--mode', choices=[ 'count', 'zero', 'negonly' ],
-                     help='Normalisation mode'
-                     )
-ap_norm.add_argument('--start', type=int, default=1, help='start indices from')
+ap_norm.add_argument('--mode', choices=['count', 'zero', 'negonly'],
+                     help='Normalisation mode')
+ap_norm.add_argument('--start', type=int, default=1,
+                     help='start indices from')
 ap_norm.add_argument('--verbose', '-v', action='store_true')
 ap_norm.set_defaults(func=main_normalise)
 
 
-ap_hashcode = subparsers.add_parser('hashcode', help='Print corpus hashcode for Glozz ac file')
+ap_hashcode = subparsers.add_parser('hashcode',
+                                    help='Print corpus hashcode for Glozz ac file')
 ap_hashcode.add_argument('input', metavar='FILE', help='Glozz ac file')
 ap_hashcode.set_defaults(func=main_hashcode)
 

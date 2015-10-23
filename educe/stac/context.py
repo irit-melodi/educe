@@ -59,6 +59,8 @@ def _blank_out(text, rejects):
     return text2
 
 
+# FIXME produce proper turn-stars, with type 'Tstar'
+# MM: not sure what side-effects this could produce as of 2015-10-20
 def merge_turn_stars(doc):
     """Return a copy of the document in which consecutive turns
     by the same speaker have been merged.

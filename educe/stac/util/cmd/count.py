@@ -14,25 +14,25 @@ from tabulate import tabulate
 from ..args import (add_usual_input_args,
                     read_corpus_with_unannotated)
 from ..doc import strip_fixme
-from educe.stac.context import (merge_turn_stars)
+from .pd_count import report_on_corpus
+from educe.stac.annotation import (is_cdu, is_dialogue, is_edu,
+                                   is_relation_instance, is_turn,
+                                   is_turn_star)
+from educe.stac.context import merge_turn_stars
 from educe.util import concat
 import educe.stac
+# from educe.stac.sanity.common import is_default
+
 
 # we have an order on this, so no dict
-SEGMENT_CATEGORIES = [("dialogue", educe.stac.is_dialogue),
-                      ("turn star", lambda x: x.type == 'Tstar'),
-                      ("turn", educe.stac.is_turn),
-                      # temporary workaround to exclude Tstars from being
-                      # considered as EDUs
-                      # TODO update educe.stac.{annotation,context} to
-                      # cleanly integrate Tstars
-                      # MM: I cannot make an informed decision about this yet
-                      ("edu", lambda x: (educe.stac.is_edu(x) and
-                                         x.type != 'Tstar'))]
+SEGMENT_CATEGORIES = [("dialogue", is_dialogue),
+                      ("turn star", is_turn_star),
+                      ("turn", is_turn),
+                      ("edu", is_edu)]
 
 
-LINK_CATEGORIES = [("rel insts", educe.stac.is_relation_instance),
-                   ("CDUs", educe.stac.is_cdu)]
+LINK_CATEGORIES = [("rel insts", is_relation_instance),
+                   ("CDUs", is_cdu)]
 
 
 # ---------------------------------------------------------------------
@@ -293,11 +293,14 @@ def count_by_docname(corpus):
         dcounts.struct[kdoc]["subdoc"] += len(ksubdocs)
         for k in (k for k in unannotated_keys if k.doc == kdoc):
             doc = corpus[k]
+            # add Turn-stars to doc
+            # TODO encapsulate upstream
             tstar_doc = merge_turn_stars(doc)
             for anno in tstar_doc.units:
                 if educe.stac.is_turn(anno):
                     anno.type = 'Tstar'
                     doc.units.append(anno)
+            # end add Turn-stars
             count_segments(doc, dcounts.struct[kdoc])
             for dlg in doc.units:
                 if not educe.stac.is_dialogue(dlg):
@@ -397,7 +400,14 @@ def main(args):
     You shouldn't need to call this yourself if you're using
     `config_argparser`
     """
-    corpus = read_corpus_with_unannotated(args, verbose=True)
-    dcounts, gcounts, gcounts2 = count_by_docname(corpus)
-    acounts = count_by_annotator(corpus)
-    print(report(dcounts, gcounts, gcounts2, acounts))
+    # former stats, kept for comparison and adjustments of its
+    # replacement, using feedback from users/customers (esp. NA)
+    if False:
+        corpus = read_corpus_with_unannotated(args, verbose=True)
+        dcounts, gcounts, gcounts2 = count_by_docname(corpus)
+        acounts = count_by_annotator(corpus)
+        print(report(dcounts, gcounts, gcounts2, acounts))
+    else:
+        # new stats
+        corpus = read_corpus_with_unannotated(args, verbose=True)
+        report_on_corpus(corpus)
