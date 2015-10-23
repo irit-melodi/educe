@@ -324,7 +324,11 @@ def create_dfs(corpus):
                 # 'Anaphora', 'Several_resources'
                 continue
             else:
-                raise ValueError('Unsupported annotation: {}'.format(anno))
+                err_msg = 'Unsupported annotation: {}'.format(anno)
+                # raise ValueError(err_msg)
+                print('W: {}'.format(err_msg))
+                continue
+
 
     res = {anno_type: pd.DataFrame(data=row_list)
            for anno_type, row_list in rows.items()
