@@ -67,39 +67,45 @@ import warnings
 from educe.annotation import Unit, Relation, Schema
 import educe.glozz as glozz
 
-# TODO cleanly integrate 'Tstar' in one of the following ?
-STRUCTURE_TYPES = ['Turn', 'paragraph',
-                   'dialogue', 'Dialogue',  # TODO remove one or keep both?
+
+STRUCTURE_TYPES = [
+    'Turn',
+    'Tstar',  # sequence of turns with same speaker
+    'paragraph',
+    'dialogue', 'Dialogue',  # TODO remove one or keep both?
 ]
 RESOURCE_TYPES = ['default', 'Resource']
 PREFERENCE_TYPES = ['Preference']
 
-SUBORDINATING_RELATIONS = \
-    ['Explanation',
-     'Background',
-     'Elaboration',
-     'Correction',
-     'Q-Elab',
-     'Comment',
-     'Question-answer_pair',
-     'Clarification_question',
-     'Acknowledgement']
+SUBORDINATING_RELATIONS = [
+    'Explanation',
+    'Background',
+    'Elaboration',
+    'Correction',
+    'Q-Elab',
+    'Comment',
+    'Question-answer_pair',
+    'Clarification_question',
+    'Acknowledgement'
+]
 
-COORDINATING_RELATIONS = \
-    ['Result',
-     'Narration',
-     'Continuation',
-     'Contrast',
-     'Parallel',
-     'Conditional',
-     'Alternation']
+COORDINATING_RELATIONS = [
+    'Result',
+    'Narration',
+    'Continuation',
+    'Contrast',
+    'Parallel',
+    'Conditional',
+    'Alternation'
+]
 
-DIALOGUE_ACTS =\
-    ['Offer',
-     'Counteroffer',
-     'Accept',
-     'Refusal',
-     'Other']
+DIALOGUE_ACTS = [
+    'Offer',
+    'Counteroffer',
+    'Accept',
+    'Refusal',
+    'Other'
+]
 
 _F_ADDRESSEE = 'Addressee'
 
@@ -124,8 +130,8 @@ def split_turn_text(text):
     else:
         # it's easy to just return the body here, but when this arises
         # it's a sign that something weird has happened
-        raise Exception("Turn does not start with number/speaker prefix: "
-                        + text)
+        raise Exception("Turn does not start with number/speaker prefix: " +
+                        text)
 
 
 def turn_id(anno):
@@ -174,8 +180,10 @@ def set_addressees(anno, addr):
 # ---------------------------------------------------------------------
 
 
-RENAMES = {'Strategic_comment': 'Other',
-           'Segment': 'Other'}
+RENAMES = {
+    'Strategic_comment': 'Other',
+    'Segment': 'Other'
+}
 "Dialogue acts that should be treated as a different one"
 
 
@@ -212,32 +220,40 @@ def is_resource(annotation):
     """
     See Unit typology above
     """
-    return isinstance(annotation, Unit) and\
-        annotation.type in RESOURCE_TYPES
+    return (isinstance(annotation, Unit) and
+            annotation.type in RESOURCE_TYPES)
 
 
 def is_preference(annotation):
     """
     See Unit typology above
     """
-    return isinstance(annotation, Unit) and\
-        annotation.type in PREFERENCE_TYPES
+    return (isinstance(annotation, Unit) and
+            annotation.type in PREFERENCE_TYPES)
 
 
 def is_turn(annotation):
     """
     See Unit typology above
     """
-    return isinstance(annotation, Unit) and\
-        annotation.type == 'Turn'
+    return (isinstance(annotation, Unit) and
+            annotation.type == 'Turn')
+
+
+def is_turn_star(annotation):
+    """
+    See Unit typology above
+    """
+    return (isinstance(annotation, Unit) and
+            annotation.type == 'Tstar')
 
 
 def is_dialogue(annotation):
     """
     See Unit typology above
     """
-    return isinstance(annotation, Unit) and\
-        annotation.type == 'Dialogue'
+    return (isinstance(annotation, Unit) and
+            annotation.type == 'Dialogue')
 
 
 def is_edu(annotation):
@@ -245,41 +261,41 @@ def is_edu(annotation):
     See Unit typology above
     """
     blacklist = STRUCTURE_TYPES + RESOURCE_TYPES + PREFERENCE_TYPES
-    return isinstance(annotation, Unit) and\
-        annotation.type not in blacklist
+    return (isinstance(annotation, Unit) and
+            annotation.type not in blacklist)
 
 
 def is_relation_instance(annotation):
     """
     See Relation typology above
     """
-    return isinstance(annotation, Relation) and\
-        annotation.type in SUBORDINATING_RELATIONS or\
-        annotation.type in COORDINATING_RELATIONS
+    return (isinstance(annotation, Relation) and
+            annotation.type in SUBORDINATING_RELATIONS or
+            annotation.type in COORDINATING_RELATIONS)
 
 
 def is_subordinating(annotation):
     """
     See Relation typology above
     """
-    return isinstance(annotation, Relation) and\
-        annotation.type in SUBORDINATING_RELATIONS
+    return (isinstance(annotation, Relation) and
+            annotation.type in SUBORDINATING_RELATIONS)
 
 
 def is_coordinating(annotation):
     """
     See Relation typology above
     """
-    return isinstance(annotation, Relation) and\
-        annotation.type in COORDINATING_RELATIONS
+    return (isinstance(annotation, Relation) and
+            annotation.type in COORDINATING_RELATIONS)
 
 
 def is_cdu(annotation):
     """
     See CDUs typology above
     """
-    return isinstance(annotation, Schema) and\
-        annotation.type == 'Complex_discourse_unit'
+    return (isinstance(annotation, Schema) and
+            annotation.type == 'Complex_discourse_unit')
 
 
 def is_dialogue_act(annotation):
@@ -295,8 +311,8 @@ def is_structure(annotation):
     Is one of the document-structure annotations, something an
     annotator is expected not to edit, create, delete
     """
-    return isinstance(annotation, Unit) and\
-        annotation.type in STRUCTURE_TYPES
+    return (isinstance(annotation, Unit) and
+            annotation.type in STRUCTURE_TYPES)
 
 
 def cleanup_comments(anno):
@@ -362,57 +378,58 @@ def speaker(anno):
 # Adding annotations
 # ---------------------------------------------------------------------
 
-STAC_GLOZZ_FS_ORDER = \
-    ['Status',
-     'Quantity',
-     'Correctness',
-     'Kind',
-     'Comments',
-     'Developments',
-     'Emitter',
-     'Identifier',
-     'Timestamp',
-     'Resources',
-     'Trades',
-     'Dice_rolling',
-     'Gets',
-     'Has_resources',
-     'Amount_of_resources',
-     'Addressee',
-     'Surface_act']
+STAC_GLOZZ_FS_ORDER = [
+    'Status',
+    'Quantity',
+    'Correctness',
+    'Kind',
+    'Comments',
+    'Developments',
+    'Emitter',
+    'Identifier',
+    'Timestamp',
+    'Resources',
+    'Trades',
+    'Dice_rolling',
+    'Gets',
+    'Has_resources',
+    'Amount_of_resources',
+    'Addressee',
+    'Surface_act'
+]
 
-STAC_UNANNOTATED_FS_ORDER = \
-    ['Status',
-     'Quantity',
-     'Correctness',
-     'Kind',
-     'Identifier',
-     'Timestamp',
-     'Emitter',
-     'Resources',
-     'Developments',
-     'Comments',
-     'Dice_rolling',
-     'Gets',
-     'Trades',
-     'Has_resources',
-     'Amount_of_resources',
-     'Addressee',
-     'Surface_act']
+STAC_UNANNOTATED_FS_ORDER = [
+    'Status',
+    'Quantity',
+    'Correctness',
+    'Kind',
+    'Identifier',
+    'Timestamp',
+    'Emitter',
+    'Resources',
+    'Developments',
+    'Comments',
+    'Dice_rolling',
+    'Gets',
+    'Trades',
+    'Has_resources',
+    'Amount_of_resources',
+    'Addressee',
+    'Surface_act'
+]
 
-STAC_MD_ORDER = \
-    ['author',
-     'creation-date',
-     'lastModifier',
-     'lastModificationDate']
+STAC_MD_ORDER = [
+    'author',
+    'creation-date',
+    'lastModifier',
+    'lastModificationDate'
+]
 
-STAC_OUTPUT_SETTINGS = \
-    glozz.GlozzOutputSettings(STAC_GLOZZ_FS_ORDER,
-                              STAC_MD_ORDER)
+STAC_OUTPUT_SETTINGS = glozz.GlozzOutputSettings(
+    STAC_GLOZZ_FS_ORDER, STAC_MD_ORDER)
 
-STAC_UNANNOTATED_OUTPUT_SETTINGS = \
-    glozz.GlozzOutputSettings(STAC_UNANNOTATED_FS_ORDER,
-                              STAC_MD_ORDER)
+STAC_UNANNOTATED_OUTPUT_SETTINGS = glozz.GlozzOutputSettings(
+    STAC_UNANNOTATED_FS_ORDER, STAC_MD_ORDER)
 
 
 # Deprecated
