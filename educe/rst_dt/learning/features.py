@@ -91,17 +91,13 @@ def extract_single_ptb_token_pos(edu_info):
 
 def build_edu_feature_extractor():
     """Build the feature extractor for single EDUs"""
-    feats = []
     funcs = []
 
     # raw word
-    feats.extend(SINGLE_RAW_WORD)
     funcs.append(extract_single_raw_word)
     # PTB word
-    feats.extend(SINGLE_PTB_TOKEN_WORD)
     funcs.append(extract_single_ptb_token_word)
     # PTB pos
-    feats.extend(SINGLE_PTB_TOKEN_POS)
     funcs.append(extract_single_ptb_token_pos)
 
     def _extract_all(edu_info):
@@ -111,12 +107,9 @@ def build_edu_feature_extractor():
             for feat in fct(edu_info):
                 yield feat
 
-    # header
-    header = feats
     # extractor
     feat_extractor = _extract_all
-    # return header and extractor
-    return header, feat_extractor
+    return feat_extractor
 
 
 # ---------------------------------------------------------------------
@@ -217,16 +210,12 @@ def build_pair_feature_extractor():
     they are already stored in sf_cache, but under (slightly) different
     names
     """
-    feats = []
     funcs = []
 
-    feats.extend(PAIR_GAP)
     funcs.append(extract_pair_gap)
 
-    feats.extend(PAIR_RAW_WORD)
     funcs.append(extract_pair_raw_word)
 
-    feats.extend(PAIR_POS_TAGS)
     funcs.append(extract_pair_pos_tags)
 
     def _extract_all(edu_info1, edu_info2):
@@ -236,12 +225,9 @@ def build_pair_feature_extractor():
             for feat in fct(edu_info1, edu_info2):
                 yield feat
 
-    # header
-    header = feats
     # extractor
     feat_extractor = _extract_all
-    # return header and extractor
-    return header, feat_extractor
+    return feat_extractor
 
 
 def product_features(feats_g, feats_d, feats_gd):

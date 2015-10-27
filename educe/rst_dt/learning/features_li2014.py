@@ -217,26 +217,19 @@ def extract_single_syntax(edu_info):
 
 def build_edu_feature_extractor():
     """Build the feature extractor for single EDUs"""
-    feats = []
     funcs = []
 
     # word
-    feats.extend(SINGLE_WORD)
     funcs.append(extract_single_word)
     # pos
-    feats.extend(SINGLE_POS)
     funcs.append(extract_single_pos)
     # length
-    feats.extend(SINGLE_LENGTH)
     funcs.append(extract_single_length)
     # para
-    feats.extend(SINGLE_PARA)
     funcs.append(extract_single_para)
     # sent
-    feats.extend(SINGLE_SENTENCE)
     funcs.append(extract_single_sentence)
     # syntax (disabled)
-    # feats.extend(SINGLE_SYNTAX)
     # funcs.append(extract_single_syntax)
 
     def _extract_all(edu_info):
@@ -246,12 +239,9 @@ def build_edu_feature_extractor():
             for feat in fct(edu_info):
                 yield feat
 
-    # header
-    header = feats
     # extractor
     feat_extractor = _extract_all
-    # return header and extractor
-    return header, feat_extractor
+    return feat_extractor
 
 
 # ---------------------------------------------------------------------
@@ -395,7 +385,8 @@ def extract_pair_sent(edu_info1, edu_info2):
     else:
         if rev_offset1 is not None and offset2 is not None:
             yield ('rev_offset_diff', str(rev_offset1 - rev_offset2))
-            yield ('rev_offset_diff_div3', str((rev_offset1 - rev_offset2) / 3))
+            yield ('rev_offset_diff_div3',
+                   str((rev_offset1 - rev_offset2) / 3))
             yield ('rev_offset_pair', (rev_offset1, rev_offset2))
             yield ('rev_offset_div3_pair', (rev_offset1 / 3, rev_offset2 / 3))
 
@@ -429,28 +420,20 @@ def build_pair_feature_extractor():
     they are already stored in sf_cache, but under (slightly) different
     names
     """
-    feats = []
     funcs = []
 
     # feature type: 1
-    feats.extend(PAIR_WORD)
     funcs.append(extract_pair_word)
     # 2
-    feats.extend(PAIR_POS)
     funcs.append(extract_pair_pos)
     # 3
-    feats.extend(PAIR_PARA)
     funcs.append(extract_pair_para)
-    feats.extend(PAIR_SENT)
     funcs.append(extract_pair_sent)
     # 4
-    feats.extend(PAIR_LENGTH)
     funcs.append(extract_pair_length)
     # 5
-    # feats.extend(PAIR_SYNTAX)  # NotImplemented
     # funcs.append(extract_pair_syntax)
     # 6
-    # feats.extend(PAIR_SEMANTICS)  # NotImplemented
     # funcs.append(extract_pair_semantics)
 
     def _extract_all(edu_info1, edu_info2):
@@ -460,12 +443,9 @@ def build_pair_feature_extractor():
             for feat in fct(edu_info1, edu_info2):
                 yield feat
 
-    # header
-    header = feats
     # extractor
     feat_extractor = _extract_all
-    # return header and extractor
-    return header, feat_extractor
+    return feat_extractor
 
 
 def product_features(feats_g, feats_d, feats_gd):

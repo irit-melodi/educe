@@ -182,13 +182,11 @@ class DocumentCountVectorizer(object):
         # preprocessor for each EDU
         self.doc_preprocess = feature_set.build_doc_preprocessor()
         # feature extractor for single EDUs
-        sing_header, sing_extract = feature_set.build_edu_feature_extractor()
-        self.sing_header = sing_header
+        sing_extract = feature_set.build_edu_feature_extractor()
         self.sing_extract = sing_extract
         # feature extractor for pairs of EDUs
-        pair_header, pair_extract = feature_set.build_pair_feature_extractor(
+        pair_extract = feature_set.build_pair_feature_extractor(
             lecsie_data_dir=lecsie_data_dir)
-        self.pair_header = pair_header
         self.pair_extract = pair_extract
         # end EXPERIMENTAL
         # feature filters
@@ -214,9 +212,7 @@ class DocumentCountVectorizer(object):
         """Extract feature vectors for all EDU pairs of a document"""
 
         doc_preprocess = self.doc_preprocess
-        sing_header = self.sing_header
         sing_extract = self.sing_extract
-        pair_header = self.pair_header
         pair_extract = self.pair_extract
         separator = self.separator
         # NEW
@@ -261,11 +257,13 @@ class DocumentCountVectorizer(object):
                                                feat_dict['EDU2'],
                                                feat_dict['pair']))
             # add suffix to single EDU features
-            feat_dict['EDU1'] = dict(re_emit(feat_dict['EDU1'].items(), '_EDU1'))
-            feat_dict['EDU2'] = dict(re_emit(feat_dict['EDU2'].items(), '_EDU2'))
+            feat_dict['EDU1'] = dict(re_emit(feat_dict['EDU1'].items(),
+                                             '_EDU1'))
+            feat_dict['EDU2'] = dict(re_emit(feat_dict['EDU2'].items(),
+                                             '_EDU2'))
 
             # split feat space
-            if split_feat_space:
+            if split_feat_space is not None:
                 # options are:
                 # * directionality of attachment
                 # * intra/inter-sentential,
