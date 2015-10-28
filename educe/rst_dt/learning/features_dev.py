@@ -202,20 +202,21 @@ def extract_single_syntax(edu_info):
 
 def build_edu_feature_extractor():
     """Build the feature extractor for single EDUs"""
-    funcs = []
+    funcs = [
+        # word
+        extract_single_word,
+        # discourse markers
+        extract_single_pdtb_markers,
+        # pos
+        extract_single_pos,
+        # length
+        extract_single_length,
+        # para
+        extract_single_para,
+        # sent
+        extract_single_sentence,
+    ]
 
-    # word
-    funcs.append(extract_single_word)
-    # discourse markers
-    funcs.append(extract_single_pdtb_markers)
-    # pos
-    funcs.append(extract_single_pos)
-    # length
-    funcs.append(extract_single_length)
-    # para
-    funcs.append(extract_single_para)
-    # sent
-    funcs.append(extract_single_sentence)
     # syntax (EXPERIMENTAL)
     # funcs.append(extract_single_syntax)
 
@@ -481,16 +482,18 @@ def build_pair_feature_extractor(lecsie_data_dir=None):
     they are already stored in sf_cache, but under (slightly) different
     names
     """
-    funcs = []
+    funcs = [
+        # feature type: 3
+        extract_pair_doc,
+        extract_pair_para,
+        extract_pair_sent,
+        # feature type: 5
+        extract_pair_syntax,
+    ]
 
-    # feature type: 3
-    funcs.append(extract_pair_doc)
-    funcs.append(extract_pair_para)
-    funcs.append(extract_pair_sent)
-    # 5
-    funcs.append(extract_pair_syntax)
     # 6
     # funcs.append(extract_pair_semantics)
+
     # LECSIE feats
     if lecsie_data_dir is not None:
         lecsie_feats = LecsieFeats(lecsie_data_dir)
