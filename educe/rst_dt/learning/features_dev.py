@@ -4,17 +4,17 @@
 
 from __future__ import print_function
 
-from collections import deque, Counter
+from collections import Counter
 import re
 
-from nltk.tree import Tree
 import numpy as np
 
 from .base import DocumentPlusPreprocessor
-from educe.stac.lexicon.pdtb_markers import (load_pdtb_markers_lexicon,
-                                             PDTB_MARKERS_FILE)
+from educe.ptb.head_finder import find_edu_head
 from educe.rst_dt.lecsie import (load_lecsie_feats,
                                  LINE_FORMAT as LECSIE_LINE_FORMAT)
+from educe.stac.lexicon.pdtb_markers import (load_pdtb_markers_lexicon,
+                                             PDTB_MARKERS_FILE)
 
 
 # ---------------------------------------------------------------------
@@ -164,33 +164,6 @@ def extract_single_para(edu_info):
 
 
 # syntactic features
-
-# helpers
-def find_edu_head(tree, hwords, wanted):
-    """Find the word with highest occurrence in the lexicalized tree
-
-    Return a pair of treepositions (head node, head word), or None if
-    no occurrence of any word in wanted was found.
-    """
-    # prune wanted to prevent punctuation from becoming the head of an EDU
-    nohead_tags = set(['.', ',', "''", "``"])
-    wanted = set([tp for tp in wanted
-                  if tree[tp].tag not in nohead_tags])
-
-    all_treepos = deque([()])  # init with root treepos: ()
-    while all_treepos:
-        cur_treepos = all_treepos.popleft()
-        cur_tree = tree[cur_treepos]
-        cur_hw = hwords[cur_treepos]
-        if cur_hw in wanted:
-            return (cur_treepos, cur_hw)
-        elif isinstance(cur_tree, Tree):
-            c_treeposs = [tuple(list(cur_treepos) + [c_idx])
-                          for c_idx, c in enumerate(tree[cur_treepos])]
-            all_treepos.extend(c_treeposs)
-        else:  # don't try to recurse if the current subtree is a Token
-            pass
-    return None
 
 
 def extract_single_syntax(edu_info):

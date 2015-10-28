@@ -9,7 +9,7 @@ and the classes in (StanfordNLP) CoreNLP that inherit from
 
 from __future__ import print_function
 
-
+from collections import deque
 import os
 
 from nltk import Tree
@@ -148,7 +148,7 @@ def find_lexical_heads(tree):
 
                 # apply special post-rule for coordinated phrases (if needed)
                 # if h > 2 and Y_h-1 == 'CC': head = Y_h-2
-                if (c_idx > 1 and cnt_hws[c_idx - 1] == 'CC'):
+                if c_idx > 1 and cnt_hws[c_idx - 1] == 'CC':
                     c_idx = c_idx - 2
                     hw = cnt_hws[c_idx]
 
@@ -164,3 +164,60 @@ def find_lexical_heads(tree):
     root_nt, hw = _find_lexical_head_rec(treepos_root)
 
     return head_word
+
+
+def find_edu_head(tree, hwords, wanted):
+    """Find the head word of a set of wanted nodes from a tree.
+
+    The tree is traversed top-down, breadth first, until we reach a node
+    headed by a word from `wanted`.
+
+    Return a pair of treepositions (head node, head word), or None if
+    no occurrence of any word in `wanted` was found.
+
+    This function is typically called for each EDU, `wanted` being the
+    set of tree positions of its tokens, after `find_lexical_heads` has
+    been called on the entire `tree` (providing `hwords`).
+
+    Parameters
+    ----------
+    tree: `nltk.Tree` with `educe.external.postag.RawToken` leaves
+        PTB tree whose lexical heads we want.
+
+    hwords: dict(tuple(int), tuple(int))
+        Map from each node of the constituency tree to its lexical head.
+        Both nodes are designated by their (NLTK) tree position (a.k.a.
+        Gorn address).
+
+    wanted: iterable of tuple(int)
+        The tree positions of the tokens in the span of interest, e.g.
+        in the EDU we are looking at.
+
+    Returns
+    -------
+    cur_treepos: tuple(int)
+        Tree position of the head node, i.e. the highest node headed by
+        a word from wanted.
+
+    cur_hw: tuple(int)
+        Tree position of the head word.
+    """
+    # exclude punctuation from this search
+    nohead_tags = set(['.', ',', "''", "``"])
+    wanted = set([tp for tp in wanted
+                  if tree[tp].tag not in nohead_tags])
+
+    all_treepos = deque([()])  # init with root treepos: ()
+    while all_treepos:
+        cur_treepos = all_treepos.popleft()
+        cur_tree = tree[cur_treepos]
+        cur_hw = hwords[cur_treepos]
+        if cur_hw in wanted:
+            return (cur_treepos, cur_hw)
+        elif isinstance(cur_tree, Tree):
+            c_treeposs = [tuple(list(cur_treepos) + [c_idx])
+                          for c_idx, c in enumerate(tree[cur_treepos])]
+            all_treepos.extend(c_treeposs)
+        else:  # don't try to recurse if the current subtree is a Token
+            pass
+    return None
