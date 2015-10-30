@@ -272,6 +272,14 @@ class LecsieFeats(object):
             s2_beg = s2.char_start
             s2_end = s2.char_end
             num2 = edu_info2['edu'].num
+            # WIP adjacency
+            adjacent_pair = (abs(num1 - num2) == 1)
+            # WIP intra- vs inter-sentential
+            sent_id1 = edu_info1['sent_idx']
+            sent_id2 = edu_info2['sent_idx']
+            intra_sent = (sent_id1 is not None and sent_id2 is not None and
+                          sent_id1 == sent_id2)
+
             # lecsie features are defined on unordered pairs
             # e.g. (e1, e2) and (e2, e1) have the same lecsie features
             lecsie_key = ((lecsie_doc_name, s1_beg, s1_end, s2_beg, s2_end)
@@ -283,8 +291,33 @@ class LecsieFeats(object):
                 # silently skip
                 continue
 
-            for fn, fv in zip(LECSIE_FEAT_NAMES, pair_lfeats):
-                if not np.isnan(fv):
+            # put in a dict
+            pair_lfeats = dict(zip(LECSIE_FEAT_NAMES, pair_lfeats))
+
+            # WIP
+            # composite family scores
+            for family in ['wcomb', 'specificity', 'normpmi']:
+                fam_scores = [fv for fn, fv in pair_lfeats.items()
+                              if fn.endswith(family)]
+
+                pair_lfeats['max_' + family] = np.nanmax(fam_scores)
+                pair_lfeats['min_' + family] = np.nanmin(fam_scores)
+                pair_lfeats['mean_' + family] = np.nanmean(fam_scores)
+            # overall max score
+            pair_lfeats['max_lecsie'] = np.nanmax(pair_lfeats.values())
+            # end WIP
+
+            # yield finite features (abstain on inf and nan)
+            for fn, fv in pair_lfeats.items():
+                # WIP
+                # split these features: adjacent vs non-adjacent
+                if adjacent_pair:
+                    fn = 'adj_' + fn
+                # split: intra- vs inter-sentential
+                fn = fn + ('_intra' if intra_sent else '_inter')
+                # end WIP
+
+                if np.isfinite(fv):
                     yield (fn, fv)
 # end EXPERIMENTAL
 
