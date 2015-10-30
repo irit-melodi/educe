@@ -19,10 +19,8 @@ import codecs
 from nltk import Tree
 
 from educe.annotation import Span
-from .annotation import\
-    RSTTreeException,\
-    EDU, Node,\
-    RSTContext, RSTTree, SimpleRSTTree
+from .annotation import (EDU, Node, RSTContext, RSTTree, RSTTreeException,
+                         SimpleRSTTree)
 from .rst_wsj_corpus import load_rst_wsj_corpus_text_file
 from ..external.postag import generic_token_spans
 from ..internalutil import treenode
@@ -50,7 +48,7 @@ def _process_text(matchobj):
     """
     text = matchobj.group("text")
     return "[%s]" % text
-    #.replace(" ","¤")
+    # .replace(" ","¤")
 
 
 def _process_head(matchobj):
@@ -131,8 +129,8 @@ def _tree_span(tree):
     """
     Span for the current node or leaf in the tree
     """
-    return treenode(tree).span if isinstance(tree, Tree)\
-        else tree.span
+    return (treenode(tree).span if isinstance(tree, Tree)
+            else tree.span)
 
 
 def _postprocess(tree, start=0, edu_start=1):
