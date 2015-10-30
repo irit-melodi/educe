@@ -99,6 +99,8 @@ def extract_single_pos(edu_info):
         tag_cnt = Counter(tags)
         for tag, occ in tag_cnt.items():
             yield ('POS_' + tag, occ)
+        # NEW feature: EDU has at least a verb
+        yield ('has_vb', any(tag.startswith('VB') for tag in tags))
 
 
 def extract_single_length(edu_info):
