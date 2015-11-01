@@ -75,11 +75,7 @@ class Graph(educe.graph.Graph):
           and if sloppy is True, return the textually leftmost one;
           otherwise, raise a MultiheadedCduException
         """
-        if self.has_node(cdu):
-            hyperedge = self.mirror(cdu)
-        else:
-            hyperedge = cdu
-
+        hyperedge = self.edgeform(cdu)
         members = self.cdu_members(cdu)
         candidates = []
         # pylint seems confused by our use of inheritence
@@ -221,8 +217,8 @@ class Graph(educe.graph.Graph):
         and in case of a tie their inverse width (ie. widest first)
         """
         def is_interesting_du(n):
-            return self.is_edu(n) or\
-                (self.is_cdu(n) and self.cdu_members(n))
+            return (self.is_edu(n) or
+                (self.is_cdu(n) and self.cdu_members(n)))
 
         dus = list(filter(is_interesting_du,self.nodes()))
         return self.sorted_first_outermost(dus)
