@@ -10,7 +10,7 @@ import os
 import pandas as pd
 
 from educe.internalutil import treenode
-from educe.rst_dt.annotation import RSTTree
+from educe.rst_dt.annotation import (RSTTree, _binarize)
 from educe.rst_dt.corpus import (Reader as RstReader,
                                  RstRelationConverter,
                                  RELMAP_112_18_FILE)
@@ -242,8 +242,13 @@ def parse_doc_ptb(doc_id, doc_tkd_toks):
 
 
 # clean stuff
-def load_training_as_dataframe_new():
+def load_training_as_dataframe_new(binarize=False):
     """Load training section of the RST-WSJ corpus as a pandas.DataFrame.
+
+    Parameters
+    ----------
+    binarize: boolean, default: False
+        If True, apply right-heavy binarization on RST trees.
 
     Returns
     -------
@@ -275,6 +280,9 @@ def load_training_as_dataframe_new():
 
         # convert labels to coarse
         coarse_rtree_ref = REL_CONV(rtree_ref)
+        # binarize if necessary
+        if binarize:
+            coarse_rtree_ref = _binarize(coarse_rtree_ref)
 
         # RST nodes: constituents are either relations or EDUs
         for node_idx, node in enumerate(coarse_rtree_ref.subtrees()):
@@ -408,29 +416,15 @@ def load_training_as_dataframe_new():
                         raise ValueError(
                             'No minimal spanning node for {}'.format(row))
                     # add info to row
-                    try:
-                        row.update({
-                            # parent span, on EDUs
-                            'parent_span_start': parent_span[0],
-                            'parent_span_end': parent_span[1],
-                            # length of parent span, in sentences
-                            'parent_span_sent_len': (
-                                edu2sent[parent_span[1] - 1] -
-                                edu2sent[parent_span[0] - 1] + 1),
-                        })
-                    except TypeError:
-                        print(doc_id.doc)
-                        print(row['edu_span_start'], row['edu_span_end'])
-                        print(parent_span)
-                        raise
-                    sent_span = Span(row['span_start'], row['span_end'])
-                    print('{}: Leaky sentence [{}-{}] in [{}-{}]'.format(
-                        doc_id, row['edu_span_start'], row['edu_span_end'],
-                        row['parent_span_start'], row['parent_span_end']))
-                    print(rtree_ref.label().context.text(sent_span))
-                    print('Parent span covers {} sentences'.format(
-                        row['parent_span_sent_len']))
-                    print()
+                    row.update({
+                        # parent span, on EDUs
+                        'parent_span_start': parent_span[0],
+                        'parent_span_end': parent_span[1],
+                        # length of parent span, in sentences
+                        'parent_span_sent_len': (
+                            edu2sent[parent_span[1] - 1] -
+                            edu2sent[parent_span[0] - 1] + 1),
+                    })
                 else:
                     row.update({
                         'parent_span_start': row['edu_span_start'],
@@ -467,7 +461,7 @@ def load_training_as_dataframe_new():
     return node_df, rel_df, edu_df, sent_df
 
 
-nodes_train, rels_train, edus_train, sents_train = load_training_as_dataframe_new()
+nodes_train, rels_train, edus_train, sents_train = load_training_as_dataframe_new(binarize=False)
 # print(rels_train)
 # as of version 0.17, pandas handles missing boolean values by degrading
 # column type to object, which makes boolean selection return true for
