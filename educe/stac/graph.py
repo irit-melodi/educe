@@ -8,6 +8,7 @@ STAC-specific conventions related to graphs.
 """
 
 import copy
+import itertools
 import re
 import textwrap
 
@@ -134,7 +135,7 @@ class Graph(educe.graph.Graph):
             get_head(c)
         return cache
 
-    def without_cdus(self, sloppy=False):
+    def without_cdus(self, sloppy=False, mode='head'):
         """
         Return a deep copy of this graph with all CDUs removed.
         Links involving these CDUs will point instead from/to
@@ -144,7 +145,10 @@ class Graph(educe.graph.Graph):
         just as easily call deepcopy yourself
         """
         g2 = copy.deepcopy(self)
-        g2.strip_cdus(sloppy)
+        if mode == 'head':
+            g2.strip_cdus(sloppy)
+        elif mode == 'broadcast':
+            g2.strip_cdus_broadcast()
         return g2
 
     def strip_cdus(self, sloppy=False):
@@ -192,6 +196,45 @@ class Graph(educe.graph.Graph):
                 rel.span = annotation.RelSpan(src2.local_id(), tgt2.local_id())
         # remove the actual CDU objects too
         self.doc.schemas = [s for s in self.doc.schemas if not stac.is_cdu(s)]
+
+    def strip_cdus_broadcast(self):
+        """ Delete all CDUs in this graph.
+            Links involving a CDU will point to/from all the elements
+            of this CDU.
+            There will be one edge copy for every new source-target
+            combination.
+
+            WARNING: Disabled link-rewriting for annotation layer
+        """
+        def edu_components(node):
+            """ Returns a list of all EDUs contained by a node. """
+            if self.is_edu(node):
+                return [node]
+            return [snode for snode in self.cdu_members(node, deep=True)
+                        if self.is_edu(snode)]
+
+        # Convert all edges in order
+        for old_edge in self.relations():
+            links = self.links(old_edge)
+            assert(len(links) == 2) # Verify the edge is well-formed
+            src_nodes, tgt_nodes = [edu_components(node) for node in links]
+            attrs = self.edge_attributes(old_edge)
+            if any(self.is_cdu(l) for l in links):
+                # Remove the old edge
+                self.del_edge(old_edge)
+                # Build a new edge for all new combinations
+                for i, (n_src, n_tgt) in enumerate(
+                    itertools.product(src_nodes, tgt_nodes)):
+                    new_edge = '{0}_{1}'.format(old_edge, i)
+                    self.add_edge(new_edge)
+                    self.add_edge_attributes(new_edge, list(attrs))
+                    self.link(n_src, new_edge)
+                    self.link(n_tgt, new_edge)
+
+        # Now all the CDUs are edge-orphaned, remove them from the graph
+        for e_cdu in self.cdus():
+            self.del_node(self.mirror(e_cdu))
+            self.del_edge(e_cdu)
 
     # --------------------------------------------------
     # right frontier constraint
