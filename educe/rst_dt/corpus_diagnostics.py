@@ -258,6 +258,10 @@ def load_training_as_dataframe_new(binarize=False):
         DataFrame of all relations.
     edu_df: pandas.DataFrame
         DataFrame of all EDUs.
+
+    TODO
+    ----
+    [ ] propose left-heavy binarization
     """
     node_rows = []  # list of dicts, one dict per node
     rel_rows = []  # list of dicts, one dict per relation
@@ -305,6 +309,9 @@ def load_training_as_dataframe_new(binarize=False):
                     # edu span
                     'edu_span_start': node_label.edu_span[0],
                     'edu_span_end': node_label.edu_span[1],
+                    # computed column
+                    'edu_span_len': (node_label.edu_span[1] -
+                                     node_label.edu_span[0]) + 1,
                     # info on children
                     'arity': len(node),
                     'kids_rel': '+'.join(
@@ -355,21 +362,14 @@ def load_training_as_dataframe_new(binarize=False):
                           if i in edu2sent_codom
                           else None)
                          for i in range(len(doc_tkd_trees))]
-        # sentences with 2+ EDUs are 'complex'
-        # TODO rewrite with numpy.unique
-        complex_sent_idc = set(sent_idx for sent_idx, nb_occs
-                               in Counter(edu2sent).items()
-                               if nb_occs > 1 and sent_idx is not None)
         # sentences that don't have their own RST subtree are 'leaky' ;
         # collect the EDU spans of all constituent nodes from the RST tree
         rst_tree_node_spans = set((row['edu_span_start'], row['edu_span_end'])
                                   for row in doc_rst_rel_rows)
-        # WIP
-        rst_tree_node_spans_by_len = defaultdict(list)
-        for edu_span in rst_tree_node_spans:
-            edu_span_len = edu_span[1] - edu_span[0]
-            rst_tree_node_spans_by_len[edu_span_len].append(edu_span)
-        # end WIP
+        # list of EDU spans of constituent nodes, sorted by span size then
+        # start
+        rst_tree_node_spans_by_len = list(sorted(
+            rst_tree_node_spans, key=lambda x: (x[1] - x[0], x[0])))
         # end of sentence <-> EDU mapping et al.
 
         # iterate over syntactic trees as proxy for sentences
@@ -392,22 +392,20 @@ def load_training_as_dataframe_new(binarize=False):
                     # computed column
                     'edu_span_len': (sent_edu_ends[sent_idx] -
                                      sent_edu_starts[sent_idx]) + 1,
-                    # TODO add columns using pandas
-                    # or: sent_edu_starts[sent_idx] != sent_edu_ends[sent_idx]
-                    'complex': (sent_idx in complex_sent_idc),
-                    'leaky': (sent_idx in complex_sent_idc and
-                              ((sent_edu_starts[sent_idx],
-                                sent_edu_ends[sent_idx])
-                               not in rst_tree_node_spans)),
                 })
-                # WIP
+                # use sentence <-> RST tree alignment
+                if row['edu_span_len'] > 1:
+                    row.update({
+                        'leaky': ((sent_edu_starts[sent_idx],
+                                   sent_edu_ends[sent_idx])
+                                  not in rst_tree_node_spans),
+                    })
+                else:
+                    row.update({'leaky': False})
                 # WIP find for each leaky sentence the smallest RST subtree
                 # that covers it
                 if row['leaky']:
-                    for edu_span in itertools.chain.from_iterable(
-                            [edu_spans for span_len, edu_spans
-                             in sorted(
-                                 rst_tree_node_spans_by_len.items())]):
+                    for edu_span in rst_tree_node_spans_by_len:
                         if (edu_span[0] <= sent_edu_starts[sent_idx] and
                             sent_edu_ends[sent_idx] <= edu_span[1]):
                             parent_span = edu_span
@@ -424,6 +422,12 @@ def load_training_as_dataframe_new(binarize=False):
                         'parent_span_sent_len': (
                             edu2sent[parent_span[1] - 1] -
                             edu2sent[parent_span[0] - 1] + 1),
+                        # distance between the current sentence and the most
+                        # remote sentence covered by the parent span,
+                        # in sentences
+                        'parent_span_sent_dist': (
+                            max([(edu2sent[parent_span[1] - 1] - sent_idx),
+                                 (sent_idx - edu2sent[parent_span[0] - 1])])),
                     })
                 else:
                     row.update({
@@ -467,32 +471,48 @@ nodes_train, rels_train, edus_train, sents_train = load_training_as_dataframe_ne
 # column type to object, which makes boolean selection return true for
 # all non-None values ; the best workaround is to explicitly fill boolean
 # na values
-sents_train = sents_train.fillna(value={'complex': False, 'leaky': False})
+sents_train = sents_train.fillna(value={'leaky': False})
 # exclude 'fileX' documents
 if False:
     sents_train = sents_train[~sents_train['sent_id'].str.startswith('file')]
 
+# complex sentences
+complex_sents = sents_train[sents_train.edu_span_len > 1]
+print('Complex: {} / {} = {}'.format(
+    len(complex_sents), len(sents_train),
+    float(len(complex_sents)) / len(sents_train)))
+
+# leaky sentences
+# assert there is no sentence which is leaky but not complex
+assert sents_train[sents_train.leaky & (sents_train.edu_span_len <= 1)].empty
 # proportion of leaky sentences
 leaky_sents = sents_train[sents_train.leaky]
 # according to (Soricut and Marcu, 2003), p. 2, should be 323/6132 = 5.3%
 print('Leaky: {} / {} = {}'.format(
     len(leaky_sents), len(sents_train),
     float(len(leaky_sents)) / len(sents_train)))
-complex_sents = sents_train[sents_train.complex]
-print('Complex: {} / {} = {}'.format(
-    len(complex_sents), len(sents_train),
-    float(len(complex_sents)) / len(sents_train)))
-# assert there is no sentence which is leaky but not complex
-assert sents_train[sents_train.leaky & (~sents_train.complex)].empty
-# proportion of complex sentences that are leaky
+# proportion of leaky among complex sentences
 print('Leaky | Complex: {} / {} = {}'.format(
     len(leaky_sents), len(complex_sents),
     float(len(leaky_sents)) / len(complex_sents)))
-# compare leaky sentences with all complex sentences: length
-print(complex_sents['edu_span_len'].describe())
-print(leaky_sents['edu_span_len'].describe())
-print(leaky_sents['parent_span_sent_len'].describe())
-print(leaky_sents['parent_span_sent_len'].value_counts())
+print()
+
+# compare leaky with non-leaky complex sentences: EDU length
+print('EDU span length of leaky vs non-leaky complex sentences')
+print(complex_sents.groupby('leaky')['edu_span_len'].describe().unstack())
+print()
+
+# for each leaky sentence, number of sentences included in the smallest
+# RST node that fully covers the leaky sentence
+# according to Joty, 
+print(leaky_sents[['parent_span_sent_len', 'parent_span_sent_dist']].describe(
+    percentiles=[.1, .2, .3, .4, .5, .6, .7, .8, .9]))
+print(leaky_sents[(leaky_sents['parent_span_sent_dist'] == 1)].describe())
+print(leaky_sents[(leaky_sents['parent_span_sent_dist'] == 1) &
+                  (leaky_sents['parent_span_sent_len'] > 2)])
+if False:
+    print(leaky_sents['parent_span_sent_len'].value_counts())
+
 # WEIRDOS
 # constituent nodes whose kids bear different relations
 print([kid_rel for kid_rel in rels_train['kids_rel']
