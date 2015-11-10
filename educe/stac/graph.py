@@ -141,8 +141,9 @@ class Graph(educe.graph.Graph):
         g2 = copy.deepcopy(self)
         if mode == 'head':
             g2.strip_cdus(sloppy)
-        elif mode == 'broadcast':
-            g2.strip_cdus_broadcast()
+        elif mode == 'broadcast' or mode == 'custom':
+            g2.strip_cdus_distribute(sloppy, mode)
+
         return g2
 
     def strip_cdus(self, sloppy=False):
@@ -191,7 +192,7 @@ class Graph(educe.graph.Graph):
         # remove the actual CDU objects too
         self.doc.schemas = [s for s in self.doc.schemas if not stac.is_cdu(s)]
 
-    def strip_cdus_broadcast(self):
+    def strip_cdus_distribute(self, sloppy=False, mode='broadcast'):
         """ Delete all CDUs in this graph.
             Links involving a CDU will point to/from all the elements
             of this CDU.
@@ -200,6 +201,53 @@ class Graph(educe.graph.Graph):
 
             WARNING: Disabled link-rewriting for annotation layer
         """
+
+        # Set of labels for which the source node should be distributed
+        LEFT_DIST = frozenset((
+            'Acknowledgement',
+            'Explanation',
+            'Comment',
+            'Continuation',
+            'Narration',
+            'Contrast',
+            'Parallel',
+            'Background'))
+
+        # Set of labels for which the target node should be distributed
+        RIGHT_DIST = frozenset((
+            'Result',
+            'Continuation',
+            'Narration',
+            'Comment',
+            'Contrast',
+            'Parallel',
+            'Background',
+            'Elaboration'))
+
+        # Warning: heads.keys() are hyperedges
+        heads = self.recursive_cdu_heads(sloppy)
+
+        def distrib_candidates(links, attrs):
+            """ Return a pair of list of nodes to be attached,
+                depending on the edge label.
+            """
+            src_node, tgt_node = links
+            label = dict(attrs)['annotation'].type
+
+            def candidates(node, label_set):
+                if self.is_edu(node):
+                    return [node]
+                if label in label_set or mode == 'broadcast':
+                    # Either distribute over all components...
+                    nodes = edu_components(node)
+                else:
+                    # ... or link to the CDU recursive head only
+                    nodes = [heads[self.mirror(node)]]
+                return nodes
+
+            return [candidates(node, lset) for (node, lset) in
+                    ((src_node, LEFT_DIST), (tgt_node, RIGHT_DIST))]
+
         def edu_components(node):
             """ Returns a list of all EDUs contained by a node. """
             if self.is_edu(node):
@@ -211,8 +259,8 @@ class Graph(educe.graph.Graph):
         for old_edge in self.relations():
             links = self.links(old_edge)
             assert(len(links) == 2) # Verify the edge is well-formed
-            src_nodes, tgt_nodes = [edu_components(node) for node in links]
             attrs = self.edge_attributes(old_edge)
+            src_nodes, tgt_nodes = distrib_candidates(links, attrs)
             if any(self.is_cdu(l) for l in links):
                 # Remove the old edge
                 self.del_edge(old_edge)

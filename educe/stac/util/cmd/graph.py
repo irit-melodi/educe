@@ -178,7 +178,8 @@ def config_argparser(parser):
                          help='Separate file for each connected component')
     psr_rel.add_argument('--strip-cdus', action='store_true',
                          help='Strip away CDUs')
-    psr_rel.add_argument('--strip-mode', choices=['head', 'broadcast'],
+    psr_rel.add_argument('--strip-mode',
+                         choices=['head', 'broadcast', 'custom'],
                          default='head',
                          help='CDUs stripping method')
 
