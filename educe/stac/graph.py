@@ -115,25 +115,19 @@ class Graph(educe.graph.Graph):
         A dictionary mapping each CDU to its recursive CDU
         head (see `cdu_head`)
         """
-        cache = {}
+        heads = {}
         def get_head(c):
-            if c in cache:
-                return cache[c]
-            else:
-                hd = self.cdu_head(c, sloppy)
-                if hd is None: return None
-                if self.is_cdu(hd):
-                    deep_hd = get_head(hd)
-                else:
-                    deep_hd = hd
-                if deep_hd is None:
-                    return None
-                else:
-                    cache[c] = deep_hd
-                    return deep_hd
+            if c in heads:
+                return heads[c]
+            hd = self.cdu_head(c, sloppy)
+            if (hd is not None) and self.is_cdu(hd):
+                hd = get_head(hd)
+            heads[c] = hd
+            return hd
+
         for c in self.cdus():
             get_head(c)
-        return cache
+        return heads
 
     def without_cdus(self, sloppy=False, mode='head'):
         """
