@@ -14,7 +14,7 @@ import textwrap
 
 import pydot
 
-from educe.annotation import Annotation
+from educe.annotation import Annotation, Relation, RelSpan
 from .. import stac, annotation
 import educe.graph
 import educe.stac.annotation as stac_anno
@@ -139,67 +139,31 @@ class Graph(educe.graph.Graph):
         just as easily call deepcopy yourself
         """
         g2 = copy.deepcopy(self)
-        if mode == 'head':
-            g2.strip_cdus(sloppy)
-        elif mode == 'broadcast' or mode == 'custom':
-            g2.strip_cdus_distribute(sloppy, mode)
+        g2.strip_cdus(sloppy=sloppy, mode=mode)
 
         return g2
 
-    def strip_cdus(self, sloppy=False):
-        """
-        Delete all CDUs in this graph.
-        Links involving these CDUs will point instead from/to
-        their deep heads
-        """
-        heads = self.recursive_cdu_heads(sloppy)
-        anno_heads = {self.annotation(k): self.annotation(v)
-                      for k, v in heads.items()}
-        # replace all links to/from cdus with to/from their heads
-        for e_edge in self.relations():
-            links = self.links(e_edge)
-            targets = [heads[self.mirror(l)] if self.is_cdu(l) else l
-                       for l in links]
-            attrs = self.edge_attributes(e_edge)
-            if any(self.is_cdu(l) for l in links):
-                # recreate the edge
-                self.del_edge(e_edge)
-                self.add_edge(e_edge)
-                self.add_edge_attributes(e_edge, attrs)
-                for lnk in links:
-                    lnk2 = heads[self.mirror(lnk)] if self.is_cdu(lnk) else lnk
-                    if e_edge in self.links(lnk2):
-                        # rare case where we have something that is pointing
-                        # to itself
-                        continue
-                    self.link(lnk2, e_edge)
-        # now that we've pointed everything away, nuke the CDUs
-        for e_cdu in self.cdus():
-            self.del_node(self.mirror(e_cdu))
-            self.del_edge(e_cdu)
-        # to be on the safe side, we should also do similar link-rewriting
-        # but on the underlying educe.annotation objects layer
-        # (symptom of a yucky design) :-(
-        for rel in self.doc.relations:
-            if stac.is_relation_instance(rel):
-                src = rel.source
-                tgt = rel.target
-                src2 = anno_heads.get(src, src)
-                tgt2 = anno_heads.get(tgt, tgt)
-                rel.source = src2
-                rel.target = tgt2
-                rel.span = annotation.RelSpan(src2.local_id(), tgt2.local_id())
-        # remove the actual CDU objects too
-        self.doc.schemas = [s for s in self.doc.schemas if not stac.is_cdu(s)]
-
-    def strip_cdus_distribute(self, sloppy=False, mode='broadcast'):
+    def strip_cdus(self, sloppy=False, mode='head'):
         """ Delete all CDUs in this graph.
-            Links involving a CDU will point to/from all the elements
+            Links involving a CDU will point to/from the elements
             of this CDU.
-            There will be one edge copy for every new source-target
-            combination.
+            Non-head modes may add new edges to the graph.
 
-            WARNING: Disabled link-rewriting for annotation layer
+            Parameters
+            ----------
+            sloppy: boolean, default=False
+                See `cdu_head`.
+
+            mode: string, default='head'
+                Strategy for replacing edges involving CDUs.
+                `head` will relocate the edge on the recursive head of the
+                CDU (see `recursive_cdu_heads`).
+                `broadcast` will distribute the edge over all EDUs belonging
+                to the CDU. A copy of the edge will be created for each of
+                them. If the edge's source and target are both distributed,
+                a new copy will be created for each combination of EDUs.
+                `custom` (or any other string) will distribute or relocate on
+                the head depending on the relation label.
         """
 
         # Set of labels for which the source node should be distributed
@@ -227,21 +191,23 @@ class Graph(educe.graph.Graph):
         # Warning: heads.keys() are hyperedges
         heads = self.recursive_cdu_heads(sloppy)
 
-        def distrib_candidates(links, attrs):
+        def distrib_candidates(links, label):
             """ Return a pair of list of nodes to be attached,
                 depending on the edge label.
             """
             src_node, tgt_node = links
-            label = dict(attrs)['annotation'].type
 
-            def candidates(node, label_set):
+            def candidates(node, distributive):
                 if self.is_edu(node):
                     return [node]
-                if label in label_set or mode == 'broadcast':
+                if (mode != 'head' and
+                    (mode == 'broadcast' or label in distributive)):
                     # Either distribute over all components...
+                    # (always do in broadcast mode)
                     nodes = edu_components(node)
                 else:
                     # ... or link to the CDU recursive head only
+                    # (always do in head mode)
                     nodes = [heads[self.mirror(node)]]
                 return nodes
 
@@ -258,25 +224,48 @@ class Graph(educe.graph.Graph):
         # Convert all edges in order
         for old_edge in self.relations():
             links = self.links(old_edge)
-            assert(len(links) == 2) # Verify the edge is well-formed
-            attrs = self.edge_attributes(old_edge)
-            src_nodes, tgt_nodes = distrib_candidates(links, attrs)
-            if any(self.is_cdu(l) for l in links):
-                # Remove the old edge
-                self.del_edge(old_edge)
-                # Build a new edge for all new combinations
-                for i, (n_src, n_tgt) in enumerate(
-                    itertools.product(src_nodes, tgt_nodes)):
-                    new_edge = '{0}_{1}'.format(old_edge, i)
-                    self.add_edge(new_edge)
-                    self.add_edge_attributes(new_edge, list(attrs))
-                    self.link(n_src, new_edge)
-                    self.link(n_tgt, new_edge)
+            # Verify the edge is well-formed
+            assert(len(links) == 2)
+            if not any(self.is_cdu(l) for l in links):
+                # No CDU to strip: skip
+                continue
+
+            old_attrs = self.edge_attributes(old_edge)
+            old_anno = self.annotation(old_edge)
+            src_nodes, tgt_nodes = distrib_candidates(links, old_anno.type)
+            # Remove the old edge
+            self.del_edge(old_edge)
+            self.doc.relations.remove(old_anno)
+            # Build a new edge for all new combinations
+            for i, (n_src, n_tgt) in enumerate(
+                itertools.product(src_nodes, tgt_nodes)):
+                # First, build a new Relation for the annotation layer
+                n_src_anno = self.annotation(n_src)
+                n_tgt_anno = self.annotation(n_tgt)
+                new_anno = Relation(
+                    '{0}_{1}'.format(old_anno._anno_id, i),
+                    RelSpan(n_src_anno._anno_id,
+                            n_tgt_anno._anno_id),
+                    old_anno.type,
+                    dict())
+                new_anno.source = n_src_anno
+                new_anno.target = n_tgt_anno
+                self.doc.relations.append(new_anno)
+                # Second, build a new graph edge
+                new_edge = '{0}_{1}'.format(old_edge, i)
+                new_attrs = dict(old_attrs)
+                new_attrs['annotation'] = new_anno
+                self.add_edge(new_edge)
+                self.add_edge_attributes(new_edge, new_attrs.items())
+                self.link(n_src, new_edge)
+                self.link(n_tgt, new_edge)
 
         # Now all the CDUs are edge-orphaned, remove them from the graph
         for e_cdu in self.cdus():
             self.del_node(self.mirror(e_cdu))
             self.del_edge(e_cdu)
+        # Same for annotation-level CDUs
+        self.doc.schemas = [s for s in self.doc.schemas if not stac.is_cdu(s)]
 
     # --------------------------------------------------
     # right frontier constraint
