@@ -133,15 +133,14 @@ INQUIRER_CLASSES = ['Positiv',
 # ---------------------------------------------------------------------
 # preprocessing
 # ---------------------------------------------------------------------
-def strip_cdus(corpus):
+def strip_cdus(corpus, mode):
     """
     For all documents in a corpus, remove any CDUs and relink the
-    document accordingly.  This mutates the corpus
+    document according to the desired mode. This mutates the corpus.
     """
     for key in corpus:
-        # replace all CDUs in links with their recursive heads
         graph = stac_gr.Graph.from_doc(corpus, key)
-        graph.strip_cdus(sloppy=True)
+        graph.strip_cdus(sloppy=True, mode=mode)
 
 # ---------------------------------------------------------------------
 # relation queries
@@ -1427,7 +1426,7 @@ def read_corpus_inputs(args):
     corpus = reader.slurp(anno_files, verbose=True)
 
     if not args.ignore_cdus:
-        strip_cdus(corpus)
+        strip_cdus(corpus, mode=args.strip_mode)
     postags = postag.read_tags(corpus, args.corpus)
     parses = corenlp.read_results(corpus, args.corpus)
     _fuse_corpus(corpus, postags)
