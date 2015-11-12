@@ -245,8 +245,8 @@ class Graph(educe.graph.Graph):
                     nodes = [heads[self.mirror(node)]]
                 return nodes
 
-            return [candidates(node, lset) for (node, lset) in
-                    ((src_node, LEFT_DIST), (tgt_node, RIGHT_DIST))]
+            return (candidates(src_node, LEFT_DIST),
+                    candidates(tgt_node, RIGHT_DIST))
 
         def edu_components(node):
             """ Returns a list of all EDUs contained by a node. """

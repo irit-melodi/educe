@@ -508,7 +508,7 @@ class Graph(gr.hypergraph, AttrsMixin):
         if deep:
             for m in list(members):
                 if self.is_cdu(m):
-                    members.update(self.cdu_members(m, True))
+                    members.update(self.cdu_members(m, deep=deep))
 
         return frozenset(members)
 
