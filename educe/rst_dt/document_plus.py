@@ -37,6 +37,67 @@ def _filter0(pred, iterable):
         return None
 
 
+# dirty temporary extraction from DocumentPlus
+def align_edus_with_paragraphs(doc_edus, doc_paras, text, strict=False):
+    """Align EDUs with paragraphs, if any.
+
+    Parameters
+    ----------
+    doc_edus:
+
+    doc_paras:
+
+    strict:
+
+
+    Returns
+    -------
+    edu2para: list(int) or None
+        Index of the paragraph that contains each EDU, None if the
+        paragraph segmentation is missing.
+    """
+    if doc_paras is None:
+        return None
+
+    edu2para = []
+    for edu in doc_edus:
+        espan = edu.text_span()
+        # find enclosing paragraph
+        para = _filter0(containing(espan), doc_paras)
+        # sloppy EDUs happen; try shaving off some characters
+        # if we can't find a paragraph
+        if para is None:
+            # DEBUG
+            if False:
+                print('WP ({}) : {}'.format(self.grouping, edu))
+            # end DEBUG
+            espan = copy.copy(espan)
+            espan.char_start += 1
+            espan.char_end -= 1
+            etext = text[espan.char_start:espan.char_end]
+            # kill left whitespace
+            espan.char_start += len(etext) - len(etext.lstrip())
+            etext = etext.lstrip()
+            # kill right whitespace
+            espan.char_end -= len(etext) - len(etext.rstrip())
+            etext = etext.rstrip()
+            # try again
+            para = _filter0(containing(espan), doc_paras)
+            # DEBUG
+            if False:
+                if para is None:
+                    print('EP ({}): {}'.format(self.grouping, edu))
+            # end DEBUG
+
+        # update edu to paragraph mapping
+        para_idx = (doc_paras.index(para) if para is not None
+                    else None)  # TODO or -1 or ...
+        edu2para.append(para_idx)
+
+    return edu2para
+# end dirty
+
+
 class DocumentPlus(object):
     """A document and relevant contextual information"""
 
@@ -136,47 +197,11 @@ class DocumentPlus(object):
 
         # align EDUs with paragraphs
         paragraphs = self.paragraphs
-        if paragraphs is None:
-            edu2para = [None for edu in edus]
-        else:
-            edu2para = []
-            edu2para.append(0)  # left padding
-            # align the other EDUs
-            for edu in edus[1:]:
-                espan = edu.text_span()
-                # find enclosing paragraph
-                para = _filter0(containing(espan), paragraphs)
-                # sloppy EDUs happen; try shaving off some characters
-                # if we can't find a paragraph
-                if para is None:
-                    # DEBUG
-                    if False:
-                        print('WP ({}) : {}'.format(self.grouping, edu))
-                    # end DEBUG
-                    espan = copy.copy(espan)
-                    espan.char_start += 1
-                    espan.char_end -= 1
-                    etext = text[espan.char_start:espan.char_end]
-                    # kill left whitespace
-                    espan.char_start += len(etext) - len(etext.lstrip())
-                    etext = etext.lstrip()
-                    # kill right whitespace
-                    espan.char_end -= len(etext) - len(etext.rstrip())
-                    etext = etext.rstrip()
-                    # try again
-                    para = _filter0(containing(espan), paragraphs)
-                    # DEBUG
-                    if False:
-                        if para is None:
-                            print('EP ({}): {}'.format(self.grouping, edu))
-                    # end DEBUG
-
-                # update edu to paragraph mapping
-                para_idx = (paragraphs.index(para) if para is not None
-                            else None)  # TODO or -1 or ...
-                edu2para.append(para_idx)
-
-        self.edu2para = edu2para
+        # dirty extraction
+        edu2para = align_edus_with_paragraphs(edus[1:], paragraphs[1:], text)
+        # prepend [0] for the left padding EDU and paragraph
+        self.edu2para = ([0] + edu2para if edu2para is not None
+                         else [None for edu in edus])
 
         # compute relative index of each EDU to the beginning (resp. to
         # the end) of the paragraph
