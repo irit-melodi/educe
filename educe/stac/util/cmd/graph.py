@@ -59,7 +59,7 @@ def _main_rel_graph(args):
         try:
             gra = stacgraph.Graph.from_doc(corpus, k)
             if args.strip_cdus:
-                gra = gra.without_cdus()
+                gra = gra.without_cdus(mode=args.strip_mode)
             dot_gra = stacgraph.DotGraph(gra)
             if dot_gra.get_nodes():
                 write_dot_graph(k, output_dir, dot_gra,
@@ -177,7 +177,11 @@ def config_argparser(parser):
     psr_rel.add_argument('--split', action='store_true',
                          help='Separate file for each connected component')
     psr_rel.add_argument('--strip-cdus', action='store_true',
-                         help='Strip away CDUs (substitute w heads)')
+                         help='Strip away CDUs')
+    psr_rel.add_argument('--strip-mode',
+                         choices=['head', 'broadcast', 'custom'],
+                         default='head',
+                         help='CDUs stripping method')
 
     psr_rfc = parser.add_argument_group("RFC graphs")
     psr_rfc.add_argument('--rfc', choices=['basic', 'mlast'],

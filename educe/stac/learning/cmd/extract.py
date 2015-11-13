@@ -71,6 +71,10 @@ def config_argparser(parser):
                         help='Vocabulary file (for --parsing mode)')
     parser.add_argument('--ignore-cdus', action='store_true',
                         help='Avoid going into CDUs')
+    parser.add_argument('--strip-mode',
+                        choices=['head', 'broadcast', 'custom'],
+                        default='head',
+                        help='CDUs stripping method (if going into CDUs)')
     parser.set_defaults(func=main)
 
 # ---------------------------------------------------------------------
