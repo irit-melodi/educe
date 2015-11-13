@@ -17,6 +17,7 @@ from educe.rst_dt.corpus import (Reader as RstReader,
 # imports for dirty stuff (mostly)
 import itertools
 
+from nltk import Tree
 from nltk.corpus.reader import BracketParseCorpusReader
 
 from educe.annotation import Span
@@ -291,12 +292,21 @@ def load_training_as_dataframe_new(binarize=False):
             coarse_rtree_ref = _binarize(coarse_rtree_ref)
 
         # RST nodes: constituents are either relations or EDUs
-        for node_idx, node in enumerate(coarse_rtree_ref.subtrees()):
+        for tpos in coarse_rtree_ref.treepositions():
+            node = coarse_rtree_ref[tpos]
+            # skip EDUs themselves
+            if not isinstance(node, Tree):
+                continue
+
             node_label = node.label()
-            node_id = '{}_const{}'.format(node.origin.doc, node_idx)
+            node_id = '{}_const{}'.format(
+                node.origin.doc,
+                '-'.join(str(x) for x in tpos))
             # node
             row = {
                 'node_id': node_id,
+                # WIP tree position
+                'treepos': tpos,
                 # char span
                 'span_start': node_label.span.char_start,
                 'span_end': node_label.span.char_end,
@@ -305,6 +315,15 @@ def load_training_as_dataframe_new(binarize=False):
                 # relation
                 'relation': node_label.rel,
             }
+            # add pointer to parent, except for root node
+            if tpos:
+                parent_tpos = tpos[:-1]
+                parent_id = '{}_const{}'.format(
+                    node.origin.doc,
+                    '-'.join(str(x) for x in parent_tpos))
+                row.update({
+                    'parent_id': parent_id,
+                })
 
             if len(node) > 1:  # internal node => relation
                 row.update({
@@ -323,8 +342,6 @@ def load_training_as_dataframe_new(binarize=False):
                         ('N' if kid.label().nuclearity == 'Nucleus' else 'S')
                         for kid in node),
                 })
-                # TODO add a column for sentential status (intra or inter)
-                # (once we have the sentences and EDU <-> sentence mapping)
                 doc_rst_rel_rows.append(row)
             else:  # pre-EDU
                 edu = node[0]
@@ -335,9 +352,11 @@ def load_training_as_dataframe_new(binarize=False):
 
         # prepare this info to find "leaky" substructures:
         # sentences and paragraphs
-        # set of EDU spans of all constituent nodes from the RST tree
-        rst_tree_node_spans = set((row['edu_span_start'], row['edu_span_end'])
-                                  for row in doc_rst_rel_rows)
+        # dict of EDU spans to constituent node from the RST tree
+        rst_tree_node_spans = {
+            (row['edu_span_start'], row['edu_span_end']): row['treepos']
+            for row in doc_rst_rel_rows
+        }
         # list of EDU spans of constituent nodes, sorted by length of span
         # then start
         rst_tree_node_spans_by_len = list(sorted(
@@ -410,10 +429,31 @@ def load_training_as_dataframe_new(binarize=False):
                 # WIP find for each leaky sentence the smallest RST subtree
                 # that covers it
                 if row['leaky']:
+                    sent_edu_first = sent_edu_starts[sent_idx]
+                    sent_edu_last = sent_edu_ends[sent_idx]
                     for edu_span in rst_tree_node_spans_by_len:
-                        if (edu_span[0] <= sent_edu_starts[sent_idx] and
-                            sent_edu_ends[sent_idx] <= edu_span[1]):
+                        if (edu_span[0] <= sent_edu_first and
+                            sent_edu_last <= edu_span[1]):
                             parent_span = edu_span
+                            # WIP get immediate members of parent span
+                            parent_tpos = rst_tree_node_spans[parent_span]
+                            parent_subtree = coarse_rtree_ref[parent_tpos]
+                            member_spans = [m.label().edu_span
+                                            for m in parent_subtree
+                                            if isinstance(m, Tree)]
+                            # leaky types 1 and 2: members of the parent
+                            # constituent are "pure" wrt sentence span:
+                            # each member is either fully inside or fully
+                            # outside the sentence ;
+                            # no member straddles either of the sentence
+                            # boundaries
+                            leaky_type_12 = all(
+                                ((sent_edu_first <= mspan[0] and
+                                  mspan[1] <= sent_edu_last) or
+                                 mspan[1] < sent_edu_first or
+                                 mspan[0] > sent_edu_last)
+                                for mspan in member_spans)
+                            # end WIP immediate members
                             break
                     else:
                         raise ValueError(
@@ -433,6 +473,10 @@ def load_training_as_dataframe_new(binarize=False):
                         'parent_span_sent_dist': (
                             max([(edu2sent[parent_span[1] - 1] - sent_idx),
                                  (sent_idx - edu2sent[parent_span[0] - 1])])),
+                        # types of leaky, in the taxonomy of
+                        # (van der Vliet et al. 2011)
+                        # currently {1,2} vs {3,4}
+                        'leaky_type_12': leaky_type_12,
                     })
                 else:
                     row.update({
@@ -563,7 +607,7 @@ def load_training_as_dataframe_new(binarize=False):
     return node_df, rel_df, edu_df, sent_df, para_df
 
 
-nodes_train, rels_train, edus_train, sents_train, paras_train = load_training_as_dataframe_new(binarize=False)
+nodes_train, rels_train, edus_train, sents_train, paras_train = load_training_as_dataframe_new(binarize=True)
 # print(rels_train)
 # as of version 0.17, pandas handles missing boolean values by degrading
 # column type to object, which makes boolean selection return true for
@@ -619,45 +663,48 @@ if False:
                       (leaky_sents['parent_span_sent_len'] > 2)])
 if False:
     print(leaky_sents['parent_span_sent_len'].value_counts())
+# taxonomy of leaky sentences
+print(leaky_sents.groupby('leaky_type_12')['edu_span_len'].describe().unstack())
 
 
 # PARAGRAPHS
-# complex paragraphs
-complex_paras = paras_train[paras_train.edu_span_len > 1]
-print('Complex: {} / {} = {}'.format(
-    len(complex_paras), len(paras_train),
-    float(len(complex_paras)) / len(paras_train)))
-
-# leaky paragraphs
-# assert there is no paragraph which is leaky but not complex
-assert paras_train[paras_train.leaky & (paras_train.edu_span_len <= 1)].empty
-# proportion of leaky paragraphs
-leaky_paras = paras_train[paras_train.leaky]
-print('Leaky: {} / {} = {}'.format(
-    len(leaky_paras), len(paras_train),
-    float(len(leaky_paras)) / len(paras_train)))
-# proportion of leaky among complex paragraphs
-print('Leaky | Complex: {} / {} = {}'.format(
-    len(leaky_paras), len(complex_paras),
-    float(len(leaky_paras)) / len(complex_paras)))
-print()
-
-# compare leaky with non-leaky complex paragraphss: EDU length
-print('EDU span length of leaky vs non-leaky complex paragraphs')
-print(complex_paras.groupby('leaky')['edu_span_len'].describe().unstack())
-print()
-
-# for each leaky paragraph, number of paragraphs included in the smallest
-# RST node that fully covers the leaky paragraph
 if False:
-    print(leaky_paras[['parent_span_para_len', 'parent_span_para_dist']].describe(
-        percentiles=[.1, .2, .3, .4, .5, .6, .7, .8, .9]))
-    print(leaky_paras[(leaky_paras['parent_span_para_dist'] == 1)].describe())
-    print(leaky_paras[(leaky_paras['parent_span_para_dist'] == 1) &
-                      (leaky_paras['parent_span_para_len'] > 2)])
-    #
-    print(leaky_paras['parent_span_para_len'].value_counts())
-print(leaky_paras[:10])
+    # complex paragraphs
+    complex_paras = paras_train[paras_train.edu_span_len > 1]
+    print('Complex: {} / {} = {}'.format(
+        len(complex_paras), len(paras_train),
+        float(len(complex_paras)) / len(paras_train)))
+
+    # leaky paragraphs
+    # assert there is no paragraph which is leaky but not complex
+    assert paras_train[paras_train.leaky & (paras_train.edu_span_len <= 1)].empty
+    # proportion of leaky paragraphs
+    leaky_paras = paras_train[paras_train.leaky]
+    print('Leaky: {} / {} = {}'.format(
+        len(leaky_paras), len(paras_train),
+        float(len(leaky_paras)) / len(paras_train)))
+    # proportion of leaky among complex paragraphs
+    print('Leaky | Complex: {} / {} = {}'.format(
+        len(leaky_paras), len(complex_paras),
+        float(len(leaky_paras)) / len(complex_paras)))
+    print()
+
+    # compare leaky with non-leaky complex paragraphss: EDU length
+    print('EDU span length of leaky vs non-leaky complex paragraphs')
+    print(complex_paras.groupby('leaky')['edu_span_len'].describe().unstack())
+    print()
+
+    # for each leaky paragraph, number of paragraphs included in the smallest
+    # RST node that fully covers the leaky paragraph
+    if False:
+        print(leaky_paras[['parent_span_para_len', 'parent_span_para_dist']].describe(
+            percentiles=[.1, .2, .3, .4, .5, .6, .7, .8, .9]))
+        print(leaky_paras[(leaky_paras['parent_span_para_dist'] == 1)].describe())
+        print(leaky_paras[(leaky_paras['parent_span_para_dist'] == 1) &
+                          (leaky_paras['parent_span_para_len'] > 2)])
+        #
+        print(leaky_paras['parent_span_para_len'].value_counts())
+    print(leaky_paras[:10])
 # end leaky paragraphs
 
 
