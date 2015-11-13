@@ -198,7 +198,7 @@ class Graph(educe.graph.Graph):
             src_node, tgt_node = links
 
             def candidates(node, distributive):
-                if self.is_edu(node):
+                if not self.is_cdu(node):
                     return [node]
                 if (mode != 'head' and
                     (mode == 'broadcast' or label in distributive)):
@@ -216,7 +216,7 @@ class Graph(educe.graph.Graph):
 
         def edu_components(node):
             """ Returns a list of all EDUs contained by a node. """
-            if self.is_edu(node):
+            if not self.is_cdu(node):
                 return [node]
             return [snode for snode in self.cdu_members(node, deep=True)
                         if self.is_edu(snode)]
@@ -239,6 +239,10 @@ class Graph(educe.graph.Graph):
             # Build a new edge for all new combinations
             for i, (n_src, n_tgt) in enumerate(
                 itertools.product(src_nodes, tgt_nodes)):
+                if n_src == n_tgt:
+                    print ("WARNING: something is pointing to its own CDU : "
+                        + str(n_src))
+                    continue
                 # First, build a new Relation for the annotation layer
                 n_src_anno = self.annotation(n_src)
                 n_tgt_anno = self.annotation(n_tgt)
