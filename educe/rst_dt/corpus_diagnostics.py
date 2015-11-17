@@ -243,7 +243,116 @@ def parse_doc_ptb(doc_id, doc_tkd_toks):
     return trees  #, lex_heads
 
 
+# WIP straddling relations ; definitely dirty as is
+strad_rels_rows = []
+# end WIP straddling relations
+
 # clean stuff
+def load_edus(doc_edus):
+    """Get descriptions of EDUs"""
+    doc_edu_rows = []
+
+    for edu in doc_edus:
+        row = {
+            # identification
+            'edu_id': edu.identifier(),  # primary key
+            'doc_id': edu.origin.doc,
+            'num': edu.num,
+            # text span
+            'char_start': edu.span.char_start,
+            'char_end': edu.span.char_end,
+        }
+        doc_edu_rows.append(row)
+
+    return doc_edu_rows
+
+
+def load_spans(coarse_rtree_ref):
+    """Load spans, i.e. internal nodes, from an RST tree.
+
+    Parameters
+    ----------
+    coarse_rtree_ref: RST tree
+        RST tree under scrutiny
+
+    Returns
+    -------
+    doc_span_rows: list(dict)
+        List of (descriptions of) the spans
+    """
+    doc_span_rows = []
+
+    for tpos in coarse_rtree_ref.treepositions():
+        node = coarse_rtree_ref[tpos]
+        # skip EDUs
+        if not isinstance(node, Tree):
+            continue
+
+        node_label = node.label()
+
+        node_id = '{}_const{}'.format(
+            node.origin.doc,
+            '-'.join(str(x) for x in tpos))
+        # entry for span
+        row = {
+            'node_id': node_id,
+            # WIP tree position
+            'treepos': tpos,
+            # EDU span
+            'edu_start': node_label.edu_span[0],
+            'edu_end': node_label.edu_span[1],
+            # derived from EDU span
+            'edu_len': (node_label.edu_span[1] -
+                        node_label.edu_span[0]) + 1,
+            'arity': len(node),
+            'char_start': node_label.span.char_start,
+            'char_end': node_label.span.char_end,
+            # function in discourse structure
+            'nuclearity': node_label.nuclearity,
+            'relation': node_label.rel,
+        }
+
+        # add pointer to parent
+        if tpos:
+            parent_tpos = tpos[:-1]
+            parent_id = '{}_const{}'.format(
+                node.origin.doc,
+                '-'.join(str(x) for x in parent_tpos))
+        else:  # missing value, for the root node
+            parent_id = None
+        row.update({
+            'parent_id': parent_id,
+        })
+
+        # information about kids
+        if len(node) > 1:  # internal node => relation
+            # get the relation label of all kids ;
+            # don't keep copies if all are the same
+            kid_rels = [kid.label().rel for kid in node
+                        if kid.label().rel != 'span']
+            if len(set(kid_rels)) == 1:
+                kid_rels = kid_rels[0]
+            else:
+                kid_rels = '+'.join(kid_rels)
+            # get the nuclearity of all kids, abbr. version
+            kid_nucs = ''.join(('N' if kid.label().nuclearity == 'Nucleus'
+                                else 'S')
+                               for kid in node)
+        else:  # pre-terminals (pre-EDUs)
+            kid_rels = None
+            kid_nucs = None
+
+        # update (proto) dataframe entry
+        row.update({
+            'kid_rels': kid_rels,
+            'kid_nucs': kid_nucs,
+        })
+
+        doc_span_rows.append(row)
+
+    return doc_span_rows
+
+
 def load_training_as_dataframe_new(binarize=False):
     """Load training section of the RST-WSJ corpus as a pandas.DataFrame.
 
@@ -263,7 +372,8 @@ def load_training_as_dataframe_new(binarize=False):
 
     TODO
     ----
-    [ ] propose left-heavy binarization
+    [ ] intra-sentential-first right-heavy binarization
+    [ ] left-heavy binarization (?)
     """
     node_rows = []  # list of dicts, one dict per node
     rel_rows = []  # list of dicts, one dict per relation
@@ -281,81 +391,22 @@ def load_training_as_dataframe_new(binarize=False):
         doc_text = doc_ctx.text()
         doc_edus = rtree_ref.leaves()
 
-        # 1. Collect constituency nodes and EDUs from the gold RST trees
-        doc_rst_rel_rows = []
-        doc_edu_rows = []
-
         # convert labels to coarse
         coarse_rtree_ref = REL_CONV(rtree_ref)
         # binarize if necessary
         if binarize:
             coarse_rtree_ref = _binarize(coarse_rtree_ref)
 
-        # RST nodes: constituents are either relations or EDUs
-        for tpos in coarse_rtree_ref.treepositions():
-            node = coarse_rtree_ref[tpos]
-            # skip EDUs themselves
-            if not isinstance(node, Tree):
-                continue
-
-            node_label = node.label()
-            node_id = '{}_const{}'.format(
-                node.origin.doc,
-                '-'.join(str(x) for x in tpos))
-            # node
-            row = {
-                'node_id': node_id,
-                # WIP tree position
-                'treepos': tpos,
-                # char span
-                'span_start': node_label.span.char_start,
-                'span_end': node_label.span.char_end,
-                # nuclearity
-                'nuclearity': node_label.nuclearity,
-                # relation
-                'relation': node_label.rel,
-            }
-            # add pointer to parent, except for root node
-            if tpos:
-                parent_tpos = tpos[:-1]
-                parent_id = '{}_const{}'.format(
-                    node.origin.doc,
-                    '-'.join(str(x) for x in parent_tpos))
-                row.update({
-                    'parent_id': parent_id,
-                })
-
-            if len(node) > 1:  # internal node => relation
-                row.update({
-                    # edu span
-                    'edu_span_start': node_label.edu_span[0],
-                    'edu_span_end': node_label.edu_span[1],
-                    # computed column
-                    'edu_span_len': (node_label.edu_span[1] -
-                                     node_label.edu_span[0]) + 1,
-                    # info on children
-                    'arity': len(node),
-                    'kids_rel': '+'.join(
-                        set(kid.label().rel for kid in node
-                            if kid.label().rel != 'span')),
-                    'kids_nuc': ''.join(
-                        ('N' if kid.label().nuclearity == 'Nucleus' else 'S')
-                        for kid in node),
-                })
-                doc_rst_rel_rows.append(row)
-            else:  # pre-EDU
-                edu = node[0]
-                row.update({
-                    'num': edu.num,
-                })
-                doc_edu_rows.append(row)
-
+        # 1. Collect constituency nodes and EDUs from the gold RST trees
+        edus = coarse_rtree_ref.leaves()
+        doc_edu_rows = load_edus(edus)
+        doc_span_rows = load_spans(coarse_rtree_ref)
         # prepare this info to find "leaky" substructures:
         # sentences and paragraphs
         # dict of EDU spans to constituent node from the RST tree
         rst_tree_node_spans = {
-            (row['edu_span_start'], row['edu_span_end']): row['treepos']
-            for row in doc_rst_rel_rows
+            (row['edu_start'], row['edu_end']): row['treepos']
+            for row in doc_span_rows
         }
         # list of EDU spans of constituent nodes, sorted by length of span
         # then start
@@ -426,41 +477,111 @@ def load_training_as_dataframe_new(binarize=False):
                     })
                 else:
                     row.update({'leaky': False})
-                # WIP find for each leaky sentence the smallest RST subtree
+                # find for each leaky sentence the smallest RST subtree
                 # that covers it
                 if row['leaky']:
                     sent_edu_first = sent_edu_starts[sent_idx]
                     sent_edu_last = sent_edu_ends[sent_idx]
+                    # find parent span and straddling spans ;
+                    # for type 3 and 4, they will be different from the
+                    # parent span
+                    strad_spans = []
                     for edu_span in rst_tree_node_spans_by_len:
+                        # straddling spans
+                        if ((edu_span[0] < sent_edu_first and
+                             sent_edu_first <= edu_span[1]) or
+                            (edu_span[0] <= sent_edu_last and
+                             sent_edu_last < edu_span[1])):
+                            strad_spans.append(edu_span)
+                        # parent span (is also a straddling span)
                         if (edu_span[0] <= sent_edu_first and
                             sent_edu_last <= edu_span[1]):
                             parent_span = edu_span
-                            # WIP get immediate members of parent span
-                            parent_tpos = rst_tree_node_spans[parent_span]
-                            parent_subtree = coarse_rtree_ref[parent_tpos]
-                            member_spans = [m.label().edu_span
-                                            for m in parent_subtree
-                                            if isinstance(m, Tree)]
-                            # leaky types 1 and 2: members of the parent
-                            # constituent are "pure" wrt sentence span:
-                            # each member is either fully inside or fully
-                            # outside the sentence ;
-                            # no member straddles either of the sentence
-                            # boundaries
-                            leaky_type_12 = all(
-                                ((sent_edu_first <= mspan[0] and
-                                  mspan[1] <= sent_edu_last) or
-                                 mspan[1] < sent_edu_first or
-                                 mspan[0] > sent_edu_last)
-                                for mspan in member_spans)
-                            # end WIP immediate members
                             break
                     else:
                         raise ValueError(
                             'No minimal spanning node for {}'.format(row))
+                    # WIP straddling spans (other than parent span)
+                    print(doc_id.doc)
+                    print(parent_span)
+                    if strad_spans != [parent_span]:
+                        print(set(strad_spans) - set([parent_span]))
+                    # WIP get immediate members of parent span
+                    parent_tpos = rst_tree_node_spans[parent_span]
+                    parent_subtree = coarse_rtree_ref[parent_tpos]
+                    member_spans = [m.label().edu_span
+                                    for m in parent_subtree
+                                    if isinstance(m, Tree)]
+                    # leaky types 1 and 2: members of the parent
+                    # constituent are "pure" wrt sentence span:
+                    # each member is either fully inside or fully
+                    # outside the sentence ;
+                    # no member straddles either of the sentence
+                    # boundaries
+                    leaky_type_12 = all(
+                        ((sent_edu_first <= mspan[0] and
+                          mspan[1] <= sent_edu_last) or
+                         mspan[1] < sent_edu_first or
+                         mspan[0] > sent_edu_last)
+                        for mspan in member_spans)
+                    # alternatively: types 1 and 2 ("same-level") happen
+                    # when the first straddling span is the parent span
+                    assert leaky_type_12 == ([parent_span] == strad_spans)
+                    # end WIP immediate members
+                    # coordinative or subordinative relation, uses
+                    # nuclearity of straddling spans
+                    leaky_coord = False
+                    strad_rels = []
+                    for strad_span in strad_spans:
+                        strad_tpos = rst_tree_node_spans[strad_span]
+                        strad_subtree = coarse_rtree_ref[strad_tpos]
+                        # if there is a coordinative relation in the
+                        # chain of straddling spans, the leak is of
+                        # Type 3 (or Type 1 if same level)
+                        if all(kid.label().nuclearity == 'Nucleus'
+                               for kid in strad_subtree):
+                            leaky_coord = True
+                        # relations of straddling spans
+                        # NB: take them from the kids
+                        kid_rels = [kid.label().rel for kid in strad_subtree]
+                        # if all kids bear the same relation label, store
+                        # only this value
+                        rels_wo_span = [kid_rel for kid_rel in kid_rels
+                                        if kid_rel != 'span']
+                        if len(set(rels_wo_span)) == 1:
+                            kid_rels = rels_wo_span[0]
+                        else:
+                            kid_rels = '+'.join(rels_wo_span)
+                        strad_rels.append(kid_rels)
+                        # WIP running counter of straddling relations
+                        strad_rels_rows.append({
+                            'sent_id': '{}_sent{}'.format(doc_id.doc, sent_idx),
+                            'kid_rels': kid_rels,
+                        })
+                        # end WIP running counter
+                    # determine type of leaky (ugly)
+                    if leaky_type_12:
+                        if leaky_coord:
+                            leaky_type = 1
+                        else:
+                            leaky_type = 2
+                    else:
+                        if leaky_coord:
+                            leaky_type = 3
+                        else:
+                            leaky_type = 4
+                    # display type of leaky
+                    print('Type {} ({}-level {} structure)\t{}'.format(
+                        leaky_type,
+                        'Same' if leaky_type_12 else 'Multi',
+                        'coordination' if leaky_coord else 'subordination',
+                        '; '.join(strad_rels)))
+                    print()
+                    # end WIP nuclearity of straddling spans
+
                     # add info to row
                     row.update({
-                        # parent span, on EDUs
+                        # parent span, in EDUs
                         'parent_span_start': parent_span[0],
                         'parent_span_end': parent_span[1],
                         # length of parent span, in sentences
@@ -593,7 +714,7 @@ def load_training_as_dataframe_new(binarize=False):
         # add doc entries to corpus entries
         para_rows.extend(doc_para_rows)
         sent_rows.extend(doc_sent_rows)
-        rel_rows.extend(doc_rst_rel_rows)
+        rel_rows.extend(doc_span_rows)
         edu_rows.extend(doc_edu_rows)
 
     # turn list into a DataFrame
@@ -607,7 +728,7 @@ def load_training_as_dataframe_new(binarize=False):
     return node_df, rel_df, edu_df, sent_df, para_df
 
 
-nodes_train, rels_train, edus_train, sents_train, paras_train = load_training_as_dataframe_new(binarize=True)
+nodes_train, rels_train, edus_train, sents_train, paras_train = load_training_as_dataframe_new(binarize=False)
 # print(rels_train)
 # as of version 0.17, pandas handles missing boolean values by degrading
 # column type to object, which makes boolean selection return true for
@@ -666,6 +787,14 @@ if False:
 # taxonomy of leaky sentences
 print(leaky_sents.groupby('leaky_type_12')['edu_span_len'].describe().unstack())
 
+# WIP straddling relations
+strad_rels_df = pd.DataFrame(strad_rels_rows)
+print()
+print(strad_rels_df['sent_id'].describe()['count'])
+print(strad_rels_df.groupby(['kid_rels']).describe()['sent_id'].unstack().sort_values('count', ascending=False))
+# compare to distribution of intra/inter relations
+print()
+# print(rels_train.groupby('  # RESUME HERE
 
 # PARAGRAPHS
 if False:
@@ -710,5 +839,5 @@ if False:
 
 # WEIRDOS
 # constituent nodes whose kids bear different relations
-print([kid_rel for kid_rel in rels_train['kids_rel']
-       if '+' in kid_rel])
+print([kid_rel for kid_rel in rels_train['kid_rels']
+       if kid_rel is not None and '+' in kid_rel])
