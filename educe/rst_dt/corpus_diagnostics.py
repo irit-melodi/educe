@@ -296,6 +296,7 @@ def load_spans(coarse_rtree_ref):
         # entry for span
         row = {
             'node_id': node_id,
+            'doc_id': node.origin.doc,
             # WIP tree position
             'treepos': tpos,
             # EDU span
@@ -353,6 +354,7 @@ def load_spans(coarse_rtree_ref):
     return doc_span_rows
 
 
+@profile
 def load_training_as_dataframe_new(binarize=False):
     """Load training section of the RST-WSJ corpus as a pandas.DataFrame.
 
@@ -419,6 +421,7 @@ def load_training_as_dataframe_new(binarize=False):
         # 2. Collect sentences
         doc_sent_rows = []
         # use dirty PTB tokenizer + parser
+        # NB: the two following lines eat up 67% of total time
         doc_tkd_toks = tokenize_doc_ptb(doc_id, doc_text)
         doc_tkd_trees = parse_doc_ptb(doc_id, doc_tkd_toks)
 
@@ -462,8 +465,8 @@ def load_training_as_dataframe_new(binarize=False):
                 row['sent_len'] = row['sent_end'] - row['sent_start'] + 1
                 row['intra_sent'] = (row['sent_start'] == row['sent_end'])
                 row['strad_sent'] = (not row['intra_sent'] and
-                                     (row['edu_start'] in sent_edu_starts and
-                                      row['edu_end'] in sent_edu_ends))
+                                     (not row['edu_start'] in sent_edu_starts or
+                                      not row['edu_end'] in sent_edu_ends))
             else:
                 row['sent_len'] = None
                 row['intra_sent'] = None
@@ -510,78 +513,74 @@ def load_training_as_dataframe_new(binarize=False):
                     sent_edu_first = sent_edu_starts[sent_idx]
                     sent_edu_last = sent_edu_ends[sent_idx]
                     # find parent span and straddling spans ;
-                    # for type 3 and 4, they will be different from the
-                    # parent span
+                    # straddling spans exist for type 3 and 4
                     strad_spans = []
                     for edu_span in rst_tree_node_spans_by_len:
+                        # parent span
+                        if (edu_span[0] <= sent_edu_first and
+                            sent_edu_last <= edu_span[1]):
+                            parent_span = edu_span
+                            break
                         # straddling spans
                         if ((edu_span[0] < sent_edu_first and
                              sent_edu_first <= edu_span[1]) or
                             (edu_span[0] <= sent_edu_last and
                              sent_edu_last < edu_span[1])):
                             strad_spans.append(edu_span)
-                        # parent span (is also a straddling span)
-                        if (edu_span[0] <= sent_edu_first and
-                            sent_edu_last <= edu_span[1]):
-                            parent_span = edu_span
-                            break
                     else:
                         raise ValueError(
                             'No minimal spanning node for {}'.format(row))
-                    # WIP straddling spans (other than parent span)
-                    print(doc_id.doc)
-                    print(parent_span)
-                    if strad_spans != [parent_span]:
-                        print(set(strad_spans) - set([parent_span]))
-                    # WIP get immediate members of parent span
-                    parent_tpos = rst_tree_node_spans[parent_span]
-                    parent_subtree = coarse_rtree_ref[parent_tpos]
-                    member_spans = [m.label().edu_span
-                                    for m in parent_subtree
-                                    if isinstance(m, Tree)]
-                    # leaky types 1 and 2: members of the parent
+                    # leaky types {1, 2} vs {3, 4}:
+                    # for types 1 and 2, members of the parent
                     # constituent are "pure" wrt sentence span:
                     # each member is either fully inside or fully
                     # outside the sentence ;
                     # no member straddles either of the sentence
                     # boundaries
-                    leaky_type_12 = all(
-                        ((sent_edu_first <= mspan[0] and
-                          mspan[1] <= sent_edu_last) or
-                         mspan[1] < sent_edu_first or
-                         mspan[0] > sent_edu_last)
-                        for mspan in member_spans)
-                    # alternatively: types 1 and 2 ("same-level") happen
-                    # when the first straddling span is the parent span
-                    assert leaky_type_12 == ([parent_span] == strad_spans)
-                    # end WIP immediate members
-                    # coordinative or subordinative relation, uses
-                    # nuclearity of straddling spans
+                    leaky_type_12 = not(strad_spans)
+                    # DEBUG
+                    print(doc_id.doc)
+                    print(parent_span, strad_spans if strad_spans else '')
+                    # end DEBUG
+
+                    # leaky types {1, 3} vs {2, 4}
+                    # {1, 3} have at least one coordinative (aka multinuclear)
+                    # relation in the chain of spans between the parent span
+                    # and the EDU(s) of the leaky sentence ;
+                    # {2, 4} have only subordinative (aka mononuclear)
+                    # relations
                     leaky_coord = False
-                    strad_rels = []
+                    # first, check the kids of the parent span
+                    parent_tpos = rst_tree_node_spans[parent_span]
+                    parent_subtree = coarse_rtree_ref[parent_tpos]
+                    if all(kid.label().nuclearity == 'Nucleus'
+                           for kid in parent_subtree):
+                        leaky_coord = True
+
+                    # then, check the kids of all straddling spans
+                    strad_rels = []  # TEMPORARY
                     for strad_span in strad_spans:
                         strad_tpos = rst_tree_node_spans[strad_span]
                         strad_subtree = coarse_rtree_ref[strad_tpos]
-                        # if there is a coordinative relation in the
-                        # chain of straddling spans, the leak is of
-                        # Type 3 (or Type 1 if same level)
                         if all(kid.label().nuclearity == 'Nucleus'
                                for kid in strad_subtree):
                             leaky_coord = True
-                        # relations of straddling spans
-                        # NB: take them from the kids
-                        kid_rels = [kid.label().rel for kid in strad_subtree]
+                        # TEMPORARY: store straddling relations (from kids)
+                        kid_rels = [kid.label().rel
+                                    for kid in strad_subtree
+                                    if kid.label().rel != 'span']
                         # if all kids bear the same relation label, store
                         # only this value
-                        rels_wo_span = [kid_rel for kid_rel in kid_rels
-                                        if kid_rel != 'span']
-                        if len(set(rels_wo_span)) == 1:
-                            kid_rels = rels_wo_span[0]
+                        if len(set(kid_rels)) == 1:
+                            kid_rels = kid_rels[0]
                         else:
-                            kid_rels = '+'.join(rels_wo_span)
+                            kid_rels = '+'.join(kid_rels)
                         strad_rels.append(kid_rels)
                         # WIP list of straddling relations
                         strad_rels_rows.append({
+                            'node_id': '{}_const{}'.format(
+                                strad_subtree.origin.doc,
+                                '-'.join(str(x) for x in strad_tpos)),
                             'sent_id': '{}_sent{}'.format(doc_id.doc, sent_idx),
                             'kid_rels': kid_rels,
                         })
@@ -828,7 +827,18 @@ print(strad_rels_df['sent_id'].describe()['count'])
 print(strad_rels_df.groupby(['kid_rels']).describe()['sent_id'].unstack().sort_values('count', ascending=False))
 # compare to distribution of intra/inter relations
 print()
-print(rels_train[rels_train['edu_len'] > 2].groupby(['intra_sent', 'strad_sent'])['kid_rels'].value_counts(normalize=True))
+print(rels_train[rels_train['edu_len'] > 1].groupby(['intra_sent', 'strad_sent'])['kid_rels'].value_counts(normalize=False))
+print()
+print(rels_train[rels_train['edu_len'] > 1].groupby(['intra_sent', 'strad_sent'])['kid_rels'].value_counts(normalize=True))
+print()
+# mismatches between strad_rels and rels_train['strad_sent']
+# strad_rels has 2 duplicate entries for spans that straddle part
+# of 2 sentences each
+rels_train = rels_train.fillna(value={'strad_sent': False})
+nodes_rels_train = rels_train[rels_train['strad_sent']]['node_id']
+nodes_strad_rels = strad_rels_df['node_id']
+print([rels_train[rels_train['node_id'] == node_id]
+       for node_id in Counter(nodes_strad_rels.values) - Counter(nodes_rels_train.values)])
 
 # PARAGRAPHS
 if False:
@@ -870,9 +880,3 @@ if False:
         print(leaky_paras['parent_span_para_len'].value_counts())
     print(leaky_paras[:10])
 # end leaky paragraphs
-
-
-# WEIRDOS
-# constituent nodes whose kids bear different relations
-print([kid_rel for kid_rel in rels_train['kid_rels']
-       if kid_rel is not None and '+' in kid_rel])
