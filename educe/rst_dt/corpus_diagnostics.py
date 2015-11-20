@@ -36,7 +36,8 @@ from educe.ptb.head_finder import find_lexical_heads
 # RST corpus
 # TODO import CORPUS_DIR/CD_TRAIN e.g. from educe.rst_dt.rst_wsj_corpus
 CORPUS_DIR = os.path.join(os.path.dirname(__file__),
-                          '..', '..', '..', '..', 'corpora',
+                          '..', '..',
+                          'data',  # alt: '..', '..', 'corpora',
                           'rst_discourse_treebank', 'data',
                           'RSTtrees-WSJ-main-1.0')
 CD_TRAIN = os.path.join(CORPUS_DIR, 'TRAINING')
