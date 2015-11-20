@@ -437,7 +437,7 @@ def _chain_to_binary(rel, kids):
         edu_span = (lnode.edu_span[0], rnode.edu_span[1])
         span = lnode.span.merge(rnode.span)
         newnode = Node('Nucleus', edu_span, span, rel)
-        return RSTTree(newnode, [left, right])
+        return RSTTree(newnode, [left, right], origin=left.origin)
     return functools.reduce(builder, kids[::-1])
 
 
@@ -479,7 +479,8 @@ def _binarize(tree):
         raise RSTTreeException("Ill-formed RST tree? Unary non-terminal: " +
                                str(tree))
     elif len(tree) <= 2:
-        return RSTTree(treenode(tree), list(map(_binarize, tree)))
+        return RSTTree(treenode(tree), list(map(_binarize, tree)),
+                       origin=tree.origin)
     else:
         # convenient string representation of what the children look like
         # eg. NS, SN, NNNNN, SNS
@@ -499,10 +500,10 @@ def _binarize(tree):
             kids = [_binarize(x) for x in tree]
             left = kids[0]
             right = _chain_to_binary(treenode(left).rel, kids[1:])
-            return RSTTree(treenode(tree), [left, right])
+            return RSTTree(treenode(tree), [left, right], origin=tree.origin)
         elif nscode == 'SNS':
             left = _chain_to_binary('span', tree[:2])
             right = _binarize(tree[2])
-            return RSTTree(treenode(tree), [left, right])
+            return RSTTree(treenode(tree), [left, right], origin=tree.origin)
         else:
             raise RSTTreeException("Don't know how to handle %s trees", nscode)
