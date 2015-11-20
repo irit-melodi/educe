@@ -11,6 +11,7 @@ from educe.external.postag import Token
 from educe.util import relative_indices
 from .text import Sentence, Paragraph, clean_edu_text
 from .annotation import EDU
+from .ptb import align_edus_with_sentences
 
 
 # helpers for _align_with_doc_structure
@@ -34,6 +35,67 @@ def _filter0(pred, iterable):
             return item
     else:
         return None
+
+
+# dirty temporary extraction from DocumentPlus
+def align_edus_with_paragraphs(doc_edus, doc_paras, text, strict=False):
+    """Align EDUs with paragraphs, if any.
+
+    Parameters
+    ----------
+    doc_edus:
+
+    doc_paras:
+
+    strict:
+
+
+    Returns
+    -------
+    edu2para: list(int) or None
+        Index of the paragraph that contains each EDU, None if the
+        paragraph segmentation is missing.
+    """
+    if doc_paras is None:
+        return None
+
+    edu2para = []
+    for edu in doc_edus:
+        espan = edu.text_span()
+        # find enclosing paragraph
+        para = _filter0(containing(espan), doc_paras)
+        # sloppy EDUs happen; try shaving off some characters
+        # if we can't find a paragraph
+        if para is None:
+            # DEBUG
+            if False:
+                print('WP ({}) : {}'.format(self.grouping, edu))
+            # end DEBUG
+            espan = copy.copy(espan)
+            espan.char_start += 1
+            espan.char_end -= 1
+            etext = text[espan.char_start:espan.char_end]
+            # kill left whitespace
+            espan.char_start += len(etext) - len(etext.lstrip())
+            etext = etext.lstrip()
+            # kill right whitespace
+            espan.char_end -= len(etext) - len(etext.rstrip())
+            etext = etext.rstrip()
+            # try again
+            para = _filter0(containing(espan), doc_paras)
+            # DEBUG
+            if False:
+                if para is None:
+                    print('EP ({}): {}'.format(self.grouping, edu))
+            # end DEBUG
+
+        # update edu to paragraph mapping
+        para_idx = (doc_paras.index(para) if para is not None
+                    else None)  # TODO or -1 or ...
+        edu2para.append(para_idx)
+
+    return edu2para
+# end dirty
 
 
 class DocumentPlus(object):
@@ -135,46 +197,15 @@ class DocumentPlus(object):
 
         # align EDUs with paragraphs
         paragraphs = self.paragraphs
+        # dirty extraction
         if paragraphs is None:
-            edu2para = [None for edu in edus]
+            edu2para = None
         else:
-            edu2para = []
-            edu2para.append(0)  # left padding
-            # align the other EDUs
-            for edu in edus[1:]:
-                espan = edu.text_span()
-                # find enclosing paragraph
-                para = _filter0(containing(espan), paragraphs)
-                # sloppy EDUs happen; try shaving off some characters
-                # if we can't find a paragraph
-                if para is None:
-                    # DEBUG
-                    if False:
-                        print('WP ({}) : {}'.format(self.grouping, edu))
-                    # end DEBUG
-                    espan = copy.copy(espan)
-                    espan.char_start += 1
-                    espan.char_end -= 1
-                    etext = text[espan.char_start:espan.char_end]
-                    # kill left whitespace
-                    espan.char_start += len(etext) - len(etext.lstrip())
-                    etext = etext.lstrip()
-                    # kill right whitespace
-                    espan.char_end -= len(etext) - len(etext.rstrip())
-                    etext = etext.rstrip()
-                    # try again
-                    para = _filter0(containing(espan), paragraphs)
-                    # DEBUG
-                    if False:
-                        if para is None:
-                            print('EP ({}): {}'.format(self.grouping, edu))
-                    # end DEBUG
-
-                # update edu to paragraph mapping
-                para_idx = (paragraphs.index(para) if para is not None
-                            else None)  # TODO or -1 or ...
-                edu2para.append(para_idx)
-
+            edu2para = align_edus_with_paragraphs(edus[1:], paragraphs[1:],
+                                                  text)
+        # prepend [0] for the left padding EDU and paragraph
+        edu2para = ([0] + edu2para if edu2para is not None
+                    else [None for edu in edus])
         self.edu2para = edu2para
 
         # compute relative index of each EDU to the beginning (resp. to
@@ -292,9 +323,9 @@ class DocumentPlus(object):
         self.edu2tokens = edu2tokens
         return self
 
-    # TODO move functionality to ptb.py
     def align_with_trees(self, strict=False):
         """Compute for each EDU the overlapping trees"""
+        edus = self.edus
         syn_trees = self.tkd_trees
 
         # if there is no sentence segmentation from syntax,
@@ -303,56 +334,12 @@ class DocumentPlus(object):
             self.edu2sent = self.edu2raw_sent
             return self
 
-        edu2sent = []
-
-        edus = self.edus
-
-        # left padding EDU
+        # compute edu2sent, prepend 0 for lpad, shift all indices by 1
         assert edus[0].is_left_padding()
-        edu2sent.append(0)
-
-        # regular EDUs
-        for edu in edus[1:]:
-            tree_idcs = [t_idx
-                         for t_idx, tree in enumerate(syn_trees[1:], start=1)
-                         if tree is not None and tree.overlaps(edu)]
-
-            if len(tree_idcs) == 1:
-                tree_idx = tree_idcs[0]
-            elif len(tree_idcs) == 0:
-                # "no tree at all" can happen when the EDU text is totally
-                # absent from the list of sentences of this doc in the PTB
-                # ex: wsj_0696.out, last sentence
-                if strict:
-                    print(edu)
-                    emsg = 'No PTB tree for this EDU'
-                    raise ValueError(emsg)
-
-                tree_idx = None
-            else:
-                # more than one PTB trees overlap with this EDU
-                if strict:
-                    emsg = ('Segmentation mismatch:',
-                            'one EDU, more than one PTB tree')
-                    print(edu)
-                    ptrees = [syn_trees[t_idx] for t_idx in tree_idcs]
-                    for ptree in ptrees:
-                        print('    ', [str(leaf) for leaf in ptree.leaves()])
-                    raise ValueError(emsg)
-
-                # heuristics: pick the PTB tree with maximal overlap
-                # with the EDU span
-                len_espan = edu.span.length()
-                ovlaps = [syn_trees[tree_idx].overlaps(edu).length()
-                          for tree_idx in tree_idcs]
-                ovlap_ratios = [float(ovlap) / len_espan
-                                for ovlap in ovlaps]
-                # find the argmax
-                max_idx = ovlap_ratios.index(max(ovlap_ratios))
-                tree_idx = tree_idcs[max_idx]
-
-            edu2sent.append(tree_idx)
-
+        edu2sent = align_edus_with_sentences(self.edus[1:], syn_trees[1:],
+                                             strict=strict)
+        edu2sent = [0] + [(i+1 if i is not None else i)
+                          for i in edu2sent]
         self.edu2sent = edu2sent
 
         # compute relative index of each EDU from the beginning (resp. to

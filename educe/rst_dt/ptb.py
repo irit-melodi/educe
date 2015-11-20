@@ -209,8 +209,8 @@ def _mk_token(ttoken, span):
     Convert a tweaked token and the span it's been aligned with
     into a proper Token object.
     """
-    span = span if ttoken.offset == 0 else\
-        Span(span.char_start + ttoken.offset, span.char_end)
+    if ttoken.offset != 0:
+        span = Span(span.char_start + ttoken.offset, span.char_end)
     return Token(ttoken, span)
 
 
@@ -312,3 +312,76 @@ class PtbParser(object):
         doc.lex_heads.extend(lex_heads)
 
         return doc
+
+
+# FIXME refactor, maybe move to a better place:
+# educe.rst_dt.annotation ? educe.external.parser ?
+# none of this code is specific to the PTB corpus itself, only to
+# NLTK-style syntactic trees
+def align_edus_with_sentences(edus, syn_trees, strict=False):
+    """Map each EDU to its sentence.
+
+    If an EDU span overlaps with more than one sentence span, the
+    sentence with maximal overlap is chosen.
+
+    Parameters
+    ----------
+    edus: list(EDU)
+        List of EDUs.
+
+    syn_trees: list(Tree)
+        List of syntactic trees, one per sentence.
+
+    strict: boolean, default False
+        If True, raise an error if an EDU does not map to exactly
+        one sentence.
+
+    Returns
+    -------
+    edu2sent: list(int or None)
+        Map from EDU to (0-based) sentence index or None.
+    """
+    edu2sent = []
+    for edu in edus:
+        # find the syntactic trees that overlap with this EDU
+        tree_idcs = [t_idx
+                     for t_idx, tree in enumerate(syn_trees)
+                     if tree is not None and tree.overlaps(edu)]
+
+        if len(tree_idcs) == 1:
+            tree_idx = tree_idcs[0]
+        elif len(tree_idcs) == 0:
+            # "no tree at all" can happen when the EDU text is totally
+            # absent from the list of sentences of this doc in the PTB
+            # ex: wsj_0696.out, last sentence
+            if strict:
+                print(edu)
+                emsg = 'No PTB tree for this EDU'
+                raise ValueError(emsg)
+
+            tree_idx = None
+        else:
+            # more than one PTB trees overlap with this EDU
+            if strict:
+                emsg = ('Segmentation mismatch:',
+                        'one EDU, more than one PTB tree')
+                print(edu)
+                ptrees = [syn_trees[t_idx] for t_idx in tree_idcs]
+                for ptree in ptrees:
+                    print('    ', [str(leaf) for leaf in ptree.leaves()])
+                raise ValueError(emsg)
+
+            # heuristics: pick the PTB tree with maximal overlap
+            # with the EDU span
+            len_espan = edu.span.length()
+            ovlaps = [syn_trees[tree_idx].overlaps(edu).length()
+                      for tree_idx in tree_idcs]
+            ovlap_ratios = [float(ovlap) / len_espan
+                            for ovlap in ovlaps]
+            # find the argmax
+            max_idx = ovlap_ratios.index(max(ovlap_ratios))
+            tree_idx = tree_idcs[max_idx]
+        # append the computed index
+        edu2sent.append(tree_idx)
+
+    return edu2sent

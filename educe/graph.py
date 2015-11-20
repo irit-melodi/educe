@@ -502,16 +502,15 @@ class Graph(gr.hypergraph, AttrsMixin):
         that are members of (members of ..) this CDU.
         """
 
+        hyperedge = self.edgeform(cdu)
+        members = set(self.links(hyperedge))
+
         if deep:
-            members = set()
-            for m in self.cdu_members(cdu):
-                members.add(m)
+            for m in list(members):
                 if self.is_cdu(m):
-                    members.update(self.cdu_members(m,deep))
-            return frozenset(members)
-        else:
-            hyperedge = self.edgeform(cdu)
-            return frozenset(self.links(hyperedge))
+                    members.update(self.cdu_members(m, deep=deep))
+
+        return frozenset(members)
 
     def _mk_guid(self, x):
         return self.doc_key.mk_global_id(x)
