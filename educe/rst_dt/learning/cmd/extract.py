@@ -181,7 +181,7 @@ def main(args):
     docs = [open_plus(doc) for doc in sorted(rst_corpus)]
     # instance generator
     instance_generator = lambda doc: doc.all_edu_pairs()
-
+    split_feat_space = 'dir_sent'
     # extract vectorized samples
     if args.vocabulary is not None:
         vocab = load_vocabulary(args.vocabulary)
@@ -189,14 +189,14 @@ def main(args):
                                        feature_set,
                                        lecsie_data_dir=lecsie_data_dir,
                                        vocabulary=vocab,
-                                       split_feat_space='dir_sent')
+                                       split_feat_space=split_feat_space)
         X_gen = vzer.transform(docs)
     else:
         vzer = DocumentCountVectorizer(instance_generator,
                                        feature_set,
                                        lecsie_data_dir=lecsie_data_dir,
                                        min_df=5,
-                                       split_feat_space='dir_sent')
+                                       split_feat_space=split_feat_space)
         X_gen = vzer.fit_transform(docs)
 
     # extract class label for each instance

@@ -4,21 +4,17 @@
 
 from __future__ import print_function
 
-from collections import deque, Counter
+from collections import Counter
 import re
-import itertools
 
-from nltk.tree import Tree
 import numpy as np
 
-from educe.external.postag import Token
-from educe.internalutil import treenode
-from educe.learning.keys import Substance
-from .base import lowest_common_parent, DocumentPlusPreprocessor
-from educe.stac.lexicon.pdtb_markers import (load_pdtb_markers_lexicon,
-                                             PDTB_MARKERS_FILE)
+from .base import DocumentPlusPreprocessor
+from educe.ptb.head_finder import find_edu_head
 from educe.rst_dt.lecsie import (load_lecsie_feats,
                                  LINE_FORMAT as LECSIE_LINE_FORMAT)
+from educe.stac.lexicon.pdtb_markers import (load_pdtb_markers_lexicon,
+                                             PDTB_MARKERS_FILE)
 
 
 # ---------------------------------------------------------------------
@@ -51,14 +47,6 @@ def build_doc_preprocessor():
 # single EDU features
 # ---------------------------------------------------------------------
 
-SINGLE_WORD = [
-    ('ptb_word_first', Substance.DISCRETE),
-    ('ptb_word_last', Substance.DISCRETE),
-    ('ptb_word_first2', Substance.DISCRETE),
-    ('ptb_word_last2', Substance.DISCRETE)
-]
-
-
 def extract_single_word(edu_info):
     """word features for the EDU"""
     try:
@@ -78,7 +66,7 @@ def extract_single_word(edu_info):
 #
 # NEW discourse markers
 #
-marker2rels = load_pdtb_markers_lexicon(PDTB_MARKERS_FILE)
+MARKER2RELS = load_pdtb_markers_lexicon(PDTB_MARKERS_FILE)
 
 
 def extract_single_pdtb_markers(edu_info):
@@ -89,19 +77,12 @@ def extract_single_pdtb_markers(edu_info):
         return
 
     if words:
-        for marker, rels in marker2rels.items():
+        for marker, rels in MARKER2RELS.items():
             if marker.appears_in(words):
                 yield ('pdtb_marker', str(marker))
                 for rel in rels:
                     yield ('pdtb_marked_rel', rel)
 # end NEW
-
-
-SINGLE_POS = [
-    ('ptb_pos_tag_first', Substance.DISCRETE),
-    ('ptb_pos_tag_last', Substance.DISCRETE),
-    ('POS', Substance.BASKET)
-]
 
 
 def extract_single_pos(edu_info):
@@ -118,12 +99,8 @@ def extract_single_pos(edu_info):
         tag_cnt = Counter(tags)
         for tag, occ in tag_cnt.items():
             yield ('POS_' + tag, occ)
-
-
-SINGLE_LENGTH = [
-    ('num_tokens', Substance.CONTINUOUS),
-    ('num_tokens_div5', Substance.CONTINUOUS),
-]
+        # NEW feature: EDU has at least a verb
+        yield ('has_vb', any(tag.startswith('VB') for tag in tags))
 
 
 def extract_single_length(edu_info):
@@ -138,19 +115,6 @@ def extract_single_length(edu_info):
 
 
 # features on document structure
-
-SINGLE_SENTENCE = [
-    # offset
-    ('num_edus_from_sent_start', Substance.CONTINUOUS),
-    # revOffset
-    ('num_edus_to_sent_end', Substance.CONTINUOUS),
-    # sentenceID
-    ('sentence_id', Substance.CONTINUOUS),
-    # revSentenceID
-    ('num_edus_to_para_end', Substance.CONTINUOUS)
-]
-
-
 def extract_single_sentence(edu_info):
     """Sentence features for the EDU"""
     try:
@@ -181,12 +145,6 @@ def extract_single_sentence(edu_info):
         pass
 
 
-SINGLE_PARA = [
-    ('paragraph_id', Substance.CONTINUOUS),
-    ('paragraph_id_div5', Substance.CONTINUOUS)
-]
-
-
 def extract_single_para(edu_info):
     """paragraph features for the EDU"""
     try:
@@ -208,40 +166,6 @@ def extract_single_para(edu_info):
 
 
 # syntactic features
-
-# helpers
-def find_edu_head(tree, hwords, wanted):
-    """Find the word with highest occurrence in the lexicalized tree
-
-    Return a pair of treepositions (head node, head word), or None if
-    no occurrence of any word in wanted was found.
-    """
-    # prune wanted to prevent punctuation from becoming the head of an EDU
-    nohead_tags = set(['.', ',', "''", "``"])
-    wanted = set([tp for tp in wanted
-                  if tree[tp].tag not in nohead_tags])
-
-    all_treepos = deque([()])  # init with root treepos: ()
-    while all_treepos:
-        cur_treepos = all_treepos.popleft()
-        cur_tree = tree[cur_treepos]
-        cur_hw = hwords[cur_treepos]
-        if cur_hw in wanted:
-            return (cur_treepos, cur_hw)
-        elif isinstance(cur_tree, Tree):
-            c_treeposs = [tuple(list(cur_treepos) + [c_idx])
-                          for c_idx, c in enumerate(tree[cur_treepos])]
-            all_treepos.extend(c_treeposs)
-        else:  # don't try to recurse if the current subtree is a Token
-            pass
-    return None
-
-
-SINGLE_SYNTAX = [
-    ('SYN_hlabel', Substance.DISCRETE),
-    ('SYN_hword', Substance.DISCRETE),
-    # ('SYN', Substance.BASKET),
-]
 
 
 def extract_single_syntax(edu_info):
@@ -280,29 +204,22 @@ def extract_single_syntax(edu_info):
 
 def build_edu_feature_extractor():
     """Build the feature extractor for single EDUs"""
-    feats = []
-    funcs = []
+    funcs = [
+        # word
+        extract_single_word,
+        # discourse markers
+        extract_single_pdtb_markers,
+        # pos
+        extract_single_pos,
+        # length
+        extract_single_length,
+        # para
+        extract_single_para,
+        # sent
+        extract_single_sentence,
+    ]
 
-    # word
-    feats.extend(SINGLE_WORD)
-    funcs.append(extract_single_word)
-    # discourse markers
-    # feats.extend(SINGLE_PDTB_MARKERS)
-    funcs.append(extract_single_pdtb_markers)
-    # pos
-    feats.extend(SINGLE_POS)
-    funcs.append(extract_single_pos)
-    # length
-    feats.extend(SINGLE_LENGTH)
-    funcs.append(extract_single_length)
-    # para
-    feats.extend(SINGLE_PARA)
-    funcs.append(extract_single_para)
-    # sent
-    feats.extend(SINGLE_SENTENCE)
-    funcs.append(extract_single_sentence)
     # syntax (EXPERIMENTAL)
-    # feats.extend(SINGLE_SYNTAX)
     # funcs.append(extract_single_syntax)
 
     def _extract_all(edu_info):
@@ -312,12 +229,9 @@ def build_edu_feature_extractor():
             for feat in fct(edu_info):
                 yield feat
 
-    # header
-    header = feats
     # extractor
     feat_extractor = _extract_all
-    # return header and extractor
-    return header, feat_extractor
+    return feat_extractor
 
 
 # ---------------------------------------------------------------------
@@ -326,6 +240,7 @@ def build_edu_feature_extractor():
 
 # EXPERIMENTAL
 LECSIE_FEAT_NAMES = LECSIE_LINE_FORMAT[3:]
+
 
 class LecsieFeats(object):
     """Extract Lecsie features from each pair of EDUs"""
@@ -359,6 +274,14 @@ class LecsieFeats(object):
             s2_beg = s2.char_start
             s2_end = s2.char_end
             num2 = edu_info2['edu'].num
+            # WIP adjacency
+            adjacent_pair = (abs(num1 - num2) == 1)
+            # WIP intra- vs inter-sentential
+            sent_id1 = edu_info1['sent_idx']
+            sent_id2 = edu_info2['sent_idx']
+            intra_sent = (sent_id1 is not None and sent_id2 is not None and
+                          sent_id1 == sent_id2)
+
             # lecsie features are defined on unordered pairs
             # e.g. (e1, e2) and (e2, e1) have the same lecsie features
             lecsie_key = ((lecsie_doc_name, s1_beg, s1_end, s2_beg, s2_end)
@@ -370,46 +293,54 @@ class LecsieFeats(object):
                 # silently skip
                 continue
 
-            for fn, fv in zip(LECSIE_FEAT_NAMES, pair_lfeats):
-                if not np.isnan(fv):
+            # put in a dict
+            pair_lfeats = dict(zip(LECSIE_FEAT_NAMES, pair_lfeats))
+
+            # WIP
+            # composite family scores
+            for family in ['wcomb', 'specificity', 'normpmi']:
+                fam_scores = [fv for fn, fv in pair_lfeats.items()
+                              if fn.endswith(family)]
+
+                pair_lfeats['max_' + family] = np.nanmax(fam_scores)
+                pair_lfeats['min_' + family] = np.nanmin(fam_scores)
+                pair_lfeats['mean_' + family] = np.nanmean(fam_scores)
+            # overall max score
+            pair_lfeats['max_lecsie'] = np.nanmax(pair_lfeats.values())
+            # end WIP
+
+            # yield finite features (abstain on inf and nan)
+            for fn, fv in pair_lfeats.items():
+                # WIP
+                # split these features: adjacent vs non-adjacent
+                if adjacent_pair:
+                    fn = 'adj_' + fn
+                # split: intra- vs inter-sentential
+                fn = fn + ('_intra' if intra_sent else '_inter')
+                # end WIP
+
+                if np.isfinite(fv):
                     yield (fn, fv)
 # end EXPERIMENTAL
-
-PAIR_DOC = [
-    ('dist_edus_abs', Substance.CONTINUOUS),
-    ('dist_edus_left', Substance.CONTINUOUS),
-    ('dist_edus_right', Substance.CONTINUOUS),
-]
-
 
 def extract_pair_doc(edu_info1, edu_info2):
     """Document-level tuple features"""
     edu_idx1 = edu_info1['edu'].num
     edu_idx2 = edu_info2['edu'].num
 
-    # direction of attachment
-    attach_dir = 'right' if edu_idx1 < edu_idx2 else 'left'
-    yield ('attach_dir', attach_dir)
+    # direction of attachment: attach_right
+    attach_right = edu_idx1 < edu_idx2
+    yield ('attach_right', attach_right)
 
     # absolute distance
-    abs_dist = abs(edu_idx1 - edu_idx2)
-    # (left- and right-) oriented distances
-    if edu_idx1 < edu_idx2:  # right attachment (gov before dep)
-        yield ('dist_edus_right', abs_dist)
-    else:
-        yield ('dist_edus_left', abs_dist)
+    # this feature is more efficient when split in 4 features, for
+    # every combination of the direction of attachment and
+    # intra/inter-sentential status
+    dist_edus = abs(edu_idx1 - edu_idx2)
+    yield ('dist_edus', dist_edus)
 
 
 # features on document structure: paragraphs and sentences
-
-PAIR_PARA = [
-    ('dist_para_abs', Substance.CONTINUOUS),
-    ('dist_para_right', Substance.CONTINUOUS),
-    ('dist_para_left', Substance.CONTINUOUS),
-    ('same_para', Substance.DISCRETE),
-    ('num_paragraphs_between_div3', Substance.CONTINUOUS)
-]
-
 
 def extract_pair_para(edu_info1, edu_info2):
     """Paragraph tuple features"""
@@ -434,38 +365,11 @@ def extract_pair_para(edu_info1, edu_info2):
         yield ('num_paragraphs_between_div3', (para_id1 - para_id2) / 3)
 
 
-PAIR_SENT = [
-    ('same_bad_sentence', Substance.DISCRETE),
-    ('sentence_id_diff', Substance.CONTINUOUS),
-    ('sentence_id_diff_div3', Substance.CONTINUOUS),
-    ('rev_sentence_id_diff', Substance.CONTINUOUS),
-    ('rev_sentence_id_diff_div3', Substance.CONTINUOUS)
-]
-
-
 def extract_pair_sent(edu_info1, edu_info2):
     """Sentence tuple features"""
 
     sent_id1 = edu_info1['sent_idx']
     sent_id2 = edu_info2['sent_idx']
-
-    # offset features
-    offset1 = edu_info1['edu_idx_in_sent']
-    offset2 = edu_info2['edu_idx_in_sent']
-    if offset1 is not None and offset2 is not None:
-        # offset diff
-        yield ('offset_diff', offset1 - offset2)
-        yield ('offset_diff_div3', (offset1 - offset2) / 3)
-        # offset pair
-        yield ('offset_div3_pair', (offset1 / 3, offset2 / 3))
-
-    # rev_offset features
-    rev_offset1 = edu_info1['edu_rev_idx_in_sent']
-    rev_offset2 = edu_info2['edu_rev_idx_in_sent']
-    if rev_offset1 is not None and rev_offset2 is not None:
-        yield ('rev_offset_diff', rev_offset1 - rev_offset2)
-        yield ('rev_offset_diff_div3', (rev_offset1 - rev_offset2) / 3)
-        yield ('rev_offset_div3_pair', (rev_offset1 / 3, rev_offset2 / 3))
 
     # sentenceID
     if sent_id1 is not None and sent_id2 is not None:
@@ -485,6 +389,24 @@ def extract_pair_sent(edu_info1, edu_info2):
 
         yield ('sentence_id_diff_div3', (sent_id1 - sent_id2) / 3)
 
+    # offset features
+    offset1 = edu_info1['edu_idx_in_sent']
+    offset2 = edu_info2['edu_idx_in_sent']
+    if offset1 is not None and offset2 is not None:
+        # offset diff
+        yield ('offset_diff', offset1 - offset2)
+        yield ('offset_diff_div3', (offset1 - offset2) / 3)
+        # offset pair
+        yield ('offset_div3_pair', (offset1 / 3, offset2 / 3))
+
+    # rev_offset features
+    rev_offset1 = edu_info1['edu_rev_idx_in_sent']
+    rev_offset2 = edu_info2['edu_rev_idx_in_sent']
+    if rev_offset1 is not None and rev_offset2 is not None:
+        yield ('rev_offset_diff', rev_offset1 - rev_offset2)
+        yield ('rev_offset_diff_div3', (rev_offset1 - rev_offset2) / 3)
+        yield ('rev_offset_div3_pair', (rev_offset1 / 3, rev_offset2 / 3))
+
     # revSentenceID
     rev_sent_id1 = edu_info1['edu_rev_idx_in_para']
     rev_sent_id2 = edu_info2['edu_rev_idx_in_para']
@@ -495,17 +417,6 @@ def extract_pair_sent(edu_info1, edu_info2):
 
 
 # syntax
-
-PAIR_SYNTAX = [
-    # relation between spanning nodes in the syntactic tree
-    ('SYN_dom1', Substance.DISCRETE),
-    ('SYN_dom2', Substance.DISCRETE),
-    ('SYN_alabel', Substance.DISCRETE),
-    ('SYN_aword', Substance.DISCRETE),
-    ('SYN_hlabel', Substance.DISCRETE),
-    ('SYN_hword', Substance.DISCRETE),
-]
-
 
 def extract_pair_syntax(edu_info1, edu_info2):
     """syntactic features for the pair of EDUs"""
@@ -606,22 +517,18 @@ def build_pair_feature_extractor(lecsie_data_dir=None):
     they are already stored in sf_cache, but under (slightly) different
     names
     """
-    feats = []
-    funcs = []
+    funcs = [
+        # feature type: 3
+        extract_pair_doc,
+        extract_pair_para,
+        extract_pair_sent,
+        # feature type: 5
+        extract_pair_syntax,
+    ]
 
-    # feature type: 3
-    feats.extend(PAIR_DOC)
-    funcs.append(extract_pair_doc)
-    feats.extend(PAIR_PARA)
-    funcs.append(extract_pair_para)
-    feats.extend(PAIR_SENT)
-    funcs.append(extract_pair_sent)
-    # 5
-    feats.extend(PAIR_SYNTAX)
-    funcs.append(extract_pair_syntax)
     # 6
-    # feats.extend(PAIR_SEMANTICS)  # NotImplemented
     # funcs.append(extract_pair_semantics)
+
     # LECSIE feats
     if lecsie_data_dir is not None:
         lecsie_feats = LecsieFeats(lecsie_data_dir)
@@ -634,12 +541,9 @@ def build_pair_feature_extractor(lecsie_data_dir=None):
             for feat in fct(edu_info1, edu_info2):
                 yield feat
 
-    # header
-    header = feats
     # extractor
     feat_extractor = _extract_all
-    # return header and extractor
-    return header, feat_extractor
+    return feat_extractor
 
 
 def product_features(feats_g, feats_d, feats_gd):
@@ -839,7 +743,8 @@ def split_feature_space(feats_g, feats_d, feats_gd, keep_original=False,
     # attachment dir
     if split_criterion in ['dir', 'dir_sent']:
         try:
-            attach_dir = feats_gd['attach_dir']
+            attach_dir = ('right' if feats_gd['attach_right']
+                          else 'left')
         except KeyError:
             pass
         else:
