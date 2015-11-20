@@ -198,10 +198,15 @@ class DocumentPlus(object):
         # align EDUs with paragraphs
         paragraphs = self.paragraphs
         # dirty extraction
-        edu2para = align_edus_with_paragraphs(edus[1:], paragraphs[1:], text)
+        if paragraphs is None:
+            edu2para = None
+        else:
+            edu2para = align_edus_with_paragraphs(edus[1:], paragraphs[1:],
+                                                  text)
         # prepend [0] for the left padding EDU and paragraph
-        self.edu2para = ([0] + edu2para if edu2para is not None
-                         else [None for edu in edus])
+        edu2para = ([0] + edu2para if edu2para is not None
+                    else [None for edu in edus])
+        self.edu2para = edu2para
 
         # compute relative index of each EDU to the beginning (resp. to
         # the end) of the paragraph
