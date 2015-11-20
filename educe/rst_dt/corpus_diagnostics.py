@@ -4,7 +4,7 @@
 
 from __future__ import print_function
 
-from collections import Counter, defaultdict
+from collections import Counter
 import os
 
 import pandas as pd
@@ -240,12 +240,13 @@ def parse_doc_ptb(doc_id, doc_tkd_toks):
         # ("tree position" in NLTK) in the tree
         lheads = find_lexical_heads(clean_tree)
         lex_heads.append(lheads)
-    return trees  #, lex_heads
+    return trees  # , lex_heads
 
 
 # WIP straddling relations ; definitely dirty as is
 strad_rels_rows = []
 # end WIP straddling relations
+
 
 # clean stuff
 def load_edus(doc_edus):
@@ -354,7 +355,6 @@ def load_spans(coarse_rtree_ref):
     return doc_span_rows
 
 
-@profile
 def load_training_as_dataframe_new(binarize=False):
     """Load training section of the RST-WSJ corpus as a pandas.DataFrame.
 
@@ -517,8 +517,8 @@ def load_training_as_dataframe_new(binarize=False):
                     strad_spans = []
                     for edu_span in rst_tree_node_spans_by_len:
                         # parent span
-                        if (edu_span[0] <= sent_edu_first and
-                            sent_edu_last <= edu_span[1]):
+                        if ((edu_span[0] <= sent_edu_first and
+                             sent_edu_last <= edu_span[1])):
                             parent_span = edu_span
                             break
                         # straddling spans
@@ -537,7 +537,7 @@ def load_training_as_dataframe_new(binarize=False):
                     # outside the sentence ;
                     # no member straddles either of the sentence
                     # boundaries
-                    leaky_type_12 = not(strad_spans)
+                    leaky_type_12 = not strad_spans
                     # DEBUG
                     print(doc_id.doc)
                     print(parent_span, strad_spans if strad_spans else '')
@@ -581,7 +581,8 @@ def load_training_as_dataframe_new(binarize=False):
                             'node_id': '{}_const{}'.format(
                                 strad_subtree.origin.doc,
                                 '-'.join(str(x) for x in strad_tpos)),
-                            'sent_id': '{}_sent{}'.format(doc_id.doc, sent_idx),
+                            'sent_id': '{}_sent{}'.format(
+                                doc_id.doc, sent_idx),
                             'kid_rels': kid_rels,
                         })
                         # end WIP running counter
@@ -648,7 +649,7 @@ def load_training_as_dataframe_new(binarize=False):
             edu2para = align_edus_with_paragraphs(doc_edus, doc_paras,
                                                   doc_text, strict=False)
             edu2para_codom = set([para_idx for para_idx in edu2para
-                                 if para_idx is not None])
+                                  if para_idx is not None])
             # index of the first and last EDU of each paragraph
             para_edu_starts = [(edu2para.index(i) + 1 if i in edu2para_codom
                                 else None)
@@ -691,12 +692,12 @@ def load_training_as_dataframe_new(binarize=False):
                         })
                     else:
                         row.update({'leaky': False})
-                    # WIP find for each leaky paragraph the smallest RST subtree
-                    # that covers it
+                    # WIP find for each leaky paragraph the smallest RST
+                    # subtree that covers it
                     if row['leaky']:
                         for edu_span in rst_tree_node_spans_by_len:
-                            if (edu_span[0] <= para_edu_starts[para_idx] and
-                                para_edu_ends[para_idx] <= edu_span[1]):
+                            if ((edu_span[0] <= para_edu_starts[para_idx] and
+                                 para_edu_ends[para_idx] <= edu_span[1])):
                                 parent_span = edu_span
                                 break
                         else:
@@ -711,9 +712,9 @@ def load_training_as_dataframe_new(binarize=False):
                             'parent_para_len': (
                                 edu2para[parent_span[1] - 1] -
                                 edu2para[parent_span[0] - 1] + 1),
-                            # distance between the current paragraph and the most
-                            # remote paragraph covered by the parent span, in
-                            # paragraphs
+                            # distance between the current paragraph and the
+                            # most remote paragraph covered by the parent
+                            # span, in paragraphs
                             'parent_para_dist': (
                                 max([(edu2para[parent_span[1] - 1] - para_idx),
                                      (para_idx - edu2para[parent_span[0] - 1])])),
