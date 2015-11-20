@@ -181,7 +181,8 @@ def check_label_ranks():
 # dirty, almost copies from educe.rst_dt.ptb.PtbParser...
 # TODO go and fix educe.rst_dt.{ptb, corenlp}
 PTB_DIR = os.path.join(os.path.dirname(__file__),
-                       '..', '..', '..', '..', 'corpora',
+                       '..', '..',
+                       'data',  # alt: '..', '..', 'corpora',
                        'PTBIII', 'parsed', 'mrg', 'wsj')
 PTB_READER = BracketParseCorpusReader(PTB_DIR,
                                       r'../wsj_.*\.mrg',
