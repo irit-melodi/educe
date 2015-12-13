@@ -15,6 +15,7 @@ from educe.rst_dt.lecsie import (load_lecsie_feats,
                                  LINE_FORMAT as LECSIE_LINE_FORMAT)
 from educe.stac.lexicon.pdtb_markers import (load_pdtb_markers_lexicon,
                                              PDTB_MARKERS_FILE)
+from educe.wordreprs.brown_clusters_acl2010 import fetch_brown_clusters
 
 
 # ---------------------------------------------------------------------
@@ -39,7 +40,9 @@ def build_doc_preprocessor():
     """Build the preprocessor for feature extraction in each EDU of doc"""
     # TODO re-do in a better, more modular way
     token_filter = None  # token_filter_li2014
-    docppp = DocumentPlusPreprocessor(token_filter)
+    word2clust = fetch_brown_clusters()[3200]  # EXPERIMENTAL
+    docppp = DocumentPlusPreprocessor(token_filter=token_filter,
+                                      word2clust=word2clust)
     return docppp.preprocess
 
 
@@ -101,6 +104,22 @@ def extract_single_pos(edu_info):
             yield ('POS_' + tag, occ)
         # NEW feature: EDU has at least a verb
         yield ('has_vb', any(tag.startswith('VB') for tag in tags))
+
+
+def extract_single_brown(edu_info):
+    """Brown cluster features for the EDU"""
+    try:
+        brown_clusters = edu_info['brown_clusters']
+    except KeyError:
+        return
+
+    if brown_clusters:
+        yield ('bc_first', brown_clusters[0])
+        yield ('bc_last', brown_clusters[-1])
+        # nb of occurrences of each brown cluster id in this EDU
+        bc_cnt = Counter(brown_clusters)
+        for bc, occ in bc_cnt.items():
+            yield ('bc_' + bc, occ)
 
 
 def extract_single_length(edu_info):
@@ -211,6 +230,8 @@ def build_edu_feature_extractor():
         extract_single_pdtb_markers,
         # pos
         extract_single_pos,
+        # EXPERIMENTAL Brown clusters
+        # extract_single_brown,
         # length
         extract_single_length,
         # para

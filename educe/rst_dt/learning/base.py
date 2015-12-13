@@ -131,14 +131,13 @@ class DocumentPlusPreprocessor(object):
     certainly not optimal.
     """
 
-    def __init__(self, token_filter=None):
+    def __init__(self, token_filter=None, word2clust=None):
         """
         token_filter is a function that returns True if a token should be
         kept; if None is provided, all tokens are kept
         """
-        if token_filter is None:
-            token_filter = lambda token: True
         self.token_filter = token_filter
+        self.word2clust = word2clust
 
     def preprocess(self, doc, strict=False):
         """Preprocess a document and output basic features for each EDU.
@@ -148,6 +147,7 @@ class DocumentPlusPreprocessor(object):
         TODO explicitly impute missing values, e.g. for (rev_)idxes_in_*
         """
         token_filter = self.token_filter
+        word2clust = self.word2clust
 
         edus = doc.edus
         raw_words = doc.raw_words  # TEMPORARY
@@ -183,6 +183,9 @@ class DocumentPlusPreprocessor(object):
         res['words'] = []  # TODO: __START__ ?
         res['tok_beg'] = 0  # EXPERIMENTAL
         res['tok_end'] = 0  # EXPERIMENTAL
+        # EXPERIMENTAL: Brown clusters
+        res['brown_clusters'] = []
+        # end Brown clusters
         # sentence
         res['edu_idx_in_sent'] = idxes_in_sent[0]
         res['edu_rev_idx_in_sent'] = rev_idxes_in_sent[0]
@@ -210,19 +213,26 @@ class DocumentPlusPreprocessor(object):
             if tokens is not None:
                 tok_idcs = edu2tokens[edu_idx]
                 toks = [tokens[tok_idx] for tok_idx in tok_idcs]
-                if toks:
-                    filtd_toks = [tt for tt in toks if token_filter(tt)]
-                    res['tokens'] = filtd_toks
-                    res['tags'] = [tok.tag for tok in filtd_toks]
-                    res['words'] = [tok.word for tok in filtd_toks]
-                else:
-                    if strict:
-                        emsg = 'No token for EDU'
-                        print(list(enumerate(tokens)))
-                        print(tok_idcs)
-                        print(edu.text())
-                        raise ValueError(emsg)
-                    # maybe I should fill res with empty lists? unclear
+                # special case: no tokens
+                if strict and not toks:
+                    emsg = 'No token for EDU'
+                    print(list(enumerate(tokens)))
+                    print(tok_idcs)
+                    print(edu.text())
+                    raise ValueError(emsg)
+                # filter tokens if relevant
+                if token_filter is not None:
+                    toks = [tt for tt in toks if token_filter(tt)]
+                # store information
+                res['tokens'] = toks
+                res['tags'] = [tok.tag for tok in toks]
+                res['words'] = [tok.word for tok in toks]
+                # EXPERIMENTAL: Brown clusters
+                if word2clust is not None:
+                    res['brown_clusters'] = [word2clust[w]
+                                             for w in res['words']
+                                             if w in word2clust]
+                # end Brown clusters
 
             # doc structure
 
