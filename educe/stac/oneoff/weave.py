@@ -7,7 +7,10 @@ text) with those in a 'target' document. This involves copying missing
 annotations over and shifting the text spans of any matching documents
 """
 
+from __future__ import print_function
+
 from collections import namedtuple
+import sys
 
 from educe.annotation import Span
 from educe.stac.context import enclosed
@@ -118,12 +121,23 @@ def tgt_gaps(matches):
     return gaps
 
 
-def check_matches(tgt_doc, matches):
+def check_matches(tgt_doc, matches, strict=True):
     """
     Check that the target document text is indeed a subsequence of
     the source document text (the source document is expected to be
     "augmented" version of the target with new text interspersed
     throughout)
+
+    Parameters
+    ----------
+    tgt_doc :
+    matches : list of (int, int, int)
+        List of triples (i, j, n) representing matching subsequences:
+        a[i:i+n] == b[j:j+n].
+        See `difflib.SequenceMatcher.get_matching_blocks`.
+    strict : boolean
+        If True, raise an exception if there are match gaps in the
+        target document, otherwise just print the gaps to stderr.
     """
     tgt_text = tgt_doc.text()
 
@@ -138,8 +152,17 @@ def check_matches(tgt_doc, matches):
 
     gaps = tgt_gaps(matches)
     if gaps:
-        oops = 'there are match gaps in the target document: {}'
-        raise WeaveException(oops.format(gaps))
+        if strict:
+            oops = 'there are match gaps in the target document {}: {}'
+            raise WeaveException(oops.format(tgt_doc.origin, gaps))
+        # we might want to give some slack because gaps can result from
+        # manual rewrites that happened here and there in the soclogs
+        # e.g. a pair of logical not (&not;) around _ => ^_^
+        # in these cases, just print them on stderr for quick checks
+        for gap in gaps:
+            gap_txt = tgt_text[gap[0]:gap[0] + gap[1]]
+            print(u"Match gap in tgt doc ({})\t{}\t{}".format(
+                tgt_doc.origin, gap, gap_txt), file=sys.stderr)
 
     _, tgt, size = matches[-1]
     if tgt + size != len(tgt_text):
@@ -178,14 +201,18 @@ def compute_updates(src_doc, tgt_doc, matches):
         res.shift_if_ge[tgt] = tgt_to_src  # case 1 and 2
         src_annos = enclosed(Span(src, src + size), src_doc.units)
         tgt_annos = enclosed(Span(tgt, tgt + size), tgt_doc.units)
-        for src_anno in src_annos:
+        # NEW compute (shifted) spans once, before looping over annotations
+        src_spans = [anno.text_span() for anno in src_annos]
+        tgt_spans = [anno.text_span().shift(tgt_to_src)
+                     for anno in tgt_annos]
+        for src_span, src_anno in zip(src_spans, src_annos):
             res.expected_src_only.remove(src_anno)  # prune from case 5
-            src_span = src_anno.text_span()
-            tgt_equiv = [x for x in tgt_annos
-                         if x.text_span().shift(tgt_to_src) == src_span]
+            tgt_equiv = [tgt_anno for tgt_span, tgt_anno
+                         in zip(tgt_spans, tgt_annos)
+                         if tgt_span == src_span]
             if not tgt_equiv:  # case 4
                 res.abnormal_src_only.append(src_anno)
-            for tgt_anno in tgt_equiv:  # prun from case 2
+            for tgt_anno in tgt_equiv:  # prune from case 2
                 if tgt_anno in res.abnormal_tgt_only:
                     res.abnormal_tgt_only.remove(tgt_anno)
 
