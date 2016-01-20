@@ -14,19 +14,14 @@ import copy
 import difflib
 import sys
 
-from educe.stac.oneoff.weave import\
-    (check_matches,
-     compute_updates,
-     shift_span)
-from educe.stac.util.args import\
-    (add_usual_input_args, add_usual_output_args,
-     get_output_dir, announce_output_dir,
-     read_corpus_with_unannotated)
+from educe.stac.oneoff.weave import (check_matches, compute_updates,
+                                     shift_span)
+from educe.stac.util.args import (add_usual_input_args, add_usual_output_args,
+                                  get_output_dir, announce_output_dir,
+                                  read_corpus_with_unannotated)
 from educe.stac.util.output import save_document
-from educe.stac.util.doc import\
-    (evil_set_text,
-     compute_renames, rename_ids,
-     unannotated_key)
+from educe.stac.util.doc import (evil_set_text, compute_renames, rename_ids,
+                                 unannotated_key)
 from educe.util import mk_is_interesting
 import educe.stac
 
@@ -39,7 +34,7 @@ def _preview_anno(doc, anno, max_width=50):
         snippet = text[:max_width] + '...'
     else:
         snippet = text
-    template = '{ty} {span} [{snippet}]'
+    template = u"{ty} {span} [{snippet}]"
     return template.format(ty=anno.type,
                            span=span,
                            snippet=snippet)
@@ -49,10 +44,12 @@ def _maybe_warn(warning, doc, annos):
     """Emit a warning about a potentially problematic group of annotations
     """
     if annos:
-        oops = 'WARNING: ' + warning + ':\n'
-        oops += '\n'.join(['    {}'.format(_preview_anno(doc, x))
+        oops = u"WARNING: " + warning + u":\n"
+        oops += u"\n".join([u"    {}".format(_preview_anno(doc, x))
                            for x in annos])
-        print(oops, file=sys.stderr)
+        # explicitly encoding to UTF-8 is not a great solution, but heh
+        # see http://stackoverflow.com/a/4546129
+        print(oops.encode('utf-8'), file=sys.stderr)
 
 
 def _hollow_out_nonplayer_text(src_doc):
@@ -84,18 +81,19 @@ def _hollow_out_nonplayer_text(src_doc):
                 if x.type == 'NonplayerTurn']
 
     # merge consecutive nonplayer turns
-    current = None
     merged_np_spans = []
-    for span in sorted(np_spans):
-        if not current:
-            current = span
-            continue
-        elif span.char_start == current.char_end + 1:
-            current = current.merge(span)
-        else:
-            merged_np_spans.append(current)
-            current = span
-    merged_np_spans.append(current)
+    if np_spans:
+        current = None
+        for span in sorted(np_spans):
+            if not current:
+                current = span
+                continue
+            elif span.char_start == current.char_end + 1:
+                current = current.merge(span)
+            else:
+                merged_np_spans.append(current)
+                current = span
+        merged_np_spans.append(current)
 
     orig = src_doc.text()
     res = ''
