@@ -15,6 +15,7 @@ import difflib
 import sys
 
 from educe.stac.oneoff.weave import (check_matches, compute_updates,
+                                     compute_structural_updates,
                                      shift_span)
 from educe.stac.util.args import (add_usual_input_args, add_usual_output_args,
                                   get_output_dir, announce_output_dir,
@@ -52,9 +53,10 @@ def _maybe_warn(warning, doc, annos):
         print(oops.encode('utf-8'), file=sys.stderr)
 
 
-def _hollow_out_nonplayer_text(src_doc):
-    """Return a version of the source text where all characters in nonplayer
-    turns are replaced with a nonsense char (tab).
+def _hollow_out_missing_turn_text(src_doc, tgt_doc):
+    """Return a version of the source text where all characters in turns
+    present in `src_doc` but not in `tgt_doc` are replaced with a
+    nonsense char (tab).
 
     Notes
     -----
@@ -77,8 +79,12 @@ def _hollow_out_nonplayer_text(src_doc):
 
     # we can't use the API one until we update it to account for the
     # fancy new identifiers
+    tgt_turns = set(x.features['Identifier']
+                    for x in tgt_doc.units
+                    if x.features.get('Identifier'))
     np_spans = [x.text_span() for x in src_doc.units
-                if x.type == 'NonplayerTurn']
+                if (x.features.get('Identifier') and
+                    x.features['Identifier'] not in tgt_turns)]
 
     # merge consecutive nonplayer turns
     merged_np_spans = []
@@ -117,17 +123,29 @@ def _weave_docs(renames, src_doc, tgt_doc):
     src_text = src_doc.text()
     tgt_text = tgt_doc.text()
 
-    matcher = difflib.SequenceMatcher(isjunk=None,
-                                      a=_hollow_out_nonplayer_text(src_doc),
-                                      b=tgt_text,
-                                      autojunk=False)
+    matcher = difflib.SequenceMatcher(
+        isjunk=None,
+        a=_hollow_out_missing_turn_text(src_doc, tgt_doc),
+        b=tgt_text,
+        autojunk=False)
     matches = matcher.get_matching_blocks()
-    check_matches(tgt_doc, matches)
+    
+    try:  # DEBUG
+        check_matches(tgt_doc, matches)  # non-DEBUG
+    except educe.stac.oneoff.weave.WeaveException:
+        print(matcher.a)
+        print('>>>>>>>')
+        print(matcher.b)
+        raise
 
     # we have to compute the updates on the basis of the result
     # doc because we want to preserve things like relation and
     # cdu pointers (which have been deep copied from original)
     updates = compute_updates(src_doc, res_doc, matches)
+
+    # WIP update structural annotations: dialogues
+    updates = compute_structural_updates(src_doc, tgt_doc, matches, updates)
+    # end WIP
 
     structural_tgt_only = [x for x in updates.abnormal_tgt_only if
                            educe.stac.is_structure(x)]
@@ -211,7 +229,9 @@ def main(args):
     corpus = read_corpus_with_unannotated(args)
     renames = compute_renames(corpus, augmented)
     for key in corpus:
+        print('<== weaving {} ==>'.format(key), file=sys.stderr)  # DEBUG
         ukey = unannotated_key(key)
         new_tgt_doc = _weave_docs(renames, augmented[ukey], corpus[key])
         save_document(output_dir, key, new_tgt_doc)
+        print('<== done ==>', file=sys.stderr)  # DEBUG
     announce_output_dir(output_dir)

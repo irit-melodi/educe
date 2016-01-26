@@ -13,6 +13,7 @@ from collections import namedtuple
 import sys
 
 from educe.annotation import Span
+from educe.stac.annotation import is_structure, DIALOGUE_ACTS, RENAMES
 from educe.stac.context import enclosed
 
 
@@ -59,13 +60,13 @@ class Updates(namedtuple('Updates',
     shift_if_ge : dict(int, int)
         (case 1 and 2) shift points and offsets for characters
         in the target document (see `shift_spans`)
-    abnormal_tgt_only : [Annotation]
-        (case 2) annotations that only occur
-        in the target document (weird, found in matches)
     abnormal_src_only: [Annotation]
         (case 4) annotations that only occur in the
         source document (weird, found in matches)
-    abnormal_src_only [Annotation]
+    abnormal_tgt_only : [Annotation]
+        (case 2) annotations that only occur
+        in the target document (weird, found in matches)
+    expected_src_only [Annotation]
         (case 5) annotations that only occur in the
         source doc (ok, found in gaps)
     """
@@ -152,9 +153,6 @@ def check_matches(tgt_doc, matches, strict=True):
 
     gaps = tgt_gaps(matches)
     if gaps:
-        if strict:
-            oops = 'there are match gaps in the target document {}: {}'
-            raise WeaveException(oops.format(tgt_doc.origin, gaps))
         # we might want to give some slack because gaps can result from
         # manual rewrites that happened here and there in the soclogs
         # e.g. a pair of logical not (&not;) around _ => ^_^
@@ -163,6 +161,17 @@ def check_matches(tgt_doc, matches, strict=True):
             gap_txt = tgt_text[gap[0]:gap[0] + gap[1]]
             print(u"Match gap in tgt doc ({})\t{}\t{}".format(
                 tgt_doc.origin, gap, gap_txt), file=sys.stderr)
+        print(matches)
+        tgt_turns = set(x.features['Identifier']
+                        for x in tgt_doc.units
+                        if x.features.get('Identifier'))
+        print(sorted(tgt_turns))
+        print('\n'.join(str(x) for x
+                        in sorted(tgt_doc.units, key=lambda y: y.span)))
+        # end DEBUG
+        if strict:
+            oops = 'there are match gaps in the target document {}: {}'
+            raise WeaveException(oops.format(tgt_doc.origin, gaps))
 
     _, tgt, size = matches[-1]
     if tgt + size != len(tgt_text):
@@ -217,6 +226,211 @@ def compute_updates(src_doc, tgt_doc, matches):
                     res.abnormal_tgt_only.remove(tgt_anno)
 
     return res
+
+
+def stretch_match(updates, src_doc, tgt_doc, span_src, span_tgt,
+                  annos_src, annos_tgt, verbose=0):
+    """Compute stretch matches between `annos_src` and `annos_tgt`.
+
+    Parameters
+    ----------
+    updates : Update
+    src_doc : Document
+    tgt_doc : Document
+    span_src : Span
+    span_tgt : Span
+    annos_src : list of educe.annotation
+        Unmatched annotations in `span_src`.
+    annos_tgt : list of educe.annotation
+        Unmatched annotations in `span_tgt`.
+    verbose : int
+        Verbosity level
+
+    Returns
+    -------
+    res : Update
+        Possibly trimmed version of `updates`.
+    """
+    # unmatched structs in src
+    cands_src = enclosed(Span(span_src[0], span_src[1]),
+                         annos_src)
+    spans_src = [anno.text_span() for anno in cands_src]
+    # unmatched structs in tgt
+    cands_tgt = enclosed(Span(span_tgt[0], span_tgt[1]),
+                         annos_tgt)
+    spans_tgt = [shift_span(anno.text_span(), updates)
+                 for anno in cands_tgt]
+
+    # {one,many} to one match between source and target
+    for span_tgt, cand_tgt in zip(spans_tgt, cands_tgt):
+        # search for an annotation in source on the exact same span
+        src_equiv = [cand_src for span_src, cand_src
+                     in zip(spans_src, cands_src)
+                     if span_src == span_tgt]
+        if src_equiv:
+            # 1 to 1 match between source and target
+            #
+            # the target structure has a (stretch) match in the source
+            updates.abnormal_tgt_only.remove(cand_tgt)
+            if verbose:
+                print('Remove {} from abnormal_tgt_only'.format(cand_tgt),
+                      file=sys.stderr)  # DEBUG
+            for cand_src in src_equiv:
+                # these source structures are neither abnormal
+                if cand_src in updates.abnormal_src_only:
+                    updates.abnormal_src_only.remove(cand_src)
+                    if verbose:
+                        print('Remove {} from abnormal_src_only'.format(
+                            cand_src),
+                              file=sys.stderr)  # DEBUG
+                # nor expected to appear only in source
+                if cand_src in updates.expected_src_only:
+                    updates.expected_src_only.remove(cand_src)
+                    if verbose:
+                        print('Remove {} from expected_src_only'.format(
+                            cand_src),
+                              file=sys.stderr)  # DEBUG
+        else:
+            # many to 1 match between source and target
+            #
+            # search for a sequence of contiguous annotations in source
+            # that covers the same span as a single annotation of the
+            # same type in target ; this is supposed to capture the
+            # result of `stac-edit merge-{dialogue,edu}`
+            src_equiv_cands = enclosed(span_tgt, cands_src)
+            src_equiv_seq = sorted(src_equiv_cands, key=lambda x: x.span)
+            # if the sequence covers the targeted span
+            if ((src_equiv_seq and
+                 src_equiv_seq[0].span.char_start == span_tgt.char_start and
+                 src_equiv_seq[-1].span.char_end == span_tgt.char_end)):
+                # and has no gap or just whitespaces
+                gap_str = ''.join(
+                    src_doc.text(span=Span(elt_cur.span.char_end,
+                                           elt_nex.span.char_start))
+                    for elt_cur, elt_nex
+                    in zip(src_equiv_seq[:-1], src_equiv_seq[1:])
+                )
+                gap_str = gap_str.strip()
+                if not gap_str:
+                    # mark the target anno as matched
+                    if cand_tgt in updates.abnormal_tgt_only:
+                        updates.abnormal_tgt_only.remove(cand_tgt)
+                    # and the source annotations likewise
+                    for src_equiv_elt in src_equiv_seq:
+                        if src_equiv_elt in updates.abnormal_src_only:
+                            updates.abnormal_src_only.remove(src_equiv_elt)
+                        if src_equiv_elt in updates.expected_src_only:
+                            updates.expected_src_only.remove(src_equiv_elt)
+                    if verbose:
+                        print('Guess: {} results from a merge on {}'.format(
+                            str(cand_tgt), [str(x) for x in src_equiv_seq]),
+                              file=sys.stderr)
+
+    # one to many match between source and target
+    for span_src, cand_src in zip(spans_src, cands_src):
+        # search for a sequence of contiguous annotations in target
+        # that covers the same span as a single annotation of the
+        # same type in source ; this is supposed to capture the
+        # result of `stac-edit split-{dialogue,edu}`
+        tgt_equiv_cands = [cand_tgt for span_tgt, cand_tgt
+                           in zip(spans_tgt, cands_tgt)
+                           if span_src.encloses(span_tgt)]
+
+        tgt_equiv_seq = sorted(tgt_equiv_cands, key=lambda x: x.span)
+        # if the sequence covers the source span
+        if ((tgt_equiv_seq and
+             tgt_equiv_seq[0].span.char_start == span_src.char_start and
+             tgt_equiv_seq[-1].span.char_end == span_src.char_end)):
+            # and has no gap or just whitespaces
+            gap_str = ''.join(
+                tgt_doc.text(span=Span(elt_cur.span.char_end,
+                                       elt_nex.span.char_start))
+                for elt_cur, elt_nex
+                in zip(tgt_equiv_seq[:-1], tgt_equiv_seq[1:])
+            )
+            gap_str = gap_str.strip()
+            if not gap_str:
+                # mark the source anno as matched
+                if cand_src in updates.abnormal_src_only:
+                    updates.abnormal_src_only.remove(cand_src)
+                if cand_src in updates.expected_src_only:
+                    updates.expected_src_only.remove(cand_src)
+                # and the target annotations likewise
+                for tgt_equiv_elt in tgt_equiv_seq:
+                    if tgt_equiv_elt in updates.abnormal_tgt_only:
+                        updates.abnormal_tgt_only.remove(tgt_equiv_elt)
+                if verbose:
+                    print('Guess: {} results from a split on {}'.format(
+                        [str(x) for x in tgt_equiv_seq], str(cand_src)),
+                          file=sys.stderr)
+
+    # TODO? many to many match between source and target
+    return updates
+
+
+UNITS = DIALOGUE_ACTS + RENAMES.keys()
+
+
+def compute_structural_updates(src_doc, tgt_doc, matches, updates, verbose=0):
+    """Transfer structural annotations from `tgt_doc` to `src_doc`.
+
+    This is the transposition of `compute_updates` to structural
+    units (dialogues only, for the moment).
+    """
+    # match structural units: transpose to the augmented `src_doc`
+    # the structures defined on (a subspan of) a sequence of contiguous
+    # match spans in b
+    stretch_map = {}
+    offset_src = matches[0].a
+    offset_tgt = matches[0].b
+    for m, m1 in zip(matches[:-1], matches[1:]):
+        # the next match is not contiguous on tgt
+        if m.b + m.size != m1.b:
+            merged_span_src = (offset_src, m.a + m.size)
+            merged_span_tgt = (offset_tgt, m.b + m.size)
+            stretch_map[merged_span_tgt] = merged_span_src
+            # update offsets
+            offset_src = m.a
+            offset_tgt = m.b
+    # add final stretch map
+    merged_span_src = (offset_src, m.a + m.size)
+    merged_span_tgt = (offset_tgt, m.b + m.size)
+    stretch_map[merged_span_src] = merged_span_tgt
+
+    # gather all unmatched units from tgt and tgt that can be stretched:
+    # dialogues and segments (we'll see if they can be treated the same)
+    unmatched_src_annos = set(updates.abnormal_src_only +
+                              updates.expected_src_only)
+    unmatched_src_dlgs = [x for x in unmatched_src_annos
+                          if x.type.lower() == 'dialogue']
+    unmatched_src_segs = [x for x in unmatched_src_annos
+                          if x.type.lower() == 'segment']
+    # target: same categories + units
+    unmatched_tgt_annos = set(updates.abnormal_tgt_only)
+    unmatched_tgt_dlgs = [x for x in unmatched_tgt_annos
+                          if x.type.lower() == 'dialogue']
+    unmatched_tgt_segs = [x for x in unmatched_tgt_annos
+                          if x.type.lower() == 'segment']
+    unmatched_tgt_units = [x for x in unmatched_tgt_annos
+                           if x.type.lower() in set(y.lower() for y in UNITS)]
+    # try to match them using the stretched maps
+    for span_src, span_tgt in stretch_map.items():
+        # dialogues
+        updates = stretch_match(updates, src_doc, tgt_doc,
+                                span_src, span_tgt,
+                                unmatched_src_dlgs, unmatched_tgt_dlgs,
+                                verbose=verbose)
+        # EDUs (segments)
+        updates = stretch_match(updates, src_doc, tgt_doc,
+                                span_src, span_tgt,
+                                unmatched_src_segs, unmatched_tgt_segs,
+                                verbose=verbose)
+        # units / discourse acts
+        updates = stretch_match(updates, src_doc, tgt_doc,
+                                span_src, span_tgt,
+                                unmatched_src_segs, unmatched_tgt_units,
+                                verbose=verbose)
+    return updates
 
 
 def shift_char(position, updates):
