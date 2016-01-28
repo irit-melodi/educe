@@ -16,6 +16,7 @@ import sys
 
 from educe.stac.oneoff.weave import (check_matches, compute_updates,
                                      compute_structural_updates,
+                                     hollow_out_missing_turn_text,
                                      shift_span)
 from educe.stac.util.args import (add_usual_input_args, add_usual_output_args,
                                   get_output_dir, announce_output_dir,
@@ -53,65 +54,6 @@ def _maybe_warn(warning, doc, annos):
         print(oops.encode('utf-8'), file=sys.stderr)
 
 
-def _hollow_out_missing_turn_text(src_doc, tgt_doc):
-    """Return a version of the source text where all characters in turns
-    present in `src_doc` but not in `tgt_doc` are replaced with a
-    nonsense char (tab).
-
-    Notes
-    -----
-    We use difflib's SequenceMatcher to compare the original (but annotated)
-    corpus against the augmented corpus containing nonplayer turns. This
-    gives us the ability to shift annotation spans into the appropriate
-    place within the augmented corpus. By rights the diff should yield only
-    inserts (of the nonplayer turns). But if the inserted text should happen
-    to have the same sorts of substrings as you might find in the rest of
-    corpus, the diff algorithm can be fooled.
-    """
-    # docstring followup:
-    #
-    # That said, since we know exactly what things we expect to have inserted,
-    # it's not clear to me why we are using diff and not just computing the
-    # shifts off the nonplayer turns. Was I being lazy? Did I just not work
-    # out this was possible? Was I trying to be robust? It could also have
-    # something to do with managing the extra bits of whitespace around the
-    # new nonplayer turns.  To simplify...
-
-    # we can't use the API one until we update it to account for the
-    # fancy new identifiers
-    tgt_turns = set(x.features['Identifier']
-                    for x in tgt_doc.units
-                    if x.features.get('Identifier'))
-    np_spans = [x.text_span() for x in src_doc.units
-                if (x.features.get('Identifier') and
-                    x.features['Identifier'] not in tgt_turns)]
-
-    # merge consecutive nonplayer turns
-    merged_np_spans = []
-    if np_spans:
-        current = None
-        for span in sorted(np_spans):
-            if not current:
-                current = span
-                continue
-            elif span.char_start == current.char_end + 1:
-                current = current.merge(span)
-            else:
-                merged_np_spans.append(current)
-                current = span
-        merged_np_spans.append(current)
-
-    orig = src_doc.text()
-    res = ''
-    last = 0
-    for span in merged_np_spans:
-        res += orig[last:span.char_start]
-        res += '\t' * (span.char_end - span.char_start)
-        last = span.char_end
-    res += orig[last:]
-    return res
-
-
 def _weave_docs(renames, src_doc, tgt_doc):
     """Return a deep copy of the target document with combined
     annotations from both the original source and target
@@ -125,7 +67,7 @@ def _weave_docs(renames, src_doc, tgt_doc):
 
     matcher = difflib.SequenceMatcher(
         isjunk=None,
-        a=_hollow_out_missing_turn_text(src_doc, tgt_doc),
+        a=hollow_out_missing_turn_text(src_doc, tgt_doc),
         b=tgt_text,
         autojunk=False)
     matches = matcher.get_matching_blocks()

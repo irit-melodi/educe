@@ -228,7 +228,7 @@ def compute_updates(src_doc, tgt_doc, matches):
     return res
 
 
-def stretch_match(updates, src_doc, tgt_doc, span_src, span_tgt,
+def stretch_match(updates, src_doc, tgt_doc, doc_span_src, doc_span_tgt,
                   annos_src, annos_tgt, verbose=0):
     """Compute stretch matches between `annos_src` and `annos_tgt`.
 
@@ -237,8 +237,8 @@ def stretch_match(updates, src_doc, tgt_doc, span_src, span_tgt,
     updates : Update
     src_doc : Document
     tgt_doc : Document
-    span_src : Span
-    span_tgt : Span
+    doc_span_src : Span
+    doc_span_tgt : Span
     annos_src : list of educe.annotation
         Unmatched annotations in `span_src`.
     annos_tgt : list of educe.annotation
@@ -252,26 +252,52 @@ def stretch_match(updates, src_doc, tgt_doc, span_src, span_tgt,
         Possibly trimmed version of `updates`.
     """
     # unmatched structs in src
-    cands_src = enclosed(Span(span_src[0], span_src[1]),
+    cands_src = enclosed(Span(doc_span_src[0], doc_span_src[1]),
                          annos_src)
     spans_src = [anno.text_span() for anno in cands_src]
     # unmatched structs in tgt
-    cands_tgt = enclosed(Span(span_tgt[0], span_tgt[1]),
+    cands_tgt = enclosed(Span(doc_span_tgt[0], doc_span_tgt[1]),
                          annos_tgt)
-    spans_tgt = [shift_span(anno.text_span(), updates)
-                 for anno in cands_tgt]
+    spans_tgt = [anno.text_span() for anno in cands_tgt]
 
     # {one,many} to one match between source and target
     for span_tgt, cand_tgt in zip(spans_tgt, cands_tgt):
-        # search for an annotation in source on the exact same span
+        # 1-1 match on the exact (translated) same span
         src_equiv = [cand_src for span_src, cand_src
                      in zip(spans_src, cands_src)
                      if span_src == span_tgt]
+
+        # 1-1 stretch match, based on comparing the text of the turns
+        # that are common to source and target
+        txt_tgt = tgt_doc.text(span=span_tgt)
+        src_equiv_stretch = [cand_src for span_src, cand_src
+                             in zip(spans_src, cands_src)
+                             if (txt_tgt.strip() ==
+                                 hollow_out_missing_turn_text(
+                                     src_doc, tgt_doc,
+                                     doc_span_src=span_src,
+                                     doc_span_tgt=span_tgt
+                                 ).replace('\t ', '').replace('\t', '').strip())]
+        if verbose and src_equiv_stretch:
+            print('1-to-1 stretch match: ',
+                  [str(x) for x in src_equiv_stretch])
+            print('for target annotation: ', cand_tgt)
+        # extend list of 1-1 exact matches with 1-1 stretch matches
+        if src_equiv_stretch:
+            src_equiv.extend(src_equiv_stretch)
+
+        span_tgt = shift_span(span_tgt, updates)
         if src_equiv:
             # 1 to 1 match between source and target
             #
             # the target structure has a (stretch) match in the source
-            updates.abnormal_tgt_only.remove(cand_tgt)
+            try:
+                updates.abnormal_tgt_only.remove(cand_tgt)
+            except ValueError:
+                print(cand_tgt)
+                print('is not in abnormal_tgt_only:')
+                print('\n'.join(str(x) for x in updates.abnormal_tgt_only))
+                raise
             if verbose:
                 print('Remove {} from abnormal_tgt_only'.format(cand_tgt),
                       file=sys.stderr)  # DEBUG
@@ -326,6 +352,8 @@ def stretch_match(updates, src_doc, tgt_doc, span_src, span_tgt,
                             str(cand_tgt), [str(x) for x in src_equiv_seq]),
                               file=sys.stderr)
 
+    spans_tgt = [shift_span(span_tgt, updates)
+                 for span_tgt in spans_tgt]  # WIP
     # one to many match between source and target
     for span_src, cand_src in zip(spans_src, cands_src):
         # search for a sequence of contiguous annotations in target
@@ -364,7 +392,132 @@ def stretch_match(updates, src_doc, tgt_doc, span_src, span_tgt,
                         [str(x) for x in tgt_equiv_seq], str(cand_src)),
                           file=sys.stderr)
 
-    # TODO? many to many match between source and target
+    return updates
+
+
+def find_continuous_seqs(doc, spans, annos):
+    """Find continuous sequences of annotations, ignoring whitespaces.
+
+    Parameters
+    ----------
+    doc : Document
+        Annotated document
+    spans : list of Span
+        Spans that support the annotations
+    annos : list of Annotation
+        Annotations of interest
+    ignore_whitespaces : boolean, optional
+        If True, whitespaces are ignored when assessing continuity.
+
+    Returns
+    -------
+    seqs : list of list of integers
+        List of sequences of indices (in annos and spans)
+    """
+    seqs = [[]]
+    seqs[-1].append(0)
+
+    for i, (span_cur, anno_cur, span_nex, anno_nex) in enumerate(zip(
+            spans[:-1], annos[:-1], spans[1:], annos[1:])):
+        # check for gap
+        if span_cur.char_end < span_nex.char_start:
+            gap_span = Span(span_cur.char_end, span_nex.char_start)
+            # ignore gap if all whitespace
+            if doc.text(span=gap_span).strip():
+                seqs.append([])
+        elif span_cur.char_end > span_nex.char_start:
+            raise ValueError('Overlapping annotations?!\n{}\n{}'.format(
+                anno_cur, anno_nex))
+        # update current (possibly new) sequence
+        seqs[-1].append(i + 1)
+
+    return seqs
+    
+
+def stretch_match_many(updates, src_doc, tgt_doc, doc_span_src, doc_span_tgt,
+                       annos_src, annos_tgt, verbose=0):
+    """Compute n-m stretch matches between `annos_src` and `annos_tgt`.
+
+    Parameters
+    ----------
+    updates : Update
+    src_doc : Document
+    tgt_doc : Document
+    doc_span_src : Span
+    doc_span_tgt : Span
+    annos_src : list of educe.annotation
+        Unmatched annotations in `span_src`.
+    annos_tgt : list of educe.annotation
+        Unmatched annotations in `span_tgt`.
+    verbose : int
+        Verbosity level
+
+    Returns
+    -------
+    res : Update
+        Possibly trimmed version of `updates`.
+    """
+    # unmatched structs in src
+    cands_src = enclosed(Span(doc_span_src[0], doc_span_src[1]),
+                         annos_src)
+    cands_src = sorted(cands_src, key=lambda x: x.span)
+    spans_src = [anno.text_span() for anno in cands_src]
+    # unmatched structs in tgt
+    cands_tgt = enclosed(Span(doc_span_tgt[0], doc_span_tgt[1]),
+                         annos_tgt)
+    cands_tgt = sorted(cands_tgt, key=lambda x: x.span)
+    spans_tgt = [anno.text_span() for anno in cands_tgt]
+
+    if not (spans_src and spans_tgt):
+        return updates
+
+    # many to many match between source and target
+    seqs_src = find_continuous_seqs(src_doc, spans_src, cands_src)
+    seqs_tgt = find_continuous_seqs(tgt_doc, spans_tgt, cands_tgt)
+
+    # TODO if both sequences span the same text (for common turns), use
+    # stretched target annotations
+    for seq_src, seq_tgt in zip(seqs_src, seqs_tgt):
+        seq_spans_src = [spans_src[i] for i in seq_src]
+        seq_annos_src = [cands_src[i] for i in seq_src]
+        span_seq_src = Span(seq_spans_src[0].char_start,
+                            seq_spans_src[-1].char_end)
+
+        seq_spans_tgt = [spans_tgt[i] for i in seq_tgt]
+        seq_annos_tgt = [cands_tgt[i] for i in seq_tgt]
+        span_seq_tgt = Span(seq_spans_tgt[0].char_start,
+                            seq_spans_tgt[-1].char_end)
+        # compare (hollowed) text
+        txt_src = src_doc.text(span=span_seq_src)
+        txt_src = hollow_out_missing_turn_text(
+            src_doc, tgt_doc,
+            doc_span_src=span_seq_src,
+            doc_span_tgt=span_seq_tgt).replace('\t ', '').replace('\t', '')
+        txt_tgt = tgt_doc.text(span=span_seq_tgt)
+
+        if txt_tgt.strip() == txt_src.strip():
+            if verbose:
+                print('Many-to-many stretch match:\n',
+                      'source:\n',
+                      '\n'.join(str(x) for x in seq_annos_src),
+                      '\ntarget:\n',
+                      '\n'.join(str(x) for x in seq_annos_tgt)
+                )
+            # remove matched annos from src and tgt from _only
+            for anno in seq_annos_tgt:
+                try:
+                    updates.abnormal_tgt_only.remove(anno)
+                except ValueError:
+                    print(anno)
+                    print('is not in abnormal_tgt_only:')
+                    print(updates.abnormal_tgt_only)
+                    raise
+            for anno in seq_annos_src:
+                if anno in updates.abnormal_src_only:
+                    updates.abnormal_src_only.remove(anno)
+                if anno in updates.expected_src_only:
+                    updates.expected_src_only.remove(anno)
+
     return updates
 
 
@@ -415,21 +568,49 @@ def compute_structural_updates(src_doc, tgt_doc, matches, updates, verbose=0):
                            if x.type.lower() in set(y.lower() for y in UNITS)]
     # try to match them using the stretched maps
     for span_src, span_tgt in stretch_map.items():
-        # dialogues
+        # dialogues: 1-1, n-1, 1-n
         updates = stretch_match(updates, src_doc, tgt_doc,
                                 span_src, span_tgt,
                                 unmatched_src_dlgs, unmatched_tgt_dlgs,
                                 verbose=verbose)
+        
         # EDUs (segments)
         updates = stretch_match(updates, src_doc, tgt_doc,
                                 span_src, span_tgt,
                                 unmatched_src_segs, unmatched_tgt_segs,
                                 verbose=verbose)
-        # units / discourse acts
+        # units / dialogue acts
         updates = stretch_match(updates, src_doc, tgt_doc,
                                 span_src, span_tgt,
                                 unmatched_src_segs, unmatched_tgt_units,
                                 verbose=verbose)
+
+    # WIP n-m matchings, currently for dialogues only
+    # FIXME find a cleaner and more concise formulation, share code
+    # with the above
+    # dialogues and segments (we'll see if they can be treated the same)
+    unmatched_src_annos = set(updates.abnormal_src_only +
+                              updates.expected_src_only)
+    unmatched_src_dlgs = [x for x in unmatched_src_annos
+                          if x.type.lower() == 'dialogue']
+    unmatched_src_segs = [x for x in unmatched_src_annos
+                          if x.type.lower() == 'segment']
+    # target: same categories + units
+    unmatched_tgt_annos = set(updates.abnormal_tgt_only)
+    unmatched_tgt_dlgs = [x for x in unmatched_tgt_annos
+                          if x.type.lower() == 'dialogue']
+    unmatched_tgt_segs = [x for x in unmatched_tgt_annos
+                          if x.type.lower() == 'segment']
+    unmatched_tgt_units = [x for x in unmatched_tgt_annos
+                           if x.type.lower() in set(y.lower() for y in UNITS)]
+    # try to match them using the stretched maps
+    for span_src, span_tgt in stretch_map.items():
+        # dialogues: n-m
+        updates = stretch_match_many(updates, src_doc, tgt_doc,
+                                     span_src, span_tgt,
+                                     unmatched_src_dlgs, unmatched_tgt_dlgs,
+                                     verbose=verbose)
+
     return updates
 
 
@@ -488,3 +669,81 @@ def shift_span(span, updates):
     # left of a new annotation
     end = 1 + shift_char(span.char_end - 1, updates)
     return Span(start, end)
+
+
+def hollow_out_missing_turn_text(src_doc, tgt_doc,
+                                 doc_span_src=None, doc_span_tgt=None):
+    """Return a version of the source text where all characters in turns
+    present in `src_doc` but not in `tgt_doc` are replaced with a
+    nonsense char (tab).
+
+    Parameters
+    ----------
+    src_doc : Document
+    tgt_doc : Document
+    doc_span_src : Span, optional
+    doc_span_tgt : Span, optional
+
+    Notes
+    -----
+    We use difflib's SequenceMatcher to compare the original (but annotated)
+    corpus against the augmented corpus containing nonplayer turns. This
+    gives us the ability to shift annotation spans into the appropriate
+    place within the augmented corpus. By rights the diff should yield only
+    inserts (of the nonplayer turns). But if the inserted text should happen
+    to have the same sorts of substrings as you might find in the rest of
+    corpus, the diff algorithm can be fooled.
+    """
+    # docstring followup:
+    #
+    # That said, since we know exactly what things we expect to have inserted,
+    # it's not clear to me why we are using diff and not just computing the
+    # shifts off the nonplayer turns. Was I being lazy? Did I just not work
+    # out this was possible? Was I trying to be robust? It could also have
+    # something to do with managing the extra bits of whitespace around the
+    # new nonplayer turns.  To simplify...
+    units_tgt = tgt_doc.units
+    if doc_span_tgt is not None:
+        units_tgt = [x for x in units_tgt
+                     if doc_span_tgt.encloses(x.span)]
+    units_src = src_doc.units
+    if doc_span_src is not None:
+        units_src = [x for x in units_src
+                     if doc_span_src.encloses(x.span)]
+
+    # we can't use the API one until we update it to account for the
+    # fancy new identifiers
+    tgt_turns = set(x.features['Identifier']
+                    for x in units_tgt
+                    if x.features.get('Identifier'))
+    np_spans = [x.text_span() for x in units_src
+                if (x.features.get('Identifier') and
+                    x.features['Identifier'] not in tgt_turns)]
+
+    # merge consecutive nonplayer turns
+    merged_np_spans = []
+    if np_spans:
+        current = None
+        for span in sorted(np_spans):
+            if not current:
+                current = span
+                continue
+            elif span.char_start == current.char_end + 1:
+                current = current.merge(span)
+            else:
+                merged_np_spans.append(current)
+                current = span
+        merged_np_spans.append(current)
+
+    if doc_span_src is not None:
+        orig = src_doc.text(span=doc_span_src)
+    else:
+        orig = src_doc.text()
+    res = ''
+    last = 0
+    for span in merged_np_spans:
+        res += orig[last:span.char_start]
+        res += '\t' * (span.char_end - span.char_start)
+        last = span.char_end
+    res += orig[last:]
+    return res
