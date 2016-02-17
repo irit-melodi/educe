@@ -50,13 +50,22 @@ class FeatureItem(ContextItem):
         return parent
 # pylint: enable=too-many-arguments
 
-STAC_EXPECTED_FEATURES =\
-    {'EDU': frozenset(['Addressee', 'Surface_act']),
-     'relation': frozenset(['Argument_scope']),
-     'Resource': frozenset(['Status', 'Quantity', 'Correctness', 'Kind']),
-     'Preference': frozenset(),
-     'Several_resources': frozenset(['Operator']),
-     'Complex_discourse_unit': frozenset()}
+STAC_EXPECTED_FEATURES = {
+    'EDU': frozenset(['Addressee', 'Surface_act']),
+    'relation': frozenset(['Argument_scope']),
+    'Resource': frozenset(['Status', 'Quantity', 'Correctness', 'Kind']),
+    'Preference': frozenset(),
+    'Several_resources': frozenset(['Operator']),
+    'Complex_discourse_unit': frozenset(),
+    # WIP
+    # TODO enforce invariance of turn features across layers
+    'Turn': frozenset(['Timestamp', 'Identifier', 'Emitter']),
+}
+
+# WIP features that are expected but can be empty
+STAC_OPTIONAL_FEATURES = {
+    'Turn': frozenset(['Developments', 'Resources']),
+}
 
 # lowercase stripped; annotations that are allowed not to have features
 STAC_MISSING_FEATURE_TXT_WHITELIST =\
@@ -94,12 +103,14 @@ def unexpected_features(_, anno):
     not expecting to see in the given annotations
     """
     rty = rough_type(anno)
+    # some fields are optional, others are ignored
+    optional = STAC_OPTIONAL_FEATURES.get(rty, frozenset([]))
     ignored = frozenset(['Comments', 'highlight'])
 
     if rty in STAC_EXPECTED_FEATURES:
         expected = STAC_EXPECTED_FEATURES[rty]
         present = frozenset(anno.features.keys())
-        leftover = present - ignored - expected
+        leftover = present - ignored - optional - expected
         return {k: anno.features[k] for k in leftover}
     else:
         return {}
