@@ -82,7 +82,7 @@ def sanity_check_order(k):
         else:
             return 3
 
-    return (k.doc, k.subdoc, k.annotator, stage_num(k.stage))
+    return (k.doc, (k.subdoc or ''), (k.annotator or ''), stage_num(k.stage))
 
 
 def run_checks(inputs, k):
