@@ -281,7 +281,7 @@ class SanityChecker(object):
         reader = stac.Reader(corpus_dir)
         all_files = reader.files()
         self.anno_files = reader.filter(all_files, is_interesting)
-        interesting = self.anno_files.keys()
+        interesting = list(self.anno_files)  # or list(self.anno_files.keys())
         for key in interesting:
             ukey = twin_key(key, 'unannotated')
             if ukey in all_files:
