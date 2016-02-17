@@ -460,8 +460,8 @@ def run(inputs, k):
             search_glozz_off_by_one(inputs, k))
 
     if k.stage == 'discourse':
-        missing_excess, mismatches =\
-            cross_check_against(inputs, k, stage='units')
+        missing_excess, mismatches = cross_check_against(
+            inputs, k, stage='units')
         squawk('[DISCOURSE v. UNIT] fixed-span items added/deleted/moved',
                missing_excess)
         squawk('[DISCOURSE v. UNIT] id mismatches',
