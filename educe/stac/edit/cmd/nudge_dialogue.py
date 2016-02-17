@@ -13,6 +13,7 @@ import sys
 from educe.annotation import Span
 import educe.stac as st
 
+from educe.stac.annotation import parse_turn_id
 from educe.stac.util.annotate import show_diff, annotate_doc
 from educe.stac.util.args import\
     add_usual_input_args, add_usual_output_args,\
@@ -49,7 +50,7 @@ def _nudge_up(turn, dialogue, next_turn, prev_dialogue):
         sys.exit("Can't move very last turn. "
                  "Try `stac-util merge-dialogue` instead")
     elif not prev_dialogue:
-        sys.exit("Can't move from first dialogue."
+        sys.exit("Can't move from first dialogue. "
                  "Try `stac-util move` instead")
     elif turn.span.char_start - 1 != dialogue.span.char_start:
         sys.exit("Turn %d %s is not at the start of its dialogue %s" %
@@ -113,16 +114,18 @@ def _nudge_dialogue(doc, tid, direction):
     Move a turn either up or down.
     For feedback purposes, return the span of the affected region
     """
-    prev_turn, turn, next_turn = \
-        _window1(lambda x: st.turn_id(x) == tid,
-                 [x for x in doc.units if st.is_turn(x)])
+    prev_turn, turn, next_turn = _window1(
+        lambda x: st.turn_id(x) == tid,
+        [x for x in doc.units if st.is_turn(x)]
+    )
     if not turn:
         sys.exit("Could not find turn %d" % tid)
 
     tspan = turn.text_span()
-    prev_dialogue, dialogue, next_dialogue = \
-        _window1(lambda x: x.text_span().encloses(tspan),
-                 [x for x in doc.units if st.is_dialogue(x)])
+    prev_dialogue, dialogue, next_dialogue = _window1(
+        lambda x: x.text_span().encloses(tspan),
+        [x for x in doc.units if st.is_dialogue(x)]
+    )
 
     if direction == "up":
         return _nudge_up(turn, dialogue, next_turn, prev_dialogue)
@@ -149,7 +152,7 @@ def config_argparser(parser):
     add_usual_input_args(parser, doc_subdoc_required=True)
     add_usual_output_args(parser, default_overwrite=True)
     add_commit_args(parser)
-    parser.add_argument('turn', metavar='TURN', type=int,
+    parser.add_argument('turn', metavar='TURN', type=parse_turn_id,
                         help='turn number')
     parser.add_argument('direction', choices=["up", "down"],
                         help='move turn up or down')

@@ -15,14 +15,14 @@ import sys
 from educe.annotation import Span
 import educe.stac as st
 
+from educe.stac.annotation import parse_turn_id
 from educe.stac.util.annotate import show_diff, annotate_doc
-from educe.stac.util.args import\
-    add_usual_input_args, add_usual_output_args,\
-    add_commit_args,\
-    read_corpus, get_output_dir, announce_output_dir
-from educe.stac.util.glozz import\
-    (TimestampCache,
-     set_anno_author, set_anno_date)
+from educe.stac.util.args import (add_usual_input_args, add_usual_output_args,
+                                  add_commit_args,
+                                  read_corpus, get_output_dir,
+                                  announce_output_dir)
+from educe.stac.util.glozz import (TimestampCache,
+                                   set_anno_author, set_anno_date)
 from educe.stac.util.doc import narrow_to_span
 from educe.stac.util.output import save_document
 
@@ -35,8 +35,7 @@ def _mini_diff(k, args, old_doc, new_doc, span):
     """
     mini_old_doc = narrow_to_span(old_doc, span)
     mini_new_doc = narrow_to_span(new_doc, span)
-    return ["======= SPLIT AT TURN %d in %s ========" %
-            (args.turn, k),
+    return ["======= SPLIT AT TURN {} in {} ========".format(args.turn, k),
             "...",
             show_diff(mini_old_doc, mini_new_doc),
             "...",
@@ -91,7 +90,7 @@ def _split_dialogue(tcache, doc, tid):
     Span for the dialogue that was split
     """
 
-    wanted_t = 'turn %d' % tid
+    wanted_t = 'turn {}'.format(tid)
     wanted_d = 'dialogue for ' + wanted_t
     turn = _the(wanted_t, [x for x in doc.units if st.is_turn(x) and
                            st.turn_id(x) == tid])
@@ -119,7 +118,7 @@ def config_argparser(parser):
     add_usual_input_args(parser, doc_subdoc_required=True)
     add_usual_output_args(parser, default_overwrite=True)
     add_commit_args(parser)
-    parser.add_argument('turn', metavar='TURN', type=int,
+    parser.add_argument('turn', metavar='TURN', type=parse_turn_id,
                         help='turn number')
     parser.set_defaults(func=main)
 
@@ -135,8 +134,8 @@ def commit_msg(info):
     k = info.key
     mini_new_doc = narrow_to_span(info.after, info.span)
 
-    lines = [("%s_%s: split dialogue before turn %d" %
-              (k.doc, k.subdoc, info.tid)),
+    lines = ["{}_{}: split dialogue before turn {}".format(
+        k.doc, k.subdoc, info.tid),
              "",
              annotate_doc(mini_new_doc),
              "..."]

@@ -17,6 +17,7 @@ import sys
 from educe.stac.oneoff.weave import (check_matches, compute_updates,
                                      compute_structural_updates,
                                      hollow_out_missing_turn_text,
+                                     shift_dialogues,
                                      shift_span)
 from educe.stac.util.args import (add_usual_input_args, add_usual_output_args,
                                   get_output_dir, announce_output_dir,
@@ -85,8 +86,12 @@ def _weave_docs(renames, src_doc, tgt_doc):
     # cdu pointers (which have been deep copied from original)
     updates = compute_updates(src_doc, res_doc, matches)
 
-    # WIP update structural annotations: dialogues
-    updates = compute_structural_updates(src_doc, tgt_doc, matches, updates)
+    # WIP update structural annotations
+    # * shift and stretch target dialogues onto source text
+    updates = shift_dialogues(src_doc, res_doc, updates)
+    # then other structures
+    updates = compute_structural_updates(src_doc, tgt_doc, matches, updates,
+                                         verbose=0)
     # end WIP
 
     structural_tgt_only = [x for x in updates.abnormal_tgt_only if
@@ -97,11 +102,18 @@ def _weave_docs(renames, src_doc, tgt_doc):
                         not educe.stac.is_preference(x)]
 
     # the most important change: update the spans for all current
-    # target annotations
-    for tgt_anno in res_doc.units:
+    # target annotations (except for dialogues, because it has already
+    # been done in shift_dialogues
+    tgt_annos = [tgt_anno for tgt_anno in res_doc.units
+                 if tgt_anno.type.lower() != 'dialogue']
+    for tgt_anno in tgt_annos:
         tgt_anno.span = shift_span(tgt_anno.span, updates)
+    # put the augmented text into res_doc
     evil_set_text(res_doc, src_text)
 
+    _maybe_warn(('copying over the following source annotations, which '
+                 'are not expected to have matches on the target side'),
+                src_doc, updates.expected_src_only)
     for src_anno in updates.expected_src_only:
         res_doc.units.append(src_anno)
 
@@ -170,10 +182,18 @@ def main(args):
     augmented = read_augmented_corpus(args)
     corpus = read_corpus_with_unannotated(args)
     renames = compute_renames(corpus, augmented)
-    for key in corpus:
+    # iterate on annotated versions
+    for key, tgt_doc in sorted(corpus.items()):
         print('<== weaving {} ==>'.format(key), file=sys.stderr)  # DEBUG
+        # locate augmented version
         ukey = unannotated_key(key)
-        new_tgt_doc = _weave_docs(renames, augmented[ukey], corpus[key])
+        try:
+            src_doc = augmented[ukey]
+        except KeyError:
+            print('Cannot find augmented version of {}'.format(str(ukey)))
+            raise
+        # weave
+        new_tgt_doc = _weave_docs(renames, src_doc, tgt_doc)
         save_document(output_dir, key, new_tgt_doc)
         print('<== done ==>', file=sys.stderr)  # DEBUG
     announce_output_dir(output_dir)
