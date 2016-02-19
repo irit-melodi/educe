@@ -30,8 +30,8 @@ def _mini_diff(k, args, old_doc, new_doc, span):
     """
     mini_old_doc = narrow_to_span(old_doc, span)
     mini_new_doc = narrow_to_span(new_doc, span)
-    return ["======= NUDGE TURN %d %s in %s ========" %
-            (args.turn, args.direction, k),
+    return ["======= NUDGE TURN {} {} in {} ========".format(
+        args.turn, args.direction, k),
             "...",
             show_diff(mini_old_doc, mini_new_doc),
             "...",
@@ -170,8 +170,8 @@ def commit_msg(info):
     k = info.key
     mini_new_doc = narrow_to_span(info.after, info.span)
 
-    lines = ["%s_%s: move turn %d %s" % (k.doc, k.subdoc,
-                                         info.tid, info.direction),
+    lines = ["{}_{}: move turn {} {}".format(
+        k.doc, k.subdoc, info.tid, info.direction),
              "",
              annotate_doc(mini_new_doc),
              "..."]
