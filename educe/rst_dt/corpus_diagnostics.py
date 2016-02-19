@@ -106,7 +106,7 @@ def load_training_as_dataframe():
     return df
 
 
-def get_most_frequent_unuc(df, verbose=False):
+def get_most_frequent_unuc(df, verbose=0):
     """Get the most frequent undirected nuclearity for each relation.
 
     Parameters
@@ -357,7 +357,7 @@ def load_spans(coarse_rtree_ref):
     return doc_span_rows
 
 
-def load_training_as_dataframe_new(binarize=False):
+def load_training_as_dataframe_new(binarize=False, verbose=0):
     """Load training section of the RST-WSJ corpus as a pandas.DataFrame.
 
     Parameters
@@ -541,8 +541,9 @@ def load_training_as_dataframe_new(binarize=False):
                     # boundaries
                     leaky_type_12 = not strad_spans
                     # DEBUG
-                    print(doc_id.doc)
-                    print(parent_span, strad_spans if strad_spans else '')
+                    if verbose:
+                        print(doc_id.doc)
+                        print(parent_span, strad_spans if strad_spans else '')
                     # end DEBUG
 
                     # leaky types {1, 3} vs {2, 4}
@@ -600,12 +601,13 @@ def load_training_as_dataframe_new(binarize=False):
                         else:
                             leaky_type = 4
                     # display type of leaky
-                    print('Type {} ({}-level {} structure)\t{}'.format(
-                        leaky_type,
-                        'Same' if leaky_type_12 else 'Multi',
-                        'coordination' if leaky_coord else 'subordination',
-                        '; '.join(strad_rels)))
-                    print()
+                    if verbose:
+                        print('Type {} ({}-level {} structure)\t{}'.format(
+                            leaky_type,
+                            'Same' if leaky_type_12 else 'Multi',
+                            'coordination' if leaky_coord else 'subordination',
+                            '; '.join(strad_rels)))
+                        print()
                     # end WIP nuclearity of straddling spans
 
                     # add info to row
@@ -760,126 +762,128 @@ def load_training_as_dataframe_new(binarize=False):
     return node_df, rel_df, edu_df, sent_df, para_df
 
 
-nodes_train, rels_train, edus_train, sents_train, paras_train = load_training_as_dataframe_new(binarize=False)
-# print(rels_train)
-# as of version 0.17, pandas handles missing boolean values by degrading
-# column type to object, which makes boolean selection return true for
-# all non-None values ; the best workaround is to explicitly fill boolean
-# na values
-sents_train = sents_train.fillna(value={'leaky': False})
-paras_train = paras_train.fillna(value={'leaky': False})
-# exclude 'fileX' documents
-if False:
-    sents_train = sents_train[~sents_train['sent_id'].str.startswith('file')]
-    paras_train = paras_train[~paras_train['para_id'].str.startswith('file')]
-
-# SENTENCES
-# complex sentences
-complex_sents = sents_train[sents_train['edu_len'] > 1]
-print('Complex: {} / {} = {}'.format(
-    len(complex_sents), len(sents_train),
-    float(len(complex_sents)) / len(sents_train)))
-
-# leaky sentences
-# assert there is no sentence which is leaky but not complex
-assert sents_train[sents_train['leaky'] &
-                   (sents_train['edu_len'] <= 1)].empty
-# proportion of leaky sentences
-leaky_sents = sents_train[sents_train['leaky']]
-# according to (Soricut and Marcu, 2003), p. 2, should be 323/6132 = 5.3%
-print('Leaky: {} / {} = {}'.format(
-    len(leaky_sents), len(sents_train),
-    float(len(leaky_sents)) / len(sents_train)))
-# proportion of leaky among complex sentences
-print('Leaky | Complex: {} / {} = {}'.format(
-    len(leaky_sents), len(complex_sents),
-    float(len(leaky_sents)) / len(complex_sents)))
-print()
-
-# compare leaky with non-leaky complex sentences: EDU length
-print('EDU span length of leaky vs non-leaky complex sentences')
-print(complex_sents.groupby('leaky')['edu_len'].describe().unstack())
-print()
-
-# for each leaky sentence, number of sentences included in the smallest
-# RST node that fully covers the leaky sentence
-# According to the CODRA paper, as I first understood it, 75% of leaky
-# sentences need only their left and right neighboring sentences to form
-# a complete span ;
-# our counts sensibly differ
-# new hypothesis: 75% of leaky sentences can be split so that their EDUs
-# + the neighboring sentences form complete spans
-if False:
-    print(leaky_sents[['parent_sent_len', 'parent_sent_dist']].describe(
-        percentiles=[.1, .2, .3, .4, .5, .6, .7, .8, .9]))
-    print(leaky_sents[(leaky_sents['parent_sent_dist'] == 1)].describe())
-    print(leaky_sents[(leaky_sents['parent_sent_dist'] == 1) &
-                      (leaky_sents['parent_sent_len'] > 2)])
-if False:
-    print(leaky_sents['parent_sent_len'].value_counts())
-# taxonomy of leaky sentences
-print(complex_sents.groupby('leaky_type')['edu_len'].describe().unstack())
-print(complex_sents.groupby('edu_len')['leaky_type'].value_counts(normalize=False).unstack())  # absolute value counts
-print(complex_sents.groupby('edu_len')['leaky_type'].value_counts(normalize=True).unstack())  # normalized value counts
-
-
-# WIP straddling relations
-strad_rels_df = pd.DataFrame(strad_rels_rows)
-print()
-print(strad_rels_df['sent_id'].describe()['count'])
-print(strad_rels_df.groupby(['kid_rels']).describe()['sent_id'].unstack().sort_values('count', ascending=False))
-# compare to distribution of intra/inter relations
-print()
-print(rels_train[rels_train['edu_len'] > 1].groupby(['intra_sent', 'strad_sent'])['kid_rels'].value_counts(normalize=False))
-print()
-print(rels_train[rels_train['edu_len'] > 1].groupby(['intra_sent', 'strad_sent'])['kid_rels'].value_counts(normalize=True))
-print()
-# mismatches between strad_rels and rels_train['strad_sent']
-# strad_rels has 2 duplicate entries for spans that straddle part
-# of 2 sentences each
-rels_train = rels_train.fillna(value={'strad_sent': False})
-nodes_rels_train = rels_train[rels_train['strad_sent']]['node_id']
-nodes_strad_rels = strad_rels_df['node_id']
-print([rels_train[rels_train['node_id'] == node_id]
-       for node_id in Counter(nodes_strad_rels.values) - Counter(nodes_rels_train.values)])
-
-# PARAGRAPHS
-if False:
-    # complex paragraphs
-    complex_paras = paras_train[paras_train['edu_len'] > 1]
-    print('Complex: {} / {} = {}'.format(
-        len(complex_paras), len(paras_train),
-        float(len(complex_paras)) / len(paras_train)))
-
-    # leaky paragraphs
-    # assert there is no paragraph which is leaky but not complex
-    assert paras_train[paras_train['leaky'] &
-                       (paras_train['edu_span_len'] <= 1)].empty
-    # proportion of leaky paragraphs
-    leaky_paras = paras_train[paras_train['leaky']]
-    print('Leaky: {} / {} = {}'.format(
-        len(leaky_paras), len(paras_train),
-        float(len(leaky_paras)) / len(paras_train)))
-    # proportion of leaky among complex paragraphs
-    print('Leaky | Complex: {} / {} = {}'.format(
-        len(leaky_paras), len(complex_paras),
-        float(len(leaky_paras)) / len(complex_paras)))
-    print()
-
-    # compare leaky with non-leaky complex paragraphss: EDU length
-    print('EDU span length of leaky vs non-leaky complex paragraphs')
-    print(complex_paras.groupby('leaky')['edu_span_len'].describe().unstack())
-    print()
-
-    # for each leaky paragraph, number of paragraphs included in the smallest
-    # RST node that fully covers the leaky paragraph
+if __name__ == "__main__":
+    # maybe everything is not relevant in what follows, but who knows?
+    nodes_train, rels_train, edus_train, sents_train, paras_train = load_training_as_dataframe_new(binarize=False)
+    # print(rels_train)
+    # as of version 0.17, pandas handles missing boolean values by degrading
+    # column type to object, which makes boolean selection return true for
+    # all non-None values ; the best workaround is to explicitly fill boolean
+    # na values
+    sents_train = sents_train.fillna(value={'leaky': False})
+    paras_train = paras_train.fillna(value={'leaky': False})
+    # exclude 'fileX' documents
     if False:
-        print(leaky_paras[['parent_span_para_len', 'parent_span_para_dist']].describe(
+        sents_train = sents_train[~sents_train['sent_id'].str.startswith('file')]
+        paras_train = paras_train[~paras_train['para_id'].str.startswith('file')]
+
+    # SENTENCES
+    # complex sentences
+    complex_sents = sents_train[sents_train['edu_len'] > 1]
+    print('Complex: {} / {} = {}'.format(
+        len(complex_sents), len(sents_train),
+        float(len(complex_sents)) / len(sents_train)))
+
+    # leaky sentences
+    # assert there is no sentence which is leaky but not complex
+    assert sents_train[sents_train['leaky'] &
+                       (sents_train['edu_len'] <= 1)].empty
+    # proportion of leaky sentences
+    leaky_sents = sents_train[sents_train['leaky']]
+    # according to (Soricut and Marcu, 2003), p. 2, should be 323/6132 = 5.3%
+    print('Leaky: {} / {} = {}'.format(
+        len(leaky_sents), len(sents_train),
+        float(len(leaky_sents)) / len(sents_train)))
+    # proportion of leaky among complex sentences
+    print('Leaky | Complex: {} / {} = {}'.format(
+        len(leaky_sents), len(complex_sents),
+        float(len(leaky_sents)) / len(complex_sents)))
+    print()
+
+    # compare leaky with non-leaky complex sentences: EDU length
+    print('EDU span length of leaky vs non-leaky complex sentences')
+    print(complex_sents.groupby('leaky')['edu_len'].describe().unstack())
+    print()
+
+    # for each leaky sentence, number of sentences included in the smallest
+    # RST node that fully covers the leaky sentence
+    # According to the CODRA paper, as I first understood it, 75% of leaky
+    # sentences need only their left and right neighboring sentences to form
+    # a complete span ;
+    # our counts sensibly differ
+    # new hypothesis: 75% of leaky sentences can be split so that their EDUs
+    # + the neighboring sentences form complete spans
+    if False:
+        print(leaky_sents[['parent_sent_len', 'parent_sent_dist']].describe(
             percentiles=[.1, .2, .3, .4, .5, .6, .7, .8, .9]))
-        print(leaky_paras[(leaky_paras['parent_span_para_dist'] == 1)].describe())
-        print(leaky_paras[(leaky_paras['parent_span_para_dist'] == 1) &
-                          (leaky_paras['parent_span_para_len'] > 2)])
-        #
-        print(leaky_paras['parent_span_para_len'].value_counts())
-    print(leaky_paras[:10])
-# end leaky paragraphs
+        print(leaky_sents[(leaky_sents['parent_sent_dist'] == 1)].describe())
+        print(leaky_sents[(leaky_sents['parent_sent_dist'] == 1) &
+                          (leaky_sents['parent_sent_len'] > 2)])
+    if False:
+        print(leaky_sents['parent_sent_len'].value_counts())
+    # taxonomy of leaky sentences
+    print(complex_sents.groupby('leaky_type')['edu_len'].describe().unstack())
+    print(complex_sents.groupby('edu_len')['leaky_type'].value_counts(normalize=False).unstack())  # absolute value counts
+    print(complex_sents.groupby('edu_len')['leaky_type'].value_counts(normalize=True).unstack())  # normalized value counts
+
+
+    # WIP straddling relations
+    strad_rels_df = pd.DataFrame(strad_rels_rows)
+    print()
+    print(strad_rels_df['sent_id'].describe()['count'])
+    print(strad_rels_df.groupby(['kid_rels']).describe()['sent_id'].unstack().sort_values('count', ascending=False))
+    # compare to distribution of intra/inter relations
+    print()
+    print(rels_train[rels_train['edu_len'] > 1].groupby(['intra_sent', 'strad_sent'])['kid_rels'].value_counts(normalize=False))
+    print()
+    print(rels_train[rels_train['edu_len'] > 1].groupby(['intra_sent', 'strad_sent'])['kid_rels'].value_counts(normalize=True))
+    print()
+    # mismatches between strad_rels and rels_train['strad_sent']
+    # strad_rels has 2 duplicate entries for spans that straddle part
+    # of 2 sentences each
+    rels_train = rels_train.fillna(value={'strad_sent': False})
+    nodes_rels_train = rels_train[rels_train['strad_sent']]['node_id']
+    nodes_strad_rels = strad_rels_df['node_id']
+    print([rels_train[rels_train['node_id'] == node_id]
+           for node_id in Counter(nodes_strad_rels.values) - Counter(nodes_rels_train.values)])
+
+    # PARAGRAPHS
+    if False:
+        # complex paragraphs
+        complex_paras = paras_train[paras_train['edu_len'] > 1]
+        print('Complex: {} / {} = {}'.format(
+            len(complex_paras), len(paras_train),
+            float(len(complex_paras)) / len(paras_train)))
+
+        # leaky paragraphs
+        # assert there is no paragraph which is leaky but not complex
+        assert paras_train[paras_train['leaky'] &
+                           (paras_train['edu_span_len'] <= 1)].empty
+        # proportion of leaky paragraphs
+        leaky_paras = paras_train[paras_train['leaky']]
+        print('Leaky: {} / {} = {}'.format(
+            len(leaky_paras), len(paras_train),
+            float(len(leaky_paras)) / len(paras_train)))
+        # proportion of leaky among complex paragraphs
+        print('Leaky | Complex: {} / {} = {}'.format(
+            len(leaky_paras), len(complex_paras),
+            float(len(leaky_paras)) / len(complex_paras)))
+        print()
+
+        # compare leaky with non-leaky complex paragraphss: EDU length
+        print('EDU span length of leaky vs non-leaky complex paragraphs')
+        print(complex_paras.groupby('leaky')['edu_span_len'].describe().unstack())
+        print()
+
+        # for each leaky paragraph, number of paragraphs included in the smallest
+        # RST node that fully covers the leaky paragraph
+        if False:
+            print(leaky_paras[['parent_span_para_len', 'parent_span_para_dist']].describe(
+                percentiles=[.1, .2, .3, .4, .5, .6, .7, .8, .9]))
+            print(leaky_paras[(leaky_paras['parent_span_para_dist'] == 1)].describe())
+            print(leaky_paras[(leaky_paras['parent_span_para_dist'] == 1) &
+                              (leaky_paras['parent_span_para_len'] > 2)])
+            #
+            print(leaky_paras['parent_span_para_len'].value_counts())
+        print(leaky_paras[:10])
+    # end leaky paragraphs
