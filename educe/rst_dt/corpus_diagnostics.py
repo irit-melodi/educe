@@ -41,12 +41,18 @@ CORPUS_DIR = os.path.join(os.path.dirname(__file__),
                           'rst_discourse_treebank', 'data',
                           'RSTtrees-WSJ-main-1.0')
 CD_TRAIN = os.path.join(CORPUS_DIR, 'TRAINING')
+CD_TEST = os.path.join(CORPUS_DIR, 'TEST')
 # relation converter (fine- to coarse-grained labels)
 REL_CONV = RstRelationConverter(RELMAP_112_18_FILE).convert_tree
 
 
-def load_training_as_dataframe():
+def load_corpus_as_dataframe(selection='train'):
     """Load training section of the RST-WSJ corpus as a pandas.DataFrame.
+
+    Parameters
+    ----------
+    selection : one of {'train', 'test'}  TODO: add 'both'
+        Select the part of the corpus to load.
 
     Returns
     -------
@@ -56,7 +62,13 @@ def load_training_as_dataframe():
     """
     rst_phrases = []  # list of rows, each represented as a dict
 
-    rst_reader = RstReader(CD_TRAIN)
+    if selection == 'train':
+        rst_reader = RstReader(CD_TRAIN)
+    elif selection == 'test':
+        rst_reader = RstReader(CD_TEST)
+    else:
+        raise ValueError('Unknown selection {}'.format(selection))
+
     rst_corpus = rst_reader.slurp()
     for doc_id, rtree_ref in sorted(rst_corpus.items()):
         # convert labels to coarse
@@ -357,12 +369,16 @@ def load_spans(coarse_rtree_ref):
     return doc_span_rows
 
 
-def load_training_as_dataframe_new(binarize=False, verbose=0):
+def load_corpus_as_dataframe_new(selection='train', binarize=False,
+                                 verbose=0):
     """Load training section of the RST-WSJ corpus as a pandas.DataFrame.
 
     Parameters
     ----------
-    binarize: boolean, default: False
+    selection : one of {'train', 'test'}  TODO: add 'both'
+        Select the part of the corpus to load.
+
+    binarize : boolean, default: False
         If True, apply right-heavy binarization on RST trees.
 
     Returns
@@ -378,6 +394,16 @@ def load_training_as_dataframe_new(binarize=False, verbose=0):
     ----
     [ ] intra-sentential-first right-heavy binarization
     [ ] left-heavy binarization (?)
+    [ ] add selection='both'
+
+    Notes
+    -----
+    `selection='both'` can currently be done as:
+    ```
+    train_df = load_corpus_as_dataframe_new(selection='train')
+    test_df = load_corpus_as_dataframe_new(selection='test')
+    both_df = train_df.append(test_df)
+    ```
     """
     node_rows = []  # list of dicts, one dict per node
     rel_rows = []  # list of dicts, one dict per relation
@@ -387,7 +413,13 @@ def load_training_as_dataframe_new(binarize=False, verbose=0):
     sent_rows = []  # ibid
     para_rows = []  # ibid
 
-    rst_reader = RstReader(CD_TRAIN)
+    if selection == 'train':
+        rst_reader = RstReader(CD_TRAIN)
+    elif selection == 'test':
+        rst_reader = RstReader(CD_TEST)
+    else:
+        raise ValueError('Unknown selection {}'.format(selection))
+
     rst_corpus = rst_reader.slurp()
 
     for doc_id, rtree_ref in sorted(rst_corpus.items()):
@@ -711,18 +743,24 @@ def load_training_as_dataframe_new(binarize=False, verbose=0):
                         row.update({
                             # parent span, on EDUs
                             'parent_edu_start': parent_span[0],
-                            'parent_edu_end': parent_span[1],
-                            # length of parent span, in paragraphs
-                            'parent_para_len': (
-                                edu2para[parent_span[1] - 1] -
-                                edu2para[parent_span[0] - 1] + 1),
-                            # distance between the current paragraph and the
-                            # most remote paragraph covered by the parent
-                            # span, in paragraphs
-                            'parent_para_dist': (
-                                max([(edu2para[parent_span[1] - 1] - para_idx),
-                                     (para_idx - edu2para[parent_span[0] - 1])])),
+                            'parent_edu_end': parent_span[1]
                         })
+                        # length of parent span, in paragraphs
+                        if ((edu2para[parent_span[1] - 1] is not None and
+                             edu2para[parent_span[0] - 1] is not None)):
+                            row.update({
+                                'parent_para_len': (
+                                    edu2para[parent_span[1] - 1] -
+                                    edu2para[parent_span[0] - 1] + 1),
+                                # distance between the current paragraph and the
+                                # most remote paragraph covered by the parent
+                                # span, in paragraphs
+                                'parent_para_dist': (
+                                    max([(edu2para[parent_span[1] - 1] -
+                                          para_idx),
+                                         (para_idx -
+                                          edu2para[parent_span[0] - 1])])),
+                            })
                     else:
                         row.update({
                             'parent_edu_start': row['edu_start'],
@@ -764,7 +802,7 @@ def load_training_as_dataframe_new(binarize=False, verbose=0):
 
 if __name__ == "__main__":
     # maybe everything is not relevant in what follows, but who knows?
-    nodes_train, rels_train, edus_train, sents_train, paras_train = load_training_as_dataframe_new(binarize=False)
+    nodes_train, rels_train, edus_train, sents_train, paras_train = load_corpus_as_dataframe_new(selection='train', binarize=False)
     # print(rels_train)
     # as of version 0.17, pandas handles missing boolean values by degrading
     # column type to object, which makes boolean selection return true for
