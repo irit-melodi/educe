@@ -181,7 +181,7 @@ class Span(object):
 # pylint: disable=invalid-name
 class RelSpan(object):
     """
-    Which two units a relation connections.
+    Which two units a relation connects.
     """
     def __init__(self, t1, t2):
         self.t1 = t1
@@ -370,14 +370,27 @@ class Unit(Annotation):
 
 
 class Relation(Annotation):
-    """
-    An annotation between two annotations.
+    """An annotation between two annotations.
+
     Relations are directed; see `RelSpan` for details
 
     Use the `source` and `target` field to grab these respective
     annotations, but note that they are only instantiated after
     `fleshout` is called (corpus slurping normally fleshes out
-    documents and thus their relations)
+    documents and thus their relations).
+
+    Parameters
+    ----------
+    rel_id : string
+        Relation id
+    span : RelSpan
+        Pair of units connected by this relation
+    rtype : string
+        Relation type
+    features : dict
+        Features
+    metadata : TODO
+        TODO
     """
     def __init__(self, rel_id, span, rtype, features, metadata=None):
         Annotation.__init__(self, rel_id, span, rtype, features, metadata)
