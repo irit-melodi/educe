@@ -465,7 +465,7 @@ def create_units(_, doc, author, partial_units):
     """
     # It seems like Glozz uses the creation-date metadata field to
     # identify units (symptom: units that have different ids, but
-    # some date don't appear in UI).
+    # same date don't appear in UI).
     #
     # Also, other tools in the STAC pipeline seem to use the convention
     # of negative numbers for fields where the notion of a creation date
