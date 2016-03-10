@@ -22,6 +22,7 @@ import tempfile
 
 from educe import stac
 from educe.corpus import FileId
+import educe.graph
 from educe.stac import graph as egr
 from educe.stac.corpus import (METAL_STR, twin_key)
 from educe.stac.util.args import STAC_GLOBS
@@ -82,7 +83,7 @@ def sanity_check_order(k):
         else:
             return 3
 
-    return (k.doc, k.subdoc, k.annotator, stage_num(k.stage))
+    return (k.doc, (k.subdoc or ''), (k.annotator or ''), stage_num(k.stage))
 
 
 def run_checks(inputs, k):
@@ -150,7 +151,7 @@ def generate_graphs(settings):
             if gra.get_nodes():
                 with codecs.open(dot_file, 'w', encoding='utf-8') as fout:
                     print(gra.to_string(), file=fout)
-        except egr.DuplicateIdException:
+        except educe.graph.DuplicateIdException:
             warning = ("Couldn't graph %s because it has duplicate "
                        "annotation ids") % dot_file
             print(warning, file=sys.stderr)
@@ -281,7 +282,7 @@ class SanityChecker(object):
         reader = stac.Reader(corpus_dir)
         all_files = reader.files()
         self.anno_files = reader.filter(all_files, is_interesting)
-        interesting = self.anno_files.keys()
+        interesting = list(self.anno_files)  # or list(self.anno_files.keys())
         for key in interesting:
             ukey = twin_key(key, 'unannotated')
             if ukey in all_files:

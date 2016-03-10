@@ -566,8 +566,11 @@ def turn_follows_gap(_, edu):
     "if the EDU turn number is > 1 + previous turn"
     tid = turn_id(edu.turn)
     dialogue_tids = [turn_id(x) for x in edu.dialogue_turns]
+    # FIXME dirty temporary workaround for turn ids X.Y
+    prev_tid = tid[0] - 1 if isinstance(tid, tuple) else tid - 1
+    # end FIXME
     follows_previous_or_edge = (tid and
-                                tid - 1 in dialogue_tids and
+                                prev_tid in dialogue_tids and
                                 tid != min(dialogue_tids))
     return not follows_previous_or_edge
 
@@ -636,13 +639,25 @@ def num_speakers_between(_current, gap, _edu1, _edu2):
 
 def num_nonling_tstars_between(_current, gap, _edu1, _edu2):
     "number of non-linguistic turn-stars between EDUs"
-    tid1 = (turn_id(_edu1.turn) if _edu1 != FakeRootEDU else
-            min(turn_id(x) for x in _edu2.dialogue_turns) - 1)
+    if _edu1 != FakeRootEDU:
+        tid1 = turn_id(_edu1.turn)
+    else:
+        # FIXME quick and dirty workaround for X.Y turn ids
+        tid1 = min(turn_id(x) for x in _edu2.dialogue_turns)
+        tid1 = (tuple([tid1[0] - 1] + list(tid1[1:]))
+                if isinstance(tid1, tuple)
+                else tid1 - 1)
+        # end FIXME
+
     tid2 = turn_id(_edu2.turn)
     tids_span = [tid1] + [turn_id(t) for t in gap.turns_between] + [tid2]
     nb_nonling_tstars = 0
     for tid_i, tid_j in zip(tids_span[:-1], tids_span[1:]):
-        if tid_j - tid_i > 1:
+        # FIXME quick and dirty workaround for X.Y turn ids
+        tid_diff = ((tid_j[0] if isinstance(tid_j, tuple) else tid_j) -
+                    (tid_i[0] if isinstance(tid_i, tuple) else tid_i))
+        # end FIXME
+        if tid_diff > 1:
             nb_nonling_tstars += 1
 
     return nb_nonling_tstars

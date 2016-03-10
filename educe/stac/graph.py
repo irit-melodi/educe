@@ -6,6 +6,7 @@
 """
 STAC-specific conventions related to graphs.
 """
+from __future__ import print_function
 
 import copy
 import itertools
@@ -25,17 +26,19 @@ import educe.stac.annotation as stac_anno
 #
 # ---------------------------------------------------------------------
 
+
 class MultiheadedCduException(Exception):
     def __init__(self, cdu, *args, **kw):
         self.cdu = cdu
         Exception.__init__(self, *args, **kw)
+
 
 class Graph(educe.graph.Graph):
     def __init__(self):
         super(Graph, self).__init__()
 
     @classmethod
-    def from_doc(cls, corpus, doc_key, pred=lambda x:True):
+    def from_doc(cls, corpus, doc_key, pred=lambda x: True):
         return super(Graph, cls).from_doc(corpus, doc_key,
                                           could_include=stac.is_edu,
                                           pred=pred)
@@ -84,10 +87,10 @@ class Graph(educe.graph.Graph):
             def points_to_me(lnk):
                 """some other member of this CDU points to me
                 via this link"""
-                return (lnk != hyperedge
-                        and self.is_relation(lnk)
-                        and self.links(lnk)[1] == mem
-                        and self.links(lnk)[0] in members)
+                return (lnk != hyperedge and
+                        self.is_relation(lnk) and
+                        self.links(lnk)[1] == mem and
+                        self.links(lnk)[0] in members)
 
             pointed_to = any(points_to_me(l) for l in self.links(mem))
             if not (self.is_relation(mem) or pointed_to):
@@ -116,6 +119,7 @@ class Graph(educe.graph.Graph):
         head (see `cdu_head`)
         """
         heads = {}
+
         def get_head(c):
             if c in heads:
                 return heads[c]
@@ -200,8 +204,8 @@ class Graph(educe.graph.Graph):
             def candidates(node, distributive):
                 if not self.is_cdu(node):
                     return [node]
-                if (mode != 'head' and
-                    (mode == 'broadcast' or label in distributive)):
+                if ((mode != 'head' and
+                     (mode == 'broadcast' or label in distributive))):
                     # Either distribute over all components...
                     # (always do in broadcast mode)
                     nodes = edu_components(node)
@@ -219,13 +223,13 @@ class Graph(educe.graph.Graph):
             if not self.is_cdu(node):
                 return [node]
             return [snode for snode in self.cdu_members(node, deep=True)
-                        if self.is_edu(snode)]
+                    if self.is_edu(snode)]
 
         # Convert all edges in order
         for old_edge in self.relations():
             links = self.links(old_edge)
             # Verify the edge is well-formed
-            assert(len(links) == 2)
+            assert len(links) == 2
             if not any(self.is_cdu(l) for l in links):
                 # No CDU to strip: skip
                 continue
@@ -238,10 +242,13 @@ class Graph(educe.graph.Graph):
             self.doc.relations.remove(old_anno)
             # Build a new edge for all new combinations
             for i, (n_src, n_tgt) in enumerate(
-                itertools.product(src_nodes, tgt_nodes)):
+                    itertools.product(src_nodes, tgt_nodes)):
                 if n_src == n_tgt:
-                    print ("WARNING: something is pointing to its own CDU : "
-                        + str(n_src))
+                    # FIXME find a way to add this to the errors voiced in
+                    # educe.stac.sanity.checks.graph
+                    # we should likely squawk() this
+                    print("WARNING: something is pointing to its own CDU : " +
+                          str(n_src))
                     continue
                 # First, build a new Relation for the annotation layer
                 n_src_anno = self.annotation(n_src)
@@ -276,17 +283,18 @@ class Graph(educe.graph.Graph):
     # --------------------------------------------------
 
     def sorted_first_outermost(self, annos):
-        """
-        Given a list of nodes, return the nodes ordered by their starting point,
-        and in case of a tie their inverse width (ie. widest first).
+        """Order nodes by their starting point, then inverse width.
+
+        Given a list of nodes, return the nodes ordered by their starting
+        point, and in case of a tie their inverse width (ie. widest first).
         """
         def key(anno):
             """ Sort by starting point, then by width (widest first),
             then by depth (outermost first) """
             span = self.annotation(anno).text_span()
             return (span.char_start, 0 - span.char_end,
-                len(self.containing_cdu_chain(anno)))
-        
+                    len(self.containing_cdu_chain(anno)))
+
         return sorted(annos, key=key)
 
     def first_outermost_dus(self):
@@ -296,9 +304,9 @@ class Graph(educe.graph.Graph):
         """
         def is_interesting_du(n):
             return (self.is_edu(n) or
-                (self.is_cdu(n) and self.cdu_members(n)))
+                    (self.is_cdu(n) and self.cdu_members(n)))
 
-        dus = list(filter(is_interesting_du,self.nodes()))
+        dus = list(filter(is_interesting_du, self.nodes()))
         return self.sorted_first_outermost(dus)
 
     def _repr_dot_(self):
@@ -308,6 +316,7 @@ class Graph(educe.graph.Graph):
         `_repr_svg_` implementation
         """
         return DotGraph(self).to_string()
+
 
 class DotGraph(educe.graph.DotGraph):
     """
@@ -363,7 +372,7 @@ class DotGraph(educe.graph.DotGraph):
         addressee = self._get_addressee(anno)
 
         if speaker is None:
-            speaker_prefix = '(%s)'  % tid
+            speaker_prefix = '(%s)' % tid
         elif addressee is None:
             speaker_prefix = '(%s: %s) ' % (tid, speaker)
         else:

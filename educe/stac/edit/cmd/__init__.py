@@ -21,21 +21,22 @@ from . import (delete_anno,
 # subcommands into sections, but maybe we can wait for it to grow such
 # a feature, or write our own formatter class, or just abuse the command
 # epilog
-SUBCOMMAND_SECTIONS =\
-    [('Annotation ids',
-      [rename,
-       delete_anno,
-       rewrite]),
-     ('Boundaries',
-      [merge_dialogue,
-       merge_edus,
-       split_dialogue,
-       split_edu,
-       nudge,
-       nudge_dialogue]),
-     ('Block editing',
-      [insert,
-       move])]
+SUBCOMMAND_SECTIONS = [
+    ('Annotation ids',
+     [rename,
+      delete_anno,
+      rewrite]),
+    ('Boundaries',
+     [merge_dialogue,
+      merge_edus,
+      split_dialogue,
+      split_edu,
+      nudge,
+      nudge_dialogue]),
+    ('Block editing',
+     [insert,
+      move])
+]
 
 SUBCOMMANDS = []
 for descr, section in SUBCOMMAND_SECTIONS:

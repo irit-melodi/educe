@@ -12,6 +12,7 @@ import sys
 from educe.annotation import Span
 from educe.glozz import GlozzException
 
+from educe.stac.annotation import parse_turn_id
 from educe.stac.util.annotate import annotate_doc
 from educe.stac.util.args import\
     add_usual_input_args, add_usual_output_args, anno_id,\
@@ -141,7 +142,7 @@ def config_argparser(parser):
                               nargs='+',
                               help='eg. stac_39819045 stac_98871771')
     parser_mutex.add_argument('--turns',
-                              metavar='INT', type=int,
+                              metavar='TURN_ID', type=parse_turn_id,
                               nargs=2,
                               help='eg. 187 192')
     add_commit_args(parser)
@@ -158,7 +159,8 @@ def commit_msg(args, corpus, k, sought):
     dialogues = [_get_annotation_with_id(d, doc.units) for d in sought]
     if dialogues:
         title_fmt = u"{doc}_{subdoc}: merge dialogues{hint}"
-        title_hint = " (turns %d-%d)" % tuple(args.turns) if args.turns else ""
+        title_hint = (" (turns {}-{})".format(args.turns[0], args.turns[1])
+                      if args.turns else "")
         dspan = _merge_spans(dialogues)
         lines = [title_fmt.format(doc=k.doc,
                                   subdoc=k.subdoc,
