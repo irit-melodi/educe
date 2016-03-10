@@ -352,16 +352,22 @@ def report_on_corpus(corpus):
     edus = dfs['edu']
     dialogues = dfs['dialogue']
     # annotation
-    rels = dfs['rel']
-    disc_rels = rels[rels['stage'] == 'discourse']
+    if 'rels' in dfs:
+        rels = dfs['rel']
+        disc_rels = rels[rels['stage'] == 'discourse']
+    else:
+        disc_rels = pd.DataFrame()
     # pd.util.testing.assert_frame_equal(rels, disc_rels)
     # FIXME this assertion fails for TEST: a document has
     # an "Elaboration" relation in units/SILVER (!?) ; this is
     # probably an error from the annotation process
-    cdus = dfs['cdu']
-    disc_cdus = cdus[cdus['stage'] == 'discourse']
+    if 'cdu' in dfs:
+        cdus = dfs['cdu']
+        disc_cdus = cdus[cdus['stage'] == 'discourse']
+    else:
+        disc_cdus = pd.DataFrame()
     # pd.util.testing.assert_frame_equal(cdus, disc_cdus)
-    # TODO maybe all EDUs from "units" are not acts? should we filter?
+    # TODO maybe filter to keep only the EDUs with a dialogue act annotation?
     acts = edus[edus['stage'] == 'units']
 
     # invariant info
@@ -453,62 +459,69 @@ def report_on_corpus(corpus):
 
     # Dialogue acts
     # =============
-    print(big_banner("Dialogue acts"))
+    if not acts.empty:
+        print(big_banner("Dialogue acts"))
 
-    acts_annot = acts.groupby('annotator')['type']
-    print(acts_annot.count())
-    print()
-    print(acts_annot.value_counts())
-    print()
+        acts_annot = acts.groupby('annotator')['type']
+        print(acts_annot.count())
+        print()
+        print(acts_annot.value_counts())
+        print()
 
     # Links (per annotator)
     # =====================
-    print(big_banner('Links'))
+    if not disc_cdus.empty or not disc_rels.empty:
+        print(big_banner('Links'))
+
     # CDUs
-    print('CDUs: number of members')
-    print('-----------------------')
-    print(disc_cdus['members'].describe().to_frame().unstack().unstack())
-    print(disc_cdus.groupby('annotator')['members'].describe().unstack())
-    print()
+    if not disc_cdus.empty:
+        print('CDUs: number of members')
+        print('-----------------------')
+        print(disc_cdus['members'].describe().to_frame().unstack().unstack())
+        print(disc_cdus.groupby('annotator')['members'].describe().unstack())
+        print()
     # rels
-    print('Relation instances: length (in EDUs)')
-    print('------------------------------------')
-    print(disc_rels['edu_dist'].describe().to_frame().unstack().unstack())
-    print(disc_rels.groupby('annotator')['edu_dist'].describe().unstack())
-    print()
+    if not disc_rels.empty:
+        print('Relation instances: length (in EDUs)')
+        print('------------------------------------')
+        print(disc_rels['edu_dist'].describe().to_frame().unstack().unstack())
+        print(disc_rels.groupby('annotator')['edu_dist'].describe().unstack())
+        print()
 
     # Relation instances
     # ==================
-    print(big_banner("Relation instances"))
+    if not disc_rels.empty:
+        print(big_banner("Relation instances"))
 
-    print('Distribution of relations')
-    print(disc_rels['type'].value_counts())
-    print()
-    print(disc_rels.groupby(['annotator'])['type'].value_counts())
-    print()
-
-    # additional tables
-    print('Relation length (in EDUs)')
-    rel_edist = disc_rels.groupby('type')['edu_dist'].describe().unstack()
-    print(rel_edist.sort_values(by='count', ascending=False))
-    print()
-
-    print('Relation length (in Turn-stars)')
-    rel_tdist = disc_rels.groupby('type')['tstar_dist'].describe().unstack()
-    print(rel_tdist.sort_values(by='count', ascending=False))
-    print()
-
-    print('Type of endpoints')
-    rel_by_endpoints = disc_rels.groupby(['src_type', 'tgt_type'])
-    rel_by_endpoints_stats = rel_by_endpoints['edu_dist'].describe()
-    print(rel_by_endpoints_stats.unstack()['count'].to_frame())
-    print()
-    if False:
-        print('Type of endpoints, by relation')
-        print(rel_by_endpoints['type'].value_counts().to_frame())
+        print('Distribution of relations')
+        print(disc_rels['type'].value_counts())
         print()
+        print(disc_rels.groupby(['annotator'])['type'].value_counts())
+        print()
+
+        # additional tables
+        print('Relation length (in EDUs)')
+        rel_edist = disc_rels.groupby('type')['edu_dist'].describe().unstack()
+        print(rel_edist.sort_values(by='count', ascending=False))
+        print()
+
+        print('Relation length (in Turn-stars)')
+        rel_tdist = disc_rels.groupby('type')['tstar_dist'].describe().unstack()
+        print(rel_tdist.sort_values(by='count', ascending=False))
+        print()
+
+        print('Type of endpoints')
+        rel_by_endpoints = disc_rels.groupby(['src_type', 'tgt_type'])
+        rel_by_endpoints_stats = rel_by_endpoints['edu_dist'].describe()
+        print(rel_by_endpoints_stats.unstack()['count'].to_frame())
+        print()
+        if False:
+            print('Type of endpoints, by relation')
+            print(rel_by_endpoints['type'].value_counts().to_frame())
+            print()
 
     # CDUs
     # ====
-    print(big_banner("CDUs"))
-    print(disc_cdus.describe().transpose())
+    if not disc_cdus.empty:
+        print(big_banner("CDUs"))
+        print(disc_cdus.describe().transpose())

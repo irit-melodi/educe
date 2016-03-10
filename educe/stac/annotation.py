@@ -123,7 +123,7 @@ def split_turn_text(text):
 
     Mind your offsets! They're based on the whole turn string.
     """
-    prefix_re = re.compile(r'(^[0-9]+ ?: .*? ?: )(.*)$')
+    prefix_re = re.compile(r'(^[0-9]+(?:[.][0-9]+)* ?: .*? ?: )(.*)$')
     match = prefix_re.match(text)
     if match:
         return (match.group(1), match.group(2))
@@ -134,13 +134,15 @@ def split_turn_text(text):
                         text)
 
 
+def parse_turn_id(turn_id_str):
+    """Parse a turn identifier akin to a Gorn address from a string."""
+    return tuple(int(x) for x in turn_id_str.split('.'))
+
+
 def turn_id(anno):
-    """
-    Return as an integer the turn number associated with a turn
-    annotation (or None if this information is missing).
-    """
+    """Get the turn identifier for a turn annotation (or None)."""
     tid_str = anno.features.get('Identifier')
-    return int(tid_str) if tid_str is not None else None
+    return parse_turn_id(tid_str) if tid_str is not None else None
 
 
 def addressees(anno):
@@ -238,6 +240,12 @@ def is_turn(annotation):
     """
     return (isinstance(annotation, Unit) and
             annotation.type == 'Turn')
+
+
+def is_paragraph(annotation):
+    """See Unit typology above"""
+    return (isinstance(annotation, Unit) and
+            annotation.type.lower() == 'paragraph')
 
 
 def is_turn_star(annotation):
@@ -457,7 +465,7 @@ def create_units(_, doc, author, partial_units):
     """
     # It seems like Glozz uses the creation-date metadata field to
     # identify units (symptom: units that have different ids, but
-    # some date don't appear in UI).
+    # same date don't appear in UI).
     #
     # Also, other tools in the STAC pipeline seem to use the convention
     # of negative numbers for fields where the notion of a creation date

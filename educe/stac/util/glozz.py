@@ -9,6 +9,8 @@ STAC Glozz conventions
 # Alternatively the stac module should be kicked out of educe and
 # moved into the stac tree
 
+from __future__ import print_function
+
 import math
 import time
 import random
@@ -123,14 +125,12 @@ def get_turn(tid, doc):
     """
     Return the turn annotation with the desired ID
     """
-    def is_match(anno):
-        "Is a turn with the right turn number"
-        return educe.stac.is_turn(anno) and educe.stac.turn_id(anno) == tid
-
-    turns = list(filter(is_match, doc.annotations()))
+    turns = [anno for anno in doc.annotations()
+             if (educe.stac.is_turn(anno) and
+                 educe.stac.turn_id(anno) == tid)]
     if not turns:
-        raise GlozzException("Turn %d not found" % tid)
+        raise GlozzException("Turn {} not found".format(tid))
     elif len(turns) > 1:
-        raise GlozzException("Found more than one turn with id %d" % tid)
+        raise GlozzException("Found > 1 turn with id {}".format(tid))
     else:
         return turns[0]

@@ -105,7 +105,7 @@ def shift_annotations(doc, offset, point=None):
     have been shifted by an offset.
 
     If shifting right, we pad the document with whitespace
-    to act as filler. If shifting left, we cut the text
+    to act as filler. If shifting left, we cut the text.
 
     If a shift point is specified and the offset is positive,
     we only shift annotations that are to the right of the
@@ -123,13 +123,10 @@ def shift_annotations(doc, offset, point=None):
 
     def shift(anno):
         "Shift a single annotation"
-        if offset != 0 and isinstance(anno, Unit)\
-            and is_moveable(anno):
-            anno2 = copy.deepcopy(anno)
+        anno2 = copy.deepcopy(anno)
+        if offset != 0 and isinstance(anno, Unit) and is_moveable(anno):
             anno2.span = anno.span.shift(offset)
-            return anno2
-        else:
-            return copy.deepcopy(anno)
+        return anno2
 
     if offset > 0:
         padding = " " * offset
@@ -139,9 +136,9 @@ def shift_annotations(doc, offset, point=None):
         txt2 = doc.text()[start:]
     doc2 = copy.copy(doc)
     evil_set_text(doc2, txt2)
-    doc2.units = list(map(shift, doc.units))
-    doc2.schemas = list(map(shift, doc.schemas))
-    doc2.relations = list(map(shift, doc.relations))
+    doc2.units = [shift(x) for x in doc.units]
+    doc2.schemas = [shift(x) for x in doc.schemas]
+    doc2.relations = [shift(x) for x in doc.relations]
     return doc2
 
 
@@ -166,8 +163,10 @@ def compute_renames(avoid, incoming):
         for anno in doc2.annotations():
             author = anno_author(anno)
             old_date = anno_date(anno)
-            if author in dates and old_date in dates[author] and\
-               not (author in renames and old_date in renames[author]):
+            if ((author in dates and
+                 old_date in dates[author] and
+                 not (author in renames and
+                      old_date in renames[author]))):
                 if old_date < 0:
                     new_date = min_dates[author] - 1
                     min_dates[author] = new_date
@@ -207,6 +206,21 @@ def split_doc(doc, middle):
     point)
 
     Raise an exception if there are any annotations that span the point.
+
+    Parameters
+    ----------
+    doc : Document
+        The document we want to split.
+    middle : int
+        Split point.
+
+    Returns
+    -------
+    doc_prefix : Document
+        Deep copy of `doc` restricted to span [:middle]
+    doc_suffix : Document
+        Deep copy of `doc` restricted to span [middle:] ; the span of each
+        annotation is shifted to match the new text.
     """
     doc_len = doc.text_span().char_end
     if middle < 0:
@@ -304,6 +318,26 @@ def move_portion(renames, src_doc, tgt_doc,
           respective ends, there's a strong off-by-one risk because
           some annotations span the whole text (whitespace and all),
           particularly dialogues
+
+    Parameters
+    ----------
+    renames : TODO
+        TODO
+    src_doc : Document
+        Source document
+    tgt_doc : Document
+        Target document
+    src_split : int
+        Split point for `src_doc`.
+    tgt_split : int
+        Split point for `tgt_doc`.
+
+    Returns
+    -------
+    new_src_doc : Document
+        TODO
+    new_tgt_doc : Document
+        TODO
     """
     def snippet(txt, point, width=30):
         "text fragment with highlight"

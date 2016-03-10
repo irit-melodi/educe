@@ -22,6 +22,7 @@ import tempfile
 
 from educe import stac
 from educe.corpus import FileId
+import educe.graph
 from educe.stac import graph as egr
 from educe.stac.corpus import (METAL_STR, twin_key)
 from educe.stac.util.args import STAC_GLOBS
@@ -150,7 +151,7 @@ def generate_graphs(settings):
             if gra.get_nodes():
                 with codecs.open(dot_file, 'w', encoding='utf-8') as fout:
                     print(gra.to_string(), file=fout)
-        except egr.DuplicateIdException:
+        except educe.graph.DuplicateIdException:
             warning = ("Couldn't graph %s because it has duplicate "
                        "annotation ids") % dot_file
             print(warning, file=sys.stderr)

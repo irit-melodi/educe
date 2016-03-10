@@ -15,12 +15,11 @@ from educe.stac.context import sorted_first_widest
 from educe.stac.graph import EnclosureGraph
 from educe.stac.util.annotate import show_diff
 from educe.stac.util.doc import retarget
-from educe.stac.util.glozz import\
-    (TimestampCache, set_anno_author, set_anno_date)
-from educe.stac.util.args import\
-    (add_usual_output_args,
-     read_corpus_with_unannotated,
-     get_output_dir, announce_output_dir)
+from educe.stac.util.glozz import (TimestampCache, set_anno_author,
+                                   set_anno_date)
+from educe.stac.util.args import (add_usual_output_args,
+                                  read_corpus_with_unannotated,
+                                  get_output_dir, announce_output_dir)
 from educe.stac.util.output import save_document
 from educe.util import add_corpus_filters, fields_without
 
