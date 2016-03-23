@@ -115,6 +115,9 @@ if __name__ == '__main__':
     parser.add_argument('--stop_words', default='english',
                         choices=['english', 'None'],  # TODO: add "list"
                         help='preprocessing: filter stop words')
+    parser.add_argument('--scale', default='None',
+                        choices=['0_1', 'None'],
+                        help='scale distance to given range')
     parser.add_argument('--n_jobs', type=int, default=1,
                         help='max number of concurrently running jobs')
     parser.add_argument('--verbose', type=int, default=1,
@@ -133,6 +136,8 @@ if __name__ == '__main__':
     n_jobs = args.n_jobs
     verbose = args.verbose
     sel_pairs = args.pairs
+    distance_range = (args.scale if args.scale != 'None'
+                      else None)
 
     # * read the corpus
     rst_corpus_dir = RST_CORPUS['double']
@@ -166,8 +171,9 @@ if __name__ == '__main__':
           file=sys.stderr)
     D_common = euclidean_distances(W_common)
     D_common = D_common.astype(np.double)
-    # scale distances to (0, 1)
-    D_common /= D_common.max()
+    # optional: scale distances to range (0, 1)
+    if distance_range is not None:
+        D_common /= D_common.max()
     print('done', file=sys.stderr)
     # end MOVE fit()
 
@@ -260,7 +266,7 @@ if __name__ == '__main__':
         ("%s::%s::%.5f::(%s)--(%s)" %
          (doc_key, lbl, sim, edu_txts[gov_idx_abs], edu_txts[dep_idx_abs]))
         for (doc_key, gov_idx, dep_idx, lbl, gov_idx_abs, dep_idx_abs), sim
-        in itertools.izip(edu_pairs, edu_pairs_wmd)
+        in zip(edu_pairs, edu_pairs_wmd)
     ]
     print('\n'.join(wmd_strs), file=outfile)
     # end MOVE transform()
