@@ -565,6 +565,12 @@ def position_in_game(_, edu):
 def turn_follows_gap(_, edu):
     "if the EDU turn number is > 1 + previous turn"
     tid = turn_id(edu.turn)
+    # missing identifier for turn ;
+    # from 2016 on, stac-check verifies that each Turn has an identifier
+    # in the glozz files, but in previous versions of the corpus, e.g.
+    # FROZENs from 2015, a few turn identifiers were accidentally lost
+    if tid is None:
+        return None
     dialogue_tids = [turn_id(x) for x in edu.dialogue_turns]
     # FIXME dirty temporary workaround for turn ids X.Y
     prev_tid = tid[0] - 1 if isinstance(tid, tuple) else tid - 1

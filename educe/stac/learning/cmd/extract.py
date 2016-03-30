@@ -83,22 +83,20 @@ def config_argparser(parser):
 
 
 def main_single(args):
-    """
-    The usual main. Extract feature vectors from the corpus
-    (single edus only)
-    """
+    """Extract feature vectors for single EDUs in the corpus."""
     inputs = features.read_corpus_inputs(args)
     stage = 'unannotated' if args.parsing else 'units'
     dialogues = list(mk_high_level_dialogues(inputs, stage))
     # these paths should go away once we switch to a proper dumper
-    out_file = fp.join(args.output, fp.basename(args.corpus))
-    out_file += '.dialogue-acts.sparse'
+    out_file = fp.join(args.output,
+                       fp.basename(args.corpus) + '.dialogue-acts.sparse')
     instance_generator = lambda x: x.edus[1:]  # drop fake root
 
     # pylint: disable=invalid-name
     # scikit-convention
     feats = extract_single_features(inputs, stage)
     vzer = KeyGroupVectorizer()
+    # TODO? just transform() if args.parsing or args.vocabulary?
     X_gen = vzer.fit_transform(feats)
     # pylint: enable=invalid-name
     labtor = DialogueActVectorizer(instance_generator, DIALOGUE_ACTS)
@@ -121,15 +119,13 @@ def main_single(args):
 
 
 def main_pairs(args):
-    """
-    The usual main. Extract feature vectors from the corpus
-    """
+    """Extract feature vectors for pairs of EDUs in the corpus."""
     inputs = features.read_corpus_inputs(args)
     stage = 'units' if args.parsing else 'discourse'
     dialogues = list(mk_high_level_dialogues(inputs, stage))
     # these paths should go away once we switch to a proper dumper
-    out_file = fp.join(args.output, fp.basename(args.corpus))
-    out_file += '.relations.sparse'
+    out_file = fp.join(args.output,
+                       fp.basename(args.corpus) + '.relations.sparse')
     instance_generator = lambda x: x.edu_pairs()
 
     labels = frozenset(SUBORDINATING_RELATIONS +
