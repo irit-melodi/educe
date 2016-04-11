@@ -45,6 +45,8 @@ class DummyNuclearityClassifier(object):
 
         FIXME: currently a no-op.
 
+        Both X and y are royally ignored.
+
         Parameters
         ----------
         X: list of RstDepTrees
@@ -202,7 +204,6 @@ class InsideOutAttachmentRanker(object):
                 # strategies that try to guess the order of attachment
                 else:
                     result = []
-                    head_idx = dtree.idx[head]
 
                     if self.prioritize_same_unit:
                         # gobble everything between the head and the rightmost
@@ -214,7 +215,7 @@ class InsideOutAttachmentRanker(object):
                             # and the rightmost same-unit
                             last_same_unit_tgt = same_unit_tgts[-1]
                             priority_tgts = [tgt for tgt in targets
-                                             if (tgt > head_idx and
+                                             if (tgt > head and
                                                  tgt <= last_same_unit_tgt)]
                             # prepend to the result
                             result.extend(priority_tgts)
@@ -253,15 +254,15 @@ class InsideOutAttachmentRanker(object):
                     elif strategy == 'closest-rl':
                         # take closest dependents first, take right over left to
                         # break ties
-                        sort_key = lambda e: (abs(dtree.idx[e] - head_idx),
-                                              1 if dtree.idx[e] > head_idx else 2)
+                        sort_key = lambda e: (abs(e - head),
+                                              1 if e > head else 2)
                         result.extend(sorted(targets, key=sort_key))
 
                     elif strategy == 'closest-lr':
                         # take closest dependents first, take left over right to
                         # break ties
-                        sort_key = lambda e: (abs(dtree.idx[e] - head_idx),
-                                              2 if dtree.idx[e] > head_idx else 1)
+                        sort_key = lambda e: (abs(e - head),
+                                              2 if e > head else 1)
                         result.extend(sorted(targets, key=sort_key))
 
                     # strategies that depend on intra/inter-sentential info
@@ -277,28 +278,28 @@ class InsideOutAttachmentRanker(object):
                         if strategy == 'closest-intra-rl-inter-lr':  # current best
                             # take closest dependents first, take right over left to
                             # break ties
-                            sort_key = lambda e: (1 if dtree.sent_idx[dtree.idx[e]] == dtree.sent_idx[dtree.idx[head]] else 2,
-                                                  abs(dtree.idx[e] - head_idx),
-                                                  1 if ((dtree.idx[e] > head_idx and
-                                                         dtree.sent_idx[dtree.idx[e]] == dtree.sent_idx[dtree.idx[head]]) or
-                                                        (dtree.idx[e] < head_idx and
-                                                         dtree.sent_idx[dtree.idx[e]] != dtree.sent_idx[dtree.idx[head]])) else 2)
+                            sort_key = lambda e: (1 if dtree.sent_idx[e] == dtree.sent_idx[head] else 2,
+                                                  abs(e - head),
+                                                  1 if ((e > head and
+                                                         dtree.sent_idx[e] == dtree.sent_idx[head]) or
+                                                        (e < head and
+                                                         dtree.sent_idx[e] != dtree.sent_idx[head])) else 2)
                             result.extend(sorted(targets, key=sort_key))
 
                         elif strategy == 'closest-intra-rl-inter-rl':  # current used
                             # take closest dependents first, take right over left to
                             # break ties
-                            sort_key = lambda e: (abs(dtree.sent_idx[dtree.idx[e]] - dtree.sent_idx[dtree.idx[head]]),
-                                                  abs(dtree.idx[e] - head_idx),
-                                                  1 if dtree.idx[e] > head_idx else 2)
+                            sort_key = lambda e: (abs(dtree.sent_idx[e] - dtree.sent_idx[head]),
+                                                  abs(e - head),
+                                                  1 if e > head else 2)
                             result.extend(sorted(targets, key=sort_key))
 
                         elif strategy == 'closest-intra-lr-inter-lr':
                             # take closest dependents first, take left over right to
                             # break ties
-                            sort_key = lambda e: (1 if dtree.sent_idx[dtree.idx[e]] == dtree.sent_idx[dtree.idx[head]] else 2,
-                                                  abs(dtree.idx[e] - head_idx),
-                                                  2 if dtree.idx[e] > head_idx else 1)
+                            sort_key = lambda e: (1 if dtree.sent_idx[e] == dtree.sent_idx[head] else 2,
+                                                  abs(e - head),
+                                                  2 if e > head else 1)
                             result.extend(sorted(targets, key=sort_key))
 
                         else:
@@ -314,7 +315,7 @@ class InsideOutAttachmentRanker(object):
         return dt_ranks
 
 
-def deptree_to_simple_rst_tree(dtree):
+def deptree_to_simple_rst_tree(dtree, allow_forest=False):
     r"""
     Given a dependency tree with attachment ranking and nuclearity,
     return a 'SimpleRSTTree'.
@@ -503,14 +504,24 @@ def deptree_to_simple_rst_tree(dtree):
         return connect_trees(ancestor, src, rel, nuc) if ancestor else src
 
     roots = dtree.real_roots_idx()
-    if len(roots) == 1:
-        real_root = roots[0]  # roots is a list of indices
-        rparts = walk(None, real_root)
-    else:
-        msg = ('Cannot convert RstDepTree to SimpleRSTTree, ',
-               'multiple roots: {}'.format(roots))
+    if not allow_forest and len(roots) > 1:
+        msg = ('Cannot convert RstDepTree to SimpleRSTTree, '
+               'multiple roots: {}\t{}'.format(roots, dtree.__dict__))
         raise RstDtException(msg)
-    return parts_to_tree(NUC_R, rparts)
+
+    srtrees = []
+    for real_root in roots:
+        rparts = walk(None, real_root)
+        srtree = parts_to_tree(NUC_R, rparts)
+        srtrees.append(srtree)
+
+    # for the most common case, return the tree
+    if not allow_forest:
+        return srtrees[0]
+    # otherwise return a forest of SimpleRSTTrees ; needed for e.g.
+    # intra-sentential parsing with leaky sentences, or sentence-only
+    # document parsing.
+    return srtrees
 
 
 # pylint: disable=R0903, W0232

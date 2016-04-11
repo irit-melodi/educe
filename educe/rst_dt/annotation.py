@@ -369,7 +369,7 @@ class SimpleRSTTree(SearchableTree, Standoff):
             return SimpleRSTTree(node, kids, tree.origin)
 
     @classmethod
-    def to_binary_rst_tree(cls, tree, rel=None):
+    def to_binary_rst_tree(cls, tree, rel='ROOT'):
         """
         Build and return a binary `RSTTree` from a `SimpleRSTTree`.
 

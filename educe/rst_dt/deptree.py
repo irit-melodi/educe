@@ -43,6 +43,8 @@ class RstDepTree(object):
     """RST dependency tree"""
 
     def __init__(self, edus=[], origin=None):
+        # FIXME find a clean way to avoid generating a new left padding EDU
+        # here
         _lpad = EDU.left_padding()
         self.edus = [_lpad] + edus
         # mapping from EDU num to idx
@@ -114,6 +116,56 @@ class RstDepTree(object):
                        if hd == _idx_gov]
             rank = max(self.ranks[i] for i in sisters) + 1
         self.ranks[_idx_dep] = rank
+
+    def add_dependencies(self, gov_num, dep_nums, labels=None, nucs=None,
+                         rank=None):
+        """Add a set of dependencies with a unique governor and rank.
+
+        Parameters
+        ----------
+        gov_num : int
+            Number of the head EDU
+
+        dep_nums : list of int
+            Number of the modifier EDUs
+
+        labels : list of string, optional
+            Labels of the dependencies
+
+        nuc : list of string, one of [NUC_S, NUC_N]
+            Nuclearity of the modifiers
+
+        rank : integer, optional
+            Rank of the modifiers in the order of attachment to the head.
+            `None` means it is not given declaratively and it is instead
+            inferred from the rank of modifiers previously attached to
+            the head.
+        """
+        # locate common governor, get common rank
+        _idx_gov = self.idx[gov_num]
+        if rank is None:  # assign first free rank
+            sisters = [i for i, hd in enumerate(self.heads)
+                       if hd == _idx_gov]
+            if not sisters:
+                # ranks are 1-based, so first set of dependents has rank 1
+                rank = 1
+            else:
+                rank = max(self.ranks[i] for i in sisters) + 1
+
+        # default values for labels and nucs, if necessary
+        if labels is None:
+            labels = [None for _ in dep_nums]
+        if nucs is None:
+            nucs = [NUC_S for _ in dep_nums]
+
+        # finally, add dependencies
+        for dep_num, label, nuc in zip(dep_nums, labels, nucs):
+            _idx_dep = self.idx[dep_num]
+            self.heads[_idx_dep] = _idx_gov
+            self.labels[_idx_dep] = label
+            self.nucs[_idx_dep] = nuc
+            # common rank
+            self.ranks[_idx_dep] = rank
 
     def get_dependencies(self):
         """Get the list of dependencies in this dependency tree.
@@ -206,7 +258,48 @@ class RstDepTree(object):
                                      rank=None)
                 return head
 
-        root = walk(rtree)  # populate tree structure in dtree and get its root
+        root = walk(rtree)  # populate dtree structure and get its root
+        dtree.set_root(root)
+
+        return dtree
+
+    @classmethod
+    def from_rst_tree(cls, rtree):
+        """Converts an ̀RSTTree` to an `RstDepTree`"""
+        edus = sorted(rtree.leaves(), key=lambda x: x.span.char_start)
+        dtree = cls(edus)
+
+        def walk(tree):
+            """
+            Recursively walk down tree, collecting dependency information
+            between EDUs as we go.
+            Return/percolate the num of the head found in our descent.
+            """
+            if len(tree) == 1:  # pre-terminal
+                # edu = tree[0]
+                edu_num = treenode(tree).edu_span[0]
+                return edu_num
+            else:
+                # first, recurse and get the head of each subtree
+                kid_heads = [walk(kid) for kid in tree]
+                kid_rels = [treenode(kid).rel for kid in tree]
+                kid_nucs = [treenode(kid).nuclearity for kid in tree]
+                # use heads and nucs to pick head, defined as the leftmost
+                # nucleus
+                head_idx = kid_nucs.index('Nucleus')
+                head = kid_heads[head_idx]
+                deps = [kid_head for i, kid_head in enumerate(kid_heads)
+                        if i != head_idx]
+                nucs = [kid_nuc for i, kid_nuc in enumerate(kid_nucs)
+                        if i != head_idx]
+                rels = [kid_rel for i, kid_rel in enumerate(kid_rels)
+                        if i != head_idx]
+
+                dtree.add_dependencies(head, deps, labels=rels, nucs=nucs,
+                                       rank=None)
+                return head
+
+        root = walk(rtree)  # populate dtree structure and get its root
         dtree.set_root(root)
 
         return dtree

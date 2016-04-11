@@ -19,7 +19,7 @@ from educe.rst_dt import parse
 import educe.util
 import educe.corpus
 from .document_plus import DocumentPlus
-from .annotation import SimpleRSTTree
+from .annotation import SimpleRSTTree, _binarize
 from .deptree import RstDepTree
 
 
@@ -103,21 +103,45 @@ def id_to_path(k):
 
 class RstDtParser(object):
     """Fake parser that gets annotation from the RST-DT.
+
+    Parameters
+    ----------
+    corpus_dir : string
+        TODO
+
+    args : TODO
+        TODO
+
+    coarse_rels : boolean, optional
+        If True, relation labels are converted to their coarse-grained
+        equivalent.
+
+    nary_conv : string, optional
+        Conversion method from constituency to dependency tree, for n-ary
+        spans, n > 2, whose kids are all nuclei:
+        'tree' picks the leftmost nucleus as the head of all the others
+        (effectively a tree), 'chain' attaches each nucleus to its
+        predecessor (effectively a chain).
+
+    nuc_in_label : boolean, optional
+        If True, incorporate nuclearity into the label (ex:
+        elaboration-NS) ; currently BROKEN (defined on SimpleRSTTree only).
+
+    exclude_file_docs : boolean, default False
+        If True, ignore fileX files.
+
+    TODO
+    ----
+    [ ] port incorporate_nuclearity_into_label from SimpleRSTTree to
+        RSTTree
+
+    [ ] kill `args`
     """
 
     def __init__(self, corpus_dir, args, coarse_rels=False,
+                 nary_conv='chain',
+                 nuc_in_label=False,
                  exclude_file_docs=False):
-        """
-        TODO
-
-        Parameters
-        ----------
-        ...
-
-        exclude_file_docs: boolean, default False
-            If True, ignore fileX files.
-        """
-        # TODO: kill `args`
         self.reader = Reader(corpus_dir)
         # pre-load corpus
         anno_files_unfltd = self.reader.files(exclude_file_docs)
@@ -131,9 +155,29 @@ class RstDtParser(object):
             self.rel_conv = RstRelationConverter(relmap_file).convert_tree
         else:
             self.rel_conv = None
+        # how to convert n-ary spans
+        self.nary_conv = nary_conv
+        if nary_conv not in ['chain', 'tree']:
+            err_msg = 'Unknown conversion for n-ary spans: {}'
+            raise ValueError(err_msg.format(nary_conv))
+        # whether nuclearity should be part of the label
+        self.nuc_in_label = nuc_in_label
 
     def decode(self, doc_key):
-        """Decode a document from the RST-DT (gold)"""
+        """Decode a document from the RST-DT (gold)
+
+        Parameters
+        ----------
+        doc_key : string ?
+            Identifier in the corpus of the document we want to decode.
+
+        Returns
+        -------
+        doc : DocumentPlus
+            Bunch of information about this document notably its list of
+            EDUs and the structures defined on them: RSTTree,
+            SimpleRSTTree, RstDepTree.
+        """
         # create a DocumentPlus
         # grouping is the document name
         grouping = os.path.basename(id_to_path(doc_key))
@@ -155,16 +199,25 @@ class RstDtParser(object):
             orig_rsttree = self.rel_conv(orig_rsttree)
         doc.orig_rsttree = orig_rsttree
 
+        # TO DEPRECATE - shunt SimpleRSTTree (possible?)
         # convert to binary tree
         rsttree = SimpleRSTTree.from_rst_tree(orig_rsttree)
-        # NEW incorporate nuclearity into label
-        # TODO add a parameter (in init or this function) to trigger this
-        if False:
+        # WIP incorporate nuclearity into label
+        if self.nuc_in_label:
             rsttree = SimpleRSTTree.incorporate_nuclearity_into_label(rsttree)
         doc.rsttree = rsttree
+        # end TO DEPRECATE
 
         # convert to dep tree
-        deptree = RstDepTree.from_simple_rst_tree(rsttree)
+        # WIP
+        if self.nary_conv == 'chain':
+            # legacy mode, through SimpleRSTTree
+            # deptree = RstDepTree.from_simple_rst_tree(rsttree)
+            # modern mode, directly from a binarized RSTTree
+            deptree = RstDepTree.from_rst_tree(_binarize(orig_rsttree))
+        else:  # tree conversion
+            deptree = RstDepTree.from_rst_tree(orig_rsttree)
+        # end WIP
         doc.deptree = deptree
 
         # get EDUs (bad)

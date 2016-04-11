@@ -800,8 +800,10 @@ def load_corpus_as_dataframe_new(selection='train', binarize=False,
     return node_df, rel_df, edu_df, sent_df, para_df
 
 
-if __name__ == "__main__":
-    # maybe everything is not relevant in what follows, but who knows?
+def gather_leaky_stats():
+    """Gather statistics on leaky sentences
+
+    """
     nodes_train, rels_train, edus_train, sents_train, paras_train = load_corpus_as_dataframe_new(selection='train', binarize=False)
     # print(rels_train)
     # as of version 0.17, pandas handles missing boolean values by degrading
@@ -925,3 +927,7 @@ if __name__ == "__main__":
             print(leaky_paras['parent_span_para_len'].value_counts())
         print(leaky_paras[:10])
     # end leaky paragraphs
+
+
+if __name__ == "__main__":
+    gather_leaky_stats()
