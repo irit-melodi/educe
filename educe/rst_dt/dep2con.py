@@ -12,8 +12,6 @@ from collections import namedtuple
 import itertools
 
 from .annotation import SimpleRSTTree, Node
-from .corpus_diagnostics import (get_most_frequent_unuc,
-                                 load_corpus_as_dataframe)
 from .deptree import RstDtException, NUC_N, NUC_S, NUC_R
 from ..internalutil import treenode
 
@@ -65,6 +63,16 @@ class DummyNuclearityClassifier(object):
             multinuc_lbls.extend(['joint', 'same-unit', 'textual'])
 
         elif self.strategy == "most_frequent_by_rel":
+            # FIXME very dirty hack to avoid loading the RST-DT corpus
+            # upfront (triggered by the import of
+            # load_corpus_as_dataframe)
+            try:
+                from .corpus_diagnostics import (
+                    get_most_frequent_unuc,
+                    load_corpus_as_dataframe
+                )
+            except IOError:
+                raise
             train_df = load_corpus_as_dataframe(selection='train')
             multinuc_lbls.extend(rel_name for rel_name, mode_unuc
                                  in get_most_frequent_unuc(train_df).items()
