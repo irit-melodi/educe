@@ -196,6 +196,8 @@ PTB_DIR = os.path.join(os.path.dirname(__file__),
                        '..', '..',
                        'data',  # alt: '..', '..', 'corpora',
                        'PTBIII', 'parsed', 'mrg', 'wsj')
+# FIXME this fails when PTB_DIR does not exist ;
+# I need to find a clean way to address this
 PTB_READER = BracketParseCorpusReader(PTB_DIR,
                                       r'../wsj_.*\.mrg',
                                       encoding='ascii')
