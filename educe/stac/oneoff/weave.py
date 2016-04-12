@@ -559,7 +559,7 @@ def stretch_match_many(updates, src_doc, tgt_doc, doc_span_src, doc_span_tgt,
     return updates
 
 
-UNITS = DIALOGUE_ACTS + RENAMES.keys()
+UNITS = DIALOGUE_ACTS + list(RENAMES.keys())
 
 
 def compute_structural_updates(src_doc, tgt_doc, matches, updates, verbose=0):
