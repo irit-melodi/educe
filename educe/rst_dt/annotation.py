@@ -125,6 +125,25 @@ class EDU(Standoff):
             txt = txt[:self._SUMMARY_LEN] + "..."
         return "EDU:[%s]" % txt
 
+    # EXPERIMENTAL for convenient display of RST trees in PNG images
+    # (replace RSTTool)
+    def __str__(self):
+        # wrap tokens (roughly) at _SUMMARY_LEN
+        raw_toks = [x for x in self.text().split(' ')]
+        wrapped_toks = [[]]
+        wrapped_toks[-1].append("({})".format(self.num))  # prepend EDU num
+        for tok in raw_toks:
+            # special case to handle very long tokens
+            while len(tok) > self._SUMMARY_LEN:
+                wrapped_toks.append([tok[:self._SUMMARY_LEN] + '-'])
+                tok = tok[self._SUMMARY_LEN:]
+            # regular case: optional newline, then append to current line
+            if len(' '.join(wrapped_toks[-1] + [tok])) > self._SUMMARY_LEN:
+                wrapped_toks.append([])
+            wrapped_toks[-1].append(tok)
+        return '\n'.join(' '.join(tok for tok in group_toks)
+                         for group_toks in wrapped_toks)
+
     def text(self):
         """
         Return the text associated with this EDU. We try to return
@@ -184,6 +203,14 @@ class Node(object):
                              "%s-%s" % self.edu_span,
                              self.rel)
 
+    # EXPERIMENTAL for convenient display of RST trees in PNG images
+    # (replace RSTTool)
+    def __str__(self):
+        return "%s %s %s" % (
+            "%s-%s" % self.edu_span,
+            self.nuclearity[0],
+            self.rel)
+
     def __eq__(self, other):
         return\
             self.nuclearity == other.nuclearity and\
@@ -240,7 +267,48 @@ class RSTTree(SearchableTree, Standoff):
         return list(self)  # children
 
     def __repr__(self):
-        return self.pprint()
+        return self.pformat()
+
+    # copied and adapted from nltk.tree.Tree
+    # to customize visual appearance
+    def _repr_png_(self):
+        """
+        Draws and outputs in PNG for ipython.
+        PNG is used instead of PDF, since it can be displayed in the qt console and
+        has wider browser support.
+        """
+        import os
+        import base64
+        import subprocess
+        import tempfile
+        from nltk.draw.tree import tree_to_treesegment
+        from nltk.draw.util import CanvasFrame
+        from nltk.internals import find_binary
+        _canvas_frame = CanvasFrame()
+        # WIP customization of visual appearance
+        # NB: conda-provided python and tk cannot access most fonts on the
+        # system, thus it currently falls back on the default font
+        widget = tree_to_treesegment(_canvas_frame.canvas(), self,
+                                     tree_yspace=35,
+                                     node_font=('Verdana', -18, 'bold'),
+                                     leaf_font=('Verdana', -18))
+        _canvas_frame.add_widget(widget)
+        x, y, w, h = widget.bbox()
+        # print_to_file uses scrollregion to set the width and height of the pdf.
+        _canvas_frame.canvas()['scrollregion'] = (0, 0, w, h)
+        with tempfile.NamedTemporaryFile() as file:
+            in_path = '{0:}.ps'.format(file.name)
+            out_path = '{0:}.png'.format(file.name)
+            _canvas_frame.print_to_file(in_path)
+            _canvas_frame.destroy_widget(widget)
+            subprocess.call([find_binary('gs', binary_names=['gswin32c.exe', 'gswin64c.exe'], env_vars=['PATH'], verbose=False)] +
+                            '-q -dEPSCrop -sDEVICE=png16m -r90 -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -dSAFER -dBATCH -dNOPAUSE -sOutputFile={0:} {1:}'
+                            .format(out_path, in_path).split())
+            with open(out_path, 'rb') as sr:
+                res = sr.read()
+            os.remove(in_path)
+            os.remove(out_path)
+            return base64.b64encode(res).decode()
 
     def edu_span(self):
         """
