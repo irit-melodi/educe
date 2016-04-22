@@ -19,6 +19,13 @@ from educe.external.parser import SearchableTree
 from ..internalutil import treenode
 
 
+# ghostscript parameters to generate images in different formats
+_GS_PARAMS = {
+    'png': '-sDEVICE=png16m -r90 -dTextAlphaBits=4 -dGraphicsAlphaBits=4',
+    'pdf': '-sDEVICE=pdfwrite',
+}
+
+
 class RSTTreeException(Exception):
     """
     Exceptions related to RST trees not looking like we would
@@ -269,21 +276,46 @@ class RSTTree(SearchableTree, Standoff):
     def __repr__(self):
         return self.pformat()
 
-    # copied and adapted from nltk.tree.Tree
-    # to customize visual appearance
+    # image representations, copied and adapted from nltk.tree.Tree._repr_png_
+    # for:
+    # * modularity, with PS, PNG, PDF formats using the same codebase
+    # * customized visual appearance (fonts, spacing)
     def _repr_png_(self):
-        """
-        Draws and outputs in PNG for ipython.
-        PNG is used instead of PDF, since it can be displayed in the qt console and
-        has wider browser support.
+        """Draws and outputs in PNG for ipython.
+
+        PNG is used instead of PDF, since it can be displayed in the qt
+        console and has wider browser support.
         """
         import os
         import base64
         import subprocess
         import tempfile
+        from nltk.internals import find_binary
+        with tempfile.NamedTemporaryFile() as file:
+            in_path = '{0:}.ps'.format(file.name)
+            out_path = '{0:}.png'.format(file.name)
+            # generate PostScript using the drawing utils of NLTK
+            self.to_ps(in_path)
+            # convert to PNG with ghostscript
+            subprocess.call(
+                [find_binary('gs', binary_names=['gswin32c.exe', 'gswin64c.exe'], env_vars=['PATH'], verbose=False)] +
+                '-q -dEPSCrop {2:} -dSAFER -dBATCH -dNOPAUSE -sOutputFile={0:} {1:}'
+                .format(out_path, in_path, _GS_PARAMS['png']).split())
+            # this function will return the encoded+decoded bytes of the PNG
+            # file
+            with open(out_path, 'rb') as sr:
+                res = sr.read()
+            os.remove(in_path)
+            os.remove(out_path)
+            return base64.b64encode(res).decode()
+
+    def to_ps(self, filename):
+        """Export as a PostScript image.
+
+        This function is used by `_repr_png_`.
+        """
         from nltk.draw.tree import tree_to_treesegment
         from nltk.draw.util import CanvasFrame
-        from nltk.internals import find_binary
         _canvas_frame = CanvasFrame()
         # WIP customization of visual appearance
         # NB: conda-provided python and tk cannot access most fonts on the
@@ -294,21 +326,31 @@ class RSTTree(SearchableTree, Standoff):
                                      leaf_font=('Verdana', -18))
         _canvas_frame.add_widget(widget)
         x, y, w, h = widget.bbox()
-        # print_to_file uses scrollregion to set the width and height of the pdf.
+        # print_to_file uses scrollregion to set the width and height of the
+        # pdf
         _canvas_frame.canvas()['scrollregion'] = (0, 0, w, h)
-        with tempfile.NamedTemporaryFile() as file:
-            in_path = '{0:}.ps'.format(file.name)
-            out_path = '{0:}.png'.format(file.name)
-            _canvas_frame.print_to_file(in_path)
-            _canvas_frame.destroy_widget(widget)
-            subprocess.call([find_binary('gs', binary_names=['gswin32c.exe', 'gswin64c.exe'], env_vars=['PATH'], verbose=False)] +
-                            '-q -dEPSCrop -sDEVICE=png16m -r90 -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -dSAFER -dBATCH -dNOPAUSE -sOutputFile={0:} {1:}'
-                            .format(out_path, in_path).split())
-            with open(out_path, 'rb') as sr:
-                res = sr.read()
-            os.remove(in_path)
-            os.remove(out_path)
-            return base64.b64encode(res).decode()
+        # print to file
+        _canvas_frame.print_to_file(filename)
+        _canvas_frame.destroy_widget(widget)
+
+    def to_pdf(self, filename):
+        """Image representation in PDF.
+        """
+        import os
+        import base64
+        import subprocess
+        import tempfile
+        from nltk.internals import find_binary
+        # generate PostScript using the drawing utils of NLTK
+        root, ext = os.path.splitext(filename)
+        in_path = '{0:}.ps'.format(root)
+        self.to_ps(in_path)
+        # convert to PDF with ghostscript
+        subprocess.call(
+            [find_binary('gs', binary_names=['gswin32c.exe', 'gswin64c.exe'], env_vars=['PATH'], verbose=False)] +
+            '-q -dEPSCrop {2:} -dSAFER -dBATCH -dNOPAUSE -sOutputFile={0:} {1:}'
+            .format(filename, in_path, _GS_PARAMS['pdf']).split())
+        os.remove(in_path)
 
     def edu_span(self):
         """
