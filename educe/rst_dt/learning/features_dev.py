@@ -5,6 +5,7 @@
 from __future__ import print_function
 
 from collections import Counter
+import itertools
 import re
 
 import numpy as np
@@ -57,13 +58,67 @@ def extract_single_word(edu_info):
     except KeyError:
         return
 
-    if words:
-        yield ('ptb_word_first', words[0])
-        yield ('ptb_word_last', words[-1])
+    if not words:
+        return
 
-    if len(words) > 1:
-        yield ('ptb_word_first2', (words[0], words[1]))
-        yield ('ptb_word_last2', (words[-2], words[-1]))
+    yield ('ptb_word_first', words[0])
+    yield ('ptb_word_last', words[-1])
+
+    yield ('ptb_word_first2', tuple(words[:2]))
+    yield ('ptb_word_last2', tuple(words[-2:]))
+
+    # * feature combinations
+    # NEW 2016-04-29
+    if False:  # currently unplugged (because too many features)
+        yield ('ptb_word_first_last', tuple(
+            itertools.chain(words[:1], words[-1:])))
+        yield ('ptb_word_first_last2', tuple(
+            itertools.chain(words[:1], words[-2:])))
+        yield ('ptb_word_first2_last', tuple(
+            itertools.chain(words[:2], words[-1:])))
+
+
+#
+# typography
+# WIP as of 2016-04-29
+#
+
+# list of tokens that can avoid capitalization in titles
+NOCAP = set([
+    'a', 'and', 'at', 'of', 'on', 'or', 'the', 'to'
+])
+
+
+def is_title_cased(tok_seq):
+    """True if a sequence of tokens is title-cased"""
+    return all(x[0].isupper() for x in tok_seq
+               if x not in NOCAP and x[0].isalpha())
+
+
+def is_upper_init(tok_seq):
+    """True if a sequence starts with two upper-cased tokens"""
+    alnum_toks = [x for x in tok_seq if x.isalnum()]
+    return all(x.isupper() for x in alnum_toks[:2])
+
+
+def is_upper_entire(tok_seq):
+    """True if a sequence is fully upper-cased"""
+    return all(x.upper() == x for x in tok_seq)
+
+
+def extract_single_typo(edu_info):
+    """typographical features for the EDU"""
+    try:
+        words = edu_info['words']
+    except KeyError:
+        return
+
+    if not words:
+        return
+
+    yield ('is_title_cased', is_title_cased(words))
+    yield ('is_upper_init', is_upper_init(words))
+    yield ('is_upper_entire', is_upper_entire(words))
 
 
 #
@@ -79,12 +134,14 @@ def extract_single_pdtb_markers(edu_info):
     except KeyError:
         return
 
-    if words:
-        for marker, rels in MARKER2RELS.items():
-            if marker.appears_in(words):
-                yield ('pdtb_marker', str(marker))
-                for rel in rels:
-                    yield ('pdtb_marked_rel', rel)
+    if not words:
+        return
+
+    for marker, rels in MARKER2RELS.items():
+        if marker.appears_in(words):
+            yield ('pdtb_marker', str(marker))
+            for rel in rels:
+                yield ('pdtb_marked_rel', rel)
 # end NEW
 
 
@@ -95,15 +152,28 @@ def extract_single_pos(edu_info):
     except KeyError:
         return
 
-    if tags:
-        yield ('ptb_pos_tag_first', tags[0])
-        yield ('ptb_pos_tag_last', tags[-1])
-        # nb of occurrences of each POS tag in this EDU
-        tag_cnt = Counter(tags)
-        for tag, occ in tag_cnt.items():
-            yield ('POS_' + tag, occ)
-        # NEW feature: EDU has at least a verb
-        yield ('has_vb', any(tag.startswith('VB') for tag in tags))
+    if not tags:
+        return
+
+    # * core features
+    yield ('ptb_pos_tag_first', tags[0])
+    yield ('ptb_pos_tag_last', tags[-1])
+    # nb of occurrences of each POS tag in this EDU
+    tag_cnt = Counter(tags)
+    for tag, occ in tag_cnt.items():
+        yield ('POS_' + tag, occ)
+    # NEW feature: EDU has at least a verb
+    yield ('has_vb', any(tag.startswith('VB') for tag in tags))
+
+    # * feature combinations
+    # NEW 2016-04-29
+    if False:  # currently unplugged (too many features)
+        yield ('ptb_pos_tag_first_last', tuple(
+            itertools.chain(tags[:1], tags[-1:])))
+        yield ('ptb_pos_tag_first_last2', tuple(
+            itertools.chain(tags[:1], tags[-2:])))
+        yield ('ptb_pos_tag_first2_last', tuple(
+            itertools.chain(tags[:2], tags[-1:])))
 
 
 def extract_single_brown(edu_info):
@@ -113,13 +183,15 @@ def extract_single_brown(edu_info):
     except KeyError:
         return
 
-    if brown_clusters:
-        yield ('bc_first', brown_clusters[0])
-        yield ('bc_last', brown_clusters[-1])
-        # nb of occurrences of each brown cluster id in this EDU
-        bc_cnt = Counter(brown_clusters)
-        for bc, occ in bc_cnt.items():
-            yield ('bc_' + bc, occ)
+    if not brown_clusters:
+        return
+
+    yield ('bc_first', brown_clusters[0])
+    yield ('bc_last', brown_clusters[-1])
+    # nb of occurrences of each brown cluster id in this EDU
+    bc_cnt = Counter(brown_clusters)
+    for bc, occ in bc_cnt.items():
+        yield ('bc_' + bc, occ)
 
 
 def extract_single_length(edu_info):
@@ -226,6 +298,8 @@ def build_edu_feature_extractor():
     funcs = [
         # word
         extract_single_word,
+        # WIP typography
+        extract_single_typo,
         # discourse markers
         extract_single_pdtb_markers,
         # pos
