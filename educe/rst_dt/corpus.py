@@ -168,12 +168,12 @@ class RstDtParser(object):
 
         Parameters
         ----------
-        doc_key : string ?
-            Identifier in the corpus of the document we want to decode.
+        doc_key: string ?
+            Identifier (in corpus) of the document we want to decode.
 
         Returns
         -------
-        doc : DocumentPlus
+        doc: DocumentPlus
             Bunch of information about this document notably its list of
             EDUs and the structures defined on them: RSTTree,
             SimpleRSTTree, RstDepTree.
