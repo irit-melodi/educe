@@ -457,11 +457,33 @@ class PartialUnit(namedtuple("PartialUnit", "span type features")):
 
 
 def create_units(_, doc, author, partial_units):
-    """
-    Return a collection of instantiated new unit objects.
+    """Create a collection of units from their partial specification.
 
-    :param partial_units:
-    :type  partial_units: iterable of `PartialUnit`
+    Parameters
+    ----------
+    _: anything
+        Anonymous parameter whose value is ignored. It was apparently
+        supposed to contain a FileId. I suppose the intention was to
+        follow a signature similar to other functions.
+    doc: Document
+        Containing document.
+    author: string
+        Author for the new units.
+    partial_units: iterable of `PartialUnit`
+        Partial specification of the new units.
+
+    Returns
+    -------
+    res: list of Unit
+        Collection of instantiated new unit objects.
+
+    Notes
+    -----
+    As of 2016-05-11, this function does not seem to be used anymore
+    in the codebase.
+    It used to be called in `irit-stac/segmentation/glozz-segment`,
+    which was deleted 2015-06-08 (commit e2373c03) because it was not
+    used.
     """
     # It seems like Glozz uses the creation-date metadata field to
     # identify units (symptom: units that have different ids, but
@@ -478,7 +500,7 @@ def create_units(_, doc, author, partial_units):
     creation_dates = [int(u.metadata['creation-date']) for u in doc.units]
     smallest_neg_date = min(creation_dates)
     if smallest_neg_date > 0:
-        smallest_neg_date = 0
+        smallest_neg_date = -1  # don't use 0 because log10(0)
     # next two power of 10
     id_base = 10 ** (int(math.log10(abs(smallest_neg_date))) + 2)
 
