@@ -117,15 +117,16 @@ class RstDtParser(object):
         equivalent.
 
     nary_conv : string, optional
-        Conversion method from constituency to dependency tree, for n-ary
-        spans, n > 2, whose kids are all nuclei:
+        Conversion method from constituency to dependency tree, for
+        n-ary spans, n > 2, whose kids are all nuclei:
         'tree' picks the leftmost nucleus as the head of all the others
         (effectively a tree), 'chain' attaches each nucleus to its
         predecessor (effectively a chain).
 
     nuc_in_label : boolean, optional
         If True, incorporate nuclearity into the label (ex:
-        elaboration-NS) ; currently BROKEN (defined on SimpleRSTTree only).
+        elaboration-NS) ; currently BROKEN (defined on SimpleRSTTree
+        only).
 
     exclude_file_docs : boolean, default False
         If True, ignore fileX files.
