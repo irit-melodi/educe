@@ -233,9 +233,9 @@ def main(args):
     else:
         of_bn = os.path.join(args.output, os.path.basename(args.corpus))
         out_file = '{}.relations{}'.format(of_bn, of_ext)
-    # dump vocabulary
-    vocab_file = out_file + '.vocab'
-    dump_vocabulary(vzer.vocabulary_, vocab_file)
     # dump EDUs and features in svmlight format
     dump_all(X_gen, y_gen, out_file, labtor.labelset_, docs,
              instance_generator)
+    # dump vocabulary
+    vocab_file = out_file + '.vocab'
+    dump_vocabulary(vzer.vocabulary_, vocab_file)
