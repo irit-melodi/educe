@@ -77,6 +77,9 @@ def config_argparser(parser):
     parser.add_argument('--coarse',
                         action='store_true',
                         help='use coarse-grained labels')
+    parser.add_argument('--fix_pseudo_rels',
+                        action='store_true',
+                        help='fix pseudo-relation labels')
     # NEW use CoreNLP's output for tokenization and syntax (+coref?)
     parser.add_argument('--corenlp_out_dir', metavar='DIR',
                         help='CoreNLP output directory')
@@ -113,6 +116,7 @@ def main(args):
 
     rst_reader = RstDtParser(args.corpus, args,
                              coarse_rels=args.coarse,
+                             fix_pseudo_rels=args.fix_pseudo_rels,
                              exclude_file_docs=exclude_file_docs)
     rst_corpus = rst_reader.corpus
     # TODO: change educe.corpus.Reader.slurp*() so that they return an object
