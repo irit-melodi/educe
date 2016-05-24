@@ -9,7 +9,8 @@ import warnings
 
 from educe.annotation import Span
 from .annotation import (is_edu, is_cdu, is_dialogue, is_turn,
-                         split_turn_text)
+                         split_turn_text,
+                         TURN_TYPES)
 from .annotation import speaker as anno_speaker
 from .graph import WrappedToken, EnclosureGraph
 
@@ -156,19 +157,19 @@ class Context(object):
         return anno_speaker(self.turn)
 
     @classmethod
-    def _the(cls, edu, surrounders, typ):
+    def _the(cls, edu, surrounders, types):
         """
         Return the surrounding annotation of the given type.
         We are expecting there to be exactly one such surrounder.
-        If none, we we consider it worth an exception. If more
+        If none, we consider it worth an exception. If more
         than one, we grit our teeth and move.
         """
-        matches = [x for x in surrounders if x.type == typ]
+        matches = [x for x in surrounders if x.type in types]
         if len(matches) == 1:
             return matches[0]
         else:
             oops = "Was expecting exactly one %s for edu %s" %\
-                (typ, edu.identifier()) +\
+                (types, edu.identifier()) +\
                 ", but got %d\nSurrounders found: %s" %\
                 (len(matches), [x.identifier() for x in surrounders])
             if matches:
@@ -198,11 +199,14 @@ class Context(object):
 
         edu: Unit
         """
-        turn = cls._the(edu, enclosure.outside(edu), 'Turn')
-        tstar = cls._the(edu, containing(edu.text_span(), doc_tstars), 'Turn')
+        turn = cls._the(edu, enclosure.outside(edu),
+                        TURN_TYPES)
+        tstar = cls._the(edu, containing(edu.text_span(), doc_tstars),
+                         TURN_TYPES)
         t_edus = [x for x in enclosure.inside(turn) if is_edu(x)]
         assert t_edus
-        dialogue = cls._the(edu, enclosure.outside(turn), 'Dialogue')
+        dialogue = cls._the(edu, enclosure.outside(turn),
+                            ['Dialogue'])
         d_turns = [x for x in enclosure.inside(dialogue) if is_turn(x)]
         assert d_turns
         tokens = [wrapped.token for wrapped in enclosure.inside(edu)

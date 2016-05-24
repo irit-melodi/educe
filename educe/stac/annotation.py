@@ -68,13 +68,16 @@ from educe.annotation import Unit, Relation, Schema
 import educe.glozz as glozz
 
 
-STRUCTURE_TYPES = [
-    'Turn',
+TURN_TYPES = ['Turn', 'NonplayerTurn']
+
+STRUCTURE_TYPES = TURN_TYPES + [
     'Tstar',  # sequence of turns with same speaker
     'paragraph',
     'dialogue', 'Dialogue',  # TODO remove one or keep both?
 ]
+
 RESOURCE_TYPES = ['default', 'Resource']
+
 PREFERENCE_TYPES = ['Preference']
 
 SUBORDINATING_RELATIONS = [
@@ -239,7 +242,7 @@ def is_turn(annotation):
     See Unit typology above
     """
     return (isinstance(annotation, Unit) and
-            annotation.type == 'Turn')
+            annotation.type in TURN_TYPES)
 
 
 def is_paragraph(annotation):
