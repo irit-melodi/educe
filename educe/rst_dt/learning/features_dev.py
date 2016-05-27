@@ -9,8 +9,10 @@ import itertools
 import re
 
 import numpy as np
+from nltk.tree import Tree
 
 from .base import DocumentPlusPreprocessor
+from educe.annotation import Span
 from educe.ptb.head_finder import find_edu_head
 from educe.rst_dt.lecsie import (load_lecsie_feats,
                                  LINE_FORMAT as LECSIE_LINE_FORMAT)
@@ -267,6 +269,84 @@ def extract_single_para(edu_info):
 
 # syntactic features
 
+PUNC_POSTAGS = set([
+    '``', "''",  # double quotes
+    ',',
+    ':',
+    '.',  # strong punctuations
+])
+
+def strip_punctuation(tokens):
+    """Strip leading and trailing punctuation from a sequence of tokens.
+
+    Parameters
+    ----------
+    tokens: list of Token
+        Sequence of tokens.
+
+    Returns
+    -------
+    tokens_strip: list of Token
+        Corresponding list of tokens with no leading or trailing
+        punctuation.
+    """
+    nopunc_tokens = [t.tag not in PUNC_POSTAGS for t in tokens]
+    nopunc_lmost = nopunc_tokens.index(True)
+    nopunc_rmost = len(nopunc_tokens) - 1 - nopunc_tokens[::-1].index(True)
+    tokens_strip = tokens[nopunc_lmost:nopunc_rmost + 1]
+    return tokens_strip
+
+
+def syntactic_node_seq(ptree, tokens):
+    """Find the sequence of syntactic nodes covering a sequence of tokens.
+
+    Parameters
+    ----------
+    ptree: `nltk.tree.Tree`
+        Syntactic tree.
+    tokens: sequence of `Token`
+        Sequence of tokens under scrutiny.
+
+    Returns
+    -------
+    syn_nodes: list of `nltk.tree.Tree`
+        Spanning sequence of nodes of the syntactic tree.
+    """
+    txt_span = Span(tokens[0].text_span().char_start,
+                    tokens[-1].text_span().char_end)
+
+    for tpos in ptree.treepositions():
+        node = ptree[tpos]
+        # skip nodes whose span does not enclose txt_span
+        node_txt_span = node.text_span()
+        if not node_txt_span.encloses(txt_span):
+            continue
+
+        # * spanning node
+        if node.text_span() == txt_span:
+            return [node]
+
+        # * otherwise: spanning subsequence of kid nodes
+        if not isinstance(node, Tree):
+            continue
+        txt_span_start = txt_span.char_start
+        txt_span_end = txt_span.char_end
+        kids_start = [x.text_span().char_start for x in node]
+        kids_end = [x.text_span().char_end for x in node]
+        try:
+            idx_left = kids_start.index(txt_span_start)
+        except ValueError:
+            continue
+        try:
+            idx_right = kids_end.index(txt_span_end)
+        except ValueError:
+            continue
+        if idx_left == idx_right:
+            continue
+        return [x for x in node[idx_left:idx_right + 1]]
+    else:
+        return []
+
 
 def extract_single_syntax(edu_info):
     """syntactic features for the EDU"""
@@ -277,27 +357,41 @@ def extract_single_syntax(edu_info):
         return
 
     edu = edu_info['edu']
+    tokens = edu_info['tokens']  # WIP
+    # spanning nodes for the EDU
+    syn_nodes = syntactic_node_seq(ptree, tokens)
+    if syn_nodes:
+        yield ('SYN_nodes',
+               tuple(x.label() for x in syn_nodes))
+    # variant, stripped from leading and trailing punctuations
+    tokens_strip_punc = strip_punctuation(tokens)
+    syn_nodes_nopunc = syntactic_node_seq(ptree, tokens_strip_punc)
+    if syn_nodes_nopunc:
+        yield ('SYN_nodes_nopunc',
+               tuple(x.label() for x in syn_nodes_nopunc))
 
-    # tree positions (in the syn tree) of the words that are in the EDU
-    tpos_leaves_edu = [tpos_leaf
-                       for tpos_leaf in ptree.treepositions('leaves')
-                       if ptree[tpos_leaf].overlaps(edu)]
-    wanted = set(tpos_leaves_edu)
-    edu_head = find_edu_head(ptree, pheads, wanted)
-    if edu_head is not None:
-        treepos_hn, treepos_hw = edu_head
-        hlabel = ptree[treepos_hn].label()
-        hword = ptree[treepos_hw].word
+    # currently de-activated
+    if False:
+        # tree positions (in the syn tree) of the words that are in the EDU
+        tpos_leaves_edu = [tpos_leaf
+                           for tpos_leaf in ptree.treepositions('leaves')
+                           if ptree[tpos_leaf].overlaps(edu)]
+        wanted = set(tpos_leaves_edu)
+        edu_head = find_edu_head(ptree, pheads, wanted)
+        if edu_head is not None:
+            treepos_hn, treepos_hw = edu_head
+            hlabel = ptree[treepos_hn].label()
+            hword = ptree[treepos_hw].word
 
-        if False:
-            # DEBUG
-            print('edu: ', edu.text())
-            print('hlabel: ', hlabel)
-            print('hword: ', hword)
-            print('======')
+            if False:
+                # DEBUG
+                print('edu: ', edu.text())
+                print('hlabel: ', hlabel)
+                print('hword: ', hword)
+                print('======')
 
-        yield ('SYN_hlabel', hlabel)
-        yield ('SYN_hword', hword)
+            yield ('SYN_hlabel', hlabel)
+            yield ('SYN_hword', hword)
 
 
 # TODO: features on semantic similarity
@@ -324,7 +418,7 @@ def build_edu_feature_extractor():
     ]
 
     # syntax (EXPERIMENTAL)
-    # funcs.append(extract_single_syntax)
+    funcs.append(extract_single_syntax)
 
     def _extract_all(edu_info):
         """inner helper because I am lost at sea here"""
@@ -427,7 +521,7 @@ class LecsieFeats(object):
                     yield (fn, fv)
 # end EXPERIMENTAL
 
-def extract_pair_doc(edu_info1, edu_info2):
+def extract_pair_doc(edu_info1, edu_info2, edu_info_bwn):
     """Document-level tuple features"""
     edu_idx1 = edu_info1['edu'].num
     edu_idx2 = edu_info2['edu'].num
@@ -446,7 +540,7 @@ def extract_pair_doc(edu_info1, edu_info2):
 
 # features on document structure: paragraphs and sentences
 
-def extract_pair_para(edu_info1, edu_info2):
+def extract_pair_para(edu_info1, edu_info2, edu_info_bwn):
     """Paragraph tuple features"""
     try:
         para_id1 = edu_info1['para_idx']
@@ -469,7 +563,7 @@ def extract_pair_para(edu_info1, edu_info2):
         yield ('num_paragraphs_between_div3', (para_id1 - para_id2) / 3)
 
 
-def extract_pair_sent(edu_info1, edu_info2):
+def extract_pair_sent(edu_info1, edu_info2, edu_info_bwn):
     """Sentence tuple features"""
 
     sent_id1 = edu_info1['sent_idx']
@@ -522,7 +616,7 @@ def extract_pair_sent(edu_info1, edu_info2):
 
 # syntax
 
-def extract_pair_syntax(edu_info1, edu_info2):
+def extract_pair_syntax(edu_info1, edu_info2, edu_info_bwn):
     """syntactic features for the pair of EDUs"""
     try:
         ptree1 = edu_info1['ptree']
@@ -536,11 +630,12 @@ def extract_pair_syntax(edu_info1, edu_info2):
     edu1 = edu_info1['edu']
     edu2 = edu_info2['edu']
 
-    # generate DS-LST features for intra-sentential
+    # intra-sentential case only
     if ptree1 == ptree2:
         ptree = ptree1
         pheads = pheads1
 
+        # * DS-LST features
         # find the head node of EDU1
         # tree positions (in the syn tree) of the words that are in EDU1
         tpos_leaves_edu1 = [tpos_leaf
@@ -610,6 +705,97 @@ def extract_pair_syntax(edu_info1, edu_info2):
         # TODO fire a feature if the head nodes of EDU1 and EDU2
         # have the same attachment node ?
 
+        # * syntactic nodes (WIP as of 2016-05-25)
+        #   - interval between edu1 and edu2
+        if edu_info_bwn:
+            bwn_edus = [x['edu'] for x in edu_info_bwn]
+            bwn_tokens = list(itertools.chain.from_iterable(
+                x['tokens'] for x in edu_info_bwn))
+            # * EDUs_bwn
+            # spanning nodes for the interval
+            syn_nodes = syntactic_node_seq(ptree, bwn_tokens)
+            if syn_nodes:
+                yield ('SYN_nodes_bwn',
+                       tuple(x.label() for x in syn_nodes))
+            # variant: strip leading and trailing punctuations
+            bwn_tokens_strip_punc = strip_punctuation(bwn_tokens)
+            syn_nodes_strip = syntactic_node_seq(ptree, bwn_tokens_strip_punc)
+            if syn_nodes_strip:
+                yield ('SYN_nodes_bwn_nopunc',
+                       tuple(x.label() for x in syn_nodes_strip))
+
+            # determine the linear order of {EDU_1, EDU_2}
+            if edu1.num < edu2.num:
+                edu_l = edu1
+                edu_r = edu2
+                edu_info_l = edu_info1
+                edu_info_r = edu_info2
+            else:
+                edu_l = edu2
+                edu_r = edu1
+                edu_info_l = edu_info2
+                edu_info_r = edu_info1
+
+            if False:  # WIP reproducibility check
+                # * EDU_L + EDUs_bwn + EDU_R
+                lbwnr_edus = [edu_l] + bwn_edus + [edu_r]
+                lbwnr_tokens = (edu_info_l['tokens']
+                                + bwn_tokens
+                                + edu_info_r['tokens'])
+                # spanning nodes
+                syn_nodes = syntactic_node_seq(ptree, lbwnr_tokens)
+                if syn_nodes:
+                    yield ('SYN_nodes_lbwnr',
+                           tuple(x.label() for x in syn_nodes))
+                # variant: strip leading and trailing punctuations
+                lbwnr_tokens_strip_punc = strip_punctuation(lbwnr_tokens)
+                syn_nodes_strip = syntactic_node_seq(
+                    ptree, lbwnr_tokens_strip_punc)
+                if syn_nodes_strip:
+                    yield ('SYN_nodes_lbwnr_nopunc',
+                           tuple(x.label() for x in syn_nodes_strip))
+
+                # * EDU_L + EDUs_bwn
+                lbwn_edus = [edu_l] + bwn_edus
+                lbwn_tokens = (edu_info_l['tokens']
+                               + bwn_tokens)
+                # spanning nodes
+                syn_nodes = syntactic_node_seq(ptree, lbwn_tokens)
+                if syn_nodes:
+                    yield ('SYN_nodes_lbwn',
+                           tuple(x.label() for x in syn_nodes))
+                # variant: strip leading and trailing punctuations
+                lbwn_tokens_strip_punc = strip_punctuation(lbwn_tokens)
+                syn_nodes_strip = syntactic_node_seq(
+                    ptree, lbwn_tokens_strip_punc)
+                if syn_nodes_strip:
+                    yield ('SYN_nodes_lbwn_nopunc',
+                           tuple(x.label() for x in syn_nodes_strip))
+
+                # * EDUs_bwn + EDU_R
+                bwnr_edus = bwn_edus + [edu_r]
+                bwnr_tokens = (bwn_tokens
+                               + edu_info_r['tokens'])
+                # spanning nodes
+                syn_nodes = syntactic_node_seq(ptree, bwnr_tokens)
+                if syn_nodes:
+                    yield ('SYN_nodes_bwnr',
+                           tuple(x.label() for x in syn_nodes))
+                # variant: strip leading and trailing punctuations
+                bwnr_tokens_strip_punc = strip_punctuation(bwnr_tokens)
+                syn_nodes_strip = syntactic_node_seq(
+                    ptree, bwnr_tokens_strip_punc)
+                if syn_nodes_strip:
+                    yield ('SYN_nodes_bwnr_nopunc',
+                           tuple(x.label() for x in syn_nodes_strip))
+
+            # TODO EDU_L + EDUs_bwn[:i], EDUs_bwn[i:] + EDUs_R ?
+            # where i should correspond to the split point of the (2nd
+            # order variant of the) Eisner decoder
+
+            # TODO specifically handle interval PRN that start with a comma
+            # that trails the preceding EDU ?
+
     # TODO fire a feature with the pair of labels of the head nodes of EDU1
     # and EDU2 ?
 
@@ -638,11 +824,11 @@ def build_pair_feature_extractor(lecsie_data_dir=None):
         lecsie_feats = LecsieFeats(lecsie_data_dir)
         funcs.append(lambda e1, e2: lecsie_feats.transform([(e1, e2)]))
 
-    def _extract_all(edu_info1, edu_info2):
+    def _extract_all(edu_info1, edu_info2, edu_info_bwn):
         """inner helper because I am lost at sea here, again"""
         # TODO do this in a cleaner manner
         for fct in funcs:
-            for feat in fct(edu_info1, edu_info2):
+            for feat in fct(edu_info1, edu_info2, edu_info_bwn):
                 yield feat
 
     # extractor

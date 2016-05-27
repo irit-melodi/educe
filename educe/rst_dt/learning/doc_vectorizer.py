@@ -246,10 +246,21 @@ class DocumentCountVectorizer(object):
         sf_cache = dict()
 
         for edu1, edu2 in edu_pairs:
+            # WIP interval
+            if edu1.num < edu2.num:
+                bwn_nums = range(edu1.num + 1, edu2.num)
+            else:
+                bwn_nums = range(edu2.num + 1, edu1.num)
+            bwn_nums = set(bwn_nums)
+            # end WIP interval
+
             feat_dict = dict()
             # retrieve info for each EDU
             edu_info1 = edu_info[edu1]
             edu_info2 = edu_info[edu2]
+            # ... and for the EDUs in between (WIP interval)
+            edu_info_bwn = [edu_info[x] for x in doc.edus
+                            if x.num in bwn_nums]
             # gov EDU
             if edu1 not in sf_cache:
                 sf_cache[edu1] = dict(sing_extract(edu_info1))
@@ -258,8 +269,9 @@ class DocumentCountVectorizer(object):
             if edu2 not in sf_cache:
                 sf_cache[edu2] = dict(sing_extract(edu_info2))
             feat_dict['EDU2'] = dict(sf_cache[edu2])
-            # pair
-            feat_dict['pair'] = dict(pair_extract(edu_info1, edu_info2))
+            # pair + in between
+            feat_dict['pair'] = dict(pair_extract(
+                edu_info1, edu_info2, edu_info_bwn))
             # NEW
             # product features
             feat_dict['pair'].update(feat_prod(feat_dict['EDU1'],
