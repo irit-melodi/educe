@@ -137,11 +137,20 @@ def extract_single_pdtb_markers(edu_info):
     if not words:
         return
 
-    for marker, rels in MARKER2RELS.items():
-        if marker.appears_in(words):
-            yield ('pdtb_marker', str(marker))
-            for rel in rels:
-                yield ('pdtb_marked_rel', rel)
+    markers_inc = [marker for marker in MARKER2RELS
+                   if marker.appears_in(words)]
+    rels_inc = [MARKER2RELS[marker] for marker in markers_inc]
+    # WIP
+    # TODO accumulate occurrences of same marker?
+    for marker in markers_inc:
+        yield ('pdtb_marker_' + str(marker), True)
+    for rel in itertools.chain.from_iterable(rels_inc):
+        yield ('pdtb_marked_rel_' + rel, True)
+    # TODO add info to help classifiers differentiate discourse vs
+    # non-discourse use of "flexible" discourse markers, ex: "and"
+    # can be clausal or NP-internal
+    # * linear? (index of marker in EDU from start/end)
+    # * syntactic? syn nodes above the marker(s)
 # end NEW
 
 
