@@ -9,10 +9,9 @@ import itertools
 import re
 
 import numpy as np
-from nltk.tree import Tree
 
 from .base import DocumentPlusPreprocessor
-from educe.annotation import Span
+from educe.ptb.annotation import strip_punctuation, syntactic_node_seq
 from educe.ptb.head_finder import find_edu_head
 from educe.rst_dt.lecsie import (load_lecsie_feats,
                                  LINE_FORMAT as LECSIE_LINE_FORMAT)
@@ -269,84 +268,6 @@ def extract_single_para(edu_info):
 
 # syntactic features
 
-PUNC_POSTAGS = set([
-    '``', "''",  # double quotes
-    ',',
-    ':',
-    '.',  # strong punctuations
-])
-
-def strip_punctuation(tokens):
-    """Strip leading and trailing punctuation from a sequence of tokens.
-
-    Parameters
-    ----------
-    tokens: list of Token
-        Sequence of tokens.
-
-    Returns
-    -------
-    tokens_strip: list of Token
-        Corresponding list of tokens with no leading or trailing
-        punctuation.
-    """
-    nopunc_tokens = [t.tag not in PUNC_POSTAGS for t in tokens]
-    nopunc_lmost = nopunc_tokens.index(True)
-    nopunc_rmost = len(nopunc_tokens) - 1 - nopunc_tokens[::-1].index(True)
-    tokens_strip = tokens[nopunc_lmost:nopunc_rmost + 1]
-    return tokens_strip
-
-
-def syntactic_node_seq(ptree, tokens):
-    """Find the sequence of syntactic nodes covering a sequence of tokens.
-
-    Parameters
-    ----------
-    ptree: `nltk.tree.Tree`
-        Syntactic tree.
-    tokens: sequence of `Token`
-        Sequence of tokens under scrutiny.
-
-    Returns
-    -------
-    syn_nodes: list of `nltk.tree.Tree`
-        Spanning sequence of nodes of the syntactic tree.
-    """
-    txt_span = Span(tokens[0].text_span().char_start,
-                    tokens[-1].text_span().char_end)
-
-    for tpos in ptree.treepositions():
-        node = ptree[tpos]
-        # skip nodes whose span does not enclose txt_span
-        node_txt_span = node.text_span()
-        if not node_txt_span.encloses(txt_span):
-            continue
-
-        # * spanning node
-        if node.text_span() == txt_span:
-            return [node]
-
-        # * otherwise: spanning subsequence of kid nodes
-        if not isinstance(node, Tree):
-            continue
-        txt_span_start = txt_span.char_start
-        txt_span_end = txt_span.char_end
-        kids_start = [x.text_span().char_start for x in node]
-        kids_end = [x.text_span().char_end for x in node]
-        try:
-            idx_left = kids_start.index(txt_span_start)
-        except ValueError:
-            continue
-        try:
-            idx_right = kids_end.index(txt_span_end)
-        except ValueError:
-            continue
-        if idx_left == idx_right:
-            continue
-        return [x for x in node[idx_left:idx_right + 1]]
-    else:
-        return []
-
 
 def extract_single_syntax(edu_info):
     """syntactic features for the EDU"""
@@ -520,6 +441,7 @@ class LecsieFeats(object):
                 if np.isfinite(fv):
                     yield (fn, fv)
 # end EXPERIMENTAL
+
 
 def extract_pair_doc(edu_info1, edu_info2, edu_info_bwn):
     """Document-level tuple features"""
@@ -711,7 +633,7 @@ def extract_pair_syntax(edu_info1, edu_info2, edu_info_bwn):
             bwn_edus = [x['edu'] for x in edu_info_bwn]
             bwn_tokens = list(itertools.chain.from_iterable(
                 x['tokens'] for x in edu_info_bwn))
-            # * EDUs_bwn
+            # 1. EDUs_bwn
             # spanning nodes for the interval
             syn_nodes = syntactic_node_seq(ptree, bwn_tokens)
             if syn_nodes:
@@ -736,58 +658,57 @@ def extract_pair_syntax(edu_info1, edu_info2, edu_info_bwn):
                 edu_info_l = edu_info2
                 edu_info_r = edu_info1
 
-            if False:  # WIP reproducibility check
-                # * EDU_L + EDUs_bwn + EDU_R
-                lbwnr_edus = [edu_l] + bwn_edus + [edu_r]
-                lbwnr_tokens = (edu_info_l['tokens']
-                                + bwn_tokens
-                                + edu_info_r['tokens'])
-                # spanning nodes
-                syn_nodes = syntactic_node_seq(ptree, lbwnr_tokens)
-                if syn_nodes:
-                    yield ('SYN_nodes_lbwnr',
-                           tuple(x.label() for x in syn_nodes))
-                # variant: strip leading and trailing punctuations
-                lbwnr_tokens_strip_punc = strip_punctuation(lbwnr_tokens)
-                syn_nodes_strip = syntactic_node_seq(
-                    ptree, lbwnr_tokens_strip_punc)
-                if syn_nodes_strip:
-                    yield ('SYN_nodes_lbwnr_nopunc',
-                           tuple(x.label() for x in syn_nodes_strip))
+            # 2. EDU_L + EDUs_bwn + EDU_R
+            lbwnr_edus = [edu_l] + bwn_edus + [edu_r]
+            lbwnr_tokens = (edu_info_l['tokens']
+                            + bwn_tokens
+                            + edu_info_r['tokens'])
+            # spanning nodes
+            syn_nodes = syntactic_node_seq(ptree, lbwnr_tokens)
+            if syn_nodes:
+                yield ('SYN_nodes_lbwnr',
+                       tuple(x.label() for x in syn_nodes))
+            # variant: strip leading and trailing punctuations
+            lbwnr_tokens_strip_punc = strip_punctuation(lbwnr_tokens)
+            syn_nodes_strip = syntactic_node_seq(
+                ptree, lbwnr_tokens_strip_punc)
+            if syn_nodes_strip:
+                yield ('SYN_nodes_lbwnr_nopunc',
+                       tuple(x.label() for x in syn_nodes_strip))
 
-                # * EDU_L + EDUs_bwn
-                lbwn_edus = [edu_l] + bwn_edus
-                lbwn_tokens = (edu_info_l['tokens']
-                               + bwn_tokens)
-                # spanning nodes
-                syn_nodes = syntactic_node_seq(ptree, lbwn_tokens)
-                if syn_nodes:
-                    yield ('SYN_nodes_lbwn',
-                           tuple(x.label() for x in syn_nodes))
-                # variant: strip leading and trailing punctuations
-                lbwn_tokens_strip_punc = strip_punctuation(lbwn_tokens)
-                syn_nodes_strip = syntactic_node_seq(
-                    ptree, lbwn_tokens_strip_punc)
-                if syn_nodes_strip:
-                    yield ('SYN_nodes_lbwn_nopunc',
-                           tuple(x.label() for x in syn_nodes_strip))
+            # 3. EDU_L + EDUs_bwn
+            lbwn_edus = [edu_l] + bwn_edus
+            lbwn_tokens = (edu_info_l['tokens']
+                           + bwn_tokens)
+            # spanning nodes
+            syn_nodes = syntactic_node_seq(ptree, lbwn_tokens)
+            if syn_nodes:
+                yield ('SYN_nodes_lbwn',
+                       tuple(x.label() for x in syn_nodes))
+            # variant: strip leading and trailing punctuations
+            lbwn_tokens_strip_punc = strip_punctuation(lbwn_tokens)
+            syn_nodes_strip = syntactic_node_seq(
+                ptree, lbwn_tokens_strip_punc)
+            if syn_nodes_strip:
+                yield ('SYN_nodes_lbwn_nopunc',
+                       tuple(x.label() for x in syn_nodes_strip))
 
-                # * EDUs_bwn + EDU_R
-                bwnr_edus = bwn_edus + [edu_r]
-                bwnr_tokens = (bwn_tokens
-                               + edu_info_r['tokens'])
-                # spanning nodes
-                syn_nodes = syntactic_node_seq(ptree, bwnr_tokens)
-                if syn_nodes:
-                    yield ('SYN_nodes_bwnr',
-                           tuple(x.label() for x in syn_nodes))
-                # variant: strip leading and trailing punctuations
-                bwnr_tokens_strip_punc = strip_punctuation(bwnr_tokens)
-                syn_nodes_strip = syntactic_node_seq(
-                    ptree, bwnr_tokens_strip_punc)
-                if syn_nodes_strip:
-                    yield ('SYN_nodes_bwnr_nopunc',
-                           tuple(x.label() for x in syn_nodes_strip))
+            # 4. EDUs_bwn + EDU_R
+            bwnr_edus = bwn_edus + [edu_r]
+            bwnr_tokens = (bwn_tokens
+                           + edu_info_r['tokens'])
+            # spanning nodes
+            syn_nodes = syntactic_node_seq(ptree, bwnr_tokens)
+            if syn_nodes:
+                yield ('SYN_nodes_bwnr',
+                       tuple(x.label() for x in syn_nodes))
+            # variant: strip leading and trailing punctuations
+            bwnr_tokens_strip_punc = strip_punctuation(bwnr_tokens)
+            syn_nodes_strip = syntactic_node_seq(
+                ptree, bwnr_tokens_strip_punc)
+            if syn_nodes_strip:
+                yield ('SYN_nodes_bwnr_nopunc',
+                       tuple(x.label() for x in syn_nodes_strip))
 
             # TODO EDU_L + EDUs_bwn[:i], EDUs_bwn[i:] + EDUs_R ?
             # where i should correspond to the split point of the (2nd
