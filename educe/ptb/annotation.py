@@ -12,6 +12,9 @@ corpora based off the same text (eg. the RST Discourse Treebank)
 
 import re
 
+from nltk.tree import Tree
+
+from educe.annotation import Span
 from educe.external.postag import RawToken
 
 
@@ -49,6 +52,36 @@ def is_nonword_token(text):
 def is_empty_category(postag):
     """True if postag is the empty category, i.e. `-NONE-` in the PTB."""
     return postag == '-NONE-'
+
+
+# utility functions to work on sequences of tokens
+PUNC_POSTAGS = set([
+    '``', "''",  # double quotes
+    ',',
+    ':',
+    '.',  # strong punctuations
+])
+
+
+def strip_punctuation(tokens):
+    """Strip leading and trailing punctuation from a sequence of tokens.
+
+    Parameters
+    ----------
+    tokens: list of Token
+        Sequence of tokens.
+
+    Returns
+    -------
+    tokens_strip: list of Token
+        Corresponding list of tokens with no leading or trailing
+        punctuation.
+    """
+    nopunc_tokens = [t.tag not in PUNC_POSTAGS for t in tokens]
+    nopunc_lmost = nopunc_tokens.index(True)
+    nopunc_rmost = len(nopunc_tokens) - 1 - nopunc_tokens[::-1].index(True)
+    tokens_strip = tokens[nopunc_lmost:nopunc_rmost + 1]
+    return tokens_strip
 
 
 # pylint: disable=too-few-public-methods
@@ -107,8 +140,6 @@ class TweakedToken(RawToken):
 #
 # TreebankLanguagePack (after edu.stanford.nlp.trees)
 #
-from nltk.tree import Tree
-
 
 # label annotation introducing characters
 _LAIC = [
@@ -239,3 +270,57 @@ def transform_tree(tree, transformer):
         new_tree = tree
     # apply to current node
     return transformer(new_tree)
+# end of TreebankLanguagePack
+
+
+# maybe this belongs to educe.external.parse ?
+# it operates on an NLTK-style constituency tree
+def syntactic_node_seq(ptree, tokens):
+    """Find the sequence of syntactic nodes covering a sequence of tokens.
+
+    Parameters
+    ----------
+    ptree: `nltk.tree.Tree`
+        Syntactic tree.
+    tokens: sequence of `Token`
+        Sequence of tokens under scrutiny.
+
+    Returns
+    -------
+    syn_nodes: list of `nltk.tree.Tree`
+        Spanning sequence of nodes of the syntactic tree.
+    """
+    txt_span = Span(tokens[0].text_span().char_start,
+                    tokens[-1].text_span().char_end)
+
+    for tpos in ptree.treepositions():
+        node = ptree[tpos]
+        # skip nodes whose span does not enclose txt_span
+        node_txt_span = node.text_span()
+        if not node_txt_span.encloses(txt_span):
+            continue
+
+        # * spanning node
+        if node.text_span() == txt_span:
+            return [node]
+
+        # * otherwise: spanning subsequence of kid nodes
+        if not isinstance(node, Tree):
+            continue
+        txt_span_start = txt_span.char_start
+        txt_span_end = txt_span.char_end
+        kids_start = [x.text_span().char_start for x in node]
+        kids_end = [x.text_span().char_end for x in node]
+        try:
+            idx_left = kids_start.index(txt_span_start)
+        except ValueError:
+            continue
+        try:
+            idx_right = kids_end.index(txt_span_end)
+        except ValueError:
+            continue
+        if idx_left == idx_right:
+            continue
+        return [x for x in node[idx_left:idx_right + 1]]
+    else:
+        return []

@@ -63,10 +63,23 @@ def config_argparser(parser):
                         '(when extracting test data, you may want to '
                         'use the feature vocabulary from the training '
                         'set ')
+    # labels
+    # TODO restructure ; the aim is to have three options:
+    # * fine-grained labelset (no transformation from treebank),
+    # * coarse-grained labelset (mapped from fine-grained),
+    # * manually specified list of labels (important here is the order
+    # of the labels, that implicitly maps labels as strings to integers)
+    # ... but what to do is not 100% clear right now
     parser.add_argument('--labels',
                         metavar='FILE',
                         help='Read label set from given feature file '
                         '(important when extracting test data)')
+    parser.add_argument('--coarse',
+                        action='store_true',
+                        help='use coarse-grained labels')
+    parser.add_argument('--fix_pseudo_rels',
+                        action='store_true',
+                        help='fix pseudo-relation labels')
     # NEW use CoreNLP's output for tokenization and syntax (+coref?)
     parser.add_argument('--corenlp_out_dir', metavar='DIR',
                         help='CoreNLP output directory')
@@ -99,12 +112,11 @@ def main(args):
 
     # RST data
     # fileX docs are currently not supported by CoreNLP
-    if args.corenlp_out_dir:
-        exclude_file_docs = True
-    else:
-        exclude_file_docs = False
+    exclude_file_docs = args.corenlp_out_dir
 
-    rst_reader = RstDtParser(args.corpus, args, coarse_rels=True,
+    rst_reader = RstDtParser(args.corpus, args,
+                             coarse_rels=args.coarse,
+                             fix_pseudo_rels=args.fix_pseudo_rels,
                              exclude_file_docs=exclude_file_docs)
     rst_corpus = rst_reader.corpus
     # TODO: change educe.corpus.Reader.slurp*() so that they return an object
@@ -225,11 +237,9 @@ def main(args):
     else:
         of_bn = os.path.join(args.output, os.path.basename(args.corpus))
         out_file = '{}.relations{}'.format(of_bn, of_ext)
-
     # dump EDUs and features in svmlight format
     dump_all(X_gen, y_gen, out_file, labtor.labelset_, docs,
              instance_generator)
-
     # dump vocabulary
     vocab_file = out_file + '.vocab'
     dump_vocabulary(vzer.vocabulary_, vocab_file)

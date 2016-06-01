@@ -65,8 +65,14 @@ class Marker(object):
         and assumes that the separator substring never appears in the
         tokens
         """
-        sentence = sep.join(words).lower()
-        exprs = frozenset(sep.join(e.words) for e in self.exprs)
+        # add leading and trailing empty word '', which results in
+        # leading and trailing separators ;
+        # the objective is to avoid erroneous matchings on
+        # subwords, for example we don't want the marker "as" to
+        # match a substring of the string "has"
+        sentence = sep.join([''] + words + ['']).lower()
+        exprs = frozenset(sep.join([''] + e.words + [''])
+                          for e in self.exprs)
         return all(sentence.find(e) >= 0 for e in exprs)
 
     @classmethod

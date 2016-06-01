@@ -1,6 +1,6 @@
 """This module implements a dumper for the EDU input format
 
-See `<https://github.com/kowey/attelo/blob/scikit/doc/input.rst>`_
+See `<https://github.com/irit-melodi/attelo/blob/master/doc/input.rst>`_
 """
 
 from __future__ import absolute_import, print_function

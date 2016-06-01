@@ -616,4 +616,5 @@ def _binarize(tree):
             right = _binarize(tree[2])
             return RSTTree(treenode(tree), [left, right], origin=tree.origin)
         else:
-            raise RSTTreeException("Don't know how to handle %s trees", nscode)
+            raise RSTTreeException(
+                ("Don't know how to handle %s trees" % nscode))

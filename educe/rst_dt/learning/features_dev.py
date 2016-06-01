@@ -5,11 +5,13 @@
 from __future__ import print_function
 
 from collections import Counter
+import itertools
 import re
 
 import numpy as np
 
 from .base import DocumentPlusPreprocessor
+from educe.ptb.annotation import strip_punctuation, syntactic_node_seq
 from educe.ptb.head_finder import find_edu_head
 from educe.rst_dt.lecsie import (load_lecsie_feats,
                                  LINE_FORMAT as LECSIE_LINE_FORMAT)
@@ -57,13 +59,67 @@ def extract_single_word(edu_info):
     except KeyError:
         return
 
-    if words:
-        yield ('ptb_word_first', words[0])
-        yield ('ptb_word_last', words[-1])
+    if not words:
+        return
 
-    if len(words) > 1:
-        yield ('ptb_word_first2', (words[0], words[1]))
-        yield ('ptb_word_last2', (words[-2], words[-1]))
+    yield ('ptb_word_first', words[0])
+    yield ('ptb_word_last', words[-1])
+
+    yield ('ptb_word_first2', tuple(words[:2]))
+    yield ('ptb_word_last2', tuple(words[-2:]))
+
+    # * feature combinations
+    # NEW 2016-04-29
+    if False:  # currently unplugged (because too many features)
+        yield ('ptb_word_first_last', tuple(
+            itertools.chain(words[:1], words[-1:])))
+        yield ('ptb_word_first_last2', tuple(
+            itertools.chain(words[:1], words[-2:])))
+        yield ('ptb_word_first2_last', tuple(
+            itertools.chain(words[:2], words[-1:])))
+
+
+#
+# typography
+# WIP as of 2016-04-29
+#
+
+# list of tokens that can avoid capitalization in titles
+NOCAP = set([
+    'a', 'and', 'at', 'of', 'on', 'or', 'the', 'to'
+])
+
+
+def is_title_cased(tok_seq):
+    """True if a sequence of tokens is title-cased"""
+    return all(x[0].isupper() for x in tok_seq
+               if x not in NOCAP and x[0].isalpha())
+
+
+def is_upper_init(tok_seq):
+    """True if a sequence starts with two upper-cased tokens"""
+    alnum_toks = [x for x in tok_seq if x.isalnum()]
+    return all(x.isupper() for x in alnum_toks[:2])
+
+
+def is_upper_entire(tok_seq):
+    """True if a sequence is fully upper-cased"""
+    return all(x.upper() == x for x in tok_seq)
+
+
+def extract_single_typo(edu_info):
+    """typographical features for the EDU"""
+    try:
+        words = edu_info['words']
+    except KeyError:
+        return
+
+    if not words:
+        return
+
+    yield ('is_title_cased', is_title_cased(words))
+    yield ('is_upper_init', is_upper_init(words))
+    yield ('is_upper_entire', is_upper_entire(words))
 
 
 #
@@ -79,12 +135,23 @@ def extract_single_pdtb_markers(edu_info):
     except KeyError:
         return
 
-    if words:
-        for marker, rels in MARKER2RELS.items():
-            if marker.appears_in(words):
-                yield ('pdtb_marker', str(marker))
-                for rel in rels:
-                    yield ('pdtb_marked_rel', rel)
+    if not words:
+        return
+
+    markers_inc = [marker for marker in MARKER2RELS
+                   if marker.appears_in(words)]
+    rels_inc = [MARKER2RELS[marker] for marker in markers_inc]
+    # WIP
+    # TODO accumulate occurrences of same marker?
+    for marker in markers_inc:
+        yield ('pdtb_marker_' + str(marker), True)
+    for rel in itertools.chain.from_iterable(rels_inc):
+        yield ('pdtb_marked_rel_' + rel, True)
+    # TODO add info to help classifiers differentiate discourse vs
+    # non-discourse use of "flexible" discourse markers, ex: "and"
+    # can be clausal or NP-internal
+    # * linear? (index of marker in EDU from start/end)
+    # * syntactic? syn nodes above the marker(s)
 # end NEW
 
 
@@ -95,15 +162,28 @@ def extract_single_pos(edu_info):
     except KeyError:
         return
 
-    if tags:
-        yield ('ptb_pos_tag_first', tags[0])
-        yield ('ptb_pos_tag_last', tags[-1])
-        # nb of occurrences of each POS tag in this EDU
-        tag_cnt = Counter(tags)
-        for tag, occ in tag_cnt.items():
-            yield ('POS_' + tag, occ)
-        # NEW feature: EDU has at least a verb
-        yield ('has_vb', any(tag.startswith('VB') for tag in tags))
+    if not tags:
+        return
+
+    # * core features
+    yield ('ptb_pos_tag_first', tags[0])
+    yield ('ptb_pos_tag_last', tags[-1])
+    # nb of occurrences of each POS tag in this EDU
+    tag_cnt = Counter(tags)
+    for tag, occ in tag_cnt.items():
+        yield ('POS_' + tag, occ)
+    # NEW feature: EDU has at least a verb
+    yield ('has_vb', any(tag.startswith('VB') for tag in tags))
+
+    # * feature combinations
+    # NEW 2016-04-29
+    if False:  # currently unplugged (too many features)
+        yield ('ptb_pos_tag_first_last', tuple(
+            itertools.chain(tags[:1], tags[-1:])))
+        yield ('ptb_pos_tag_first_last2', tuple(
+            itertools.chain(tags[:1], tags[-2:])))
+        yield ('ptb_pos_tag_first2_last', tuple(
+            itertools.chain(tags[:2], tags[-1:])))
 
 
 def extract_single_brown(edu_info):
@@ -113,13 +193,15 @@ def extract_single_brown(edu_info):
     except KeyError:
         return
 
-    if brown_clusters:
-        yield ('bc_first', brown_clusters[0])
-        yield ('bc_last', brown_clusters[-1])
-        # nb of occurrences of each brown cluster id in this EDU
-        bc_cnt = Counter(brown_clusters)
-        for bc, occ in bc_cnt.items():
-            yield ('bc_' + bc, occ)
+    if not brown_clusters:
+        return
+
+    yield ('bc_first', brown_clusters[0])
+    yield ('bc_last', brown_clusters[-1])
+    # nb of occurrences of each brown cluster id in this EDU
+    bc_cnt = Counter(brown_clusters)
+    for bc, occ in bc_cnt.items():
+        yield ('bc_' + bc, occ)
 
 
 def extract_single_length(edu_info):
@@ -196,27 +278,41 @@ def extract_single_syntax(edu_info):
         return
 
     edu = edu_info['edu']
+    tokens = edu_info['tokens']  # WIP
+    # spanning nodes for the EDU
+    syn_nodes = syntactic_node_seq(ptree, tokens)
+    if syn_nodes:
+        yield ('SYN_nodes',
+               tuple(x.label() for x in syn_nodes))
+    # variant, stripped from leading and trailing punctuations
+    tokens_strip_punc = strip_punctuation(tokens)
+    syn_nodes_nopunc = syntactic_node_seq(ptree, tokens_strip_punc)
+    if syn_nodes_nopunc:
+        yield ('SYN_nodes_nopunc',
+               tuple(x.label() for x in syn_nodes_nopunc))
 
-    # tree positions (in the syn tree) of the words that are in the EDU
-    tpos_leaves_edu = [tpos_leaf
-                       for tpos_leaf in ptree.treepositions('leaves')
-                       if ptree[tpos_leaf].overlaps(edu)]
-    wanted = set(tpos_leaves_edu)
-    edu_head = find_edu_head(ptree, pheads, wanted)
-    if edu_head is not None:
-        treepos_hn, treepos_hw = edu_head
-        hlabel = ptree[treepos_hn].label()
-        hword = ptree[treepos_hw].word
+    # currently de-activated
+    if False:
+        # tree positions (in the syn tree) of the words that are in the EDU
+        tpos_leaves_edu = [tpos_leaf
+                           for tpos_leaf in ptree.treepositions('leaves')
+                           if ptree[tpos_leaf].overlaps(edu)]
+        wanted = set(tpos_leaves_edu)
+        edu_head = find_edu_head(ptree, pheads, wanted)
+        if edu_head is not None:
+            treepos_hn, treepos_hw = edu_head
+            hlabel = ptree[treepos_hn].label()
+            hword = ptree[treepos_hw].word
 
-        if False:
-            # DEBUG
-            print('edu: ', edu.text())
-            print('hlabel: ', hlabel)
-            print('hword: ', hword)
-            print('======')
+            if False:
+                # DEBUG
+                print('edu: ', edu.text())
+                print('hlabel: ', hlabel)
+                print('hword: ', hword)
+                print('======')
 
-        yield ('SYN_hlabel', hlabel)
-        yield ('SYN_hword', hword)
+            yield ('SYN_hlabel', hlabel)
+            yield ('SYN_hword', hword)
 
 
 # TODO: features on semantic similarity
@@ -226,6 +322,8 @@ def build_edu_feature_extractor():
     funcs = [
         # word
         extract_single_word,
+        # WIP typography
+        extract_single_typo,
         # discourse markers
         extract_single_pdtb_markers,
         # pos
@@ -241,7 +339,7 @@ def build_edu_feature_extractor():
     ]
 
     # syntax (EXPERIMENTAL)
-    # funcs.append(extract_single_syntax)
+    funcs.append(extract_single_syntax)
 
     def _extract_all(edu_info):
         """inner helper because I am lost at sea here"""
@@ -344,7 +442,8 @@ class LecsieFeats(object):
                     yield (fn, fv)
 # end EXPERIMENTAL
 
-def extract_pair_doc(edu_info1, edu_info2):
+
+def extract_pair_doc(edu_info1, edu_info2, edu_info_bwn):
     """Document-level tuple features"""
     edu_idx1 = edu_info1['edu'].num
     edu_idx2 = edu_info2['edu'].num
@@ -363,7 +462,7 @@ def extract_pair_doc(edu_info1, edu_info2):
 
 # features on document structure: paragraphs and sentences
 
-def extract_pair_para(edu_info1, edu_info2):
+def extract_pair_para(edu_info1, edu_info2, edu_info_bwn):
     """Paragraph tuple features"""
     try:
         para_id1 = edu_info1['para_idx']
@@ -386,7 +485,7 @@ def extract_pair_para(edu_info1, edu_info2):
         yield ('num_paragraphs_between_div3', (para_id1 - para_id2) / 3)
 
 
-def extract_pair_sent(edu_info1, edu_info2):
+def extract_pair_sent(edu_info1, edu_info2, edu_info_bwn):
     """Sentence tuple features"""
 
     sent_id1 = edu_info1['sent_idx']
@@ -439,7 +538,7 @@ def extract_pair_sent(edu_info1, edu_info2):
 
 # syntax
 
-def extract_pair_syntax(edu_info1, edu_info2):
+def extract_pair_syntax(edu_info1, edu_info2, edu_info_bwn):
     """syntactic features for the pair of EDUs"""
     try:
         ptree1 = edu_info1['ptree']
@@ -453,11 +552,12 @@ def extract_pair_syntax(edu_info1, edu_info2):
     edu1 = edu_info1['edu']
     edu2 = edu_info2['edu']
 
-    # generate DS-LST features for intra-sentential
+    # intra-sentential case only
     if ptree1 == ptree2:
         ptree = ptree1
         pheads = pheads1
 
+        # * DS-LST features
         # find the head node of EDU1
         # tree positions (in the syn tree) of the words that are in EDU1
         tpos_leaves_edu1 = [tpos_leaf
@@ -527,6 +627,96 @@ def extract_pair_syntax(edu_info1, edu_info2):
         # TODO fire a feature if the head nodes of EDU1 and EDU2
         # have the same attachment node ?
 
+        # * syntactic nodes (WIP as of 2016-05-25)
+        #   - interval between edu1 and edu2
+        if edu_info_bwn:
+            bwn_edus = [x['edu'] for x in edu_info_bwn]
+            bwn_tokens = list(itertools.chain.from_iterable(
+                x['tokens'] for x in edu_info_bwn))
+            # 1. EDUs_bwn
+            # spanning nodes for the interval
+            syn_nodes = syntactic_node_seq(ptree, bwn_tokens)
+            if syn_nodes:
+                yield ('SYN_nodes_bwn',
+                       tuple(x.label() for x in syn_nodes))
+            # variant: strip leading and trailing punctuations
+            bwn_tokens_strip_punc = strip_punctuation(bwn_tokens)
+            syn_nodes_strip = syntactic_node_seq(ptree, bwn_tokens_strip_punc)
+            if syn_nodes_strip:
+                yield ('SYN_nodes_bwn_nopunc',
+                       tuple(x.label() for x in syn_nodes_strip))
+
+            # determine the linear order of {EDU_1, EDU_2}
+            if edu1.num < edu2.num:
+                edu_l = edu1
+                edu_r = edu2
+                edu_info_l = edu_info1
+                edu_info_r = edu_info2
+            else:
+                edu_l = edu2
+                edu_r = edu1
+                edu_info_l = edu_info2
+                edu_info_r = edu_info1
+
+            # 2. EDU_L + EDUs_bwn + EDU_R
+            lbwnr_edus = [edu_l] + bwn_edus + [edu_r]
+            lbwnr_tokens = (edu_info_l['tokens']
+                            + bwn_tokens
+                            + edu_info_r['tokens'])
+            # spanning nodes
+            syn_nodes = syntactic_node_seq(ptree, lbwnr_tokens)
+            if syn_nodes:
+                yield ('SYN_nodes_lbwnr',
+                       tuple(x.label() for x in syn_nodes))
+            # variant: strip leading and trailing punctuations
+            lbwnr_tokens_strip_punc = strip_punctuation(lbwnr_tokens)
+            syn_nodes_strip = syntactic_node_seq(
+                ptree, lbwnr_tokens_strip_punc)
+            if syn_nodes_strip:
+                yield ('SYN_nodes_lbwnr_nopunc',
+                       tuple(x.label() for x in syn_nodes_strip))
+
+            # 3. EDU_L + EDUs_bwn
+            lbwn_edus = [edu_l] + bwn_edus
+            lbwn_tokens = (edu_info_l['tokens']
+                           + bwn_tokens)
+            # spanning nodes
+            syn_nodes = syntactic_node_seq(ptree, lbwn_tokens)
+            if syn_nodes:
+                yield ('SYN_nodes_lbwn',
+                       tuple(x.label() for x in syn_nodes))
+            # variant: strip leading and trailing punctuations
+            lbwn_tokens_strip_punc = strip_punctuation(lbwn_tokens)
+            syn_nodes_strip = syntactic_node_seq(
+                ptree, lbwn_tokens_strip_punc)
+            if syn_nodes_strip:
+                yield ('SYN_nodes_lbwn_nopunc',
+                       tuple(x.label() for x in syn_nodes_strip))
+
+            # 4. EDUs_bwn + EDU_R
+            bwnr_edus = bwn_edus + [edu_r]
+            bwnr_tokens = (bwn_tokens
+                           + edu_info_r['tokens'])
+            # spanning nodes
+            syn_nodes = syntactic_node_seq(ptree, bwnr_tokens)
+            if syn_nodes:
+                yield ('SYN_nodes_bwnr',
+                       tuple(x.label() for x in syn_nodes))
+            # variant: strip leading and trailing punctuations
+            bwnr_tokens_strip_punc = strip_punctuation(bwnr_tokens)
+            syn_nodes_strip = syntactic_node_seq(
+                ptree, bwnr_tokens_strip_punc)
+            if syn_nodes_strip:
+                yield ('SYN_nodes_bwnr_nopunc',
+                       tuple(x.label() for x in syn_nodes_strip))
+
+            # TODO EDU_L + EDUs_bwn[:i], EDUs_bwn[i:] + EDUs_R ?
+            # where i should correspond to the split point of the (2nd
+            # order variant of the) Eisner decoder
+
+            # TODO specifically handle interval PRN that start with a comma
+            # that trails the preceding EDU ?
+
     # TODO fire a feature with the pair of labels of the head nodes of EDU1
     # and EDU2 ?
 
@@ -555,11 +745,11 @@ def build_pair_feature_extractor(lecsie_data_dir=None):
         lecsie_feats = LecsieFeats(lecsie_data_dir)
         funcs.append(lambda e1, e2: lecsie_feats.transform([(e1, e2)]))
 
-    def _extract_all(edu_info1, edu_info2):
+    def _extract_all(edu_info1, edu_info2, edu_info_bwn):
         """inner helper because I am lost at sea here, again"""
         # TODO do this in a cleaner manner
         for fct in funcs:
-            for feat in fct(edu_info1, edu_info2):
+            for feat in fct(edu_info1, edu_info2, edu_info_bwn):
                 yield feat
 
     # extractor

@@ -73,19 +73,19 @@ def _guess_ptb_name(k):
 # ex: (See: "XXXX Plans Rule on YYY" -- WSJ Oct. 27, 1989) in erratas
 # NB: this means we don't have gold PTB trees for the extra text
 PTB_MISSING_TEXT = [
-    'wsj_0603',
-    'wsj_0605',
-    'wsj_0608',
-    'wsj_0609',
-    'wsj_0611',
-    'wsj_0614',
-    'wsj_0694',
-    'wsj_0696',
-    'wsj_1107',
-    'wsj_1377',
-    'wsj_1382',
-    'wsj_1970',
-    'wsj_2352'
+    'wsj_0603',  # last 2 EDUs, footnote "(See: ...)"
+    'wsj_0605',  # last 3 EDUs, footnote "(See: ...)"
+    'wsj_0608',  # last 4 EDUs, footnote "(See: ...)"
+    'wsj_0609',  # last 1 EDU, source
+    'wsj_0611',  # last 2 EDUs, footnote "(See: ...)"
+    'wsj_0614',  # last 7 EDUs, footnote "(See: ...)"
+    'wsj_0694',  # last 1 EDU, end of address => 1 "sentence" (NP-LOC)
+    'wsj_0696',  # last 2 EDUs, footnote "Source: ..." => 1 "sentence" (NP)
+    'wsj_1107',  # last 1 EDU, end of address => 1 "sentence" (NP-LOC)
+    'wsj_1377',  # last 1 EDU, footnote "(...)"
+    'wsj_1382',  # last 2 EDUs, footnote "Source: ..." => 1 "sentence" (NP)
+    'wsj_1970',  # last 2 EDUs, footnote "Source: ..." => 1 "sentence" (NP)
+    'wsj_2352',  # last 1 EDU, end of address => 1 "sentence" (NP-LOC)
 ]
 
 # docs for which the RST-WSJ-corpus file misses text at the end of the doc

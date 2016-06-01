@@ -286,28 +286,70 @@ class InsideOutAttachmentRanker(object):
                         if strategy == 'closest-intra-rl-inter-lr':  # current best
                             # take closest dependents first, take right over left to
                             # break ties
-                            sort_key = lambda e: (1 if dtree.sent_idx[e] == dtree.sent_idx[head] else 2,
-                                                  abs(e - head),
-                                                  1 if ((e > head and
-                                                         dtree.sent_idx[e] == dtree.sent_idx[head]) or
-                                                        (e < head and
-                                                         dtree.sent_idx[e] != dtree.sent_idx[head])) else 2)
+                            sort_key = lambda e: (
+                                1 if dtree.sent_idx[e] == dtree.sent_idx[head] else 2,
+                                abs(e - head),
+                                1 if ((e > head and
+                                       dtree.sent_idx[e] == dtree.sent_idx[head]) or
+                                      (e < head and
+                                       dtree.sent_idx[e] != dtree.sent_idx[head])) else 2
+                            )
                             result.extend(sorted(targets, key=sort_key))
 
                         elif strategy == 'closest-intra-rl-inter-rl':  # current used
-                            # take closest dependents first, take right over left to
-                            # break ties
-                            sort_key = lambda e: (abs(dtree.sent_idx[e] - dtree.sent_idx[head]),
-                                                  abs(e - head),
-                                                  1 if e > head else 2)
+                            # sent_idx for all EDUs that need to be locally
+                            # ranked (+ their head)
+                            loc_edus = sorted(targets + [head])
+                            sent_idc = [dtree.sent_idx[x] for x in loc_edus
+                                        if dtree.sent_idx[x] is not None]
+                            if len(sent_idc) != len(loc_edus):
+                                # missing sent_idx => (pseudo-)imputation ;
+                                # this is a very local, and dirty, workaround
+                                # * left dependents + head
+                                sent_idc_left = []
+                                sent_idx_cur = min(sent_idc) if sent_idc else 0
+                                for x in loc_edus:
+                                    if x > head:
+                                        break
+                                    sent_idx_x = dtree.sent_idx[x]
+                                    if sent_idx_x is not None:
+                                        sent_idx_cur = sent_idx_x
+                                    sent_idc_left.append(sent_idx_cur)
+                                # * right dependents
+                                sent_idc_right = []
+                                sent_idx_cur = max(sent_idc) if sent_idc else 0
+                                for x in reversed(targets):
+                                    if x <= head:
+                                        break
+                                    sent_idx_x = dtree.sent_idx[x]
+                                    if sent_idx_x is not None:
+                                        sent_idx_cur = sent_idx_x
+                                    sent_idc_right.append(sent_idx_cur)
+                                # * replace sent_idc with the result of the
+                                # pseudo-imputation
+                                sent_idc = (sent_idc_left +
+                                            list(reversed(sent_idc_right)))
+                            # build this into a dict
+                            sent_idx_loc = {e: s_idx for e, s_idx
+                                            in zip(loc_edus, sent_idc)}
+
+                            # take closest dependents first, break ties by
+                            # choosing right first, then left
+                            sort_key = lambda e: (
+                                abs(sent_idx_loc[e] - sent_idx_loc[head]),
+                                abs(e - head),
+                                1 if e > head else 2
+                            )
                             result.extend(sorted(targets, key=sort_key))
 
                         elif strategy == 'closest-intra-lr-inter-lr':
-                            # take closest dependents first, take left over right to
-                            # break ties
-                            sort_key = lambda e: (1 if dtree.sent_idx[e] == dtree.sent_idx[head] else 2,
-                                                  abs(e - head),
-                                                  2 if e > head else 1)
+                            # take closest dependents first, take left over
+                            # right to break ties
+                            sort_key = lambda e: (
+                                1 if dtree.sent_idx[e] == dtree.sent_idx[head] else 2,
+                                abs(e - head),
+                                2 if e > head else 1
+                            )
                             result.extend(sorted(targets, key=sort_key))
 
                         else:

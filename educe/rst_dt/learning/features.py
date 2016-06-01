@@ -218,7 +218,7 @@ def build_pair_feature_extractor():
 
     funcs.append(extract_pair_pos_tags)
 
-    def _extract_all(edu_info1, edu_info2):
+    def _extract_all(edu_info1, edu_info2, edu_info_bwn):
         """inner helper because I am lost at sea here, again"""
         # TODO do this in a cleaner manner
         for fct in funcs:

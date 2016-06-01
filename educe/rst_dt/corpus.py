@@ -21,6 +21,7 @@ import educe.corpus
 from .document_plus import DocumentPlus
 from .annotation import SimpleRSTTree, _binarize
 from .deptree import RstDepTree
+from .pseudo_relations import rewrite_pseudo_rels
 
 
 RELMAP_112_18_FILE = join(dirname(__file__), 'rst_112to18.txt')
@@ -117,15 +118,16 @@ class RstDtParser(object):
         equivalent.
 
     nary_conv : string, optional
-        Conversion method from constituency to dependency tree, for n-ary
-        spans, n > 2, whose kids are all nuclei:
+        Conversion method from constituency to dependency tree, for
+        n-ary spans, n > 2, whose kids are all nuclei:
         'tree' picks the leftmost nucleus as the head of all the others
         (effectively a tree), 'chain' attaches each nucleus to its
         predecessor (effectively a chain).
 
     nuc_in_label : boolean, optional
         If True, incorporate nuclearity into the label (ex:
-        elaboration-NS) ; currently BROKEN (defined on SimpleRSTTree only).
+        elaboration-NS) ; currently BROKEN (defined on SimpleRSTTree
+        only).
 
     exclude_file_docs : boolean, default False
         If True, ignore fileX files.
@@ -139,6 +141,7 @@ class RstDtParser(object):
     """
 
     def __init__(self, corpus_dir, args, coarse_rels=False,
+                 fix_pseudo_rels=False,
                  nary_conv='chain',
                  nuc_in_label=False,
                  exclude_file_docs=False):
@@ -148,6 +151,8 @@ class RstDtParser(object):
         is_interesting = educe.util.mk_is_interesting(args)
         anno_files = self.reader.filter(anno_files_unfltd, is_interesting)
         self.corpus = self.reader.slurp(anno_files, verbose=True)
+        # WIP rewrite pseudo-relations
+        self.fix_pseudo_rels = fix_pseudo_rels
         # setup label converter for the desired granularity
         # 'fine' means we don't change anything
         if coarse_rels:
@@ -168,12 +173,12 @@ class RstDtParser(object):
 
         Parameters
         ----------
-        doc_key : string ?
-            Identifier in the corpus of the document we want to decode.
+        doc_key: string ?
+            Identifier (in corpus) of the document we want to decode.
 
         Returns
         -------
-        doc : DocumentPlus
+        doc: DocumentPlus
             Bunch of information about this document notably its list of
             EDUs and the structures defined on them: RSTTree,
             SimpleRSTTree, RstDepTree.
@@ -194,7 +199,10 @@ class RstDtParser(object):
         # doc.edus.extend(edus)
 
         # attach original RST tree
-        # convert relation labels if needed
+        # (optional) rewrite pseudo-relations
+        if self.fix_pseudo_rels:
+            orig_rsttree = rewrite_pseudo_rels(doc_key, orig_rsttree)
+        # (optional) convert relation labels
         if self.rel_conv is not None:
             orig_rsttree = self.rel_conv(orig_rsttree)
         doc.orig_rsttree = orig_rsttree
