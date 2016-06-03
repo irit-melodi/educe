@@ -279,6 +279,10 @@ def extract_single_syntax(edu_info):
 
     edu = edu_info['edu']
     tokens = edu_info['tokens']  # WIP
+
+    # WIP 2016-06-02: type of sentence, hopefully informative for non-S
+    yield ('SYN_sent_type', ptree.label())
+
     # spanning nodes for the EDU
     syn_nodes = syntactic_node_seq(ptree, tokens)
     if syn_nodes:
@@ -552,6 +556,18 @@ def extract_pair_syntax(edu_info1, edu_info2, edu_info_bwn):
     edu1 = edu_info1['edu']
     edu2 = edu_info2['edu']
 
+    # determine the linear order of {EDU_1, EDU_2}
+    if edu1.num < edu2.num:
+        edu_l = edu1
+        edu_r = edu2
+        edu_info_l = edu_info1
+        edu_info_r = edu_info2
+    else:
+        edu_l = edu2
+        edu_r = edu1
+        edu_info_l = edu_info2
+        edu_info_r = edu_info1
+
     # intra-sentential case only
     if ptree1 == ptree2:
         ptree = ptree1
@@ -646,18 +662,6 @@ def extract_pair_syntax(edu_info1, edu_info2, edu_info_bwn):
                 yield ('SYN_nodes_bwn_nopunc',
                        tuple(x.label() for x in syn_nodes_strip))
 
-            # determine the linear order of {EDU_1, EDU_2}
-            if edu1.num < edu2.num:
-                edu_l = edu1
-                edu_r = edu2
-                edu_info_l = edu_info1
-                edu_info_r = edu_info2
-            else:
-                edu_l = edu2
-                edu_r = edu1
-                edu_info_l = edu_info2
-                edu_info_r = edu_info1
-
             # 2. EDU_L + EDUs_bwn + EDU_R
             lbwnr_edus = [edu_l] + bwn_edus + [edu_r]
             lbwnr_tokens = (edu_info_l['tokens']
@@ -719,6 +723,24 @@ def extract_pair_syntax(edu_info1, edu_info2, edu_info_bwn):
 
     # TODO fire a feature with the pair of labels of the head nodes of EDU1
     # and EDU2 ?
+    else:
+        # pair of sentence types, hopefully informative esp. for non-S
+        yield ('SYN_sent_type_pair', (ptree1.label(),
+                                      ptree2.label()))
+        # sentence types in between
+        ptree_l = edu_info_l['ptree']
+        ptree_r = edu_info_r['ptree']
+        try:
+            ptrees_lbwnr = ([ptree_l]
+                            + [x['ptree'] for x in edu_info_bwn]
+                            + [ptree_r])
+        except KeyError:
+            pass
+        else:
+            ptrees_lbwnr = [x for x, _ in itertools.groupby(ptrees_lbwnr)]
+            stypes_lbwnr = [x.label() for x in ptrees_lbwnr]
+            yield ('SYN_sent_type_lbwnr', tuple(stypes_lbwnr))
+            yield ('SYN_sent_type_bwn', tuple(stypes_lbwnr[1:-1]))
 
 
 def build_pair_feature_extractor(lecsie_data_dir=None):
