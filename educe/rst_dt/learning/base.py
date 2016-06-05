@@ -133,8 +133,13 @@ class DocumentPlusPreprocessor(object):
 
     def __init__(self, token_filter=None, word2clust=None):
         """
-        token_filter is a function that returns True if a token should be
-        kept; if None is provided, all tokens are kept
+        Parameters
+        ----------
+        token_filter: function from Token to boolean, optional
+            Function that returns True if a token should be kept; if
+            None is provided, all tokens are kept.
+        word2clust: TODO
+            TODO
         """
         self.token_filter = token_filter
         self.word2clust = word2clust
@@ -142,9 +147,20 @@ class DocumentPlusPreprocessor(object):
     def preprocess(self, doc, strict=False):
         """Preprocess a document and output basic features for each EDU.
 
-        Return a dict(EDU, (dict(basic_feat_name, basic_feat_val)))
+        Parameters
+        ----------
+        doc: DocumentPlus
+            Document to be processed.
 
-        TODO explicitly impute missing values, e.g. for (rev_)idxes_in_*
+        Returns
+        -------
+        result: list of dict of features
+            Basic list of features for each EDU of the document ; each
+            feature is a couple (basic_feat_name, basic_feat_val).
+
+        TODO
+        ----
+        * [ ] explicitly impute missing values, e.g. for idxes_in_*
         """
         token_filter = self.token_filter
         word2clust = self.word2clust
@@ -169,7 +185,7 @@ class DocumentPlusPreprocessor(object):
         idxes_in_para = doc.edu2idx_in_para
         rev_idxes_in_para = doc.edu2rev_idx_in_para
 
-        result = dict()
+        result = []
 
         # special case: left padding EDU
         edu = edus[0]
@@ -199,7 +215,7 @@ class DocumentPlusPreprocessor(object):
                                else None)  # NEW
         # raw sent
         res['raw_sent_idx'] = edu2raw_sent[0]
-        result[edu] = res
+        result.append(res)
 
         # regular EDUs
         for edu_idx, edu in enumerate(edus[1:], start=1):
@@ -269,10 +285,7 @@ class DocumentPlusPreprocessor(object):
             # syntax
             if len(trees) > 1:
                 tree_idx = edu2sent[edu_idx]
-                if tree_idx is not None:
-                    tree = trees[tree_idx]
-                    res['ptree'] = tree
-                    res['pheads'] = lex_heads[tree_idx]
-            result[edu] = res
+                res['tkd_tree_idx'] = tree_idx
+            result.append(res)
 
         return result

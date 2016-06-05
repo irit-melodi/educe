@@ -52,7 +52,7 @@ SINGLE_WORD = [
 ]
 
 
-def extract_single_word(edu_info):
+def extract_single_word(doc, edu_info):
     """word features for the EDU"""
     try:
         words = edu_info['words']
@@ -75,7 +75,7 @@ SINGLE_POS = [
 ]
 
 
-def extract_single_pos(edu_info):
+def extract_single_pos(doc, edu_info):
     """POS features for the EDU"""
     try:
         tags = edu_info['tags']
@@ -97,7 +97,7 @@ SINGLE_LENGTH = [
 ]
 
 
-def extract_single_length(edu_info):
+def extract_single_length(doc, edu_info):
     """Sentence features for the EDU"""
     try:
         words = edu_info['words']
@@ -122,7 +122,7 @@ SINGLE_SENTENCE = [
 ]
 
 
-def extract_single_sentence(edu_info):
+def extract_single_sentence(doc, edu_info):
     """Sentence features for the EDU"""
     try:
         offset = edu_info['edu_idx_in_sent']
@@ -152,7 +152,7 @@ SINGLE_PARA = [
 ]
 
 
-def extract_single_para(edu_info):
+def extract_single_para(doc, edu_info):
     """paragraph features for the EDU"""
     try:
         para_idx = edu_info['para_idx']
@@ -166,14 +166,19 @@ def extract_single_para(edu_info):
 
 # features on syntax
 # helper
-def get_syntactic_labels(edu_info):
+def get_syntactic_labels(doc, edu_info):
     "Syntactic labels for this EDU"
     result = []
 
     try:
-        ptree = edu_info['ptree']
+        tree_idx = edu_info['tkd_tree_idx']
     except KeyError:
         return None
+
+    if tree_idx is None:
+        return None
+
+    ptree = doc.tkd_trees[tree_idx]
 
     edu = edu_info['edu']
 
@@ -204,9 +209,9 @@ SINGLE_SYNTAX = [
 ]
 
 
-def extract_single_syntax(edu_info):
+def extract_single_syntax(doc, edu_info):
     """syntactic features for the EDU"""
-    syn_labels = get_syntactic_labels(edu_info)
+    syn_labels = get_syntactic_labels(doc, edu_info)
     if syn_labels is not None:
         syn_cnt = Counter(syn_labels)
         for syn_lbl, occ in syn_cnt.items():
@@ -232,11 +237,11 @@ def build_edu_feature_extractor():
     # syntax (disabled)
     # funcs.append(extract_single_syntax)
 
-    def _extract_all(edu_info):
+    def _extract_all(doc, edu_info):
         """inner helper because I am lost at sea here"""
         # TODO do this in a cleaner manner
         for fct in funcs:
-            for feat in fct(edu_info):
+            for feat in fct(doc, edu_info):
                 yield feat
 
     # extractor
@@ -256,7 +261,7 @@ PAIR_WORD = [
 ]
 
 
-def extract_pair_word(edu_info1, edu_info2):
+def extract_pair_word(doc, edu_info1, edu_info2):
     """word tuple features"""
     try:
         words1 = edu_info1['words']
@@ -283,7 +288,7 @@ PAIR_POS = [
 ]
 
 
-def extract_pair_pos(edu_info1, edu_info2):
+def extract_pair_pos(doc, edu_info1, edu_info2):
     """POS tuple features"""
     try:
         tags1 = edu_info1['tags']
@@ -301,7 +306,7 @@ PAIR_LENGTH = [
 ]
 
 
-def extract_pair_length(edu_info1, edu_info2):
+def extract_pair_length(doc, edu_info1, edu_info2):
     """Sentence tuple features"""
     try:
         words1 = edu_info1['words']
@@ -323,7 +328,7 @@ PAIR_PARA = [
 ]
 
 
-def extract_pair_para(edu_info1, edu_info2):
+def extract_pair_para(doc, edu_info1, edu_info2):
     """Paragraph tuple features"""
     try:
         para_id1 = edu_info1['para_idx']
@@ -361,7 +366,7 @@ PAIR_SENT = [
 ]
 
 
-def extract_pair_sent(edu_info1, edu_info2):
+def extract_pair_sent(doc, edu_info1, edu_info2):
     """Sentence tuple features"""
     # offset features
     try:
@@ -436,11 +441,11 @@ def build_pair_feature_extractor():
     # 6
     # funcs.append(extract_pair_semantics)
 
-    def _extract_all(edu_info1, edu_info2, edu_info_bwn):
+    def _extract_all(doc, edu_info1, edu_info2, edu_info_bwn):
         """inner helper because I am lost at sea here, again"""
         # TODO do this in a cleaner manner
         for fct in funcs:
-            for feat in fct(edu_info1, edu_info2):
+            for feat in fct(doc, edu_info1, edu_info2):
                 yield feat
 
     # extractor

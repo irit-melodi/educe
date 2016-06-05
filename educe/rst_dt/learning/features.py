@@ -26,7 +26,7 @@ SINGLE_RAW_WORD = [
 ]
 
 
-def extract_single_raw_word(edu_info):
+def extract_single_raw_word(doc, edu_info):
     """raw word features for the EDU"""
     raw_words = edu_info['raw_words']
     if raw_words:
@@ -49,7 +49,7 @@ SINGLE_PTB_TOKEN_WORD = [
 ]
 
 
-def extract_single_ptb_token_word(edu_info):
+def extract_single_ptb_token_word(doc, edu_info):
     """word features on PTB tokens for the EDU"""
     try:
         words = edu_info['words']
@@ -73,7 +73,7 @@ SINGLE_PTB_TOKEN_POS = [
 ]
 
 
-def extract_single_ptb_token_pos(edu_info):
+def extract_single_ptb_token_pos(doc, edu_info):
     """POS features on PTB tokens for the EDU"""
     try:
         tags = edu_info['tags']
@@ -100,11 +100,11 @@ def build_edu_feature_extractor():
     # PTB pos
     funcs.append(extract_single_ptb_token_pos)
 
-    def _extract_all(edu_info):
+    def _extract_all(doc, edu_info):
         """inner helper because I am lost at sea here"""
         # TODO do this in a cleaner manner
         for fct in funcs:
-            for feat in fct(edu_info):
+            for feat in fct(doc, edu_info):
                 yield feat
 
     # extractor
@@ -124,7 +124,7 @@ PAIR_GAP = [
 ]
 
 
-def extract_pair_gap(edu_info1, edu_info2):
+def extract_pair_gap(doc, edu_info1, edu_info2):
     """Document tuple features"""
     edu_num1 = edu_info1['edu'].num
     edu_num2 = edu_info2['edu'].num
@@ -170,7 +170,7 @@ PAIR_RAW_WORD = [
 ]
 
 
-def extract_pair_raw_word(edu_info1, edu_info2):
+def extract_pair_raw_word(doc, edu_info1, edu_info2):
     """raw word features on EDU pairs"""
     raw_words1 = edu_info1['raw_words']
     raw_words2 = edu_info2['raw_words']
@@ -191,7 +191,7 @@ PAIR_POS_TAGS = [
 ]
 
 
-def extract_pair_pos_tags(edu_info1, edu_info2):
+def extract_pair_pos_tags(doc, edu_info1, edu_info2):
     """POS tag features on EDU pairs"""
     try:
         tags1 = edu_info1['tags']
@@ -218,11 +218,11 @@ def build_pair_feature_extractor():
 
     funcs.append(extract_pair_pos_tags)
 
-    def _extract_all(edu_info1, edu_info2, edu_info_bwn):
+    def _extract_all(doc, edu_info1, edu_info2, edu_info_bwn):
         """inner helper because I am lost at sea here, again"""
         # TODO do this in a cleaner manner
         for fct in funcs:
-            for feat in fct(edu_info1, edu_info2):
+            for feat in fct(doc, edu_info1, edu_info2):
                 yield feat
 
     # extractor
