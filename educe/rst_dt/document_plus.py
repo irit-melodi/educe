@@ -7,6 +7,8 @@ from __future__ import print_function
 import copy
 import itertools
 
+import numpy as np
+
 from educe.external.postag import Token
 from educe.util import relative_indices
 from .text import Sentence, Paragraph, clean_edu_text
@@ -292,33 +294,63 @@ class DocumentPlus(object):
         return self
 
     # TODO move functionality to ptb.py
-    def align_with_tokens(self):
-        """Compute for each EDU the overlapping tokens"""
+    def align_with_tokens(self, verbose=False):
+        """Compute for each EDU the overlapping tokens."""
+        edus = self.edus
         tokens = self.tkd_tokens
         if len(tokens) == 1:  # only lpad
             self.edu2tokens = None
             return self
 
-        # TODO possibly: replace this with a greedy procedure
-        # that assigns each token to exactly one EDU
+        # EDU segmentation in the RST corpus and token segmentation
+        # in the PTB occasionally conflict ; in such cases, a PTB
+        # token overlaps with two distinct EDUs.
+        # In the first, naive and costly implementation of this
+        # procedure, overlapping tokens were considered part of both
+        # overlapped EDUs.
+        # We stick to this behaviour by computing two mappings, on the
+        # beginning and end of the spans of tokens and EDUs, and
+        # using the union of them as the final mapping
+        edu_ends = [x.span.char_end for x in edus]
+        tok_ends = [x.span.char_end for x in tokens]
+        tok2edu_ends = np.searchsorted(edu_ends, tok_ends)
+        edu_begs = [x.span.char_start for x in edus]
+        tok_begs = [x.span.char_start for x in tokens]
+        tok2edu_begs = np.searchsorted(edu_begs, tok_begs, side='right')
+        tok2edu_begs = tok2edu_begs - 1
+        # dirty hack to recover a proper mapping for the left padding
+        # token and EDU ; we could avoid this by setting the span of
+        # the left padding to e.g. (-1, 0), but there are possible
+        # side-effects, so maybe later?
+        tok2edu_begs[0] = 0
 
-        edu2tokens = []  # tokens that overlap with this EDU
+        # optional check for mismatches between EDU and token
+        # segmentations
+        if verbose:
+            differences = (tok2edu_begs != tok2edu_ends)
+            if any(differences):
+                print('Mismatch: EDU vs token segmentation')
+                print(self.key.doc)
+                print([str(x) for x in np.array(tokens)[differences]])
+                diff_idc = np.where(differences)[0]
+                print(diff_idc)
+                print(np.array(edu_begs)[tok2edu_begs[diff_idc]],
+                      np.array(edu_ends)[tok2edu_begs[diff_idc]])
+                print(np.array(edu_begs)[tok2edu_ends[diff_idc]],
+                      np.array(edu_ends)[tok2edu_ends[diff_idc]])
 
-        edus = self.edus
-
-        # left padding EDU
-        assert edus[0].is_left_padding()
-        tok_idcs = [0]  # 0 is the index of the start token
-        edu2tokens.append(tok_idcs)
-
-        # regular EDUs
-        for edu in edus[1:]:
-            tok_idcs = [tok_idx
-                        for tok_idx, tok in enumerate(tokens[1:], start=1)
-                        if tok.overlaps(edu)]
-            # TODO store the index of the first token of each EDU
-            # this will be useful for future features
-            edu2tokens.append(tok_idcs)
+        # build the mapping from each EDU to token indices
+        edu2tokens_begs = {k: [tok_idx for tok_idx, edu_idx in g]
+                           for k, g in itertools.groupby(
+                                   enumerate(tok2edu_begs),
+                                   key=lambda x: x[1])}
+        edu2tokens_ends = {k: [tok_idx for tok_idx, edu_idx in g]
+                           for k, g in itertools.groupby(
+                                   enumerate(tok2edu_ends),
+                                   key=lambda x: x[1])}
+        edu2tokens = [np.union1d(edu2tokens_begs.get(edu_idx, []),
+                                 edu2tokens_ends.get(edu_idx, []))
+                      for edu_idx in range(len(edus))]
 
         self.edu2tokens = edu2tokens
         return self
