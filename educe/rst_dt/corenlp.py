@@ -165,7 +165,7 @@ class CoreNlpParser(object):
         corenlp_out = read_corenlp_result(doc, reader)
 
         # modify DocumentPlus doc to add tokens
-        doc.tkd_tokens.extend(corenlp_out.tokens)
+        doc.set_tokens(corenlp_out.tokens)
 
         return doc
 
@@ -198,10 +198,6 @@ class CoreNlpParser(object):
                      for ctree_no_gf in ctrees_no_gf]
 
         # store trees in doc
-        doc.tkd_trees.extend(ctrees_no_gf)
-        # store lexical heads in doc
-        doc.lex_heads = []
-        doc.lex_heads.append(None)
-        doc.lex_heads.extend(lex_heads)
+        doc.set_syn_ctrees(ctrees_no_gf, lex_heads=lex_heads)
 
         return doc

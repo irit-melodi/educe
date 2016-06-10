@@ -400,3 +400,46 @@ class DocumentPlus(object):
         erels = [rels.get(epair, 'UNRELATED')
                  for epair in edu_pairs]
         return erels
+
+    def set_syn_ctrees(self, tkd_trees, lex_heads=None):
+        """Set syntactic constituency trees for this document.
+
+        Parameters
+        ----------
+        tkd_trees: list of nltk.tree.Tree
+            Syntactic constituency trees for this document.
+        lex_heads: list of (TODO: see find_lexical_heads), optional
+            List of lexical heads for each node of each tree.
+        """
+        # extend tkd_trees
+        assert len(self.tkd_trees) == 1  # only lpad
+        self.tkd_trees.extend(tkd_trees)
+        # set lexical heads
+        self.lex_heads = []
+        self.lex_heads.append(None)  # for lpad
+        self.lex_heads.extend(lex_heads)
+        # store tree spans
+        self.trees_beg = np.array([-1]  # left padding (dirty)
+                                  + [x.text_span().char_start
+                                     for x in self.tkd_trees[1:]])
+        self.trees_end = np.array([-1]  # left padding (dirty)
+                                  + [x.text_span().char_end
+                                     for x in self.tkd_trees[1:]])
+
+    def set_tokens(self, tokens):
+        """Set tokens for this document.
+
+        Parameters
+        ----------
+        tokens: list of Token
+            List of tokens for this document.
+        """
+        assert len(self.tkd_tokens) == 1  # only lpad
+        self.tkd_tokens.extend(tokens)
+        # store token spans
+        self.toks_beg = np.array([-1]  # left padding (dirty)
+                                 + [x.text_span().char_start
+                                    for x in self.tkd_tokens[1:]])
+        self.toks_end = np.array([-1]  # left padding (dirty)
+                                 + [x.text_span().char_end
+                                    for x in self.tkd_tokens[1:]])
