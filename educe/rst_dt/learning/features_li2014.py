@@ -52,7 +52,7 @@ SINGLE_WORD = [
 ]
 
 
-def extract_single_word(doc, edu_info):
+def extract_single_word(doc, edu_info, para_info):
     """word features for the EDU"""
     try:
         words = edu_info['words']
@@ -75,7 +75,7 @@ SINGLE_POS = [
 ]
 
 
-def extract_single_pos(doc, edu_info):
+def extract_single_pos(doc, edu_info, para_info):
     """POS features for the EDU"""
     try:
         tags = edu_info['tags']
@@ -97,7 +97,7 @@ SINGLE_LENGTH = [
 ]
 
 
-def extract_single_length(doc, edu_info):
+def extract_single_length(doc, edu_info, para_info):
     """Sentence features for the EDU"""
     try:
         words = edu_info['words']
@@ -122,7 +122,7 @@ SINGLE_SENTENCE = [
 ]
 
 
-def extract_single_sentence(doc, edu_info):
+def extract_single_sentence(doc, edu_info, para_info):
     """Sentence features for the EDU"""
     try:
         offset = edu_info['edu_idx_in_sent']
@@ -152,7 +152,7 @@ SINGLE_PARA = [
 ]
 
 
-def extract_single_para(doc, edu_info):
+def extract_single_para(doc, edu_info, para_info):
     """paragraph features for the EDU"""
     try:
         para_idx = edu_info['para_idx']
@@ -209,7 +209,7 @@ SINGLE_SYNTAX = [
 ]
 
 
-def extract_single_syntax(doc, edu_info):
+def extract_single_syntax(doc, edu_info, para_info):
     """syntactic features for the EDU"""
     syn_labels = get_syntactic_labels(doc, edu_info)
     if syn_labels is not None:
@@ -237,11 +237,11 @@ def build_edu_feature_extractor():
     # syntax (disabled)
     # funcs.append(extract_single_syntax)
 
-    def _extract_all(doc, edu_info):
+    def _extract_all(doc, edu_info, para_info):
         """inner helper because I am lost at sea here"""
         # TODO do this in a cleaner manner
         for fct in funcs:
-            for feat in fct(doc, edu_info):
+            for feat in fct(doc, edu_info, para_info):
                 yield feat
 
     # extractor

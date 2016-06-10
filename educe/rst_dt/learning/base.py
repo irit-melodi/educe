@@ -6,6 +6,11 @@ from __future__ import print_function
 
 from functools import wraps
 
+import numpy as np
+
+from educe.ptb.annotation import syntactic_node_seq
+from educe.ptb.head_finder import find_edu_head
+
 
 class FeatureExtractionException(Exception):
     """
@@ -154,9 +159,12 @@ class DocumentPlusPreprocessor(object):
 
         Returns
         -------
-        result: list of dict of features
-            Basic list of features for each EDU of the document ; each
-            feature is a couple (basic_feat_name, basic_feat_val).
+        edu_infos: list of dict of features
+            List of basic features for each EDU ; each feature is a
+            couple (basic_feat_name, basic_feat_val).
+        para_infos: list of dict of features
+            List of basic features for each paragraph ; each feature is
+            a couple (basic_feat_name, basic_feat_val).
 
         TODO
         ----
@@ -185,8 +193,83 @@ class DocumentPlusPreprocessor(object):
         idxes_in_para = doc.edu2idx_in_para
         rev_idxes_in_para = doc.edu2rev_idx_in_para
 
-        result = []
+        # paragraphs
+        if paragraphs is None:
+            para_infos = None
+        else:
+            para_infos = []
 
+            # special case for the left padding paragraph
+            pfeats = dict()
+            pfeats['tokens'] = [tokens[0]]  # left padding token
+            pfeats['syn_nodes'] = None
+            para_infos.append(pfeats)
+
+            # regular paragraphs
+            for para_idx, para in enumerate(paragraphs[1:], start=1):
+                pfeats = dict()
+                para_beg = para.sentences[0].span.char_start
+                para_end = para.sentences[-1].span.char_end
+                trees_beg = doc.trees_beg
+                trees_end = doc.trees_end
+                toks_beg = doc.toks_beg
+                toks_end = doc.toks_end
+
+                # * token characterization of the paragraph
+                encltoks_idc = np.where(
+                    np.logical_and(toks_beg >= para_beg,
+                                   toks_end <= para_end)
+                )[0]
+                encltoks = [tokens[i] for i in encltoks_idc]
+                pfeats['tokens'] = encltoks
+
+                # * syntactic characterization of the paragraph
+                # find the syntactic trees that span this paragraph
+                enclosed_idc = np.intersect1d(
+                    np.where(trees_beg >= para_beg),
+                    np.where(trees_end <= para_end))
+                overlapd_idc = np.intersect1d(
+                    np.where(trees_beg < para_end),
+                    np.where(trees_end > para_beg))
+                if np.array_equal(enclosed_idc, overlapd_idc):
+                    # sentence seg and paragraph seg are compatible
+                    syn_nodes = [trees[tree_idx]
+                                 for tree_idx in overlapd_idc]
+                else:
+                    # mismatch between the sentence segmentation from the
+                    # PTB and paragraph segmentation from the RST-WSJ
+                    strad_idc = np.setdiff1d(overlapd_idc, enclosed_idc)
+                    syn_nodes = []
+                    for tree_idx in overlapd_idc:
+                        syn_tree = trees[tree_idx]
+                        if tree_idx not in strad_idc:
+                            syn_nodes.append(syn_tree)
+                            continue
+                        # find the list of tokens that overlap this
+                        # paragraph, and belong to this straddling
+                        # tree
+                        tree_beg = trees_beg[tree_idx]
+                        tree_end = trees_end[tree_idx]
+                        # here, reduce(np.logical_and(...)) was 2x
+                        # faster than np.logical_and.reduce(...)
+                        overtoks_idc = np.where(
+                            reduce(np.logical_and,
+                                   (toks_beg < para_end,
+                                    toks_end > para_beg,
+                                    toks_beg >= tree_beg,
+                                    toks_end <= tree_end)
+                            )
+                        )[0]
+                        overtoks = [tokens[i] for i in overtoks_idc]
+                        syn_node_seq = syntactic_node_seq(
+                            syn_tree, overtoks)
+                        syn_nodes.extend(syn_node_seq)
+                # add basic feature
+                pfeats['syn_nodes'] = syn_nodes
+                # store
+                para_infos.append(pfeats)
+        # EDUs
+        edu_infos = []
         # special case: left padding EDU
         edu = edus[0]
         res = dict()
@@ -215,7 +298,7 @@ class DocumentPlusPreprocessor(object):
                                else None)  # NEW
         # raw sent
         res['raw_sent_idx'] = edu2raw_sent[0]
-        result.append(res)
+        edu_infos.append(res)
 
         # regular EDUs
         for edu_idx, edu in enumerate(edus[1:], start=1):
@@ -223,7 +306,7 @@ class DocumentPlusPreprocessor(object):
             res['edu'] = edu
 
             # raw words (temporary)
-            res['raw_words'] = raw_words[edu]
+            res['raw_words'] = raw_words[edu_idx]
 
             # tokens
             if tokens is not None:
@@ -286,6 +369,20 @@ class DocumentPlusPreprocessor(object):
             if len(trees) > 1:
                 tree_idx = edu2sent[edu_idx]
                 res['tkd_tree_idx'] = tree_idx
-            result.append(res)
+                if tree_idx is not None:
+                    # head node of the EDU (for DS-LST features)
+                    ptree = trees[tree_idx]
+                    pheads = lex_heads[tree_idx]
+                    # tree positions (in the syn tree) of the words of
+                    # the EDU
+                    tpos_leaves_edu = [x for x
+                                       in ptree.treepositions('leaves')
+                                       if ptree[x].overlaps(edu)]
+                    tpos_words = set(tpos_leaves_edu)
+                    res['tpos_words'] = tpos_words
+                    edu_head = find_edu_head(ptree, pheads, tpos_words)
+                    res['edu_head'] = edu_head
 
-        return result
+            edu_infos.append(res)
+
+        return edu_infos, para_infos

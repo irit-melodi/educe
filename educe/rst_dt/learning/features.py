@@ -26,7 +26,7 @@ SINGLE_RAW_WORD = [
 ]
 
 
-def extract_single_raw_word(doc, edu_info):
+def extract_single_raw_word(doc, edu_info, para_info):
     """raw word features for the EDU"""
     raw_words = edu_info['raw_words']
     if raw_words:
@@ -49,7 +49,7 @@ SINGLE_PTB_TOKEN_WORD = [
 ]
 
 
-def extract_single_ptb_token_word(doc, edu_info):
+def extract_single_ptb_token_word(doc, edu_info, para_info):
     """word features on PTB tokens for the EDU"""
     try:
         words = edu_info['words']
@@ -73,7 +73,7 @@ SINGLE_PTB_TOKEN_POS = [
 ]
 
 
-def extract_single_ptb_token_pos(doc, edu_info):
+def extract_single_ptb_token_pos(doc, edu_info, para_info):
     """POS features on PTB tokens for the EDU"""
     try:
         tags = edu_info['tags']
@@ -100,11 +100,11 @@ def build_edu_feature_extractor():
     # PTB pos
     funcs.append(extract_single_ptb_token_pos)
 
-    def _extract_all(doc, edu_info):
+    def _extract_all(doc, edu_info, para_info):
         """inner helper because I am lost at sea here"""
         # TODO do this in a cleaner manner
         for fct in funcs:
-            for feat in fct(doc, edu_info):
+            for feat in fct(doc, edu_info, para_info):
                 yield feat
 
     # extractor
