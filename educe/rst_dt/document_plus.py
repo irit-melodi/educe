@@ -54,47 +54,64 @@ def align_edus_with_paragraphs(doc_edus, doc_paras, text, strict=False):
 
     Returns
     -------
-    edu2para: list(int) or None
-        Index of the paragraph that contains each EDU, None if the
-        paragraph segmentation is missing.
+    edu2para: list(int or None) or None
+        Map each EDU to the index of its enclosing paragraph.
+        If an EDU is not properly enclosed in a paragraph, the
+        associated index is None.
+        For files with no paragraph marking (e.g. `fileX` files),
+        returns None.
     """
     if doc_paras is None:
         return None
 
-    edu2para = []
-    for edu in doc_edus:
-        espan = edu.text_span()
-        # find enclosing paragraph
-        para = _filter0(containing(espan), doc_paras)
-        # sloppy EDUs happen; try shaving off some characters
-        # if we can't find a paragraph
-        if para is None:
-            # DEBUG
-            if False:
-                print('WP ({}) : {}'.format(self.grouping, edu))
-            # end DEBUG
-            espan = copy.copy(espan)
-            espan.char_start += 1
-            espan.char_end -= 1
-            etext = text[espan.char_start:espan.char_end]
-            # kill left whitespace
-            espan.char_start += len(etext) - len(etext.lstrip())
-            etext = etext.lstrip()
-            # kill right whitespace
-            espan.char_end -= len(etext) - len(etext.rstrip())
-            etext = etext.rstrip()
-            # try again
-            para = _filter0(containing(espan), doc_paras)
-            # DEBUG
-            if False:
-                if para is None:
-                    print('EP ({}): {}'.format(self.grouping, edu))
-            # end DEBUG
+    edu_begs = np.array([x.text_span().char_start for x in doc_edus])
+    edu_ends = np.array([x.text_span().char_end for x in doc_edus])
+    para_begs = np.array([x.sentences[0].span.char_start for x in doc_paras])
+    para_ends = np.array([x.sentences[-1].span.char_end for x in doc_paras])
+    # align beginning and end of EDUs and paragraphs
+    edu2para_begs = np.searchsorted(para_begs, edu_begs, side='right') - 1
+    edu2para_ends = np.searchsorted(para_ends, edu_ends)
+    # dirty hack for the left padding EDU and paragraph
+    # (See: align_with_tokens)
+    edu2para_begs[0] = 0
+    # create the alignment from edu2para_ends ;
+    # mismatches in the alignment will be overwritten later, with a
+    # proper paragraph index if they are resolved, None otherwise
+    edu2para = edu2para_ends.tolist()
+    # no mismatch
+    if np.array_equal(edu2para_begs, edu2para_ends):
+        return edu2para
 
-        # update edu to paragraph mapping
-        para_idx = (doc_paras.index(para) if para is not None
-                    else None)  # TODO or -1 or ...
-        edu2para.append(para_idx)
+    # otherwise, resolve mismatches
+    differences = np.where(edu2para_begs != edu2para_ends)[0]
+    for edu_idx in differences:
+        # sloppy EDU: try shaving off some characters
+        para_lmost = edu2para_begs[edu_idx]
+        para_rmost = edu2para_ends[edu_idx]
+        if (edu_begs[edu_idx] == para_begs[para_lmost]
+            and edu_ends[edu_idx] == para_ends[para_rmost]):
+            # FIXME change implementation to properly handle EDUs
+            # that enclose or overlap >1 paragraph ; this happens
+            # for e.g. titles: wsj_1373, wsj_2366
+            continue
+        edu_beg = edu_begs[edu_idx] + 1
+        edu_end = edu_ends[edu_idx] - 1
+        edu_txt = text[edu_beg:edu_end]
+        len_lws = len(edu_txt) - len(edu_txt.lstrip())
+        len_rws = len(edu_txt) - len(edu_txt.rstrip())
+        edu_beg += len_lws
+        edu_end -= len_rws
+        # retry matching to 1 paragraph
+        is_enclosing_para = np.logical_and(para_begs <= edu_beg,
+                                           para_ends >= edu_end)
+        if np.any(is_enclosing_para):
+            # as paragraphs are not recursive and cannot overlap,
+            # there can be at most one enclosing para for a given
+            # span
+            sel_para = np.where(is_enclosing_para)[0][0]
+            edu2para[edu_idx] = sel_para
+        else:
+            edu2para[edu_idx] = None
 
     return edu2para
 # end dirty
@@ -203,11 +220,9 @@ class DocumentPlus(object):
         if paragraphs is None:
             edu2para = None
         else:
-            edu2para = align_edus_with_paragraphs(edus[1:], paragraphs[1:],
-                                                  text)
-        # prepend [0] for the left padding EDU and paragraph
-        edu2para = ([0] + edu2para if edu2para is not None
-                    else [None for edu in edus])
+            edu2para = align_edus_with_paragraphs(edus, paragraphs, text)
+        if edu2para is None:
+            edu2para = [None for edu in edus]
         self.edu2para = edu2para
 
         # compute relative index of each EDU to the beginning (resp. to
@@ -273,21 +288,21 @@ class DocumentPlus(object):
         There should be one clean text per document, one tokenization and
         so on, but, well.
         """
-        edus = self.edus
-        raw_words = dict()
+        raw_words = []
 
-        for edu in edus:
-            if edu.is_left_padding():
-                _lpad_tok = self.tkd_tokens[0]
-                raw_wds = [_lpad_tok]
-            else:
-                # TODO move functionality to rst_wsj_corpus
-                cln_txt = clean_edu_text(edu.text())
-                # dummy tokenization on whitespaces
-                words = cln_txt.split()
-                # lowercase all words
-                raw_wds = [w.lower() for w in words]
-            raw_words[edu] = raw_wds
+        edus = self.edus
+
+        # dirty: lpad
+        raw_words.append([edus[0].raw_text])
+        # regular EDUs
+        for edu in edus[1:]:
+            # TODO move functionality to rst_wsj_corpus
+            cln_txt = clean_edu_text(edu.text())
+            # dummy tokenization on whitespaces
+            words = cln_txt.split()
+            # lowercase all words
+            raw_wds = [w.lower() for w in words]
+            raw_words.append(raw_wds)
 
         self.raw_words = raw_words
 
@@ -316,12 +331,13 @@ class DocumentPlus(object):
         tok2edu_ends = np.searchsorted(edu_ends, tok_ends)
         edu_begs = [x.span.char_start for x in edus]
         tok_begs = [x.span.char_start for x in tokens]
-        tok2edu_begs = np.searchsorted(edu_begs, tok_begs, side='right')
-        tok2edu_begs = tok2edu_begs - 1
+        tok2edu_begs = np.searchsorted(edu_begs, tok_begs, side='right') - 1
         # dirty hack to recover a proper mapping for the left padding
         # token and EDU ; we could avoid this by setting the span of
         # the left padding to e.g. (-1, 0), but there are possible
         # side-effects, so maybe later?
+        # => see `set_tokens`, which is more recent and uses (-1, -1)
+        # for the span of the left padding element
         tok2edu_begs[0] = 0
 
         # optional check for mismatches between EDU and token
