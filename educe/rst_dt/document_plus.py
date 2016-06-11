@@ -354,7 +354,6 @@ class DocumentPlus(object):
                       np.array(edu_ends)[tok2edu_begs[diff_idc]])
                 print(np.array(edu_begs)[tok2edu_ends[diff_idc]],
                       np.array(edu_ends)[tok2edu_ends[diff_idc]])
-
         # build the mapping from each EDU to token indices
         edu2tokens_begs = {k: [tok_idx for tok_idx, edu_idx in g]
                            for k, g in itertools.groupby(
@@ -364,8 +363,9 @@ class DocumentPlus(object):
                            for k, g in itertools.groupby(
                                    enumerate(tok2edu_ends),
                                    key=lambda x: x[1])}
-        edu2tokens = [np.union1d(edu2tokens_begs.get(edu_idx, []),
-                                 edu2tokens_ends.get(edu_idx, []))
+        edu2tokens = [np.union1d(
+            edu2tokens_begs.get(edu_idx, np.array([], dtype=np.int)),
+            edu2tokens_ends.get(edu_idx, np.array([], dtype=np.int)))
                       for edu_idx in range(len(edus))]
 
         self.edu2tokens = edu2tokens
