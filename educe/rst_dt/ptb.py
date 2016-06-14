@@ -239,7 +239,15 @@ class PtbParser(object):
     def tokenize(self, doc):
         """Tokenize the document text using the PTB gold annotation.
 
-        Return a tokenized document.
+        Parameters
+        ----------
+        doc: DocumentPlus
+            Rich representation of the document.
+
+        Returns
+        -------
+        doc: DocumentPlus
+            Rich representation of the document, with tokenization.
         """
         # get tokens from PTB
         ptb_name = _guess_ptb_name(doc.key)
@@ -266,7 +274,8 @@ class PtbParser(object):
         return doc
 
     def parse(self, doc):
-        """
+        """Parse a document, using the gold PTB annotation.
+
         Given a document, return a list of educified PTB parse trees
         (one per sentence).
 
@@ -275,6 +284,17 @@ class PtbParser(object):
         associated with a span within the RST DT text.
 
         Note: does nothing if there is no associated PTB corpus entry.
+
+        Parameters
+        ----------
+        doc: DocumentPlus
+            Rich representation of the document.
+
+        Returns
+        -------
+        doc: DocumentPlus
+            Rich representation of the document, with syntactic
+            constituency trees.
         """
         # get PTB trees
         ptb_name = _guess_ptb_name(doc.key)
