@@ -267,7 +267,7 @@ def extract_single_para(doc, edu_info, para_info):
         if para_rev_idx is not None:
             yield ('paragraph_rev_id', para_rev_idx)
     # features on the surrounding paragraph
-    if True:
+    if False:
         # WIP as of 2016-06-10
         paras = doc.paragraphs
         if paras is not None and para_idx is not None:
