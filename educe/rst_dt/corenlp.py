@@ -95,6 +95,15 @@ def read_corenlp_result(doc, corenlp_doc):
                          for x in sorted(tokens_dict, key=tok_local_id)]
         # ctree
         tree = nltk.tree.Tree.fromstring(sent['parse'])
+        # FIXME 2016-06-13 skip the ROOT node, as in PTB
+        # maybe we'd better add ROOT to the empty parentheses in the
+        # PTB version, but just getting rid of ROOT here seems simpler:
+        # the type of the root node of a tree is informative: usually
+        # S, but more interestingly SINV, NP...
+        if tree.label() != 'ROOT' or len(tree) > 1:
+            print(tree)
+            raise ValueError('Atypical root of CoreNLP tree')
+        tree = tree[0]  # go down from ROOT to the real root
         educe_ctree = ConstituencyTree.build(tree, sorted_tokens)
         # dtree
         deps = defaultdict(list)
@@ -165,7 +174,7 @@ class CoreNlpParser(object):
         corenlp_out = read_corenlp_result(doc, reader)
 
         # modify DocumentPlus doc to add tokens
-        doc.tkd_tokens.extend(corenlp_out.tokens)
+        doc.set_tokens(corenlp_out.tokens)
 
         return doc
 
@@ -181,6 +190,8 @@ class CoreNlpParser(object):
         if not os.path.exists(fname):
             raise ValueError('CoreNLP XML: no file {}'.format(fname))
         # CoreNLP XML output reader
+        # FIXME the same reading is done in tokenize(), should find
+        # a way to cache or share call
         reader = PreprocessingSource()
         reader.read(fname, suffix='')
         corenlp_out = read_corenlp_result(doc, reader)
@@ -198,10 +209,6 @@ class CoreNlpParser(object):
                      for ctree_no_gf in ctrees_no_gf]
 
         # store trees in doc
-        doc.tkd_trees.extend(ctrees_no_gf)
-        # store lexical heads in doc
-        doc.lex_heads = []
-        doc.lex_heads.append(None)
-        doc.lex_heads.extend(lex_heads)
+        doc.set_syn_ctrees(ctrees_no_gf, lex_heads=lex_heads)
 
         return doc

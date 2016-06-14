@@ -293,20 +293,12 @@ def syntactic_node_seq(ptree, tokens):
     txt_span = Span(tokens[0].text_span().char_start,
                     tokens[-1].text_span().char_end)
 
-    for tpos in ptree.treepositions():
-        node = ptree[tpos]
-        # skip nodes whose span does not enclose txt_span
-        node_txt_span = node.text_span()
-        if not node_txt_span.encloses(txt_span):
-            continue
-
+    for node in ptree.subtrees(lambda t: t.text_span().encloses(txt_span)):
         # * spanning node
         if node.text_span() == txt_span:
             return [node]
 
         # * otherwise: spanning subsequence of kid nodes
-        if not isinstance(node, Tree):
-            continue
         txt_span_start = txt_span.char_start
         txt_span_end = txt_span.char_end
         kids_start = [x.text_span().char_start for x in node]

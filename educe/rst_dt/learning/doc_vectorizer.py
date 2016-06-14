@@ -248,8 +248,9 @@ class DocumentCountVectorizer(object):
         split_feat_space = self.split_feat_space
         # end NEW
 
+        edu2para = doc.edu2para
         # preprocess each EDU
-        edu_infos = doc_preprocess(doc)
+        edu_infos, para_infos = doc_preprocess(doc)
 
         # extract one feature vector per EDU pair
         feat_vecs = []
@@ -273,15 +274,26 @@ class DocumentCountVectorizer(object):
             # retrieve info for each EDU
             edu_info1 = edu_infos[edu1.num]
             edu_info2 = edu_infos[edu2.num]
+            # NEW paragraph info
+            try:
+                para_info1 = para_infos[edu2para[edu1.num]]
+            except TypeError:
+                para_info1 = None
+            try:
+                para_info2 = para_infos[edu2para[edu2.num]]
+            except TypeError:
+                para_info2 = None
             # ... and for the EDUs in between (WIP interval)
             edu_info_bwn = [edu_infos[x] for x in bwn_nums]
             # gov EDU
             if edu1.num not in sf_cache:
-                sf_cache[edu1.num] = dict(sing_extract(doc, edu_info1))
+                sf_cache[edu1.num] = dict(sing_extract(
+                    doc, edu_info1, para_info1))
             feat_dict['EDU1'] = dict(sf_cache[edu1.num])
             # dep EDU
             if edu2.num not in sf_cache:
-                sf_cache[edu2.num] = dict(sing_extract(doc, edu_info2))
+                sf_cache[edu2.num] = dict(sing_extract(
+                    doc, edu_info2, para_info2))
             feat_dict['EDU2'] = dict(sf_cache[edu2.num])
             # pair + in between
             feat_dict['pair'] = dict(pair_extract(

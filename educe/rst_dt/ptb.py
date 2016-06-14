@@ -165,7 +165,7 @@ _PTB_SUBSTS_OTHER = {
     ('21/wsj_2172.mrg', 1280): (None, ""),  # token in PTB missing from RST-WSJ
     # * regular (wsj_XXXX.out) files
     ('06/wsj_0675.mrg', 546): ("-", None),  # --
-    ('11/wsj_1139.mrg', 582): (">", None),  # insertion
+    ('11/wsj_1139.mrg', 582): ("> ", None),  # insertion
     ('11/wsj_1161.mrg', 845): ("<", None),  # insertion
     ('11/wsj_1171.mrg', 207): (None, "'"),   # backtick
     ('13/wsj_1303.mrg', 388): (None, ""),  # extra full stop
@@ -239,7 +239,15 @@ class PtbParser(object):
     def tokenize(self, doc):
         """Tokenize the document text using the PTB gold annotation.
 
-        Return a tokenized document.
+        Parameters
+        ----------
+        doc: DocumentPlus
+            Rich representation of the document.
+
+        Returns
+        -------
+        doc: DocumentPlus
+            Rich representation of the document, with tokenization.
         """
         # get tokens from PTB
         ptb_name = _guess_ptb_name(doc.key)
@@ -261,12 +269,13 @@ class PtbParser(object):
         result = [_mk_token(t, s) for t, s in izip(tweaked2, spans)]
 
         # store in doc
-        doc.tkd_tokens.extend(result)
+        doc.set_tokens(result)
 
         return doc
 
     def parse(self, doc):
-        """
+        """Parse a document, using the gold PTB annotation.
+
         Given a document, return a list of educified PTB parse trees
         (one per sentence).
 
@@ -275,6 +284,17 @@ class PtbParser(object):
         associated with a span within the RST DT text.
 
         Note: does nothing if there is no associated PTB corpus entry.
+
+        Parameters
+        ----------
+        doc: DocumentPlus
+            Rich representation of the document.
+
+        Returns
+        -------
+        doc: DocumentPlus
+            Rich representation of the document, with syntactic
+            constituency trees.
         """
         # get PTB trees
         ptb_name = _guess_ptb_name(doc.key)
@@ -309,13 +329,7 @@ class PtbParser(object):
             lex_heads.append(lheads)
 
         # store trees in doc
-        doc.tkd_trees.extend(trees)
-        # store lexical heads in doc
-        # TODO move to DocumentPlus
-        doc.lex_heads = []
-        doc.lex_heads.append(None)
-        # end TODO
-        doc.lex_heads.extend(lex_heads)
+        doc.set_syn_ctrees(trees, lex_heads=lex_heads)
 
         return doc
 
@@ -346,6 +360,10 @@ def align_edus_with_sentences(edus, syn_trees, strict=False):
     -------
     edu2sent: list(int or None)
         Map from EDU to (0-based) sentence index or None.
+
+    TODO
+    ----
+    * [ ] rewrite a faster version using numpy
     """
     edu2sent = []
     for edu in edus:
