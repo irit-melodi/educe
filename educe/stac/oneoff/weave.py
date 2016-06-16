@@ -10,15 +10,16 @@ annotations over and shifting the text spans of any matching documents
 from __future__ import print_function
 
 from collections import namedtuple
+from functools import reduce
 import sys
+
+import numpy as np
 
 from educe.annotation import Span
 from educe.stac.annotation import (is_dialogue, is_edu, is_paragraph,
-                                   is_structure, is_turn,
+                                   is_turn,
                                    DIALOGUE_ACTS, RENAMES)
 from educe.stac.context import enclosed
-from educe.stac.edit.cmd.split_dialogue import _split_dialogue
-from educe.stac.edit.cmd.merge_dialogue import _merge_dialogues_in_document
 
 
 class WeaveException(Exception):
@@ -482,7 +483,7 @@ def find_continuous_seqs(doc, spans, annos):
         seqs[-1].append(i + 1)
 
     return seqs
-    
+
 
 def stretch_match_many(updates, src_doc, tgt_doc, doc_span_src, doc_span_tgt,
                        annos_src, annos_tgt, verbose=0):
@@ -551,8 +552,7 @@ def stretch_match_many(updates, src_doc, tgt_doc, doc_span_src, doc_span_tgt,
                       'source:\n',
                       '\n'.join(str(x) for x in seq_annos_src),
                       '\ntarget:\n',
-                      '\n'.join(str(x) for x in seq_annos_tgt)
-                )
+                      '\n'.join(str(x) for x in seq_annos_tgt))
             updates = update_updates(updates, seq_annos_src, seq_annos_tgt,
                                      verbose=verbose)
 
@@ -584,6 +584,10 @@ def compute_structural_updates(src_doc, tgt_doc, matches, updates, verbose=0):
             offset_src = m.a
             offset_tgt = m.b
     # add final stretch map
+    # m already is matches[-2] at the end of the for loop, but I reset
+    # it here, so we don't rely on a leaky variable
+    # assert m == matches[-2]
+    m = matches[-2]
     merged_span_src = (offset_src, m.a + m.size)
     merged_span_tgt = (offset_tgt, m.b + m.size)
     stretch_map[merged_span_src] = merged_span_tgt
@@ -656,7 +660,6 @@ def compute_structural_updates(src_doc, tgt_doc, matches, updates, verbose=0):
                                      span_src, span_tgt,
                                      unmatched_src_segs, unmatched_tgt_units,
                                      verbose=verbose)
-        
     return updates
 
 
@@ -676,7 +679,7 @@ def shift_dialogues(doc_src, doc_res, updates):
         stretching the first and last dialogues so as to cover the
         same span as dialogues from `doc_src`.
     updates : set of updates
-        Updates
+        Updates computed by `compute_updates`.
 
     Returns
     -------
@@ -689,18 +692,48 @@ def shift_dialogues(doc_src, doc_res, updates):
     dlgs_res = sorted([x for x in doc_res.units
                        if x.type.lower() == 'dialogue'],
                       key=lambda y: y.span)
-    # compute shifted endpoints of all target dialogues, with special
-    # processing for the first's start and the last's end so as to cover
-    # the same global span as the source dialogues
-    shifted_ends = ([dlgs_src[0].span.char_start] +
-                    [shift_char(x.span.char_end, updates)
-                     for x in dlgs_res[:-1]] +
-                    [dlgs_src[-1].span.char_end])
 
-    for dlg_res, start, end in zip(dlgs_res, shifted_ends[:-1],
-                                   shifted_ends[1:]):
-        dlg_res.span.char_start = start
-        dlg_res.span.char_end = end
+    # NEW 2016-06-15 adjust dialogue boundaries
+    # for each target dialogue, find the smallest enclosing sequence of
+    # source dialogues and map to it
+    dlgs_src_beg = np.array([x.span.char_start for x in dlgs_src])
+    dlgs_tgt_sbeg = np.array([shift_char(x.span.char_start + 1, updates) - 1
+                              for x in dlgs_res])
+    # NB: we need to broadcast (- 1) to get the source dialogue whose
+    # start immediately precedes the start of the shifted target
+    # dialogue
+    tgt2src_beg = (np.searchsorted(dlgs_src_beg, dlgs_tgt_sbeg, side='right')
+                   - 1)
+    dlgs_tgt_abeg = dlgs_src_beg[tgt2src_beg]
+    # map the shifted end of each target dialogue to the first larger end
+    # of a source dialogue
+    dlgs_src_end = np.array([x.span.char_end for x in dlgs_src])
+    dlgs_tgt_send = np.array([shift_char(x.span.char_end - 1, updates) + 1
+                              for x in dlgs_res])
+    tgt2src_end = np.searchsorted(dlgs_src_end, dlgs_tgt_send)
+    dlgs_tgt_aend = dlgs_src_end[tgt2src_end]
+    # overwrite the adjusted beginning and end, when a game turn
+    # overlaps with two different tgt dialogues ;
+    # each overlap in the matching signals a split, in the linguistic
+    # version, that happens in the middle of a game turn
+    for i, (end_cur, beg_nxt) in enumerate(
+            zip(tgt2src_end[:-1], tgt2src_beg[1:])):
+        if beg_nxt <= end_cur:
+            # linguistic turns from the same game turn, in different
+            # target dialogues => use the shifted cut point from tgt
+            dlgs_tgt_aend[i] = dlgs_tgt_send[i]
+            dlgs_tgt_abeg[i + 1] = dlgs_tgt_send[i]
+    # find source dialogues included in the shifted+expanded target dialogues
+    dlgs_src_matched = reduce(np.union1d,
+                              (np.arange(x_beg, x_end + 1)
+                               for x_beg, x_end
+                               in zip(tgt2src_beg, tgt2src_end)))
+    dlgs_src_matched = set(dlgs_src_matched)
+
+    for dlg_res, adj_start, adj_end in zip(
+            dlgs_res, dlgs_tgt_abeg, dlgs_tgt_aend):
+        dlg_res.span.char_start = adj_start
+        dlg_res.span.char_end = adj_end
         # alt: dlg_res.span = Span(start, end)
         #
         # optionally, update timestamp, id, span as in
@@ -710,10 +743,14 @@ def shift_dialogues(doc_src, doc_res, updates):
     for dlg_res in dlgs_res:
         if dlg_res in updates.abnormal_tgt_only:
             updates.abnormal_tgt_only.remove(dlg_res)
-    for dlg_src in dlgs_src:
+    for i, dlg_src in enumerate(dlgs_src):
         if dlg_src in updates.abnormal_src_only:
             updates.abnormal_src_only.remove(dlg_src)
-        if dlg_src in updates.expected_src_only:
+        if (i in dlgs_src_matched
+            and dlg_src in updates.expected_src_only):
+            # remove matched source dialogues, leave the unmatched
+            # ones in expected_src_only, so that they are added later
+            # to the woven document
             updates.expected_src_only.remove(dlg_src)
 
     return updates
