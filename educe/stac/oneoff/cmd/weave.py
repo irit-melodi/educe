@@ -55,7 +55,7 @@ def _maybe_warn(warning, doc, annos):
         print(oops.encode('utf-8'), file=sys.stderr)
 
 
-def _weave_docs(renames, src_doc, tgt_doc):
+def _weave_docs(renames, src_doc, tgt_doc, gen):
     """Return a deep copy of the target document with combined
     annotations from both the original source and target
     """
@@ -88,7 +88,7 @@ def _weave_docs(renames, src_doc, tgt_doc):
 
     # WIP update structural annotations
     # * shift and stretch target dialogues onto source text
-    updates = shift_dialogues(src_doc, res_doc, updates)
+    updates = shift_dialogues(src_doc, res_doc, updates, gen)
     # then other structures
     updates = compute_structural_updates(src_doc, tgt_doc, matches, updates,
                                          verbose=0)
@@ -149,6 +149,10 @@ def config_argparser(parser):
     You should create and pass in the subparser to which the flags
     are to be added.
     """
+    # select generation
+    parser.add_argument('--gen', metavar='N', type=int, default=2,
+                        help='max generation of turns to include (1, 2, 3)')
+    #
     parser.add_argument('augmented', metavar='DIR',
                         help='augmented corpus dir')
     add_usual_input_args(parser,
@@ -193,7 +197,7 @@ def main(args):
             print('Cannot find augmented version of {}'.format(str(ukey)))
             raise
         # weave
-        new_tgt_doc = _weave_docs(renames, src_doc, tgt_doc)
+        new_tgt_doc = _weave_docs(renames, src_doc, tgt_doc, args.gen)
         save_document(output_dir, key, new_tgt_doc)
         print('<== done ==>', file=sys.stderr)  # DEBUG
     announce_output_dir(output_dir)

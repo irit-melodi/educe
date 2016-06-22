@@ -557,6 +557,10 @@ def game_turns(doc, turns, gen=2):
         raise NotImplementedError(
             'Game turns are not available before gen. 3.')
 
+    turn_to_roll_idc = [i for i, turn in enumerate(turns)
+                        if ("turn to roll the dice" in
+                            doc.text(span=turn.text_span()))]
+
     gturn_beg = [0]
     # start a new dialogue at "It's Y's turn to roll the dice."
     # if the previous turn was "X ended their turn."
@@ -591,10 +595,11 @@ def game_turns(doc, turns, gen=2):
                         if player_prev != player_cur:
                             # the current turn starts a new game turn
                             gturn_beg.append(i)
-                    elif "built a road" in txt_prev:
-                        # first standard game turn, following the initial setup
-                        # phase when each player builds a settlement and a road,
-                        # twice
+                    elif (i == turn_to_roll_idc[0]
+                          and "built a road" in txt_prev):
+                        # first standard game turn, following the initial
+                        # setup phase when each player builds a settlement
+                        # and a road, twice
                         player_prev = txt_prev.split(
                             " built a road.")[0]
                         if player_prev == player_cur:
