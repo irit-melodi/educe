@@ -531,3 +531,81 @@ def create_units(_, doc, author, partial_units):
 
     return [mk_unit(x, i) for x, i in
             itertools.izip(partial_units, itertools.count(0))]
+
+
+# NEW 2016-06-15
+def game_turns(doc, turns, gen=2):
+    """Group a sequence of turns into a sequence of game turns.
+
+    A game turn corresponds to the sequence of events (turns) that
+    happen within a player's turn (in the SOC game).
+
+    Parameters
+    ----------
+    doc: Document
+        Containing document.
+    turns: list of educe.stac.Unit
+        Events (of type Turn) from the game: server messages, player
+        messages.
+
+    Returns
+    -------
+    gturn_beg: list of int
+        Index of the first Turn of each game turn.
+    """
+    if gen < 3:
+        raise NotImplementedError(
+            'Game turns are not available before gen. 3.')
+
+    turn_to_roll_idc = [i for i, turn in enumerate(turns)
+                        if ("turn to roll the dice" in
+                            doc.text(span=turn.text_span()))]
+
+    gturn_beg = [0]
+    # start a new dialogue at "It's Y's turn to roll the dice."
+    # if the previous turn was "X ended their turn."
+    for i, turn in enumerate(turns):
+        turn_text = doc.text(span=turn.text_span())
+        tid_cur, emit_cur, txt_cur = turn_text.split(' : ', 2)
+        # check previous turn (for non-initial turn only)
+        if i > 0:
+            turn_prev = turns[i - 1]
+            turn_prev_text = doc.text(span=turn_prev.text_span())
+            tid_prev, emit_prev, txt_prev = turn_prev_text.split(
+                ' : ', 2)
+
+        # if a player just won the game, split here
+        if (i > 0
+            and emit_prev == 'Server'
+            and "has won the game" in txt_prev):
+            # group subsequent messages as a new turn
+            gturn_beg.append(i)
+        elif emit_cur == 'Server':
+            if "turn to roll the dice" in txt_cur:
+                # FIXME rewrite with a regex
+                # the current implementation does [5:] to skip the
+                # leading "It's " (yerk)
+                player_cur = txt_cur.strip().split(
+                    "'s turn to roll the dice.")[0][5:]
+                if i > 0:
+                    if "ended their turn" in txt_prev:
+                        # FIXME rewrite with a regex
+                        player_prev = txt_prev.strip().split(
+                            " ended their turn.")[0]
+                        if player_prev != player_cur:
+                            # the current turn starts a new game turn
+                            gturn_beg.append(i)
+                    elif (i == turn_to_roll_idc[0]
+                          and "built a road" in txt_prev):
+                        # first standard game turn, following the initial
+                        # setup phase when each player builds a settlement
+                        # and a road, twice
+                        player_prev = txt_prev.split(
+                            " built a road.")[0]
+                        if player_prev == player_cur:
+                            gturn_beg.append(i)
+        elif emit_cur == 'UI':
+            if "Game started." in txt_cur:
+                gturn_beg.append(i)
+
+    return gturn_beg

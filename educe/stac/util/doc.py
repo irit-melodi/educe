@@ -345,7 +345,7 @@ def move_portion(renames, src_doc, tgt_doc,
             return u"[{0}]{1}...".format(txt[point],
                                          txt[point+1:point+width])
         else:
-            return u"...{0}[{1}]".format(txt[point-width:point-1],
+            return u"...{0}[{1}]".format(txt[point-width:point],
                                          txt[point])
 
     tgt_text = tgt_doc.text()

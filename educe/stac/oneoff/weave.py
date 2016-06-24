@@ -10,15 +10,18 @@ annotations over and shifting the text spans of any matching documents
 from __future__ import print_function
 
 from collections import namedtuple
+from functools import reduce
+import itertools
 import sys
 
+import numpy as np
+
 from educe.annotation import Span
-from educe.stac.annotation import (is_dialogue, is_edu, is_paragraph,
-                                   is_structure, is_turn,
+from educe.stac.annotation import (game_turns, is_dialogue, is_edu,
+                                   is_paragraph, is_turn,
                                    DIALOGUE_ACTS, RENAMES)
 from educe.stac.context import enclosed
-from educe.stac.edit.cmd.split_dialogue import _split_dialogue
-from educe.stac.edit.cmd.merge_dialogue import _merge_dialogues_in_document
+from educe.stac.edit.cmd.merge_dialogue import _concatenate_features
 
 
 class WeaveException(Exception):
@@ -482,7 +485,7 @@ def find_continuous_seqs(doc, spans, annos):
         seqs[-1].append(i + 1)
 
     return seqs
-    
+
 
 def stretch_match_many(updates, src_doc, tgt_doc, doc_span_src, doc_span_tgt,
                        annos_src, annos_tgt, verbose=0):
@@ -551,8 +554,7 @@ def stretch_match_many(updates, src_doc, tgt_doc, doc_span_src, doc_span_tgt,
                       'source:\n',
                       '\n'.join(str(x) for x in seq_annos_src),
                       '\ntarget:\n',
-                      '\n'.join(str(x) for x in seq_annos_tgt)
-                )
+                      '\n'.join(str(x) for x in seq_annos_tgt))
             updates = update_updates(updates, seq_annos_src, seq_annos_tgt,
                                      verbose=verbose)
 
@@ -584,12 +586,16 @@ def compute_structural_updates(src_doc, tgt_doc, matches, updates, verbose=0):
             offset_src = m.a
             offset_tgt = m.b
     # add final stretch map
+    # m already is matches[-2] at the end of the for loop, but I reset
+    # it here, so we don't rely on a leaky variable
+    # assert m == matches[-2]
+    m = matches[-2]
     merged_span_src = (offset_src, m.a + m.size)
     merged_span_tgt = (offset_tgt, m.b + m.size)
     stretch_map[merged_span_src] = merged_span_tgt
 
     # stretch match (1-1, n-1, 1-n) segments (EDUs)
-    print('Stretch match segments')
+    print('Stretch match segments', file=sys.stderr)
     # gather all unmatched units from tgt that can be stretched:
     unmatched_src_annos = set(updates.abnormal_src_only +
                               updates.expected_src_only)
@@ -606,7 +612,7 @@ def compute_structural_updates(src_doc, tgt_doc, matches, updates, verbose=0):
                                 verbose=verbose)
 
     # stretch match dialogue acts: tgt_units <-> src_segs
-    print('Stretch match dialogue acts')
+    print('Stretch match dialogue acts', file=sys.stderr)
     # gather all unmatched units from tgt that can be stretched:
     unmatched_src_annos = set(updates.abnormal_src_only +
                               updates.expected_src_only)
@@ -626,7 +632,7 @@ def compute_structural_updates(src_doc, tgt_doc, matches, updates, verbose=0):
     # with the above
     # dialogues and segments (we'll see if they can be treated the same)
     # n-m matchings: segments (EDUs)
-    print('n-m stretch match segments')
+    print('n-m stretch match segments', file=sys.stderr)
     unmatched_src_annos = set(updates.abnormal_src_only +
                               updates.expected_src_only)
     unmatched_tgt_annos = set(updates.abnormal_tgt_only)
@@ -642,7 +648,7 @@ def compute_structural_updates(src_doc, tgt_doc, matches, updates, verbose=0):
                                      verbose=verbose)
 
     # n-m matchings: dialogue acts (tgt_units <-> src_segs)
-    print('n-m stretch match on dialogue acts')
+    print('n-m stretch match on dialogue acts', file=sys.stderr)
     unmatched_src_annos = set(updates.abnormal_src_only +
                               updates.expected_src_only)
     unmatched_tgt_annos = set(updates.abnormal_tgt_only)
@@ -656,11 +662,10 @@ def compute_structural_updates(src_doc, tgt_doc, matches, updates, verbose=0):
                                      span_src, span_tgt,
                                      unmatched_src_segs, unmatched_tgt_units,
                                      verbose=verbose)
-        
     return updates
 
 
-def shift_dialogues(doc_src, doc_res, updates):
+def shift_dialogues(doc_src, doc_res, updates, gen):
     """Transpose dialogue split from target to source document.
 
     Remove all dialogues from updates.
@@ -676,45 +681,207 @@ def shift_dialogues(doc_src, doc_res, updates):
         stretching the first and last dialogues so as to cover the
         same span as dialogues from `doc_src`.
     updates : set of updates
-        Updates
+        Updates computed by `compute_updates`.
+    gen: int
+        Generation of annotations included in `doc_src` and the output.
 
     Returns
     -------
     updates : Updates
         Trimmed down set of `updates`: no more dialogue.
     """
-    dlgs_src = sorted([x for x in doc_src.units
-                       if x.type.lower() == 'dialogue'],
-                      key=lambda y: y.span)
-    dlgs_res = sorted([x for x in doc_res.units
-                       if x.type.lower() == 'dialogue'],
-                      key=lambda y: y.span)
-    # compute shifted endpoints of all target dialogues, with special
-    # processing for the first's start and the last's end so as to cover
-    # the same global span as the source dialogues
-    shifted_ends = ([dlgs_src[0].span.char_start] +
-                    [shift_char(x.span.char_end, updates)
-                     for x in dlgs_res[:-1]] +
-                    [dlgs_src[-1].span.char_end])
+    if gen < 3:
+        dlgs_src = sorted([x for x in doc_src.units
+                           if x.type.lower() == 'dialogue'],
+                          key=lambda y: y.span)
+        dlgs_res = sorted([x for x in doc_res.units
+                           if x.type.lower() == 'dialogue'],
+                          key=lambda y: y.span)
 
-    for dlg_res, start, end in zip(dlgs_res, shifted_ends[:-1],
-                                   shifted_ends[1:]):
-        dlg_res.span.char_start = start
-        dlg_res.span.char_end = end
-        # alt: dlg_res.span = Span(start, end)
-        #
-        # optionally, update timestamp, id, span as in
-        # `stac.edit.cmd.split_dialogue.{_actually_split,_set}`
+        # NEW 2016-06-15 adjust dialogue boundaries
+        # for each target dialogue, find the smallest enclosing sequence of
+        # source dialogues and map to it
+        dlgs_src_beg = np.array([x.span.char_start for x in dlgs_src])
+        dlgs_tgt_sbeg = np.array([
+            shift_char(x.span.char_start + 1, updates) - 1
+            for x in dlgs_res])
+        # NB: we need to broadcast (- 1) to get the source dialogue whose
+        # start immediately precedes the start of the shifted target
+        # dialogue
+        tgt2src_beg = (np.searchsorted(dlgs_src_beg, dlgs_tgt_sbeg,
+                                       side='right')
+                       - 1)
+        dlgs_tgt_abeg = dlgs_src_beg[tgt2src_beg]
+        # map the shifted end of each target dialogue to the first larger end
+        # of a source dialogue
+        dlgs_src_end = np.array([x.span.char_end for x in dlgs_src])
+        dlgs_tgt_send = np.array([shift_char(x.span.char_end - 1, updates) + 1
+                                  for x in dlgs_res])
+        tgt2src_end = np.searchsorted(dlgs_src_end, dlgs_tgt_send)
+        dlgs_tgt_aend = dlgs_src_end[tgt2src_end]
+        # overwrite the adjusted beginning and end, when a game turn
+        # overlaps with two different tgt dialogues ;
+        # each overlap in the matching signals a split, in the linguistic
+        # version, that happens in the middle of a game turn
+        for i, (end_cur, beg_nxt) in enumerate(
+                zip(tgt2src_end[:-1], tgt2src_beg[1:])):
+            if beg_nxt <= end_cur:
+                # linguistic turns from the same game turn, in different
+                # target dialogues => use the shifted cut point from tgt
+                dlgs_tgt_aend[i] = dlgs_tgt_send[i]
+                dlgs_tgt_abeg[i + 1] = dlgs_tgt_send[i]
+        # find source dialogues included in the shifted+expanded target
+        # dialogues
+        dlgs_src_matched = reduce(np.union1d,
+                                  (np.arange(x_beg, x_end + 1)
+                                   for x_beg, x_end
+                                   in zip(tgt2src_beg, tgt2src_end)))
+        dlgs_src_matched = set(dlgs_src_matched)
 
-    # remove all source and target dialogues from updates
-    for dlg_res in dlgs_res:
-        if dlg_res in updates.abnormal_tgt_only:
-            updates.abnormal_tgt_only.remove(dlg_res)
-    for dlg_src in dlgs_src:
-        if dlg_src in updates.abnormal_src_only:
-            updates.abnormal_src_only.remove(dlg_src)
-        if dlg_src in updates.expected_src_only:
-            updates.expected_src_only.remove(dlg_src)
+        for dlg_res, adj_start, adj_end in zip(
+                dlgs_res, dlgs_tgt_abeg, dlgs_tgt_aend):
+            dlg_res.span.char_start = adj_start
+            dlg_res.span.char_end = adj_end
+            # alt: dlg_res.span = Span(start, end)
+            #
+            # optionally, update timestamp, id, span as in
+            # `stac.edit.cmd.split_dialogue.{_actually_split,_set}`
+
+        # remove all source and target dialogues from updates
+        for dlg_res in dlgs_res:
+            if dlg_res in updates.abnormal_tgt_only:
+                updates.abnormal_tgt_only.remove(dlg_res)
+        for i, dlg_src in enumerate(dlgs_src):
+            if dlg_src in updates.abnormal_src_only:
+                updates.abnormal_src_only.remove(dlg_src)
+            if (i in dlgs_src_matched
+                and dlg_src in updates.expected_src_only):
+                # remove matched source dialogues, leave the unmatched
+                # ones in expected_src_only, so that they are added later
+                # to the woven document
+                updates.expected_src_only.remove(dlg_src)
+
+    else:
+        # situated version: we can rely on game turns
+
+        # 1. get the identifier of the first and last turn of each game turn
+        # in _src: these turns and those in between must end up in the same
+        # dialogue
+        turns_src = sorted((x for x in doc_src.units if is_turn(x)),
+                           key=lambda x: x.span)
+        turns_src_tid = np.array([x.features['Identifier']
+                                  for x in turns_src])
+        turns_src_beg = np.array([x.span.char_start for x in turns_src])
+        turns_src_end = np.array([x.span.char_end for x in turns_src])
+        # * locate game turns (index of first and last turn)
+        gturn_idc = game_turns(doc_src, turns_src, gen=3)
+        gturn_idc_beg = np.array(gturn_idc)
+        gturn_idc_end = np.array(
+            [i - 1 for i in gturn_idc[1:]] + [len(turns_src) - 1])
+        # ... and finally
+        gturn_src_tid_beg = turns_src_tid[gturn_idc_beg]
+        gturn_src_tid_end = turns_src_tid[gturn_idc_end]
+
+        # 2. get the identifier of the first and last turn of each dialogue
+        # in _res: these turns and those in between must end up in the same
+        # dialogue
+        turns_res = sorted((x for x in doc_res.units if is_turn(x)),
+                           key=lambda x: x.span)
+        turns_res_tid = np.array([x.features['Identifier']
+                                  for x in turns_res])
+        turns_res_beg = np.array([x.span.char_start for x in turns_res])
+        turns_res_end = np.array([x.span.char_end for x in turns_res])
+        # align dialogue spans with turn spans
+        dlgs_res = sorted((x for x in doc_res.units if is_dialogue(x)),
+                          key=lambda x: x.span)
+        dlgs_res_beg = np.array([x.span.char_start for x in dlgs_res])
+        dlgs_res_end = np.array([x.span.char_end for x in dlgs_res])
+        dlgs_res_ti_beg = np.searchsorted(turns_res_beg, dlgs_res_beg)
+        dlgs_res_ti_end = np.searchsorted(turns_res_end, dlgs_res_end,
+                                          side='right') - 1
+        # ... and finally
+        dlgs_res_tid_beg = turns_res_tid[dlgs_res_ti_beg]
+        dlgs_res_tid_end = turns_res_tid[dlgs_res_ti_end]
+
+        # 3. map _res dialogues to _src game turns
+        dlgs_res_ti_beg = np.array(
+            [list(turns_src_tid).index(x) for x in dlgs_res_tid_beg])
+        dlgs_res_ti_end = np.array(
+            [list(turns_src_tid).index(x) for x in dlgs_res_tid_end])
+        # * align the beginning (resp. end) indices of game turns and _res
+        # dialogues
+        dlg2gturn_beg = (np.searchsorted(gturn_idc_beg, dlgs_res_ti_beg,
+                                         side='right') - 1)
+        dlg2gturn_end = np.searchsorted(gturn_idc_end, dlgs_res_ti_end)
+        # * turn indices of the adjusted beginning and end of the _res
+        # dialogues
+        # initialize along the boundaries of game turns
+        dlg_res_src_abeg = [gturn_idc_beg[i] for i in dlg2gturn_beg]
+        dlg_res_src_aend = [gturn_idc_end[i] for i in dlg2gturn_end]
+
+        # 4. make dialogue boundaries coincide with game turn boundaries,
+        # which occasionally implies merging dialogues from _res
+
+        # * compute a partition on dialogues such that any pair of dialogues
+        # overlapping a given game turn are in the same class
+        dlg2grp = [0]
+        for i, (gturn_end_cur, gturn_beg_nxt) in enumerate(zip(
+                dlg2gturn_end[:-1], dlg2gturn_beg[1:])):
+            if gturn_beg_nxt <= gturn_end_cur:
+                # two _res dialogues overlap a single game turn:
+                # put in the same class (to merge dialogues)
+                dlg2grp.append(dlg2grp[-1])
+            else:
+                dlg2grp.append(dlg2grp[-1] + 1)
+
+        # keep one dialogue for each class of dialogues
+        for k, g in itertools.groupby(enumerate(dlg2grp),
+                                      key=lambda x: x[1]):
+            dlg_idc_merged = [x[0] for x in g]
+            # adjust boundaries of the first dialogue of the group
+            # index of first and last dialogues
+            di_beg = dlg_idc_merged[0]
+            di_end = dlg_idc_merged[-1]
+            # index of first and last turns of these dialogues
+            ti_beg = dlg_res_src_abeg[di_beg]
+            ti_end = dlg_res_src_aend[di_end]
+            # keep first dialogue, update its features to include those
+            # from the other dialogues in the same class
+            new_dlg = dlgs_res[di_beg]
+            new_dlg.span.char_start = turns_src_beg[ti_beg]
+            new_dlg.span.char_end = turns_src_end[ti_end]
+            dlgs_res_merged = [dlgs_res[i] for i in dlg_idc_merged]
+            for feat in ['Trades', 'Gets', 'Dice_rolling']:
+                new_dlg.features[feat] = _concatenate_features(
+                    dlgs_res_merged, feat)
+            # remove merged dialogues [1:] from doc_res
+            for i in dlg_idc_merged[1:]:
+                dlg_res = dlgs_res[i]
+                doc_res.units.remove(dlg_res)
+
+        # transfer each unmatched (non-overlapping) game turn as a dialogue
+        # (which already exists in doc_src)
+        gturns_matched = reduce(np.union1d,
+                                (np.arange(x_beg, x_end + 1)
+                                 for x_beg, x_end
+                                 in zip(dlg2gturn_beg, dlg2gturn_end)))
+        gturns_matched = set(gturns_matched)
+        # each dialogue in doc_src is a game turn
+        dlgs_src =  sorted((x for x in doc_src.units if is_dialogue(x)),
+                           key=lambda x: x.span)
+        # remove all source and target dialogues from updates
+        for dlg_res in dlgs_res:
+            if dlg_res in updates.abnormal_tgt_only:
+                updates.abnormal_tgt_only.remove(dlg_res)
+        for i, dlg_src in enumerate(dlgs_src):
+            if dlg_src in updates.abnormal_src_only:
+                updates.abnormal_src_only.remove(dlg_src)
+            if (i in gturns_matched
+                and dlg_src in updates.expected_src_only):
+                # remove matched source dialogues, leave the unmatched
+                # ones in expected_src_only, so that they are added later
+                # to the woven document
+                updates.expected_src_only.remove(dlg_src)
 
     return updates
 
