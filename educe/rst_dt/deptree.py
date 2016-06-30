@@ -10,6 +10,8 @@ Convert RST trees to dependency trees and back.
 
 import itertools
 
+import numpy as np
+
 from .annotation import EDU
 from ..internalutil import treenode
 
@@ -214,6 +216,35 @@ class RstDepTree(object):
     def set_origin(self, origin):
         """Update the origin of this annotation"""
         self.origin = origin
+
+    def spans(self):
+        """For each EDU, get the tree span it dominates (on EDUs).
+
+        Dominance here is recursively defined.
+
+        Returns
+        -------
+        span_beg: array of int
+            Index of the leftmost EDU dominated by an EDU.
+        span_end: array of int
+            Index of the rightmost EDU dominated by an EDU.
+        """
+        span_beg = np.array([i for i, e in enumerate(self.edus)])
+        span_end = np.array([i for i, e in enumerate(self.edus)])
+        while True:
+            span_new_beg = np.copy(span_beg)
+            span_new_end = np.copy(span_end)
+            for i, hd in enumerate(self.heads[1:], start=1):
+                span_new_beg[hd] = min(span_new_beg[i], span_new_beg[hd])
+                span_new_end[hd] = max(span_new_end[i], span_new_end[hd])
+            if (np.array_equal(span_new_beg, span_beg)
+                and np.array_equal(span_new_end, span_end)):
+                # fixpoint reached
+                break
+            # otherwise, we'll go for another round
+            span_beg = span_new_beg
+            span_end = span_new_end
+        return span_beg, span_end
 
     @classmethod
     def from_simple_rst_tree(cls, rtree):
