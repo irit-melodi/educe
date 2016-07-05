@@ -352,7 +352,7 @@ def report_on_corpus(corpus):
     edus = dfs['edu']
     dialogues = dfs['dialogue']
     # annotation
-    if 'rels' in dfs:
+    if 'rel' in dfs:
         rels = dfs['rel']
         disc_rels = rels[rels['stage'] == 'discourse']
     else:
