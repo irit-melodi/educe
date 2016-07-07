@@ -19,7 +19,7 @@ from educe.stac.util.args import\
      comma_span,
      get_output_dir, announce_output_dir)
 from educe.stac.util.doc import\
-    (compute_renames, move_portion, split_doc)
+    (compute_renames, evil_set_text, move_portion, split_doc)
 from educe.stac.util.output import save_document
 
 
@@ -125,6 +125,9 @@ def main(args):
                 renames, src_doc2, tgt_doc,
                 -1,  # src_split
                 tgt_split=0)
+            # the whitespace between new_src_doc and src_doc2 went to
+            # src_doc2, so we need to append a new whitespace to new_src_doc
+            evil_set_text(new_src_doc, new_src_doc.text() + ' ')
         else:
             raise ValueError("Sorry, can only move to the start or to the "
                              "end of a document at the moment")

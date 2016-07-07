@@ -220,9 +220,9 @@ def split_doc(doc, middle):
         Deep copy of `doc` restricted to span [middle:] ; the span of each
         annotation is shifted to match the new text.
     """
-    doc_len = doc.text_span().char_end
+    doc_len = len(doc.text())
     if middle < 0:
-        middle = doc_len + 1 + middle
+        middle = doc_len + middle
 
     def straddles(point, span):
         """
