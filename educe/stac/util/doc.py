@@ -9,7 +9,6 @@ to another
 
 from __future__ import print_function
 from collections import defaultdict
-from itertools import chain
 import copy
 
 from educe.annotation import Unit, Span
@@ -253,7 +252,9 @@ def split_doc(doc, middle):
 
     prefix = Span(0, middle)
     suffix = Span(middle, doc_len)
-    return narrow_to_span(doc, prefix), narrow_to_span(doc, suffix)
+    doc_prefix = narrow_to_span(doc, prefix)
+    doc_suffix = narrow_to_span(doc, suffix)
+    return doc_prefix, doc_suffix
 
 
 def rename_ids(renames, doc):
@@ -295,9 +296,10 @@ def rename_ids(renames, doc):
 def move_portion(renames, src_doc, tgt_doc,
                  src_split,
                  tgt_split=-1):
-    """
-    Return a copy of the documents such that part of the source
-    document has been moved into the target document.
+    """Move part of the source document into the target document.
+
+    This returns an updated copy of both the source and target
+    documents.
 
     This can capture a couple of patterns:
 
@@ -358,6 +360,7 @@ def move_portion(renames, src_doc, tgt_doc,
     if not src_text[0] == ' ':
         oops = "Source text does not start with a space\n" +\
                 snippet(src_text, 0)
+        raise StacDocException(oops)
     if not src_text[src_split] == ' ':
         oops = "Source text does not have a space at its split point\n" +\
                snippet(src_text, src_split)
