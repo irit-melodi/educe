@@ -9,7 +9,6 @@ to another
 
 from __future__ import print_function
 from collections import defaultdict
-from itertools import chain
 import copy
 
 from educe.annotation import Unit, Span
@@ -123,10 +122,9 @@ def shift_annotations(doc, offset, point=None):
 
     def shift(anno):
         "Shift a single annotation"
-        anno2 = copy.deepcopy(anno)
         if offset != 0 and isinstance(anno, Unit) and is_moveable(anno):
-            anno2.span = anno.span.shift(offset)
-        return anno2
+            anno.span = anno.span.shift(offset)
+        return anno
 
     if offset > 0:
         padding = " " * offset
@@ -134,11 +132,11 @@ def shift_annotations(doc, offset, point=None):
     else:
         start = 0 - offset
         txt2 = doc.text()[start:]
-    doc2 = copy.copy(doc)
+    doc2 = copy.deepcopy(doc)
     evil_set_text(doc2, txt2)
-    doc2.units = [shift(x) for x in doc.units]
-    doc2.schemas = [shift(x) for x in doc.schemas]
-    doc2.relations = [shift(x) for x in doc.relations]
+    doc2.units = [shift(x) for x in doc2.units]
+    doc2.schemas = [shift(x) for x in doc2.schemas]
+    doc2.relations = [shift(x) for x in doc2.relations]
     return doc2
 
 
@@ -184,15 +182,15 @@ def narrow_to_span(doc, span):
     annotations that are within the span specified by portion.
     """
     def slice_annos(annos):
-        "Return a copy of all annotations within a span"
-        return [copy.copy(anno) for anno in annos
-                if span.encloses(anno.text_span())]
+        "Select annotations within a span"
+        return [x for x in annos if span.encloses(x.text_span())]
 
     offset = 0 - span.char_start
-    doc2 = copy.copy(doc)
-    doc2.units = slice_annos(doc.units)
-    doc2.schemas = slice_annos(doc.schemas)
-    doc2.relations = slice_annos(doc.relations)
+    doc2 = copy.deepcopy(doc)
+    doc2.units = slice_annos(doc2.units)
+    doc2.schemas = slice_annos(doc2.schemas)
+    doc2.relations = slice_annos(doc2.relations)
+    # NB: shift_annotations() does a deepcopy too
     doc2 = shift_annotations(doc2, offset)
     evil_set_text(doc2, doc.text()[span.char_start:span.char_end])
     return doc2
@@ -222,9 +220,9 @@ def split_doc(doc, middle):
         Deep copy of `doc` restricted to span [middle:] ; the span of each
         annotation is shifted to match the new text.
     """
-    doc_len = doc.text_span().char_end
+    doc_len = len(doc.text())
     if middle < 0:
-        middle = doc_len + 1 + middle
+        middle = doc_len + middle
 
     def straddles(point, span):
         """
@@ -253,7 +251,9 @@ def split_doc(doc, middle):
 
     prefix = Span(0, middle)
     suffix = Span(middle, doc_len)
-    return narrow_to_span(doc, prefix), narrow_to_span(doc, suffix)
+    doc_prefix = narrow_to_span(doc, prefix)
+    doc_suffix = narrow_to_span(doc, suffix)
+    return doc_prefix, doc_suffix
 
 
 def rename_ids(renames, doc):
@@ -295,9 +295,10 @@ def rename_ids(renames, doc):
 def move_portion(renames, src_doc, tgt_doc,
                  src_split,
                  tgt_split=-1):
-    """
-    Return a copy of the documents such that part of the source
-    document has been moved into the target document.
+    """Move part of the source document into the target document.
+
+    This returns an updated copy of both the source and target
+    documents.
 
     This can capture a couple of patterns:
 
@@ -358,6 +359,7 @@ def move_portion(renames, src_doc, tgt_doc,
     if not src_text[0] == ' ':
         oops = "Source text does not start with a space\n" +\
                 snippet(src_text, 0)
+        raise StacDocException(oops)
     if not src_text[src_split] == ' ':
         oops = "Source text does not have a space at its split point\n" +\
                snippet(src_text, src_split)

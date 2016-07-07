@@ -19,7 +19,7 @@ from educe.stac.util.args import\
      comma_span,
      get_output_dir, announce_output_dir)
 from educe.stac.util.doc import\
-    (compute_renames, move_portion, split_doc)
+    (compute_renames, evil_set_text, move_portion, split_doc)
 from educe.stac.util.output import save_document
 
 
@@ -98,36 +98,48 @@ def main(args):
     tgt_corpus = read_target_corpus(args)
 
     renames = compute_renames(tgt_corpus, src_corpus)
-    for src_k in src_corpus:
+
+    for src_k, src_doc in src_corpus.items():
+        # retrieve target subdoc
         tgt_k = copy.copy(src_k)
         tgt_k.subdoc = args.target
         print(src_k, tgt_k, file=sys.stderr)
         if tgt_k not in tgt_corpus:
-            sys.exit("Uh-oh! we don't have %s in the corpus" % tgt_k)
+            raise ValueError("Uh-oh! we don't have %s in the corpus" % tgt_k)
+        tgt_doc = tgt_corpus[tgt_k]
+        # move portion from source to target subdoc
+        if start == 0:
+            # move up
+            new_src_doc, new_tgt_doc = move_portion(
+                renames, src_doc, tgt_doc,
+                end,  # src_split
+                tgt_split=-1)
+        elif end == src_doc.text_span().char_end:
+            # move down
+            # move_portion inserts src_doc[0:src_split] between
+            # tgt_doc[0:tgt_split] and tgt_doc[tgt_split:],
+            # so we detach src_doc[start:] into a temporary doc,
+            # then call move_portion on this temporary doc
+            new_src_doc, src_doc2 = split_doc(src_doc, start)
+            _, new_tgt_doc = move_portion(
+                renames, src_doc2, tgt_doc,
+                -1,  # src_split
+                tgt_split=0)
+            # the whitespace between new_src_doc and src_doc2 went to
+            # src_doc2, so we need to append a new whitespace to new_src_doc
+            evil_set_text(new_src_doc, new_src_doc.text() + ' ')
         else:
-            src_doc = src_corpus[src_k]
-            tgt_doc = tgt_corpus[tgt_k]
-            if start == 0:
-                new_src_doc, new_tgt_doc =\
-                    move_portion(renames, src_doc, tgt_doc,
-                                 src_split=end,
-                                 tgt_split=-1)
-            elif end == src_doc.text_span().char_end:
-                new_src_doc, src_doc2 = split_doc(src_doc, start)
-                _, new_tgt_doc =\
-                    move_portion(renames, src_doc2, tgt_doc,
-                                 src_split=-1,
-                                 tgt_split=0)
-            else:
-                sys.exit("Sorry, can only move to the start or to the "
-                         "end of a document at the moment")
-            diffs = ["======= TO %s   ========" % tgt_k,
-                     show_diff(tgt_doc, new_tgt_doc),
-                     "^------ FROM %s" % src_k,
-                     show_diff(src_doc, new_src_doc),
-                     ""]
-            print("\n".join(diffs), file=sys.stderr)
-            save_document(output_dir, src_k, new_src_doc)
-            save_document(output_dir, tgt_k, new_tgt_doc)
+            raise ValueError("Sorry, can only move to the start or to the "
+                             "end of a document at the moment")
+        # print diff for suggested commit message
+        diffs = ["======= TO %s   ========" % tgt_k,
+                 show_diff(tgt_doc, new_tgt_doc),
+                 "^------ FROM %s" % src_k,
+                 show_diff(src_doc, new_src_doc),
+                 ""]
+        print("\n".join(diffs), file=sys.stderr)
+        # dump the modified documents
+        save_document(output_dir, src_k, new_src_doc)
+        save_document(output_dir, tgt_k, new_tgt_doc)
 
     announce_output_dir(output_dir)
