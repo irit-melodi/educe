@@ -32,13 +32,11 @@ def fields_without(unwanted):
     return [x for x in FILEID_FIELDS if x not in unwanted]
 
 
-def add_corpus_filters(parser,
-                       fields=None,
-                       choice_fields=None):
+def add_corpus_filters(parser, fields=None, choice_fields=None):
     """
     For help with script-building:
 
-    Augment an argparer with options to filter a corpus on
+    Augment an argparser with options to filter a corpus on
     the various attributes in a 'educe.corpus.FileId'
     (eg, document, annotator).
 
@@ -67,8 +65,7 @@ def add_corpus_filters(parser,
             add(field, choices=None)
 
 
-def mk_is_interesting(args,
-                      preselected=None):
+def mk_is_interesting(args, preselected=None):
     """
     Return a function that when given a FileId returns 'True'
     if the FileId would be considered interesting according to
