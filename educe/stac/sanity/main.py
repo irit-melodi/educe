@@ -342,14 +342,31 @@ class SanityChecker(object):
 
 
 def easy_settings(args):
+    """Modify args to reflect user-friendly defaults.
+
+    Terminates the program if `args.corpus` is set but does not point to
+    an existing folder ; otherwise `args.doc` must be set and everything
+    else is expected to be empty.
+
+    Parameters
+    ----------
+    args : Namespace
+        Arguments of the argparser.
+
+    See also
+    --------
+    `educe.stac.util.args.check_easy_settings()`
     """
-    Modify args to reflect user-friendly defaults.
-    (args.doc must be set, everything else expected to be empty)
-    """
+    if args.corpus:
+        # 2017-01-25 explicitly break if there is no such folder
+        if not os.path.exists(args.corpus):
+            raise ValueError("No corpus directory {corpus}\n{hint}".format(
+                corpus=args.corpus))
+        # end explicitly break if no such folder
+        return  # not easy mode
 
     if not args.doc:
-        raise Exception("no document specified for easy mode")
-    args.output = fp.join("/tmp", "sanity-" + args.doc)
+        raise ValueError("no document specified for easy mode\n{hint}")
 
     # figure out where this thing lives
     for sdir in STAC_GLOBS:
@@ -357,16 +374,26 @@ def easy_settings(args):
             args.corpus = sdir
     if not args.corpus:
         if not any(fp.isdir(x) for x in STAC_GLOBS):
-            sys.exit("You don't appear in to be in the STAC root dir")
+            raise ValueError("You don't appear to be in the STAC root dir")
         else:
-            sys.exit("I don't know about any document called " + args.doc)
+            raise ValueError("I don't know about any document called "
+                             + args.doc)
+    # prepare info message for user
+    guess_report = "{corpus} --doc \"{doc}\""
 
+    # annotator
     args.annotator = METAL_STR
-    print("Guessing convenience settings:")
-    print("stac-check %(corpus)s\"\
- --doc \"%(doc)s\"\
- --annotator \"%(annotator)s\"\
- --output \"%(output)s\"" % args.__dict__)
+    guess_report += ' --annotator "{}"'.format(args.annotator)
+
+    # output
+    if not args.output:
+        # 2017-01-25 don't override output folder if it is given
+        args.output = fp.join("/tmp", "sanity-" + args.doc)
+    guess_report += ' --output "{}"'.format(args.output)
+
+    print("Guessing convenience settings:", file=sys.stderr)
+    print("stac-check " + guess_report.format(**args.__dict__),
+          file=sys.stderr)
 
 
 EASY_SETTINGS_HINT = "Try this: stac-check --doc pilot03"
@@ -388,14 +415,10 @@ def main():
                             help='Do not draw relations graph')
     educe.util.add_corpus_filters(arg_parser)
     args = arg_parser.parse_args()
-
-    if args.corpus and not fp.exists(args.corpus):
-        sys.exit(EASY_SETTINGS_HINT)
-    if not args.corpus:
-        if args.doc:
-            easy_settings(args)
-        else:
-            sys.exit(EASY_SETTINGS_HINT)
-
+    try:
+        easy_settings(args)
+    except ValueError as e:
+        err_msg = e.args[0]
+        sys.exit(err_msg.format(hint=EASY_SETTINGS_HINT))
     checker = SanityChecker(args)
     checker.run()

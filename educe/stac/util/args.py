@@ -26,15 +26,36 @@ STAC_GLOBS = frozenset([
 
 
 def check_easy_settings(args):
-    """
-    Modify args to reflect user-friendly defaults.
-    (args.doc must be set, everything else expected to be empty)
+    """Modify args to reflect user-friendly defaults.
+
+    Terminates the program if `args.corpus` is set but does not point to
+    an existing folder ; otherwise `args.doc` must be set and everything
+    else is expected to be empty.
+
+    Notes
+    -----
+    All callers for this function are in the `scripts` folder of the
+    educe repository: scripts/stac-{util,edit,oneoff}.
+
+    Parameters
+    ----------
+    args : Namespace
+        Arguments of the argparser.
+
+    See also
+    --------
+    `educe.stac.sanity.main.easy_settings()`
     """
     if args.corpus:
+        # 2017-01-25 explicitly break if there is no such folder
+        if not os.path.exists(args.corpus):
+            sys.exit("No corpus directory {corpus}".format(
+                corpus=args.corpus))
+        # end explicitly break if no such folder
         return  # not easy mode
 
     if not args.doc:
-        raise Exception("no document specified for easy mode")
+        raise ValueError("no document specified for easy mode")
 
     # figure out where this thing lives
     for sdir in STAC_GLOBS:
@@ -42,11 +63,13 @@ def check_easy_settings(args):
             args.corpus = sdir
     if not args.corpus:
         if not any(os.path.isdir(x) for x in STAC_GLOBS):
-            sys.exit("You don't appear in to be in the STAC root dir")
+            sys.exit("You don't appear to be in the STAC root dir")
         else:
             sys.exit("I don't know about any document called " + args.doc)
-
+    # prepare info message for user
     guess_report = "{corpus} --doc \"{doc}\""
+
+    # annotator
     want_unanno = ('stage' in args.__dict__ and
                    args.stage is not None and
                    'unannotated'.startswith(args.stage))
@@ -60,9 +83,7 @@ def check_easy_settings(args):
     print(guess_report.format(**args.__dict__), file=sys.stderr)
 
 
-def read_corpus(args,
-                preselected=None,
-                verbose=True):
+def read_corpus(args, preselected=None, verbose=True):
     """
     Read the section of the corpus specified in the command line arguments.
     """
@@ -134,25 +155,25 @@ def add_commit_args(parser):
                         help='Skip commit message summary')
 
 
-def add_usual_input_args(parser,
-                         doc_subdoc_required=False,
-                         help_suffix=None):
-    """
-    Augment a subcommand argparser with typical input arguments.
-    Sometimes your subcommand may require slightly different output
+def add_usual_input_args(parser, doc_subdoc_required=False, help_suffix=None):
+    """Augment a subcommand argparser with typical input arguments.
+    Sometimes your subcommand may require slightly different input
     arguments, in which case, just don't call this function.
 
     Parameters
     ----------
-    doc_subdoc_required (bool)
+    parser : ArgumentParser
+        Argument parser.
+
+    doc_subdoc_required : bool, defaults to False
         force user to supply --doc/--subdoc
         for this subcommand (note you'll need to add stage/anno
         yourself)
-    help_suffix (string)
+
+    help_suffix : string, defaults to None
         appended to --doc/--subdoc help strings
     """
-    parser.add_argument('corpus', metavar='DIR',
-                        nargs='?',
+    parser.add_argument('corpus', metavar='DIR', nargs='?',
                         help='corpus dir')
     if doc_subdoc_required:
         doc_help = 'document'
