@@ -5,8 +5,6 @@ Right frontier constraint and its variants
 import collections
 import itertools as itr
 
-from six.moves import zip
-
 from educe import stac
 from educe.stac.context import Context
 from .annotation import (is_subordinating)
@@ -18,7 +16,8 @@ def powerset(iterable):
     "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
     s = list(iterable)
     return (itr.chain.from_iterable(itr.combinations(s, r)
-        for r in range(len(s)+1)))
+                                    for r in range(len(s) + 1)))
+
 
 def speakers(contexts, anno):
     """ Returns the speakers for given annotation unit
@@ -150,13 +149,13 @@ class BasicRfc(object):
 
         violations = list()
         for i, new_node in enumerate(nodes):
-            last_node = nodes[i-1] if i>0 else None
+            last_node = nodes[i-1] if i > 0 else None
             for lnk in graph.links(new_node):
                 if not self._is_incoming_to(new_node, lnk):
                     continue
                 src_node, _ = graph.rel_links(lnk)
-                if (last_node is None
-                    or not self._is_on_frontier(last_node, src_node)):
+                if ((last_node is None
+                     or not self._is_on_frontier(last_node, src_node))):
                     violations.append(lnk)
 
         return violations
@@ -180,7 +179,7 @@ class ThreadedRfc(BasicRfc):
         nodes = self._nodes
         contexts = Context.for_edus(self._graph.doc)
         doc_speakers = frozenset(ctx.speaker()
-            for ctx in contexts.values())
+                                 for ctx in contexts.values())
 
         current_last = dict()
         last_nodes = dict()
@@ -190,8 +189,8 @@ class ThreadedRfc(BasicRfc):
                 current_last[speaker] = node
 
             last_nodes[node] = frozenset(current_last[speaker]
-                for speaker in doc_speakers
-                if speaker in current_last)
+                                         for speaker in doc_speakers
+                                         if speaker in current_last)
 
         return last_nodes
 

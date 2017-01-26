@@ -575,9 +575,9 @@ def game_turns(doc, turns, gen=2):
                 ' : ', 2)
 
         # if a player just won the game, split here
-        if (i > 0
-            and emit_prev == 'Server'
-            and "has won the game" in txt_prev):
+        if ((i > 0
+             and emit_prev == 'Server'
+             and "has won the game" in txt_prev)):
             # group subsequent messages as a new turn
             gturn_beg.append(i)
         elif emit_cur == 'Server':
