@@ -88,8 +88,8 @@ def align_edus_with_paragraphs(doc_edus, doc_paras, text, strict=False):
         # sloppy EDU: try shaving off some characters
         para_lmost = edu2para_begs[edu_idx]
         para_rmost = edu2para_ends[edu_idx]
-        if (edu_begs[edu_idx] == para_begs[para_lmost]
-            and edu_ends[edu_idx] == para_ends[para_rmost]):
+        if ((edu_begs[edu_idx] == para_begs[para_lmost] and
+             edu_ends[edu_idx] == para_ends[para_rmost])):
             # FIXME change implementation to properly handle EDUs
             # that enclose or overlap >1 paragraph ; this happens
             # for e.g. titles: wsj_1373, wsj_2366

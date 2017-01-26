@@ -8,14 +8,9 @@ Dump text stored in RST trees
 from __future__ import print_function
 import os
 
-import educe.rst_dt
-from educe.rst_dt import deptree
-
 from ..args import\
     add_usual_input_args, add_usual_output_args,\
     read_corpus, get_output_dir, announce_output_dir
-from .reltypes import\
-    empty_counts, walk_and_count
 
 NAME = 'text'
 

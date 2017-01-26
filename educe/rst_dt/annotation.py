@@ -11,8 +11,14 @@
 Educe-style representation for RST discourse treebank trees
 """
 
+import base64
 import copy
 import functools
+import os
+import subprocess
+import tempfile
+
+from nltk.internals import find_binary
 
 from educe.annotation import Standoff, Span
 from educe.external.parser import SearchableTree
@@ -286,19 +292,16 @@ class RSTTree(SearchableTree, Standoff):
         PNG is used instead of PDF, since it can be displayed in the qt
         console and has wider browser support.
         """
-        import os
-        import base64
-        import subprocess
-        import tempfile
-        from nltk.internals import find_binary
-        with tempfile.NamedTemporaryFile() as file:
-            in_path = '{0:}.ps'.format(file.name)
-            out_path = '{0:}.png'.format(file.name)
+        with tempfile.NamedTemporaryFile() as f_tmp:
+            in_path = '{0:}.ps'.format(f_tmp.name)
+            out_path = '{0:}.png'.format(f_tmp.name)
             # generate PostScript using the drawing utils of NLTK
             self.to_ps(in_path)
             # convert to PNG with ghostscript
             subprocess.call(
-                [find_binary('gs', binary_names=['gswin32c.exe', 'gswin64c.exe'], env_vars=['PATH'], verbose=False)] +
+                [find_binary('gs',
+                             binary_names=['gswin32c.exe', 'gswin64c.exe'],
+                             env_vars=['PATH'], verbose=False)] +
                 '-q -dEPSCrop {2:} -dSAFER -dBATCH -dNOPAUSE -sOutputFile={0:} {1:}'
                 .format(out_path, in_path, _GS_PARAMS['png']).split())
             # this function will return the encoded+decoded bytes of the PNG
@@ -336,18 +339,15 @@ class RSTTree(SearchableTree, Standoff):
     def to_pdf(self, filename):
         """Image representation in PDF.
         """
-        import os
-        import base64
-        import subprocess
-        import tempfile
-        from nltk.internals import find_binary
         # generate PostScript using the drawing utils of NLTK
         root, ext = os.path.splitext(filename)
         in_path = '{0:}.ps'.format(root)
         self.to_ps(in_path)
         # convert to PDF with ghostscript
         subprocess.call(
-            [find_binary('gs', binary_names=['gswin32c.exe', 'gswin64c.exe'], env_vars=['PATH'], verbose=False)] +
+            [find_binary('gs',
+                         binary_names=['gswin32c.exe', 'gswin64c.exe'],
+                         env_vars=['PATH'], verbose=False)] +
             '-q -dEPSCrop {2:} -dSAFER -dBATCH -dNOPAUSE -sOutputFile={0:} {1:}'
             .format(filename, in_path, _GS_PARAMS['pdf']).split())
         os.remove(in_path)
@@ -507,11 +507,11 @@ class SimpleRSTTree(SearchableTree, Standoff):
             node.rel = rel
             return RSTTree(node, tree, tree.origin)
         else:
-            left = tree[0]
-            right = tree[1]
+            # left = tree[0]
+            # right = tree[1]
             node = copy.copy(treenode(tree))
-            lnode = treenode(left)
-            rnode = treenode(right)
+            # lnode = treenode(left)
+            # rnode = treenode(right)
             # standard RST trees mark relations on the satellite
             # child (mononuclear relations) or on each nucleus
             # child (multinuclear relations)
@@ -560,7 +560,7 @@ def is_binary(tree):
     elif len(tree) > 2:
         return False
     else:
-        return all(map(is_binary, tree))
+        return all(is_binary(x) for x in tree)
 
 
 def _binarize(tree):
@@ -589,7 +589,7 @@ def _binarize(tree):
         raise RSTTreeException("Ill-formed RST tree? Unary non-terminal: " +
                                str(tree))
     elif len(tree) <= 2:
-        return RSTTree(treenode(tree), list(map(_binarize, tree)),
+        return RSTTree(treenode(tree), [_binarize(x) for x in tree],
                        origin=tree.origin)
     else:
         # convenient string representation of what the children look like

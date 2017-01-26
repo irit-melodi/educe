@@ -18,7 +18,6 @@ References
 from __future__ import print_function
 
 import argparse
-from collections import defaultdict
 import itertools
 import os
 import sys

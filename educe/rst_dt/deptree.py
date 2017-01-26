@@ -196,7 +196,7 @@ class RstDepTree(object):
         self.labels[_idx_root] = _lbl_root
         self.nucs[_idx_root] = DEFAULT_NUC
         # calculate rank (for a unique root, should always be 0)
-        sisters = [i for i, hd in  enumerate(self.heads)
+        sisters = [i for i, hd in enumerate(self.heads)
                    if hd == _idx_fake_root]
         rank = max(self.ranks[i] for i in sisters) + 1
         self.ranks[_idx_root] = rank
@@ -237,8 +237,8 @@ class RstDepTree(object):
             for i, hd in enumerate(self.heads[1:], start=1):
                 span_new_beg[hd] = min(span_new_beg[i], span_new_beg[hd])
                 span_new_end[hd] = max(span_new_end[i], span_new_end[hd])
-            if (np.array_equal(span_new_beg, span_beg)
-                and np.array_equal(span_new_end, span_end)):
+            if ((np.array_equal(span_new_beg, span_beg) and
+                 np.array_equal(span_new_end, span_end))):
                 # fixpoint reached
                 break
             # otherwise, we'll go for another round

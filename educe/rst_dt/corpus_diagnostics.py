@@ -5,32 +5,27 @@
 from __future__ import print_function
 
 from collections import Counter
+import itertools
 import os
 
+from nltk import Tree
+from nltk.corpus.reader import BracketParseCorpusReader
 import pandas as pd
 
-from educe.internalutil import treenode
+from educe.annotation import Span
+from educe.external.parser import ConstituencyTree
+from educe.internalutil import izip, treenode
+from educe.ptb.annotation import (prune_tree, is_non_empty, transform_tree,
+                                  strip_subcategory)
+from educe.ptb.head_finder import find_lexical_heads
 from educe.rst_dt.annotation import (RSTTree, _binarize)
 from educe.rst_dt.corpus import (Reader as RstReader,
                                  RstRelationConverter,
                                  RELMAP_112_18_FILE)
-# imports for dirty stuff (mostly)
-import itertools
-
-from nltk import Tree
-from nltk.corpus.reader import BracketParseCorpusReader
-
-from educe.annotation import Span
-from educe.external.parser import ConstituencyTree
-from educe.internalutil import izip
 from educe.rst_dt.document_plus import align_edus_with_paragraphs
 from educe.rst_dt.ptb import (_guess_ptb_name, _tweak_token,
                               is_empty_category, generic_token_spans,
                               _mk_token, align_edus_with_sentences)
-from educe.ptb.annotation import (prune_tree, is_non_empty, transform_tree,
-                                  strip_subcategory)
-from educe.ptb.head_finder import find_lexical_heads
-# end imports for dirty stuff
 
 
 # RST corpus
@@ -44,6 +39,14 @@ CD_TRAIN = os.path.join(CORPUS_DIR, 'TRAINING')
 CD_TEST = os.path.join(CORPUS_DIR, 'TEST')
 # relation converter (fine- to coarse-grained labels)
 REL_CONV = RstRelationConverter(RELMAP_112_18_FILE).convert_tree
+
+
+def is_internal_node(node):
+    """Return True iff the node is an internal node of an RSTTree
+
+    Maybe this function should be moved to `educe.rst_dt.annotation`.
+    """
+    return isinstance(node, RSTTree) and len(node) > 1
 
 
 def load_corpus_as_dataframe(selection='train'):
@@ -75,8 +78,7 @@ def load_corpus_as_dataframe(selection='train'):
         coarse_rtree_ref = REL_CONV(rtree_ref)
         # store "same-unit" subtrees
         heterogeneous_nodes = []
-        internal_nodes = lambda t: isinstance(t, RSTTree) and len(t) > 1
-        for su_subtree in coarse_rtree_ref.subtrees(filter=internal_nodes):
+        for su_subtree in coarse_rtree_ref.subtrees(filter=is_internal_node):
             # get each kid's relation
             kid_rels = tuple(treenode(kid).rel for kid in su_subtree)
             # filter out nodes whose kids have different relations
@@ -112,9 +114,9 @@ def load_corpus_as_dataframe(selection='train'):
     df = pd.DataFrame(rst_phrases)
     # add calculated columns
     # * "undirected" nuclearity, e.g. NS == SN
-    df['unuc_sig'] = map(lambda nuc_sig: ('NS' if nuc_sig in ['NS', 'SN']
-                                          else 'NN'),
-                         df.nuc_sig)
+    df['unuc_sig'] = df['nuc_sig'].map(
+        lambda nuc_sig: ('NS' if nuc_sig in ['NS', 'SN']
+                         else 'NN'))
     return df
 
 
@@ -500,9 +502,11 @@ def load_corpus_as_dataframe_new(selection='train', binarize=False,
                  row['sent_end'] is not None)):
                 row['sent_len'] = row['sent_end'] - row['sent_start'] + 1
                 row['intra_sent'] = (row['sent_start'] == row['sent_end'])
-                row['strad_sent'] = (not row['intra_sent'] and
-                                     (not row['edu_start'] in sent_edu_starts or
-                                      not row['edu_end'] in sent_edu_ends))
+                row['strad_sent'] = (
+                    not row['intra_sent'] and
+                    (not row['edu_start'] in sent_edu_starts or
+                     not row['edu_end'] in sent_edu_ends)
+                )
             else:
                 row['sent_len'] = None
                 row['intra_sent'] = None
@@ -754,9 +758,9 @@ def load_corpus_as_dataframe_new(selection='train', binarize=False,
                                 'parent_para_len': (
                                     edu2para[parent_span[1] - 1] -
                                     edu2para[parent_span[0] - 1] + 1),
-                                # distance between the current paragraph and the
-                                # most remote paragraph covered by the parent
-                                # span, in paragraphs
+                                # distance between the current paragraph and
+                                # the most remote paragraph covered by the
+                                # parent span, in paragraphs
                                 'parent_para_dist': (
                                     max([(edu2para[parent_span[1] - 1] -
                                           para_idx),
@@ -816,8 +820,10 @@ def gather_leaky_stats():
     paras_train = paras_train.fillna(value={'leaky': False})
     # exclude 'fileX' documents
     if False:
-        sents_train = sents_train[~sents_train['sent_id'].str.startswith('file')]
-        paras_train = paras_train[~paras_train['para_id'].str.startswith('file')]
+        sents_train = sents_train[~sents_train['sent_id'].str
+                                  .startswith('file')]
+        paras_train = paras_train[~paras_train['para_id'].str
+                                  .startswith('file')]
 
     # SENTENCES
     # complex sentences
@@ -864,21 +870,28 @@ def gather_leaky_stats():
     if False:
         print(leaky_sents['parent_sent_len'].value_counts())
     # taxonomy of leaky sentences
-    print(complex_sents.groupby('leaky_type')['edu_len'].describe().unstack())
-    print(complex_sents.groupby('edu_len')['leaky_type'].value_counts(normalize=False).unstack())  # absolute value counts
-    print(complex_sents.groupby('edu_len')['leaky_type'].value_counts(normalize=True).unstack())  # normalized value counts
-
+    print(complex_sents.groupby('leaky_type')['edu_len']
+          .describe().unstack())
+    print(complex_sents.groupby('edu_len')['leaky_type']
+          .value_counts(normalize=False).unstack())  # absolute value counts
+    print(complex_sents.groupby('edu_len')['leaky_type']
+          .value_counts(normalize=True).unstack())  # normalized value counts
 
     # WIP straddling relations
     strad_rels_df = pd.DataFrame(strad_rels_rows)
     print()
     print(strad_rels_df['sent_id'].describe()['count'])
-    print(strad_rels_df.groupby(['kid_rels']).describe()['sent_id'].unstack().sort_values('count', ascending=False))
+    print(strad_rels_df.groupby(['kid_rels']).describe()['sent_id']
+          .unstack().sort_values('count', ascending=False))
     # compare to distribution of intra/inter relations
     print()
-    print(rels_train[rels_train['edu_len'] > 1].groupby(['intra_sent', 'strad_sent'])['kid_rels'].value_counts(normalize=False))
+    print(rels_train[rels_train['edu_len'] > 1]
+          .groupby(['intra_sent', 'strad_sent'])['kid_rels']
+          .value_counts(normalize=False))
     print()
-    print(rels_train[rels_train['edu_len'] > 1].groupby(['intra_sent', 'strad_sent'])['kid_rels'].value_counts(normalize=True))
+    print(rels_train[rels_train['edu_len'] > 1]
+          .groupby(['intra_sent', 'strad_sent'])['kid_rels']
+          .value_counts(normalize=True))
     print()
     # mismatches between strad_rels and rels_train['strad_sent']
     # strad_rels has 2 duplicate entries for spans that straddle part
@@ -887,7 +900,8 @@ def gather_leaky_stats():
     nodes_rels_train = rels_train[rels_train['strad_sent']]['node_id']
     nodes_strad_rels = strad_rels_df['node_id']
     print([rels_train[rels_train['node_id'] == node_id]
-           for node_id in Counter(nodes_strad_rels.values) - Counter(nodes_rels_train.values)])
+           for node_id in (Counter(nodes_strad_rels.values) -
+                           Counter(nodes_rels_train.values))])
 
     # PARAGRAPHS
     if False:
@@ -914,15 +928,18 @@ def gather_leaky_stats():
 
         # compare leaky with non-leaky complex paragraphss: EDU length
         print('EDU span length of leaky vs non-leaky complex paragraphs')
-        print(complex_paras.groupby('leaky')['edu_span_len'].describe().unstack())
+        print(complex_paras.groupby('leaky')['edu_span_len'].describe()
+              .unstack())
         print()
 
-        # for each leaky paragraph, number of paragraphs included in the smallest
-        # RST node that fully covers the leaky paragraph
+        # for each leaky paragraph, number of paragraphs included in the
+        # smallest RST node that fully covers the leaky paragraph
         if False:
-            print(leaky_paras[['parent_span_para_len', 'parent_span_para_dist']].describe(
-                percentiles=[.1, .2, .3, .4, .5, .6, .7, .8, .9]))
-            print(leaky_paras[(leaky_paras['parent_span_para_dist'] == 1)].describe())
+            print(leaky_paras[['parent_span_para_len', 'parent_span_para_dist']]
+                  .describe(
+                      percentiles=[.1, .2, .3, .4, .5, .6, .7, .8, .9]))
+            print(leaky_paras[(leaky_paras['parent_span_para_dist'] == 1)]
+                  .describe())
             print(leaky_paras[(leaky_paras['parent_span_para_dist'] == 1) &
                               (leaky_paras['parent_span_para_len'] > 2)])
             #

@@ -44,6 +44,40 @@ def _guess_corenlp_name(k):
     return corenlp_out_file
 
 
+def tok_lid(sid):
+    """Get the local id of a token, given its global id.
+
+    Parameters
+    ----------
+    sid : string
+        Sentence id
+
+    Returns
+    -------
+    tok_lid_fun : function(string) -> int
+        Function that returns the local id of the token given its
+        global id.
+    """
+    return lambda gid: int(gid[len(sid) + 1:])
+
+
+def tok_gid(sid):
+    """Get the global id of a token, given its local id.
+
+    Parameters
+    ----------
+    sid : string
+        Sentence id
+
+    Returns
+    -------
+    tok_gid_fun : function(int) -> string
+        Function that returns the global id of the token given its
+        local id.
+    """
+    return lambda lid: sid + '-' + str(lid)
+
+
 def read_corenlp_result(doc, corenlp_doc):
     """Read CoreNLP's output for a document.
 
@@ -89,8 +123,8 @@ def read_corenlp_result(doc, corenlp_doc):
     for sent in sentences:
         sid = sent['id']
         tokens_dict = educe_tokens[sid]
-        # NEW extract local id to properly sort tokens
-        tok_local_id = lambda x: int(x[len(sid) + 1:])
+        # sort tokens by their (integer) local id
+        tok_local_id = tok_lid(sid)
         sorted_tokens = [tokens_dict[x]
                          for x in sorted(tokens_dict, key=tok_local_id)]
         # ctree
@@ -121,13 +155,13 @@ def read_corenlp_result(doc, corenlp_doc):
         mentions = []
         for mntn in chain:
             sid = mntn['sentence']
-            # helper functions to extract local ids and generate global ids
-            local_id = lambda x: int(x[len(sid) + 1:])
-            global_id = lambda x: sid + '-' + str(x)
+            # helper functions to map from/to local and global ids
+            tok_local_id = tok_lid(sid)
+            tok_global_id = tok_gid(sid)
             # retrieve tokens for this mention
-            start = local_id(mntn['start'])
-            end = local_id(mntn['end'])
-            tokens = [educe_tokens[sid][global_id(tok_idx)]
+            start = tok_local_id(mntn['start'])
+            end = tok_local_id(mntn['end'])
+            tokens = [educe_tokens[sid][tok_global_id(tok_idx)]
                       for tok_idx in range(start, end)]
             head = educe_tokens[sid][mntn['head']]
             mentions.append(Mention(tokens, head,
