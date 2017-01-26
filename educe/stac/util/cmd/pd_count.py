@@ -41,13 +41,16 @@ def rel_feats(doc, ctx, anno, debug=False):
 
     Parameters
     ----------
-    doc:
-    ctx:
-    anno:
+    doc : GlozzDocument
+        Surrounding document
+
+    ctx :
+
+    anno :
 
     Returns
     -------
-    res: dict
+    res : dict(string, string?)
         Features for this relation
     """
     # get all EDUs from document, sorted by their span
@@ -165,7 +168,25 @@ def dlg_feats(anno):
 
 
 def edu_feats(doc, ctx, anno):
-    """Get EDU features."""
+    """Get EDU features.
+
+    Parameters
+    ----------
+    doc : GlozzDocument
+        Currently unused ; possibly there for compatibility with an
+        attempted wider API (?).
+
+    ctx : ?
+        Some notion of context?
+
+    anno : Unit
+        An EDU, as an annotation.
+
+    Returns
+    -------
+    res : dict(string, string?)
+        Features for this EDU.
+    """
     span_char_len = anno.span.char_end - anno.span.char_start
     turn = ctx[anno].turn.identifier()
     tstar = ctx[anno].tstar.identifier()
@@ -328,7 +349,6 @@ def create_dfs(corpus):
                 # raise ValueError(err_msg)
                 print('W: {}'.format(err_msg))
                 continue
-
 
     res = {anno_type: pd.DataFrame(data=row_list)
            for anno_type, row_list in rows.items()
@@ -501,12 +521,14 @@ def report_on_corpus(corpus):
 
         # additional tables
         print('Relation length (in EDUs)')
-        rel_edist = disc_rels.groupby('type')['edu_dist'].describe().unstack()
+        rel_edist = (disc_rels.groupby('type')['edu_dist'].describe()
+                     .unstack())
         print(rel_edist.sort_values(by='count', ascending=False))
         print()
 
         print('Relation length (in Turn-stars)')
-        rel_tdist = disc_rels.groupby('type')['tstar_dist'].describe().unstack()
+        rel_tdist = (disc_rels.groupby('type')['tstar_dist'].describe()
+                     .unstack())
         print(rel_tdist.sort_values(by='count', ascending=False))
         print()
 

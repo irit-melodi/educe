@@ -28,6 +28,7 @@ from educe.stac.util.output import save_document
 
 _AUTHOR = 'stacutil'
 
+
 def _mini_diff(k, args, old_doc, new_doc, span):
     """
     Return lines of text to be printed out, showing how the nudge

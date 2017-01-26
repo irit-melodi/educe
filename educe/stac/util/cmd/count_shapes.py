@@ -23,6 +23,7 @@ def _outgoing(gra, node):
     return [e for e in gra.links(node)
             if gra.is_relation(e) and gra.rel_links(e)[0] == node]
 
+
 def _maybe_lozenge(gra, node):
     """Return (if applicable) lozenge nodes/edges starting from the given node
 

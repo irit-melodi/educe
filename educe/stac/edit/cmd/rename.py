@@ -22,7 +22,7 @@ def _has_named_annotation(target, doc):
     Return True if the given document has the target annotation
     """
     return any(anno_id_to_tuple(x.local_id()) == target
-               for x in  doc.annotations())
+               for x in doc.annotations())
 
 
 def _get_target(args, source, corpus):
