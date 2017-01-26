@@ -21,10 +21,10 @@ from educe.stac.util.doc import\
     compute_renames, move_portion
 from .move import is_requested
 
+
 # ---------------------------------------------------------------------
 # command and options
 # ---------------------------------------------------------------------
-
 def config_argparser(parser):
     """
     Subcommand flags.

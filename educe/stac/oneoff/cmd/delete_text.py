@@ -8,7 +8,6 @@ import sys
 
 from educe.annotation import Span, Unit
 import educe.stac
-from educe.stac.annotation import is_turn
 from educe.stac.edit.cmd.move import is_requested
 from educe.stac.util.annotate import annotate_doc, show_diff
 from educe.stac.util.args import (add_commit_args,

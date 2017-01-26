@@ -18,6 +18,6 @@ def prettify(elem, indent=""):
     return reparsed.toprettyxml(indent=indent)
 
 if __name__ == '__main__':
-    tree = ElementTree.parse(sys.argv[1])
-    root = tree.getroot()
-    print(prettify(root))
+    TREE = ElementTree.parse(sys.argv[1])
+    ROOT = TREE.getroot()
+    print(prettify(ROOT))

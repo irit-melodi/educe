@@ -8,7 +8,6 @@ import sys
 
 from educe.annotation import Span, Unit
 import educe.stac
-from educe.stac.annotation import is_turn
 from educe.stac.edit.cmd.move import is_requested
 from educe.stac.util.annotate import annotate_doc, show_diff
 from educe.stac.util.args import (add_commit_args,
@@ -50,7 +49,7 @@ def replace_text_at_span(doc, span, sub_text, minor=True):
         anno2 = copy.deepcopy(anno)
         if not isinstance(anno, Unit):
             return anno2
-        
+
         offset = (len(text_new) -
                   (span_old.char_end - span_old.char_start))
 
@@ -69,8 +68,8 @@ def replace_text_at_span(doc, span, sub_text, minor=True):
     # compute text update
     old_txt = doc.text()
     new_txt = old_txt[:span.char_start] + sub_text + old_txt[span.char_end:]
-    offset = len(new_txt) - len(old_txt)
-    point = span.char_end
+    # offset = len(new_txt) - len(old_txt)
+    # point = span.char_end
     # create a copy of the doc
     doc2 = copy.copy(doc)
     evil_set_text(doc2, new_txt)

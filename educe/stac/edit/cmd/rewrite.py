@@ -36,7 +36,7 @@ def _diff_friendly(annos):
     requested, but in order for that to work we have to to eliminate spurious
     diffs that would obscure the interesting bits.
     """
-    return sorted_first_widest(_sans_modified_by(x) for x in  annos)
+    return sorted_first_widest(_sans_modified_by(x) for x in annos)
 
 # ---------------------------------------------------------------------
 # command and args

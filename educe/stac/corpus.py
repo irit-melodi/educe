@@ -135,7 +135,6 @@ def id_to_path(k):
         raise Exception("FileId.annotator must be set for "
                         "unit/discourse items")
     pathparts.append(root)
-    # pylint:disable=W0142
     # Is there a better way to express this?
     return os.path.join(*pathparts)
 

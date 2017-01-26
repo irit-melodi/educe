@@ -49,7 +49,7 @@ def _maybe_warn(warning, doc, annos):
     if annos:
         oops = u"WARNING: " + warning + u":\n"
         oops += u"\n".join([u"    {}".format(_preview_anno(doc, x))
-                           for x in annos])
+                            for x in annos])
         # explicitly encoding to UTF-8 is not a great solution, but heh
         # see http://stackoverflow.com/a/4546129
         print(oops.encode('utf-8'), file=sys.stderr)
@@ -72,7 +72,7 @@ def _weave_docs(renames, src_doc, tgt_doc, gen):
         b=tgt_text,
         autojunk=False)
     matches = matcher.get_matching_blocks()
-    
+
     try:  # DEBUG
         check_matches(tgt_doc, matches)  # non-DEBUG
     except educe.stac.oneoff.weave.WeaveException:
