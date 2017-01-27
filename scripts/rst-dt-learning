@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# pylint: disable=invalid-name
+# We have a script here, not a module, so it's ok to have
+# a funny name
+# pylint: enable=invalid-name
+
 # Author: Eric Kow
 # License: CeCILL (French BSD3-like)
 
