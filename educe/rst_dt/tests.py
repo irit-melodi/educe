@@ -72,7 +72,7 @@ TEXT1 = " ".join(
       "on page 87),"),
 
      "and even condition certain types of paneling before installation. "
- ])
+])
 
 
 # ---------------------------------------------------------------------

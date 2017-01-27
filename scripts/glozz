@@ -7,6 +7,8 @@
 """
 Swiss-army-knife for working with glozz files
 """
+from __future__ import print_function
+
 import argparse
 import copy
 import os
@@ -56,29 +58,29 @@ def dump(filename, doc):
                    "{anno} | {text}".format(anno=x,
                                             text=schema_text(doc, x)))
     lines = (['############### %s units' % filename] +
-             list(map(show_unit, doc.units)) +
+             [show_unit(x) for x in doc.units] +
              ['############### %s relations' % filename] +
-             list(map(str, doc.relations)) +
+             [str(x) for x in doc.relations] +
              ['############### %s schema' % filename] +
-             list(map(show_schema, doc.schemas)))
+             [show_schema(x) for x in doc.schemas])
 
     return "\n".join(lines)
 
 
 def main_dump(args):
-    for file in args.files:
-        ac_file = seek_ac_file(file)
-        doc = read_annotation_file(file, ac_file)
-        print dump(file, doc).encode('utf-8')
-        print ""
+    for arg_file in args.files:
+        ac_file = seek_ac_file(arg_file)
+        doc = read_annotation_file(arg_file, ac_file)
+        print(dump(arg_file, doc).encode('utf-8'))
+        print("")
 
 
 # ---------------------------------------------------------------------
 # shift
 # ---------------------------------------------------------------------
-def shift_glozz_file(file, start, offset):
-    ac_file = seek_ac_file(file)
-    doc = read_annotation_file(file, ac_file)
+def shift_glozz_file(filename, start, offset):
+    ac_file = seek_ac_file(filename)
+    doc = read_annotation_file(filename, ac_file)
 
     def shift(x):
         if isinstance(x, Unit):
@@ -91,13 +93,13 @@ def shift_glozz_file(file, start, offset):
         else:
             return x
 
-    def slice(xs):
-        return list(map(shift, xs))
+    def shift_slice(xs):
+        return [shift(x) for x in xs]
 
     doc2 = copy.copy(doc)
-    doc2.units = slice(doc.units)
-    doc2.schemas = slice(doc.schemas)
-    doc2.relations = slice(doc.relations)
+    doc2.units = shift_slice(doc.units)
+    doc2.schemas = shift_slice(doc.schemas)
+    doc2.relations = shift_slice(doc.relations)
     return doc2
 
 
@@ -119,9 +121,9 @@ def main_shift(args):
 # ---------------------------------------------------------------------
 # cut
 # ---------------------------------------------------------------------
-def cut_glozz_file(file, span, offset=0):
-    ac_file = seek_ac_file(file)
-    doc = read_annotation_file(file, ac_file)
+def cut_glozz_file(filename, span, offset=0):
+    ac_file = seek_ac_file(filename)
+    doc = read_annotation_file(filename, ac_file)
 
     def shift(x):
         if offset != 0 and isinstance(x, Unit):
@@ -131,23 +133,14 @@ def cut_glozz_file(file, span, offset=0):
         else:
             return x
 
-    def slice(xs):
+    def shift_slice(xs):
         return [shift(x) for x in xs if span.encloses(x.text_span())]
 
     doc2 = copy.copy(doc)
-    doc2.units = slice(doc.units)
-    doc2.schemas = slice(doc.schemas)
-    doc2.relations = slice(doc.relations)
+    doc2.units = shift_slice(doc.units)
+    doc2.schemas = shift_slice(doc.schemas)
+    doc2.relations = shift_slice(doc.relations)
     return doc2
-
-
-def glozz_write_settings(args):
-    if args.format == 'stac-unannotated':
-        return stac_unannotated_output_settings
-    elif args.format == 'stac':
-        return stac_output_settings
-    else:
-        return DEFAULT_OUTPUT_SETTINGS
 
 
 def main_cut(args):
@@ -172,10 +165,10 @@ class NormSettings(object):
         self.start = start
 
 
-default_settings = NormSettings('count', 1)
+DEFAULT_SETTINGS = NormSettings('count', 1)
 
 
-def mk_new_dates(dates, settings=default_settings):
+def mk_new_dates(dates, settings=DEFAULT_SETTINGS):
     start = settings.start
     unique_dates = nub(dates)
 
@@ -239,7 +232,7 @@ def main_normalise(args):
 # ---------------------------------------------------------------------
 def main_hashcode(args):
     with open(args.input, 'rb') as f:
-        print hashcode(f)
+        print(hashcode(f))
 
 
 # ---------------------------------------------------------------------

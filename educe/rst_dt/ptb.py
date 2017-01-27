@@ -175,8 +175,8 @@ _PTB_SUBSTS_OTHER = {
 }
 
 _PTB_SUBSTS = dict(
-    [(_k, (None, "")) for _k in _PTB_EXTRA_FULLSTOPS]
-    + list(_PTB_SUBSTS_OTHER.items())
+    [(_k, (None, "")) for _k in _PTB_EXTRA_FULLSTOPS] +
+    list(_PTB_SUBSTS_OTHER.items())
 )
 
 
@@ -387,7 +387,7 @@ def align_edus_with_sentences(edus, syn_trees, strict=False):
         else:
             # more than one PTB trees overlap with this EDU
             if strict:
-                emsg = ('Segmentation mismatch:',
+                emsg = ('Segmentation mismatch:'
                         'one EDU, more than one PTB tree')
                 print(edu)
                 ptrees = [syn_trees[t_idx] for t_idx in tree_idcs]

@@ -8,7 +8,8 @@ Convert to dependency tree representation
 from __future__ import print_function
 import os
 
-from educe.rst_dt.deptree import (RstDepTree)
+from educe.rst_dt.deptree import RstDepTree
+from educe.rst_dt.dep2con import deptree_to_simple_rst_tree
 import educe.rst_dt
 
 from ..args import\

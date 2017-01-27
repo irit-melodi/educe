@@ -5,11 +5,9 @@
 Corpus management (re-exported by educe.rst_dt)
 """
 
+from glob import glob
 import os
 import sys
-from glob import glob
-from os.path import dirname
-from os.path import join
 
 from nltk import Tree
 
@@ -24,7 +22,8 @@ from .deptree import RstDepTree
 from .pseudo_relations import rewrite_pseudo_rels
 
 
-RELMAP_112_18_FILE = join(dirname(__file__), 'rst_112to18.txt')
+RELMAP_112_18_FILE = os.path.join(
+    os.path.dirname(__file__), 'rst_112to18.txt')
 
 
 # ---------------------------------------------------------------------

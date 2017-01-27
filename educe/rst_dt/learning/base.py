@@ -83,7 +83,7 @@ def on_first_bigram(wrapped):
     @wraps(wrapped)
     def inner(things):
         "[a] -> string"
-        return " ".join(map(wrapped, things[:2])) if things else None
+        return " ".join(wrapped(x) for x in things[:2]) if things else None
     return inner
 
 
@@ -97,7 +97,7 @@ def on_last_bigram(wrapped):
     @wraps(wrapped)
     def inner(things):
         "[a] -> string"
-        return " ".join(map(wrapped, things[-2:])) if things else None
+        return " ".join(wrapped(x) for x in things[-2:]) if things else None
     return inner
 
 
@@ -105,8 +105,16 @@ def on_last_bigram(wrapped):
 def lowest_common_parent(treepositions):
     """Find tree position of the lowest common parent of a list of nodes.
 
-    treepositions is a list of tree positions
-    see nltk.tree.Tree.treepositions()
+    Parameters
+    ----------
+    treepositions : list of tree positions
+        see nltk.tree.Tree.treepositions()
+
+    Returns
+    -------
+    tpos_parent : tree position
+        Tree position of the lowest common parent to all the given tree
+        positions.
     """
     if not treepositions:
         return None
@@ -114,9 +122,9 @@ def lowest_common_parent(treepositions):
     leftmost_tpos = treepositions[0]
     rightmost_tpos = treepositions[-1]
 
-    for i in range(len(leftmost_tpos)):
+    for i, lmost_idx in enumerate(leftmost_tpos):
         if ((i == len(rightmost_tpos) or
-             leftmost_tpos[i] != rightmost_tpos[i])):
+             lmost_idx != rightmost_tpos[i])):
             tpos_parent = leftmost_tpos[:i]
             break
     else:

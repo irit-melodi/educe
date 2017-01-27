@@ -77,7 +77,7 @@ class DummyNuclearityClassifier(object):
             multinuc_lbls.extend(rel_name for rel_name, mode_unuc
                                  in get_most_frequent_unuc(train_df).items()
                                  if mode_unuc == 'NN')
-        self.multinuc_lbls = multinuc_lbls
+        self.multinuc_lbls_ = multinuc_lbls
 
         # FIXME properly implement fit for the different strategies
         return self
@@ -88,7 +88,7 @@ class DummyNuclearityClassifier(object):
         y = []
         for dtree in X:
             # NB: we condition multinuclear relations on (i > head)
-            yi = [(NUC_N if (i > head and rel in self.multinuc_lbls)
+            yi = [(NUC_N if (i > head and rel in self.multinuc_lbls_)
                    else NUC_S)
                   for i, (head, rel)
                   in enumerate(itertools.izip(dtree.heads, dtree.labels))]
@@ -196,8 +196,9 @@ class InsideOutAttachmentRanker(object):
                 targets = [i for i, hd in enumerate(dtree.heads)
                            if hd == head]
                 # what follows should be well-tested code
-                sorted_nodes = sorted([head] + targets,
-                                      key=lambda x: dtree.edus[x].span.char_start)
+                sorted_nodes = sorted(
+                    [head] + targets,
+                    key=lambda x: dtree.edus[x].span.char_start)
                 centre = sorted_nodes.index(head)
                 # elements to the left and right of the node respectively
                 # these are stacks (outside ... inside)
@@ -260,32 +261,33 @@ class InsideOutAttachmentRanker(object):
                                       if x is not None)
 
                     elif strategy == 'closest-rl':
-                        # take closest dependents first, take right over left to
-                        # break ties
+                        # take closest dependents first, take right over
+                        # left to break ties
                         sort_key = lambda e: (abs(e - head),
                                               1 if e > head else 2)
                         result.extend(sorted(targets, key=sort_key))
 
                     elif strategy == 'closest-lr':
-                        # take closest dependents first, take left over right to
-                        # break ties
+                        # take closest dependents first, take left over
+                        # right to break ties
                         sort_key = lambda e: (abs(e - head),
                                               2 if e > head else 1)
                         result.extend(sorted(targets, key=sort_key))
 
                     # strategies that depend on intra/inter-sentential info
-                    # NB: the way sentential info is stored is expected to change
-                    # at some point
+                    # NB: the way sentential info is stored is expected to
+                    # change at some point
                     else:
                         if not hasattr(dtree, 'sent_idx'):
                             raise ValueError(('Strategy {stg} depends on '
-                                              'sentential information which is '
-                                              'missing here'
+                                              'sentential information which is'
+                                              ' missing here'
                                               '').format(stg=strategy))
 
-                        if strategy == 'closest-intra-rl-inter-lr':  # current best
-                            # take closest dependents first, take right over left to
-                            # break ties
+                        if strategy == 'closest-intra-rl-inter-lr':
+                            # current best
+                            # take closest dependents first, take right over
+                            # left to break ties
                             sort_key = lambda e: (
                                 1 if dtree.sent_idx[e] == dtree.sent_idx[head] else 2,
                                 abs(e - head),

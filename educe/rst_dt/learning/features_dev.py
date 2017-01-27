@@ -5,7 +5,6 @@
 from __future__ import print_function
 
 from collections import Counter
-from functools import reduce
 import itertools
 import re
 

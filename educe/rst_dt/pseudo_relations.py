@@ -51,8 +51,8 @@ def rewrite_pseudo_rels(doc_key, ctree):
     print('Doc', doc_key.doc)
     for tpos in ctree.treepositions():
         node = ctree[tpos]
-        if (not isinstance(node, nltk.tree.Tree)
-            or any(not isinstance(kid, nltk.tree.Tree) for kid in node)):
+        if ((not isinstance(node, nltk.tree.Tree) or
+             any(not isinstance(kid, nltk.tree.Tree) for kid in node))):
             # leaf or pre-terminal
             continue
         kid_rels = [kid.label().rel for kid in node]
@@ -65,14 +65,14 @@ def rewrite_pseudo_rels(doc_key, ctree):
             # problem: the two bydates (CHICAGO, SMYRNA) are (top-level) oO
             kid_spans = [kid.text_span() for kid in node]
             kid_lens = [x.length() for x in kid_spans]
-            if (len(kid_lens) == 2
-                and kid_lens[0] < kid_lens[1]):
+            if ((len(kid_lens) == 2 and
+                 kid_lens[0] < kid_lens[1])):
                 # case 1: oO: "(~summary)" (title)
                 # * datelines: manual exclusion, treat as case 2.
-                if ((doc_key.doc == 'wsj_1377.out'
-                     and node[0].label().edu_span == (2, 2))
-                    or (doc_key.doc == 'wsj_1105.out'
-                        and node[0].label().edu_span == (1, 1))):
+                if ((doc_key.doc == 'wsj_1377.out' and
+                     node[0].label().edu_span == (2, 2)) or
+                    (doc_key.doc == 'wsj_1105.out' and
+                     node[0].label().edu_span == (1, 1))):
                     # TODO do as case 2
                     for kid in node:
                         kid.label().rel = 'Style-TextualOrganization'
@@ -96,12 +96,12 @@ def rewrite_pseudo_rels(doc_key, ctree):
                 # * wsj_1341: bydate or title?
                 # * wsj_1944: 44 title, 45-69 main text, 70 footnote ?
                 # or annotation error, should 70 be footnote for whole doc?
-                if ((doc_key.doc == 'wsj_0687.out'
-                     and node[0].label().edu_span == (1, 38))
-                    or (doc_key.doc == 'wsj_1398.out'
-                        and node[0].label().edu_span == (1, 4))
-                    or (doc_key.doc == 'wsj_2366.out'
-                        and node[0].label().edu_span == (1, 33))):
+                if ((doc_key.doc == 'wsj_0687.out' and
+                     node[0].label().edu_span == (1, 38)) or
+                    (doc_key.doc == 'wsj_1398.out' and
+                     node[0].label().edu_span == (1, 4)) or
+                    (doc_key.doc == 'wsj_2366.out' and
+                     node[0].label().edu_span == (1, 33))):
                     # TextualOrganization that should be top-level
                     # Topic-Shift: manual exclusion,
                     # mark as "Style-Topic-Shift" (see below)
@@ -110,10 +110,10 @@ def rewrite_pseudo_rels(doc_key, ctree):
                         kid.label().nuclearity = 'Nucleus'
                     # print('TO', [kid.label() for kid in node])
                     continue
-                elif ((doc_key.doc == 'wsj_1322.out'
-                       and node[0].label().edu_span == (64, 88))
-                      or (doc_key.doc == 'wsj_1999.out'
-                          and node[0].label().edu_span == (3, 21))):
+                elif ((doc_key.doc == 'wsj_1322.out' and
+                       node[0].label().edu_span == (64, 88)) or
+                      (doc_key.doc == 'wsj_1999.out' and
+                       node[0].label().edu_span == (3, 21))):
                     # TextualOrganization that should be Topic-Shift
                     # that should be List
                     # TODO ask NA for blessing
@@ -162,7 +162,8 @@ def rewrite_pseudo_rels(doc_key, ctree):
                     if all(isinstance(rec_kid, nltk.tree.Tree)
                            for rec_kid in rec_nuc):
                         rec_nuc = [rec_kid for rec_kid in rec_nuc
-                                   if rec_kid.label().nuclearity == 'Nucleus'][0]
+                                   if (rec_kid.label().nuclearity ==
+                                       'Nucleus')][0]
                     else:
                         # pre-terminal
                         assert len(rec_nuc) == 1
@@ -178,9 +179,9 @@ def rewrite_pseudo_rels(doc_key, ctree):
                 # * or both fragments are adjacent
                 # TODO different sentences
                 # TODO ? intervening attribution?
-                if ((kid_cur.leaves()[-1] != rnuc_cur
-                     and kid_nxt.leaves()[0] != rnuc_nxt)
-                    or (rnuc_nxt.num - rnuc_cur.num == 1)):
+                if (((kid_cur.leaves()[-1] != rnuc_cur and
+                      kid_nxt.leaves()[0] != rnuc_nxt) or
+                     (rnuc_nxt.num - rnuc_cur.num == 1))):
                     # both have inside dependents or they are adjacent
                     is_fishy = True
                     break

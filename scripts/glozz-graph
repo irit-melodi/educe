@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+# pylint: disable=invalid-name
+# We have a script here, not a module, so it's ok to have
+# a funny name
+# pylint: enable=invalid-name
 #
 # Author: Eric Kow
 # License: BSD3
@@ -8,24 +13,16 @@
 Example script using the library to dump graphs for all files
 in a STAC corpus
 """
-
-from educe import glozz, corpus, stac, util, graph
-from educe.util import add_corpus_filters, fields_without
-import educe.corpus
-import educe.stac.graph as stacgraph
+from __future__ import print_function
 
 import argparse
-import copy
-import re
 import os.path
 import sys
-import textwrap
-import collections
 import codecs
 
-from pygraph.readwrite import dot
-from pygraph.algorithms import accessibility
-import pydot
+from educe import stac, util, graph
+from educe.util import add_corpus_filters, fields_without
+import educe.stac.graph as stacgraph
 
 
 PRESELECTED_STAGE = ["discourse", "units"]
@@ -35,32 +32,34 @@ PRESELECTED_STAGE = ["discourse", "units"]
 # ---------------------------------------------------------------------
 
 def write_dot_graph(doc_file, dot_graph, part=None):
-    doc_dir        = os.path.dirname(doc_file)
-    ofile_dirname  = os.path.join(args.odir,os.path.relpath(doc_dir, args.idir))
+    doc_dir = os.path.dirname(doc_file)
+    ofile_dirname = os.path.join(args.odir,
+                                 os.path.relpath(doc_dir, args.idir))
     ofile_basename = os.path.splitext(os.path.basename(doc_file))[0]
     if part is not None:
         ofile_basename += '_' + str(part)
-    dot_file       = os.path.join(ofile_dirname, ofile_basename + '.dot')
-    png_file       = os.path.join(ofile_dirname, ofile_basename + '.png')
+    dot_file = os.path.join(ofile_dirname, ofile_basename + '.dot')
+    png_file = os.path.join(ofile_dirname, ofile_basename + '.png')
     if not os.path.exists(ofile_dirname):
         os.makedirs(ofile_dirname)
     with codecs.open(dot_file, 'w', encoding='utf-8') as f:
-        print >> f, dot_graph.to_string()
+        print(dot_graph.to_string(), file=f)
     if not args.no_png:
-        print >> sys.stderr, "Creating %s" % png_file
+        print("Creating %s" % png_file, file=sys.stderr)
         os.system('dot -T png -o %s %s' % (png_file, dot_file))
 
 def main_rel_graph(args):
-    is_interesting=util.mk_is_interesting(args, preselected=PRESELECTED_STAGE)
+    is_interesting = util.mk_is_interesting(args,
+                                            preselected=PRESELECTED_STAGE)
 
     if args.live:
-        reader     = stac.LiveInputReader(args.idir)
+        reader = stac.LiveInputReader(args.idir)
         anno_files = reader.files()
-        corpus     = reader.slurp(anno_files, verbose=True)
+        corpus = reader.slurp(anno_files, verbose=True)
     else:
-        reader     = stac.Reader(args.idir)
+        reader = stac.Reader(args.idir)
         anno_files = reader.filter(reader.files(), is_interesting)
-        corpus     = reader.slurp(anno_files, verbose=True)
+        corpus = reader.slurp(anno_files, verbose=True)
 
     if args.live:
         keys = corpus
@@ -80,26 +79,29 @@ def main_rel_graph(args):
                 write_dot_graph(doc_file, dot_g)
                 if args.split:
                     ccs = g.connected_components()
-                    for k,nodes in enumerate(ccs,1):
+                    for k, nodes in enumerate(ccs, 1):
                         g2 = g.copy(nodes)
-                        write_dot_graph(doc_file, stacgraph.DotGraph(g2), part=k)
+                        write_dot_graph(doc_file, stacgraph.DotGraph(g2),
+                                        part=k)
             else:
-                print >> sys.stderr, "Skipping %s (empty graph)" % doc_file
+                print("Skipping %s (empty graph)" % doc_file, file=sys.stderr)
         except graph.DuplicateIdException:
-            warning  = "WARNING: %s has duplicate annotation ids" % doc_file
-            print >> sys.stderr, warning
+            warning = "WARNING: %s has duplicate annotation ids" % doc_file
+            print(warning, file=sys.stderr)
+
 
 def main_enclosure_graph(args):
-    is_interesting=util.mk_is_interesting(args, preselected=PRESELECTED_STAGE)
+    is_interesting = util.mk_is_interesting(args,
+                                            preselected=PRESELECTED_STAGE)
 
     if args.live:
-        reader     = stac.LiveInputReader(args.idir)
+        reader = stac.LiveInputReader(args.idir)
         anno_files = reader.files()
-        corpus     = reader.slurp(anno_files, verbose=True)
+        corpus = reader.slurp(anno_files, verbose=True)
     else:
-        reader     = stac.Reader(args.idir)
+        reader = stac.Reader(args.idir)
         anno_files = reader.filter(reader.files(), is_interesting)
-        corpus     = reader.slurp(anno_files, verbose=True)
+        corpus = reader.slurp(anno_files, verbose=True)
 
     if args.live:
         keys = corpus
@@ -115,13 +117,14 @@ def main_enclosure_graph(args):
         if dot_g.get_nodes():
             write_dot_graph(doc_file, dot_g)
         else:
-            print >> sys.stderr, "Skipping %s (empty graph)" % doc_file
+            print("Skipping %s (empty graph)" % doc_file, file=sys.stderr)
 
 # ---------------------------------------------------------------------
 # args
 # ---------------------------------------------------------------------
 
-arg_parser = argparse.ArgumentParser(description='Visualise discourse graphs.')
+arg_parser = argparse.ArgumentParser(
+    description='Visualise discourse graphs.')
 arg_parser.add_argument('idir', metavar='DIR',
                         help='Input directory')
 arg_parser.add_argument('odir', metavar='DIR',
@@ -147,7 +150,7 @@ arg_parser_enc.add_argument('--reduce', action='store_true',
 
 educe_group = arg_parser.add_argument_group('corpus filtering arguments')
 add_corpus_filters(educe_group, fields=fields_without(["stage"]))
-args=arg_parser.parse_args()
+args = arg_parser.parse_args()
 
 if args.enclosure:
     main_enclosure_graph(args)
