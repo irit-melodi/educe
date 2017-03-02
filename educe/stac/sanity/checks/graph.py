@@ -5,8 +5,11 @@ Sanity checker: fancy graph-based errors
 from __future__ import print_function
 from collections import defaultdict
 import copy
+import itertools
 
 from educe import stac
+# from educe.stac.annotation import (COORDINATING_RELATIONS,
+#                                    SUBORDINATING_RELATIONS)
 from educe.stac.context import sorted_first_widest
 from educe.stac.rfc import (BasicRfc)
 import educe.stac.graph as egr
@@ -26,6 +29,35 @@ from ..report import (mk_microphone,
 
 BACKWARDS_WHITELIST = ["Conditional"]
 "relations that are allowed to go backwards"
+
+PAIRS_WHITELIST = [
+    # Julie's original list (2017-02-28)
+    ('Contrast', 'Comment'),
+    ('Narration', 'Result'),
+    ('Narration', 'Continuation'),
+    ('Parallel', 'Continuation'),
+    ('Parallel', 'Background'),
+    # additional pairs vetted by Nicholas (2017-03-01)
+    ('Comment', 'Acknowledgement'),
+    ('Parallel', 'Acknowledgement'),
+    ('Question-answer_pair', 'Contrast'),
+    ('Question-answer_pair', 'Parallel'),
+]
+"""pairs of relations that are explicitly allowed between the same
+source/target DUs"""
+# un-comment if you modify the above whitelist: this catches potential
+# typos (tried and tested...)
+# ALL_RELATIONS = set(SUBORDINATING_RELATIONS + COORDINATING_RELATIONS)
+# assert all(x[0] in ALL_RELATIONS and x[1] in ALL_RELATIONS
+#            for x in PAIRS_WHITELIST)
+
+PAIRS_WHITEDICT = defaultdict(set)
+for rel1, rel2 in PAIRS_WHITELIST:
+    PAIRS_WHITEDICT[rel1].add(rel2)
+    PAIRS_WHITEDICT[rel2].add(rel1)
+"""Dict of pairwise compatible relations (more useful to check
+membership)
+"""
 
 
 def rel_link_item(doc, contexts, gra, rel):
@@ -55,6 +87,59 @@ def search_graph_relations(inputs, k, gra, pred):
     contexts = inputs.contexts[k]
     return [rel_link_item(doc, contexts, gra, x)
             for x in gra.relations() if pred(gra, contexts, x)]
+
+
+# 2017-03-02 whitelist certain pairs of relations
+def search_graph_relations_same_dus(inputs, k, gra, pred):
+    """Return a list of ReportItem (one per member of the set) for any
+    set of relation instances within the graph for which some predicate
+    is True.
+
+    Parameters
+    ----------
+    inputs : educe.stac.sanity.main.SanityChecker
+        SanityChecker, with attributes `corpus` and `contexts`.
+
+    k : FileId
+        Identifier of the desired Glozz document.
+
+    gra : educe.stac.graph.Graph
+        Graph that corresponds to the discourse structure (?).
+
+    pred : function from (gra, contexts, rel_set) to boolean
+        Predicate function.
+
+    Returns
+    -------
+    report_items : list of ReportItem
+        One ReportItem for each relation instance that belongs to a set
+        of instances, on the same DUs, where pred is True.
+    """
+    doc = inputs.corpus[k]
+    contexts = inputs.contexts[k]
+    # group relations that have the same endpoints
+    rel_sets = defaultdict(set)
+    for rel in gra.relations():
+        src, tgt = gra.links(rel)
+        # store together relations on the *unordered pair* (src, tgt) ;
+        # for each relation, we keep track of which element (src or tgt)
+        # comes first in the unordered pair
+        if src < tgt:
+            upair = tuple([src, tgt])
+            udir = 'src_tgt'
+        else:
+            upair = tuple([tgt, src])
+            udir = 'tgt_src'
+        rel_sets[upair].add((udir, rel))
+    # select sets for which pred is true
+    sel_sets = [rels for src_tgt, rels in rel_sets.items()
+                if pred(gra, contexts, rels)]
+    # generate one relation item for each relation instance in a selected
+    # set
+    res = [rel_link_item(doc, contexts, gra, x)
+           for sel_set in sel_sets
+           for udir, x in sel_set]
+    return res
 
 
 def search_graph_cdus(inputs, k, gra, pred):
@@ -138,6 +223,71 @@ def is_dupe_rel(gra, _, rel):
                 gra.rel_links(x) == (tgt, src))
                for x in gra.links(src)
                if stac.is_relation_instance(gra.annotation(x)))
+
+
+# 2017-03-02 whitelisted pairs of relations
+def is_whitelisted_relpair(gra, _, relset):
+    """True if a pair of instance relations is in `PAIRS_WHITELIST`.
+
+    Parameters
+    ----------
+    gra : Graph
+        Graph for the discourse structure.
+
+    contexts : TODO
+        TODO
+
+    relset : set of relation instances
+        Set of relation instances on the same DUs ; each instance is a
+        pair (udir, rel), where:
+        udir is one of {'src_tgt', 'tgt_src'} and
+        rel is the identifier of a relation.
+
+    Returns
+    -------
+    res : boolean
+        True if relset is a pair of relation instances with the same
+        direction and the corresponding pair of relations is explicitly
+        allowed in the whitelist.
+    """
+    # we currently do not whitelist sets of more than two relation
+    # instances, plus they need to have the same direction
+    if ((len(relset) != 2 or
+         len(set(udir for udir, rel in relset)) != 1)):
+        return False
+    # PAIRS_WHITEDICT is symmetric:
+    # rel_a in PAIRS_WHITEDICT[rel_b] iff rel_b in PAIRS_WHITEDICT[rel_a]
+    rel_a, rel_b = list(gra.annotation(x).type for udir, x in relset)
+    return rel_a in PAIRS_WHITEDICT[rel_b]
+
+
+def is_bad_relset(gra, contexts, relset):
+    """True if a set of relation instances has more than one member
+    and it is not whitelisted.
+
+    Parameters
+    ----------
+    gra : Graph
+        Graph for the discourse structure.
+
+    contexts : TODO
+        TODO
+
+    relset : set of relation instances
+        Set of relation instances on the same DUs ; each instance is a
+        pair (udir, rel), where:
+        udir is one of {'src_tgt', 'tgt_src'} and
+        rel is the identifier of a relation.
+
+    Returns
+    -------
+    res : boolean
+        True if relset contains more than one element and
+        `is_whitelisted_relpair` returns False.
+    """
+    return (len(relset) > 1 and
+            not is_whitelisted_relpair(gra, contexts, relset))
+# end WIP whitelist
 
 
 def is_non2sided_rel(gra, _, rel):
@@ -350,11 +500,35 @@ def run(inputs, k):
     squawk('EDU in more than one CDU',
            search_graph_cdu_overlap(inputs, k, graph))
 
+    # 2017-03-02 deprecate systematic errors for >1 relation instances
+    # on the same DU pair, in favor of: (a) warnings for whitelisted
+    # pairs, (b) errors for other configurations
+    # squawk('multiple relation instances between the same DU pair',
+    #        cand_dupes)
+    cand_dupes = search_graph_relations(inputs, k, graph, is_dupe_rel)
+    #
+    cand_dupes_bad = search_graph_relations_same_dus(
+        inputs, k, graph, is_bad_relset)
     squawk('multiple relation instances between the same DU pair',
-           search_graph_relations(inputs, k, graph, is_dupe_rel))
+           cand_dupes_bad)
+    # end WIP whitelist
 
     squawk('Speaker Acknowledgement to self',
            search_graph_relations(inputs, k, graph, is_weird_ack))
+
+    # 2017-03-02 emit a warning for instances of whitelisted pairs of
+    # relations
+    cand_dupes_good = search_graph_relations_same_dus(
+        inputs, k, graph, is_whitelisted_relpair)
+    quibble('whitelisted pairs of relation instances between the same DU pair',
+            cand_dupes_good,
+            noisy=True)
+    # check that we don't lose any relation (temporary assertion, should be
+    # removed once we are certain there is no hole in its two separate
+    # replacements)
+    assert (set(x.rel for x in cand_dupes) ==
+            set(x.rel for x in cand_dupes_bad + cand_dupes_good))
+    # end WIP whitelist
 
     quibble('weird QAP (non "? -> .")',
             search_graph_relations(inputs, k, graph, is_weird_qap))
