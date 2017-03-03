@@ -114,7 +114,7 @@ def main(args):
                 renames, src_doc, tgt_doc,
                 end,  # src_split
                 tgt_split=-1)
-        elif end == src_doc.text_span().char_end:
+        elif end == len(src_doc.text()):  # src_doc.text_span().char_end:
             # move down
             # move_portion inserts src_doc[0:src_split] between
             # tgt_doc[0:tgt_split] and tgt_doc[tgt_split:],
