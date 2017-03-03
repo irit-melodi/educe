@@ -197,8 +197,8 @@ def narrow_to_span(doc, span):
 
 
 def split_doc(doc, middle):
-    """
-    Given a split point, break a document into two pieces.
+    """Given a split point, break a document into two pieces.
+
     If the split point is None, we take the whole document
     (this is slightly different from having -1 as a split
     point)
@@ -238,6 +238,21 @@ def split_doc(doc, middle):
 
     leftovers = [x for x in doc.annotations()
                  if straddles(middle, x.text_span())]
+
+    # 2017-03-03 if annotations straddle the split point but the
+    # extraneous part is just a trailing whitespace, shift the
+    # annotation's right boundary one character to the left
+    true_leftovers = []
+    for anno in leftovers:
+        anno_span = anno.text_span()
+        if doc.text(span=anno_span)[-1] == ' ':
+            alt_span = Span(anno_span.char_start, anno_span.char_end - 1)
+            if not straddles(middle, alt_span):
+                anno.span = alt_span
+            else:
+                true_leftovers.append(anno)
+    leftovers = true_leftovers
+    # end trailing whitespace
 
     if leftovers:
         oops = ("Can't split document [{origin}] at {middle} because it is "
@@ -292,9 +307,7 @@ def rename_ids(renames, doc):
     return doc2
 
 
-def move_portion(renames, src_doc, tgt_doc,
-                 src_split,
-                 tgt_split=-1):
+def move_portion(renames, src_doc, tgt_doc, src_split, tgt_split=-1):
     """Move part of the source document into the target document.
 
     This returns an updated copy of both the source and target
@@ -330,7 +343,7 @@ def move_portion(renames, src_doc, tgt_doc,
         Target document
     src_split : int
         Split point for `src_doc`.
-    tgt_split : int
+    tgt_split : int, defaults to -1
         Split point for `tgt_doc`.
 
     Returns
