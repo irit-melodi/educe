@@ -13,7 +13,7 @@ import sys
 from educe.annotation import Span
 import educe.stac as st
 
-from educe.stac.annotation import parse_turn_id
+from educe.stac.annotation import TurnId
 from educe.stac.util.annotate import show_diff, annotate_doc
 from educe.stac.util.args import\
     add_usual_input_args, add_usual_output_args,\
@@ -152,7 +152,7 @@ def config_argparser(parser):
     add_usual_input_args(parser, doc_subdoc_required=True)
     add_usual_output_args(parser, default_overwrite=True)
     add_commit_args(parser)
-    parser.add_argument('turn', metavar='TURN', type=parse_turn_id,
+    parser.add_argument('turn', metavar='TURN', type=TurnId.from_string,
                         help='turn number')
     parser.add_argument('direction', choices=["up", "down"],
                         help='move turn up or down')
