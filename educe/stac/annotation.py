@@ -137,15 +137,48 @@ def split_turn_text(text):
                         text)
 
 
-def parse_turn_id(turn_id_str):
-    """Parse a turn identifier akin to a Gorn address from a string."""
-    return tuple(int(x) for x in turn_id_str.split('.'))
+class TurnId(tuple):
+    """Turn identifier akin to a Gorn address.
+
+    A Gorn address is a tuple of integers.
+    """
+
+    def __new__(cls, seq_int):
+        """Create a TurnId from a sequence of integers."""
+        return super(TurnId, cls).__new__(cls, tuple(seq_int))
+
+    def __str__(self):
+        """Custom string representation as dot-separated integers.
+
+        ex: (21.0.1)
+        """
+        return '.'.join(str(x) for x in self)
+
+    @classmethod
+    def from_string(cls, tid_str):
+        """Create a TurnId from a string.
+
+        ex: (21.0.1)
+        """
+        return cls(int(x) for x in tid_str.split('.'))
 
 
 def turn_id(anno):
-    """Get the turn identifier for a turn annotation (or None)."""
+    """Get the turn identifier for a turn annotation (or None).
+
+    Parameters
+    ----------
+    anno : Annotation
+        Annotation
+
+    Returns
+    -------
+    turn_id : tuple(int) or None
+        Turn identifier ; None if the annotation has no feature
+        'Identifier'.
+    """
     tid_str = anno.features.get('Identifier')
-    return parse_turn_id(tid_str) if tid_str is not None else None
+    return TurnId.from_string(tid_str) if tid_str is not None else None
 
 
 def addressees(anno):

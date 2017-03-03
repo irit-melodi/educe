@@ -12,7 +12,7 @@ import sys
 from educe.annotation import Span
 from educe.glozz import GlozzException
 
-from educe.stac.annotation import parse_turn_id
+from educe.stac.annotation import TurnId
 from educe.stac.util.annotate import annotate_doc
 from educe.stac.util.args import\
     add_usual_input_args, add_usual_output_args, anno_id,\
@@ -142,7 +142,7 @@ def config_argparser(parser):
                               nargs='+',
                               help='eg. stac_39819045 stac_98871771')
     parser_mutex.add_argument('--turns',
-                              metavar='TURN_ID', type=parse_turn_id,
+                              metavar='TURN_ID', type=TurnId.from_string,
                               nargs=2,
                               help='eg. 187 192')
     add_commit_args(parser)
