@@ -422,7 +422,8 @@ def cross_check_against(inputs, key1, stage='unannotated'):
 
         return sorted_first_widest(missing_excess), mismatches
     except MissingDocumentException as oops:
-        print("ARGH! Can't cross-check ", oops.k, sys.stderr)
+        print("ARGH! Can't cross-check ", oops.k,
+              file=sys.stderr)
         return ({}, {})
 
 # ---------------------------------------------------------------------
