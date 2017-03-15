@@ -6,7 +6,7 @@ Merge emoticon-only EDUs into preceding EDU (one-off cleanup)
 """
 
 from __future__ import print_function
-import collections
+from collections import defaultdict
 import copy
 
 import educe.stac
@@ -179,20 +179,30 @@ def main(args):
     tcache = TimestampCache()
     output_dir = get_output_dir(args, default_overwrite=True)
 
-    families = collections.defaultdict(list)
-    discourse_subcorpus = {}
+    families = defaultdict(list)
+    # 2017-03-15 merge emoticon EDUs if *all* (selected?) 'discourse'
+    # annotators agree that they are not part of any schema or relation
+    discourse_subcorpus = defaultdict(list)
     for k in corpus:
         fam = (k.doc, k.subdoc)
         families[fam].append(k)
         if k.stage == 'discourse':
-            discourse_subcorpus[fam] = k
+            discourse_subcorpus[fam].append(k)
 
     for fam in sorted(families):
         print(family_banner(fam[0], fam[1], families[fam]))
-        disc_k = discourse_subcorpus[fam]
+        disc_ks = discourse_subcorpus[fam]
 
-        doc = corpus[disc_k]
-        turns, warn_turns = turns_with_final_emoticons(doc, postags[disc_k])
+        turns = set()
+        warn_turns = set()
+        for disc_k in disc_ks:
+            doc = corpus[disc_k]
+            turns_k, warn_turns_k = turns_with_final_emoticons(
+                doc, postags[disc_k])
+            turns &= set(turns_k)
+            warn_turns |= set(warn_turns_k)
+        turns = sorted_first_widest(turns)
+        warn_turns = sorted_first_widest(warn_turns)
 
         warnings = []
         if warn_turns:
