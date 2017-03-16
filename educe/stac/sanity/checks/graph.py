@@ -417,17 +417,18 @@ def dialogue_graphs(k, doc, contexts):
 
 
 def is_disconnected(gra, contexts, node):
-    """
+    """Return True if an EDU is disconnected from a discourse structure.
+
     An EDU is considered disconnected unless:
 
     * it has an incoming link or
-    * it has an outgoing Conditional link
+    * it has an outgoing Conditional link or
     * it's at the beginning of a dialogue
 
     In principle we don't need to look at EDUs that are disconnected
-    on the outgoing end because (1) it's can be legitimate for
+    on the outgoing end because (1) it can be legitimate for
     non-dialogue-ending EDUs to not have outgoing links and (2) such
-    information would be redundant with the incoming anyway
+    information would be redundant with the incoming anyway.
     """
     def rel_type(rel):
         "relation type for a given link (string)"
