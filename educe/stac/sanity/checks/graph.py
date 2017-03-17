@@ -390,10 +390,30 @@ def is_weird_ack(gra, contexts, rel):
 
 
 def dialogue_graphs(k, doc, contexts):
-    """
-    Return a dict from dialogue annotations to subgraphs
+    """Return a dict from dialogue annotations to subgraphs
     containing at least everything in that dialogue (and
-    perhaps some connected items)
+    perhaps some connected items).
+
+    Parameters
+    ----------
+    k : FileId
+        File identifier
+
+    doc : TODO
+        TODO
+
+    contexts : dict(Annotation, Context)
+        Context for each annotation.
+
+    Returns
+    -------
+    graphs : dict(Dialogue, Graph)
+        Graph for each dialogue.
+
+    Notes
+    -----
+    MM: I could not find any caller for this function in either educe or
+    irit-stac, as of 2017-03-17.
     """
     def in_dialogue(d_annos, anno):
         "if the given annotation is in the given dialogue"
@@ -450,6 +470,43 @@ def is_disconnected(gra, contexts, node):
                                      for r in rel_links)
         is_at_start = edu.text_span().char_start == first_turn_start
         return not (has_incoming or has_outgoing_whitelist or is_at_start)
+
+
+# 2017-03-17 check for connectedness of all (recursive) members of
+# each CDU
+# NB: quick and dirty implementation that probably needs a rewrite
+def are_connected_cdus(inputs, k, gra):
+    """Check each CDU for the connectedness of its (recursive) members.
+
+    Parameters
+    ----------
+    gra : Graph
+        Graph for the discourse structure.
+
+    Returns
+    -------
+    report_items : list of ReportItem
+        List of report items, one per faulty CDU.
+    """
+    report_items = []
+    doc = inputs.corpus[k]
+    contexts = inputs.contexts[k]
+    for cdu_id in gra.cdus():
+        cdu = gra.annotation(cdu_id)
+        cdu_members = set(gra.cdu_members(cdu_id))
+        internal_head = dict()
+        for cdu_mem in cdu_members:
+            for rel in gra.links(cdu_mem):
+                if gra.is_relation(rel):
+                    src, tgt = gra.rel_links(rel)
+                    if src in cdu_members and tgt in cdu_members:
+                        internal_head[tgt] = src
+        unheaded_members = cdu_members - set(internal_head.keys())
+        if len(unheaded_members) > 1:
+            report_items.append(
+                SchemaItem(doc, contexts, cdu, []))
+    return report_items
+# end connectedness of CDU members
 
 # ---------------------------------------------------------------------
 # run
@@ -557,3 +614,6 @@ def run(inputs, k):
     quibble('non dialogue-initial EDUs without incoming links',
             search_graph_edus(simplified_inputs, k,
                               simplified_graph, is_disconnected))
+
+    squawk('CDUs with more than one connected component',
+           are_connected_cdus(inputs, k, graph))
