@@ -835,7 +835,10 @@ class DotGraph(pydot.Dot):
         self.doc = self.core.doc
         self.doc_key = self.core.doc_key
         self.corpus = self.core.corpus
-        self.turns = [u for u in self.core.doc.units if u.type == 'Turn']
+        # 2017-03-17 add 'NonplayerTurn' ; this is a slippery slope but
+        # 'Turn' and 'NonplayerTurn' are both rather STAC-specific anyway
+        self.turns = [u for u in self.core.doc.units
+                      if u.type in ('Turn', 'NonplayerTurn')]
         super(DotGraph, self).__init__(compound='true')
         self.set_name('hypergraph')
 

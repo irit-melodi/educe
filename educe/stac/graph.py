@@ -60,17 +60,18 @@ class Graph(educe.graph.Graph):
     # --------------------------------------------------
 
     def cdu_head(self, cdu, sloppy=False):
-        """
-        Given a CDU, return its head, defined here as the only DU
-        that is not pointed to by any other member of this CDU.
+        """Get the head DU of a CDU.
 
-        This is meant to approximate the description in Muller 2012
+        The head of a CDU is defined here as the only DU that is not
+        pointed to by any other member of this CDU.
+
+        This is meant to approximate the description in (Muller 2012)
         (/Constrained decoding for text-level discourse parsing/):
 
         1. in the highest DU in its subgraph in terms of suboordinate
-           relations
+           relations,
         2. in case of a tie in #1, the leftmost in terms of coordinate
-           relations
+           relations.
 
         Corner cases:
 
@@ -78,6 +79,22 @@ class Graph(educe.graph.Graph):
         * If the CDU contains more than one head (annotation error)
           and if sloppy is True, return the textually leftmost one;
           otherwise, raise a MultiheadedCduException
+
+        Parameters
+        ----------
+        cdu : CDU
+            The CDU under examination.
+
+        sloppy : boolean, defaults to False
+            If True, return the textually leftmost DU if the CDU
+            contains more than one head ; if False, raise a
+            `MultiheadedCduException` in such cases.
+
+        Returns
+        -------
+        cand : Unit or Schema? or None
+            The head DU of this CDU ; it is None if no member of the CDU
+            qualifies as a head (loop?).
         """
         hyperedge = self.edgeform(cdu)
         members = self.cdu_members(cdu)
@@ -124,7 +141,7 @@ class Graph(educe.graph.Graph):
             """Recursive helper to find the head EDU of a CDU"""
             if x_cdu in heads:
                 return heads[x_cdu]
-            x_hd = self.cdu_head(x_cdu, sloppy)
+            x_hd = self.cdu_head(x_cdu, sloppy=sloppy)
             if (x_hd is not None) and self.is_cdu(x_hd):
                 x_hd = get_head(x_hd)
             heads[x_cdu] = x_hd
@@ -194,7 +211,7 @@ class Graph(educe.graph.Graph):
             'Elaboration'))
 
         # Warning: heads.keys() are hyperedges
-        heads = self.recursive_cdu_heads(sloppy)
+        heads = self.recursive_cdu_heads(sloppy=sloppy)
 
         def distrib_candidates(links, label):
             """Return a pair of list of nodes to be attached, depending
