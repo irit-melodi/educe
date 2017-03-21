@@ -18,7 +18,7 @@ import numpy as np
 
 from educe.annotation import Span
 from educe.stac.annotation import (game_turns, is_dialogue, is_edu,
-                                   is_paragraph, is_turn,
+                                   is_paragraph, is_turn, turn_id,
                                    DIALOGUE_ACTS, RENAMES)
 from educe.stac.context import enclosed
 from educe.stac.edit.cmd.merge_dialogue import _concatenate_features
@@ -169,10 +169,9 @@ def check_matches(tgt_doc, matches, strict=True):
             print(u"Match gap in tgt doc ({})\t{}\t{}".format(
                 tgt_doc.origin, gap, gap_txt), file=sys.stderr)
         print('Matches: ', matches)
-        tgt_turns = set(x.features['Identifier']
-                        for x in tgt_doc.units
-                        if x.features.get('Identifier'))
-        print('Turns: ', sorted(tgt_turns, key=lambda x: int(x)))
+        tgt_turns = set(turn_id(x) for x in tgt_doc.units
+                        if turn_id(x) is not None)
+        print('Turns: ', sorted(tgt_turns))
         if strict:
             oops = 'there are match gaps in the target document {}: {}'
             raise WeaveException(oops.format(tgt_doc.origin, gaps))
@@ -772,8 +771,7 @@ def shift_dialogues(doc_src, doc_res, updates, gen):
         # dialogue
         turns_src = sorted((x for x in doc_src.units if is_turn(x)),
                            key=lambda x: x.span)
-        turns_src_tid = np.array([x.features['Identifier']
-                                  for x in turns_src])
+        turns_src_tid = np.array([turn_id(x) for x in turns_src])
         turns_src_beg = np.array([x.span.char_start for x in turns_src])
         turns_src_end = np.array([x.span.char_end for x in turns_src])
         # * locate game turns (index of first and last turn)
@@ -790,8 +788,7 @@ def shift_dialogues(doc_src, doc_res, updates, gen):
         # dialogue
         turns_res = sorted((x for x in doc_res.units if is_turn(x)),
                            key=lambda x: x.span)
-        turns_res_tid = np.array([x.features['Identifier']
-                                  for x in turns_res])
+        turns_res_tid = np.array([turn_id(x) for x in turns_res])
         turns_res_beg = np.array([x.span.char_start for x in turns_res])
         turns_res_end = np.array([x.span.char_end for x in turns_res])
         # align dialogue spans with turn spans
@@ -996,12 +993,11 @@ def hollow_out_missing_turn_text(src_doc, tgt_doc,
 
     # we can't use the API one until we update it to account for the
     # fancy new identifiers
-    tgt_turns = set(x.features['Identifier']
-                    for x in units_tgt
-                    if x.features.get('Identifier'))
+    tgt_turns = set(turn_id(x) for x in units_tgt
+                    if turn_id(x) is not None)
     np_spans = [x.text_span() for x in units_src
-                if (x.features.get('Identifier') and
-                    x.features['Identifier'] not in tgt_turns)]
+                if (turn_id(x) is not None and
+                    turn_id(x) not in tgt_turns)]
 
     # merge consecutive nonplayer turns
     merged_np_spans = []
