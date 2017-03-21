@@ -73,7 +73,7 @@ def run_pipeline(corpus, outdir, corenlp_dir, split=False):
                 if k.doc == d:
                     turns.extend([x for x in corpus[k].units
                                   if stac.is_turn(x)])
-            turn_ids = [int(t.features['Identifier']) for t in turns]
+            turn_ids = [stac.turn_id(t)[0] for t in turns]
             digits[d] = max(2, int(math.ceil(math.log10(max(turn_ids)))))
 
     # dump the turn text
@@ -191,7 +191,7 @@ def read_corenlp_result(doc, corenlp_doc, tid=None):
         if tid is None:
             return stac.is_turn(x)
         else:
-            x_tid = x.features['Identifier']
+            x_tid = stac.turn_id(x)
             return stac.is_turn(x) & tid == x_tid
 
     turns = sorted((x for x in doc.units if is_matching_turn(x)),
