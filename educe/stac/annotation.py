@@ -95,6 +95,7 @@ SUBORDINATING_RELATIONS = [
 COORDINATING_RELATIONS = [
     'Result',
     'Narration',
+    'Sequence',  # alt name for Narration
     'Continuation',
     'Contrast',
     'Parallel',
