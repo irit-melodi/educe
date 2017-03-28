@@ -390,10 +390,30 @@ def is_weird_ack(gra, contexts, rel):
 
 
 def dialogue_graphs(k, doc, contexts):
-    """
-    Return a dict from dialogue annotations to subgraphs
+    """Return a dict from dialogue annotations to subgraphs
     containing at least everything in that dialogue (and
-    perhaps some connected items)
+    perhaps some connected items).
+
+    Parameters
+    ----------
+    k : FileId
+        File identifier
+
+    doc : TODO
+        TODO
+
+    contexts : dict(Annotation, Context)
+        Context for each annotation.
+
+    Returns
+    -------
+    graphs : dict(Dialogue, Graph)
+        Graph for each dialogue.
+
+    Notes
+    -----
+    MM: I could not find any caller for this function in either educe or
+    irit-stac, as of 2017-03-17.
     """
     def in_dialogue(d_annos, anno):
         "if the given annotation is in the given dialogue"
@@ -450,6 +470,79 @@ def is_disconnected(gra, contexts, node):
                                      for r in rel_links)
         is_at_start = edu.text_span().char_start == first_turn_start
         return not (has_incoming or has_outgoing_whitelist or is_at_start)
+
+
+# 2017-03-17 check that each CDU has exactly one head DU
+# NB: quick and dirty implementation that probably needs a rewrite
+def are_single_headed_cdus(inputs, k, gra):
+    """Check that each CDU has exactly one head DU.
+
+    Parameters
+    ----------
+    gra : Graph
+        Graph for the discourse structure.
+
+    Returns
+    -------
+    report_items : list of ReportItem
+        List of report items, one per faulty CDU.
+    """
+    report_items = []
+    doc = inputs.corpus[k]
+    contexts = inputs.contexts[k]
+
+    # compute the transitive closure of DUs embedded under each CDU
+    # * map each CDU to its member EDUs and CDUs, as two lists
+    # keys are edge ids eg. 'e_pilot01_07_jhunter_1487683021582',
+    # values are node ids eg. 'n_pilot01_07_stac_1464335440'
+    cdu2mems = defaultdict(lambda: ([], []))
+    for cdu_id in gra.cdus():
+        cdu = gra.annotation(cdu_id)
+        cdu_members = set(gra.cdu_members(cdu_id))
+        cdu2mems[cdu_id] = (
+            [x for x in cdu_members if stac.is_edu(gra.annotation(x))],
+            [x for x in cdu_members if stac.is_cdu(gra.annotation(x))]
+        )
+    # * replace each nested CDU in the second list with its member DUs
+    # (to first list), and mark CDUs for exploration (to second list) ;
+    # repeat until fixpoint, ie. transitive closure complete for each CDU
+    while any(v[1] for k, v in cdu2mems.items()):
+        for cdu_id, (mem_edus, mem_cdus) in cdu2mems.items():
+            for mem_cdu in mem_cdus:
+                # switch between the edge and node representations of CDUs:
+                # gra.mirror()
+                nested_edus, nested_cdus = cdu2mems[gra.mirror(mem_cdu)]
+                # add the nested CDU and its EDU members
+                cdu2mems[cdu_id][0].append(mem_cdu)
+                cdu2mems[cdu_id][0].extend(nested_edus)
+                # store CDU members of the nested CDU for exploration
+                cdu2mems[cdu_id][1].extend(nested_cdus)
+                # delete current nested CDU from list of CDUs to be explored
+                cdu2mems[cdu_id][1].remove(mem_cdu)
+    # switch to simple dict, forget list of CDUs for exploration
+    cdu2mems = {k: v[0] for k, v in cdu2mems.items()}
+    # end transitive closure
+
+    for cdu_id in gra.cdus():
+        cdu = gra.annotation(cdu_id)
+        cdu_mems = set(gra.cdu_members(cdu_id))
+        cdu_rec_mems = set(cdu2mems[cdu_id])
+        internal_head = dict()
+        for cdu_mem in cdu_mems:
+            for rel in gra.links(cdu_mem):
+                if gra.is_relation(rel):
+                    src, tgt = gra.rel_links(rel)
+                    # src can be any DU under the current CDU, eg. even
+                    # a member of a nested CDU ; this is probably too
+                    # loose but we'll see later if we need to refine
+                    if src in cdu_rec_mems and tgt in cdu_mems:
+                        internal_head[tgt] = src
+        unheaded_mems = cdu_mems - set(internal_head.keys())
+        if len(unheaded_mems) > 1:
+            report_items.append(
+                SchemaItem(doc, contexts, cdu, []))
+    return report_items
+# end connectedness of CDU members
 
 # ---------------------------------------------------------------------
 # run
@@ -557,3 +650,6 @@ def run(inputs, k):
     quibble('non dialogue-initial EDUs without incoming links',
             search_graph_edus(simplified_inputs, k,
                               simplified_graph, is_disconnected))
+
+    squawk('CDUs with more than one head',
+           are_single_headed_cdus(inputs, k, graph))
