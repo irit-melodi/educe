@@ -302,18 +302,78 @@ def is_non2sided_rel(gra, _, rel):
             len(gra.links(rel)) != 2)
 
 
-def is_weird_qap(gra, _, rel):
-    """
-    Relation in a graph that represent a question answer pair
-    which either does not start with a question, or which ends
-    in a question
+def is_weird_qap(gra, contexts, rel):
+    """Return True if rel is a weird Question-Answer Pair relation.
+
+    Parameters
+    ----------
+    gra : TODO
+        Graph?
+
+    contexts  : TODO
+        Surrounding context
+
+    rel : TODO
+        Relation.
+
+    Returns
+    -------
+    res : boolean
+        True if rel is a relation that represents a question answer pair
+        which either does not start with a question, or which ends in a
+        question.
     """
     node1, node2 = gra.links(rel)
     is_qap = gra.annotation(rel).type == 'Question-answer_pair'
-    span1 = gra.annotation(node1).text_span()
-    span2 = gra.annotation(node2).text_span()
+    anno1 = gra.annotation(node1)
+    anno2 = gra.annotation(node2)
+    span1 = anno1.text_span()
+    span2 = anno2.text_span()
     final1 = gra.doc.text(span1)[-1]
     final2 = gra.doc.text(span2)[-1]
+
+    # 2017-03-30 trade offer
+    # don't raise warning for QAP where the first term is a trade offer
+    # with the bank or a port and the second is the Server message for
+    # its success ;
+    # we currently use a precise characterization of the messages
+    # involved so as to avoid unintentional captures
+    # DIRTY c/c of helpers from is_weird_ack ; a clean refactoring and
+    # redefinition of the graph API is much needed
+    def edu_speaker(anno):
+        "return the speaker for an EDU"
+        return contexts[anno].speaker() if anno in contexts else None
+
+    def node_speaker(anno):
+        "return the designated speaker for an EDU or CDU"
+        if stac.is_edu(anno):
+            return edu_speaker(anno)
+        elif stac.is_cdu(anno):
+            speakers = frozenset(edu_speaker(x) for x in anno.terminals())
+            if len(speakers) == 1:
+                return list(speakers)[0]
+            else:
+                return None
+        else:
+            return None
+    # end DIRTY
+
+    def is_trade_offer_bank_port(anno):
+        anno_text = gra.doc.text(anno.text_span())
+        return (node_speaker(anno) == 'UI' and
+                'made an offer to trade' in anno_text and
+                'from the bank or a port.' in anno_text)
+
+    def is_offer_bank_port_accepted(anno):
+        anno_text = gra.doc.text(anno.text_span())
+        return (node_speaker(anno) == 'Server' and
+                'traded' in anno_text and
+                ('from the bank.' in anno_text or
+                 'from a port.' in anno_text))
+
+    is_trade_offer_bank_port_qap = (is_trade_offer_bank_port(anno1) and
+                                    is_offer_bank_port_accepted(anno2))
+    # end trade offer
 
     def is_punc(char):
         "true if a char is a punctuation char"
@@ -321,7 +381,8 @@ def is_weird_qap(gra, _, rel):
 
     is_weird1 = is_punc(final1) and final1 != "?"
     is_weird2 = final2 == "?"
-    return is_qap and (is_weird1 or is_weird2)
+    return (is_qap and (is_weird1 or is_weird2) and
+            not is_trade_offer_bank_port_qap)
 
 
 def rfc_violations(inputs, k, gra):
