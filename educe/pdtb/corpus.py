@@ -24,9 +24,19 @@ class Reader(educe.corpus.Reader):
     def __init__(self, corpusdir):
         educe.corpus.Reader.__init__(self, corpusdir)
 
-    def files(self):
+    def files(self, doc_glob=None):
+        """
+        Parameters
+        ----------
+        doc_glob : str, optional
+            Glob expression for document (folder) names ; if `None`, it
+            uses the wildcard '*/*' for folder names and file basenames.
+        """
+        if doc_glob is None:
+            doc_glob = '*/*'
         anno_files = {}
-        full_glob = os.path.join(self.rootdir, '*/*.pdtb')
+        full_glob = os.path.join(
+            self.rootdir, '{doc_glob}.pdtb'.format(doc_glob=doc_glob))
         for fname in glob(full_glob):
             bname = os.path.basename(fname)
             doc = os.path.splitext(bname)[0]

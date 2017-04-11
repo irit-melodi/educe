@@ -36,20 +36,25 @@ class Reader(educe.corpus.Reader):
     def __init__(self, corpusdir):
         educe.corpus.Reader.__init__(self, corpusdir)
 
-    def files(self, exclude_file_docs=False):
+    def files(self, doc_glob=None):
         """
         Parameters
         ----------
-        exclude_file_docs : boolean, optional (default=False)
-            If True, fileX documents are ignored. The figures reported by
-            (Li et al., 2014) on the RST-DT corpus indicate they exclude
-            fileN files, whereas Joty seems to include them.
-            fileN documents are more damaged than wsj_XX documents, e.g.
-            text mismatches with the corresponding document in the PTB.
+        doc_glob : str, optional
+            Glob for document names, ie. file basenames. A common
+            pattern is `doc_glob='wsj_*'` to exclude documents whose
+            file basenames are of the form `fileX`.
+            `fileX` documents are damaged compared to `wsj_XX` documents
+            ie. their text and that of the corresponding document in the
+            PTB mismatch, and text formatting is scrambled. For example,
+            the figures reported in the paper of (Li et al., 2014)
+            indicate they only consider `wsj_XX` files.
         """
+        if doc_glob is None:
+            doc_glob = '*'
         anno_files = {}
-        dis_glob = 'wsj_*.dis' if exclude_file_docs else '*.dis'
-        full_glob = os.path.join(self.rootdir, dis_glob)
+        full_glob = os.path.join(
+            self.rootdir, '{doc_glob}.dis'.format(doc_glob=doc_glob))
 
         for fname in glob(full_glob):
             text_file = os.path.splitext(fname)[0]
@@ -146,7 +151,8 @@ class RstDtParser(object):
                  exclude_file_docs=False):
         self.reader = Reader(corpus_dir)
         # pre-load corpus
-        anno_files_unfltd = self.reader.files(exclude_file_docs)
+        doc_glob = 'wsj_*' if exclude_file_docs else None
+        anno_files_unfltd = self.reader.files(doc_glob=doc_glob)
         is_interesting = educe.util.mk_is_interesting(args)
         anno_files = self.reader.filter(anno_files_unfltd, is_interesting)
         self.corpus = self.reader.slurp(anno_files, verbose=True)

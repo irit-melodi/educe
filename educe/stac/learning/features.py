@@ -31,11 +31,11 @@ from educe.stac.context import (enclosed,
                                 edus_in_span,
                                 turns_in_span)
 from educe.stac.corpus import (twin_key)
-from educe.learning.csv import tune_for_csv
+from educe.learning.educe_csv_format import tune_for_csv
 from educe.learning.util import tuple_feature, underscore
 import educe.corpus
 import educe.glozz
-import educe.learning.csv as educe_csv
+import educe.learning.educe_csv_format as educe_csv
 import educe.stac
 import educe.stac.lexicon.pdtb_markers as pdtb_markers
 import educe.stac.graph as stac_gr
