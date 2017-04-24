@@ -463,15 +463,15 @@ def read_corpus_as_dataframes(version='situated', split='all'):
         res_dfs.append(game_dfs[7])
         pref_dfs.append(game_dfs[8])
     # concatenate each list into a single dataframe
-    turns = pd.concat(turn_dfs)
-    dlgs = pd.concat(dlg_dfs)
-    segs = pd.concat(seg_dfs)
-    acts = pd.concat(act_dfs)
-    schms = pd.concat(schm_dfs)
-    schm_mbrs = pd.concat(schm_mbr_dfs)
-    rels = pd.concat(rel_dfs)
-    res = pd.concat(res_dfs)
-    pref = pd.concat(pref_dfs)
+    turns = pd.concat(turn_dfs, ignore_index=True)
+    dlgs = pd.concat(dlg_dfs, ignore_index=True)
+    segs = pd.concat(seg_dfs, ignore_index=True)
+    acts = pd.concat(act_dfs, ignore_index=True)
+    schms = pd.concat(schm_dfs, ignore_index=True)
+    schm_mbrs = pd.concat(schm_mbr_dfs, ignore_index=True)
+    rels = pd.concat(rel_dfs, ignore_index=True)
+    res = pd.concat(res_dfs, ignore_index=True)
+    pref = pd.concat(pref_dfs, ignore_index=True)
     return turns, dlgs, segs, acts, schms, schm_mbrs, rels, res, pref
 
 
