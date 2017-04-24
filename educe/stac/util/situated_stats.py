@@ -8,11 +8,12 @@ from __future__ import absolute_import, print_function
 from glob import glob
 from itertools import chain
 import os
+import warnings
 
 import pandas as pd
 
 from educe.stac.annotation import (is_dialogue, is_edu, is_paragraph,
-                                   is_resource, is_turn)
+                                   is_preference, is_resource, is_turn)
 from educe.stac.corpus import Reader as StacReader
 
 
@@ -89,10 +90,11 @@ def read_game_as_dataframes(game_folder, thorough=True):
         stage = doc_key.stage
         annotator = doc_key.annotator
         # process annotations in doc
-        print(doc, subdoc, stage, annotator, doc_val)
+        print(doc, subdoc, stage, annotator)
         doc_text = doc_val.text()
-        print(doc_text)
+        # print(doc_text)
         for anno in doc_val.units:
+            # attributes common to all units
             unit_dict = {
                 # identification
                 'global_id': anno.identifier(),
@@ -106,11 +108,18 @@ def read_game_as_dataframes(game_folder, thorough=True):
                 'span_end': anno.span.char_end,
                 'text': doc_val.text(span=anno.span),
                 # metadata
-                'last_modifier': anno.metadata['lastModifier'],
-                'last_modif_date': anno.metadata['lastModificationDate'],
                 'creation_date': anno.metadata['creation-date'],
                 'author': anno.metadata['author'],
             }
+            # additional metadata, sometimes absent
+            if (('lastModificationDate' in anno.metadata and
+                 'lastModifier' in anno.metadata)):
+                unit_dict.update({
+                    'last_modifier': anno.metadata['lastModifier'],
+                    'last_modif_date': anno.metadata['lastModificationDate'],
+                })
+
+            # fields specific to each type of unit
             if is_paragraph(anno):
                 # paragraph: ignore? one per turn
                 pass
@@ -150,16 +159,22 @@ def read_game_as_dataframes(game_folder, thorough=True):
                     # modification date, last modifier
                     pass  # FIXME check existence (exact duplicate)
             elif is_dialogue(anno):
-                if (sorted(anno.features.keys()) !=
-                    ['Dice_rolling', 'Gets', 'Trades']):
-                    print(anno.features)  # RESUME HERE !
-                    raise ValueError('missing features in dialogue')
-                unit_dict.update({
-                    # features
-                    'gets': anno.features['Gets'],
-                    'trades': anno.features['Trades'],
-                    'dice_rolls': anno.features['Dice_rolling'],
-                })
+                expected_dlg_features = set(
+                    ['Dice_rolling', 'Gets', 'Trades'])
+                if set(anno.features.keys()).issubset(expected_dlg_features):
+                    unit_dict.update({
+                        # features
+                        'gets': anno.features.get('Gets', None),
+                        'trades': anno.features.get('Trades', None),
+                        'dice_rolls': anno.features.get('Dice_rolling', None),
+                    })
+                else:
+                    warn_msg = 'Dialogue {}: unexpected features {}'.format(
+                        anno.identifier(),
+                        ', '.join(x for x in sorted(anno.features.keys())
+                                  if x not in set(expected_dlg_features)))
+                    warnings.warn(warn_msg)
+
                 if stage == 'discourse':
                     df_dlgs.append(unit_dict)
                 elif thorough:
@@ -174,11 +189,18 @@ def read_game_as_dataframes(game_folder, thorough=True):
                 })
                 assert (sorted(anno.features.keys()) ==
                         ['Correctness', 'Kind', 'Quantity', 'Status'])
+            elif is_preference(anno):
+                if anno.features:
+                    print(anno.__dict__)
+                    raise ValueError('Preference with features {}'.format(
+                        anno.features))
             else:
                 print(anno.__dict__)
                 raise ValueError('what unit is this?')
             # print('Unit', anno)
-        for anno in doc_val.schemas:  # only in 'discourse' ?
+        for anno in doc_val.schemas:
+            # in 'discourse': CDUs ;
+            # in 'units': combinations of resources (OR, AND)
             schm_dict = {
                 # identification
                 'global_id': anno.identifier(),
@@ -196,7 +218,30 @@ def read_game_as_dataframes(game_folder, thorough=True):
             }
             # assumption: no feature
             if anno.features:
-                raise ValueError('Wow, a schema with *features*')
+                if stage == 'units':
+                    if anno.features.keys() == ['Operator']:
+                        schm_dict.update({
+                            'operator': anno.features['Operator'],
+                        })
+                    else:
+                        print(anno.origin)
+                        print(anno.__dict__)
+                        print(anno.features)
+                        raise ValueError('{}: schema with *features*'.format(
+                            stage))
+                elif stage == 'discourse':
+                    # tolerate 'default': 'default' for the moment, but
+                    # should probably cleaned out
+                    if anno.features.keys() == ['default']:
+                        schm_dict.update({
+                            'default': anno.features['default'],
+                        })
+                    else:
+                        print(anno.origin)
+                        print(anno.__dict__)
+                        print(anno.features)
+                        raise ValueError('{}: schema with *features*'.format(
+                            stage))
             df_schms.append(schm_dict)
             # associate to this schema each of its members ; assumptions:
             # - members should be units or schemas (no relation)
@@ -211,6 +256,7 @@ def read_game_as_dataframes(game_folder, thorough=True):
             # TODO post-verification: check that all members do exist
             # (should be useless as stac-check should catch it)
         for anno in doc_val.relations:
+            # attributes common to all(?) types of annotations
             rel_dict = {
                 # identification
                 'global_id': anno.identifier(),
@@ -226,18 +272,31 @@ def read_game_as_dataframes(game_folder, thorough=True):
                 'creation_date': anno.metadata['creation-date'],
                 'author': anno.metadata['author'],
             }
+            # attributes specific to relations
+            if 'Argument_scope' not in anno.features:
+                # required feature
+                w_msg = '{}: relation {} has no Argument_scope'.format(
+                    str(doc_key), anno.identifier()
+                )
+                warnings.warn(w_msg)
             rel_dict.update({
                 # features
-                'arg_scope': anno.features['Argument_scope'],
-                'comments': anno.features['Comments'],
+                'arg_scope': anno.features.get('Argument_scope', None), # req
+                'comments': anno.features.get('Comments', None),  # opt
                 # endpoints
                 'source': anno.source.identifier(),
                 'target': anno.target.identifier(),
             })
-            # hyp: features has only these 2 fields
-            assert (sorted(anno.features.keys()) ==
-                    ['Argument_scope', 'Comments'])
             df_rels.append(rel_dict)
+
+    # create dataframes
+    df_turns = pd.DataFrame(df_turns)
+    df_dlgs = pd.DataFrame(df_dlgs)
+    df_segs = pd.DataFrame(df_segs)
+    df_acts = pd.DataFrame(df_acts)
+    df_schms = pd.DataFrame(df_schms)
+    df_schm_mbrs = pd.DataFrame(df_schm_mbrs)
+    df_rels = pd.DataFrame(df_rels)
 
     return (df_turns, df_dlgs, df_segs, df_acts, df_schms, df_schm_mbrs,
             df_rels)
@@ -276,10 +335,40 @@ def read_corpus_as_dataframes(version='situated', split='all'):
     game_folders = list(chain.from_iterable(glob(x) for x in sel_globs))
     # map games to their folders
     game_dict = {os.path.basename(x): x for x in game_folders}
+    # lists of dataframes
+    turn_dfs = []
+    dlg_dfs = []
+    seg_dfs = []
+    act_dfs = []
+    schm_dfs = []
+    schm_mbr_dfs = []
+    rel_dfs = []
     for game_name, game_folder in game_dict.items():
         game_dfs = read_game_as_dataframes(game_folder)
-    print(game_dict)
+        turn_dfs.append(game_dfs[0])
+        dlg_dfs.append(game_dfs[1])
+        seg_dfs.append(game_dfs[2])
+        act_dfs.append(game_dfs[3])
+        schm_dfs.append(game_dfs[4])
+        schm_mbr_dfs.append(game_dfs[5])
+        rel_dfs.append(game_dfs[6])
+    # concatenate each list into a single dataframe
+    turns = pd.concat(turn_dfs)
+    dlgs = pd.concat(dlg_dfs)
+    segs = pd.concat(seg_dfs)
+    acts = pd.concat(act_dfs)
+    schms = pd.concat(schm_dfs)
+    schm_mbrs = pd.concat(schm_mbr_dfs)
+    rels = pd.concat(rel_dfs)
+    return turns, dlgs, segs, acts, schms, schm_mbrs, rels
 
 
 if __name__ == '__main__':
-    read_corpus_as_dataframes(version='situated', split='all')
+    turns, dlgs, segs, acts, schms, schm_mbrs, rels = read_corpus_as_dataframes(version='situated', split='all')
+    print(turns[:5])
+    print(dlgs[:5])
+    print(segs[:5])
+    print(acts[:5])
+    print(schms[:5])
+    print(schm_mbrs[:5])
+    print(rels[:5])
