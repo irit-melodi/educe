@@ -54,6 +54,103 @@ SPLIT_GLOBS_SPECT = {
                      GAME_GLOBS.values()))]
 }
 
+UNIT_COLS = [
+    # identification
+    'global_id',
+    'doc',
+    'subdoc',
+    'stage',
+    'annotator',
+    # type, span, text
+    'type',
+    'span_beg',
+    'span_end',
+    'text',
+    # metadata
+    'creation_date',
+    'author',
+    'last_modif_date',  # optional?
+    'last_modifier',  # optional?
+]
+
+TURN_COLS = UNIT_COLS + [
+    'timestamp',
+    'turn_id',
+    'emitter',
+    'developments',
+    'resources',
+    'comments',
+]
+
+SEG_COLS = UNIT_COLS
+
+ACT_COLS = [
+    'global_id',  # foreign key to SEG
+    'surface_act',
+    'addressee',
+]
+
+DLG_COLS = UNIT_COLS + [
+    'gets',
+    'trades',
+    'dice_rolls',
+]
+
+RES_COLS = UNIT_COLS + [
+    'status',
+    'kind',
+    'correctness',
+    'quantity',
+]
+
+PREF_COLS = UNIT_COLS
+
+SCHM_COLS = [
+    # identification
+    'global_id',
+    'doc',
+    'subdoc',
+    'stage',
+    'annotator',
+    # type
+    'type',
+    # metadata
+    'creation_date',
+    'author',
+    'last_modif_date',  # optional?
+    'last_modifier',  # optional?
+    # features?
+    'operator',
+    'default',
+]
+
+SCHM_MBRS_COLS = [
+    'member_id',  # foreign key: global_id of schema or seg
+    'schema_id',  # foreign key: global_id of schema
+]
+
+REL_COLS = [
+    # identification
+    'global_id',
+    'doc',
+    'subdoc',
+    'stage',
+    'annotator',
+    # type
+    'type',
+    # metadata
+    'creation_date',
+    'author',
+    'last_modif_date',  # optional?
+    'last_modifier',  # optional?
+    # features
+    'arg_scope',  # req?
+    'comments',  # opt?
+    # endpoints
+    'source',
+    'target',
+]
+
 
 def read_game_as_dataframes(game_folder, thorough=True):
     """Read an annotated game as dataframes.
@@ -80,6 +177,8 @@ def read_game_as_dataframes(game_folder, thorough=True):
     df_schm_mbrs = []  # schema members
     df_rels = []  # relations
     df_acts = []  # dialogue acts
+    df_res = []  # resources
+    df_pref = []  # preferences
 
     print(game_folder)  # DEBUG
     game_upfolder, game_name = os.path.split(game_folder)
@@ -90,7 +189,7 @@ def read_game_as_dataframes(game_folder, thorough=True):
         stage = doc_key.stage
         annotator = doc_key.annotator
         # process annotations in doc
-        print(doc, subdoc, stage, annotator)
+        print(doc, subdoc, stage, annotator)  # verbose
         doc_text = doc_val.text()
         # print(doc_text)
         for anno in doc_val.units:
@@ -147,7 +246,9 @@ def read_game_as_dataframes(game_folder, thorough=True):
                         raise ValueError('Wow, a discourse segment has *features*')
                     df_segs.append(unit_dict)
                 elif stage == 'units':
+                    # each entry (should) correspond to an entry in df_segs
                     act_dict = {
+                        'global_id': anno.identifier(),  # foreign key
                         'surface_act': anno.features['Surface_act'],
                         'addressee': anno.features['Addressee'],
                     }
@@ -189,15 +290,18 @@ def read_game_as_dataframes(game_folder, thorough=True):
                 })
                 assert (sorted(anno.features.keys()) ==
                         ['Correctness', 'Kind', 'Quantity', 'Status'])
+                df_res.append(unit_dict)
             elif is_preference(anno):
                 if anno.features:
                     print(anno.__dict__)
                     raise ValueError('Preference with features {}'.format(
                         anno.features))
+                df_pref.append(unit_dict)
             else:
                 print(anno.__dict__)
                 raise ValueError('what unit is this?')
             # print('Unit', anno)
+
         for anno in doc_val.schemas:
             # in 'discourse': CDUs ;
             # in 'units': combinations of resources (OR, AND)
@@ -290,16 +394,18 @@ def read_game_as_dataframes(game_folder, thorough=True):
             df_rels.append(rel_dict)
 
     # create dataframes
-    df_turns = pd.DataFrame(df_turns)
-    df_dlgs = pd.DataFrame(df_dlgs)
-    df_segs = pd.DataFrame(df_segs)
-    df_acts = pd.DataFrame(df_acts)
-    df_schms = pd.DataFrame(df_schms)
-    df_schm_mbrs = pd.DataFrame(df_schm_mbrs)
-    df_rels = pd.DataFrame(df_rels)
+    df_turns = pd.DataFrame(df_turns, columns=TURN_COLS)
+    df_dlgs = pd.DataFrame(df_dlgs, columns=DLG_COLS)
+    df_segs = pd.DataFrame(df_segs, columns=SEG_COLS)
+    df_acts = pd.DataFrame(df_acts, columns=ACT_COLS)
+    df_schms = pd.DataFrame(df_schms, columns=SCHM_COLS)
+    df_schm_mbrs = pd.DataFrame(df_schm_mbrs, columns=SCHM_MBRS_COLS)
+    df_rels = pd.DataFrame(df_rels, columns=REL_COLS)
+    df_res = pd.DataFrame(df_res, columns=RES_COLS)
+    df_pref = pd.DataFrame(df_pref, columns=PREF_COLS)
 
     return (df_turns, df_dlgs, df_segs, df_acts, df_schms, df_schm_mbrs,
-            df_rels)
+            df_rels, df_res, df_pref)
 
 
 def read_corpus_as_dataframes(version='situated', split='all'):
@@ -343,6 +449,8 @@ def read_corpus_as_dataframes(version='situated', split='all'):
     schm_dfs = []
     schm_mbr_dfs = []
     rel_dfs = []
+    res_dfs = []
+    pref_dfs = []
     for game_name, game_folder in game_dict.items():
         game_dfs = read_game_as_dataframes(game_folder)
         turn_dfs.append(game_dfs[0])
@@ -352,6 +460,8 @@ def read_corpus_as_dataframes(version='situated', split='all'):
         schm_dfs.append(game_dfs[4])
         schm_mbr_dfs.append(game_dfs[5])
         rel_dfs.append(game_dfs[6])
+        res_dfs.append(game_dfs[7])
+        pref_dfs.append(game_dfs[8])
     # concatenate each list into a single dataframe
     turns = pd.concat(turn_dfs)
     dlgs = pd.concat(dlg_dfs)
@@ -360,11 +470,13 @@ def read_corpus_as_dataframes(version='situated', split='all'):
     schms = pd.concat(schm_dfs)
     schm_mbrs = pd.concat(schm_mbr_dfs)
     rels = pd.concat(rel_dfs)
-    return turns, dlgs, segs, acts, schms, schm_mbrs, rels
+    res = pd.concat(res_dfs)
+    pref = pd.concat(pref_dfs)
+    return turns, dlgs, segs, acts, schms, schm_mbrs, rels, res, pref
 
 
 if __name__ == '__main__':
-    turns, dlgs, segs, acts, schms, schm_mbrs, rels = read_corpus_as_dataframes(version='situated', split='all')
+    turns, dlgs, segs, acts, schms, schm_mbrs, rels, res, pref = read_corpus_as_dataframes(version='situated', split='all')
     print(turns[:5])
     print(dlgs[:5])
     print(segs[:5])
@@ -372,3 +484,5 @@ if __name__ == '__main__':
     print(schms[:5])
     print(schm_mbrs[:5])
     print(rels[:5])
+    print(res[:5])
+    print(pref[:5])
