@@ -152,13 +152,17 @@ REL_COLS = [
 ]
 
 
-def read_game_as_dataframes(game_folder, thorough=True):
+def read_game_as_dataframes(game_folder, sel_annotator=None, thorough=True):
     """Read an annotated game as dataframes.
 
     Parameters
     ----------
     game_folder : path
         Path to the game folder.
+
+    sel_annotator : str, optional
+        Identifier of the annotator whose version we want. If `None`,
+        the existing metal annotator will be used (BRONZE|SILVER|GOLD).
 
     thorough : boolean, defaults to True
         If True, check that annotations in 'units' and 'unannotated'
@@ -170,6 +174,9 @@ def read_game_as_dataframes(game_folder, thorough=True):
     dfs : tuple of DataFrame
         DataFrames for the annotated game.
     """
+    if sel_annotator is None:
+        sel_annotator = 'metal'
+
     df_turns = []  # turns
     df_segs = []  # segments: EDUs, EEUs
     df_dlgs = []  # dialogues
@@ -188,6 +195,12 @@ def read_game_as_dataframes(game_folder, thorough=True):
         subdoc = doc_key.subdoc
         stage = doc_key.stage
         annotator = doc_key.annotator
+        # skip docs not from a selected annotator
+        if ((sel_annotator == 'metal' and
+             annotator not in ('BRONZE', 'SILVER', 'GOLD')) or
+            (sel_annotator != 'metal' and
+             annotator != sel_annotator)):
+            continue
         # process annotations in doc
         print(doc, subdoc, stage, annotator)  # verbose
         doc_text = doc_val.text()
@@ -209,14 +222,10 @@ def read_game_as_dataframes(game_folder, thorough=True):
                 # metadata
                 'creation_date': anno.metadata['creation-date'],
                 'author': anno.metadata['author'],
+                # optional?
+                'last_modifier': anno.metadata.get('lastModifier', None),
+                'last_modif_date': anno.metadata.get('lastModificationDate', None),
             }
-            # additional metadata, sometimes absent
-            if (('lastModificationDate' in anno.metadata and
-                 'lastModifier' in anno.metadata)):
-                unit_dict.update({
-                    'last_modifier': anno.metadata['lastModifier'],
-                    'last_modif_date': anno.metadata['lastModificationDate'],
-                })
 
             # fields specific to each type of unit
             if is_paragraph(anno):
@@ -244,6 +253,8 @@ def read_game_as_dataframes(game_folder, thorough=True):
                 if stage == 'discourse':
                     if anno.features:
                         raise ValueError('Wow, a discourse segment has *features*')
+                    # TODO retrieve the turn_id, possibly the offset from/to
+                    # the beginning/end of the text of the turn
                     df_segs.append(unit_dict)
                 elif stage == 'units':
                     # each entry (should) correspond to an entry in df_segs
@@ -315,10 +326,11 @@ def read_game_as_dataframes(game_folder, thorough=True):
                 # type
                 'type': anno.type,
                 # metadata
-                'last_modifier': anno.metadata['lastModifier'],
-                'last_modif_date': anno.metadata['lastModificationDate'],
                 'creation_date': anno.metadata['creation-date'],
                 'author': anno.metadata['author'],
+                # optional? metadata
+                'last_modifier': anno.metadata.get('lastModifier', None),
+                'last_modif_date': anno.metadata.get('lastModificationDate', None),
             }
             # assumption: no feature
             if anno.features:
@@ -408,7 +420,8 @@ def read_game_as_dataframes(game_folder, thorough=True):
             df_rels, df_res, df_pref)
 
 
-def read_corpus_as_dataframes(version='situated', split='all'):
+def read_corpus_as_dataframes(version='situated', split='all',
+                              sel_games=None):
     """Read the entire corpus as dataframes.
 
     Parameters
@@ -418,6 +431,15 @@ def read_corpus_as_dataframes(version='situated', split='all'):
 
     split : one of {'all', 'train', 'test'}, defaults to 'all'
         Split of the corpus.
+
+    sel_games : list of str, optional
+        List of selected games. If `None`, all games for the selected
+        version and split.
+
+    Returns
+    -------
+    dfs : tuple of DataFrame
+        Dataframes for turns, segments, acts...
     """
     if version not in ('ling', 'situated'):
         raise ValueError("Version must be one of {'ling', 'situated'}")
@@ -441,7 +463,12 @@ def read_corpus_as_dataframes(version='situated', split='all'):
     game_folders = list(chain.from_iterable(glob(x) for x in sel_globs))
     # map games to their folders
     game_dict = {os.path.basename(x): x for x in game_folders}
+    if sel_games is not None:
+        game_dict = {k: v for k, v in game_dict.items()
+                     if k in sel_games}
     # lists of dataframes
+    # TODO dataframe of docs? or glozz documents = subdocs?
+    # what fields should be included?
     turn_dfs = []
     dlg_dfs = []
     seg_dfs = []
@@ -476,13 +503,31 @@ def read_corpus_as_dataframes(version='situated', split='all'):
 
 
 if __name__ == '__main__':
-    turns, dlgs, segs, acts, schms, schm_mbrs, rels, res, pref = read_corpus_as_dataframes(version='situated', split='all')
-    print(turns[:5])
-    print(dlgs[:5])
-    print(segs[:5])
-    print(acts[:5])
-    print(schms[:5])
-    print(schm_mbrs[:5])
-    print(rels[:5])
-    print(res[:5])
-    print(pref[:5])
+    # read the situated version
+    turns_situ, dlgs_situ, segs_situ, acts_situ, schms_situ, schm_mbrs_situ, rels_situ, res_situ, pref_situ = read_corpus_as_dataframes(version='situated', split='all')
+    print(turns_situ[:5])
+    if False:
+        print(dlgs_situ[:5])
+        print(segs_situ[:5])
+        print(acts_situ[:5])
+        print(schms_situ[:5])
+        print(schm_mbrs_situ[:5])
+        print(rels_situ[:5])
+        print(res_situ[:5])
+        print(pref_situ[:5])
+
+    # get the list of documents in the situated version, filter _spect to keep
+    # them (only)
+    games_situ = list(turns_situ['doc'].unique())
+
+    # read the spect version
+    turns_spect, dlgs_spect, segs_spect, acts_spect, schms_spect, schm_mbrs_spect, rels_spect, res_spect, pred_spect = read_corpus_as_dataframes(version='ling', split='all', sel_games=games_situ)
+    print(turns_spect[:5])
+    if False:
+        print(dlgs_spect[:5])
+        print(acts_spect[:5])
+        print(schms_spect[:5])
+        print(schm_mbrs_spect[:5])
+        print(rels_spect[:5])
+        print(res_spect[:5])
+        print(pref_spect[:5])
