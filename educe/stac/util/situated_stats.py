@@ -202,7 +202,7 @@ def read_game_as_dataframes(game_folder, sel_annotator=None, thorough=True):
              annotator != sel_annotator)):
             continue
         # process annotations in doc
-        print(doc, subdoc, stage, annotator)  # verbose
+        # print(doc, subdoc, stage, annotator)  # verbose
         doc_text = doc_val.text()
         # print(doc_text)
         for anno in doc_val.units:
@@ -253,8 +253,6 @@ def read_game_as_dataframes(game_folder, sel_annotator=None, thorough=True):
                 if stage == 'discourse':
                     if anno.features:
                         raise ValueError('Wow, a discourse segment has *features*')
-                    # TODO retrieve the turn_id, possibly the offset from/to
-                    # the beginning/end of the text of the turn
                     df_segs.append(unit_dict)
                 elif stage == 'units':
                     # each entry (should) correspond to an entry in df_segs
@@ -416,12 +414,43 @@ def read_game_as_dataframes(game_folder, sel_annotator=None, thorough=True):
     df_res = pd.DataFrame(df_res, columns=RES_COLS)
     df_pref = pd.DataFrame(df_pref, columns=PREF_COLS)
 
+    # add columns computed from other dataframes
+    # * for segments: retrieve the turn_id and the char positions of the
+    # beg and end of the segment in the turn text
+    def get_seg_turn_cols(seg):
+        """Helper to retrieve turn info for a segment (EDU, EEU)."""
+        doc = seg['doc']
+        subdoc = seg['subdoc']
+        seg_beg = seg['span_beg']
+        seg_end = seg['span_end']
+        cand_turns = df_turns[(df_turns['span_beg'] <= seg_beg) &
+                              (seg_end <= df_turns['span_end']) &
+                              (doc == df_turns['doc']) &
+                              (subdoc == df_turns['subdoc'])]
+        # NB: cand_turns should contain a unique turn
+        # compute the beg and end (char) positions of the segment in the turn
+        # so we can match between the situated and linguistic versions when
+        # the segmentation has changed
+        turn_text = cand_turns['text'].item()
+        seg_text = seg['text']
+        turn_span_beg = turn_text.find(seg_text)
+        turn_span_end = turn_span_beg + len(seg_text)
+        turn_dict = {
+            'turn_id': cand_turns['turn_id'].item(),
+            'turn_span_beg': turn_span_beg,
+            'turn_span_end': turn_span_end,
+        }
+        return pd.Series(turn_dict)
+
+    seg_turn_cols = df_segs.apply(get_seg_turn_cols, axis=1)
+    df_segs = pd.concat([df_segs, seg_turn_cols], axis=1)
+
     return (df_turns, df_dlgs, df_segs, df_acts, df_schms, df_schm_mbrs,
             df_rels, df_res, df_pref)
 
 
 def read_corpus_as_dataframes(version='situated', split='all',
-                              sel_games=None):
+                              sel_games=None, exc_games=None):
     """Read the entire corpus as dataframes.
 
     Parameters
@@ -435,6 +464,10 @@ def read_corpus_as_dataframes(version='situated', split='all',
     sel_games : list of str, optional
         List of selected games. If `None`, all games for the selected
         version and split.
+
+    exc_games : list of str, optional
+        List of excluded games. If `None`, all games for the selected
+        version and split. Applies after, hence overrides, `sel_games`.
 
     Returns
     -------
@@ -466,6 +499,9 @@ def read_corpus_as_dataframes(version='situated', split='all',
     if sel_games is not None:
         game_dict = {k: v for k, v in game_dict.items()
                      if k in sel_games}
+    if exc_games is not None:
+        game_dict = {k: v for k, v in game_dict.items()
+                     if k not in exc_games}
     # lists of dataframes
     # TODO dataframe of docs? or glozz documents = subdocs?
     # what fields should be included?
@@ -503,9 +539,12 @@ def read_corpus_as_dataframes(version='situated', split='all',
 
 
 if __name__ == '__main__':
+    # situated games that are still incomplete, so should be excluded
+    not_ready = ['s2-league3-game5', 's2-league4-game2']
+    sel_games = None  # ['pilot20', 'pilot21']
     # read the situated version
-    turns_situ, dlgs_situ, segs_situ, acts_situ, schms_situ, schm_mbrs_situ, rels_situ, res_situ, pref_situ = read_corpus_as_dataframes(version='situated', split='all')
-    print(turns_situ[:5])
+    turns_situ, dlgs_situ, segs_situ, acts_situ, schms_situ, schm_mbrs_situ, rels_situ, res_situ, pref_situ = read_corpus_as_dataframes(version='situated', split='all', sel_games=sel_games, exc_games=not_ready)
+    print(segs_situ[:5])
     if False:
         print(dlgs_situ[:5])
         print(segs_situ[:5])
@@ -522,7 +561,7 @@ if __name__ == '__main__':
 
     # read the spect version
     turns_spect, dlgs_spect, segs_spect, acts_spect, schms_spect, schm_mbrs_spect, rels_spect, res_spect, pred_spect = read_corpus_as_dataframes(version='ling', split='all', sel_games=games_situ)
-    print(turns_spect[:5])
+    print(segs_spect[:5])
     if False:
         print(dlgs_spect[:5])
         print(acts_spect[:5])
@@ -531,3 +570,34 @@ if __name__ == '__main__':
         print(rels_spect[:5])
         print(res_spect[:5])
         print(pref_spect[:5])
+
+    # compare Dialog Act annotations between the two versions ; on common
+    # turns, they should be (almost) 100% identical
+    seg_acts_spect = pd.merge(segs_spect, acts_spect, on=['global_id'],
+                              how='inner')
+    seg_acts_situ = pd.merge(segs_situ, acts_situ, on=['global_id'],
+                             how='inner')
+    common_edus = pd.merge(
+        seg_acts_situ, seg_acts_spect,
+        on=['doc', 'turn_id', 'turn_span_beg', 'turn_span_end'],
+        how='inner'
+    )
+    print('Common EDUs:',
+          common_edus.shape[0], '/', seg_acts_spect.shape[0])
+    print('>>>>>>>>>>><<<<<<<<<<<')
+    print(common_edus[:5])
+    diff_acts = ((common_edus['surface_act_x'] != common_edus['surface_act_y']) &
+                 (common_edus['addressee_x'] != common_edus['addressee_y']))
+    changed_edu_acts = common_edus[diff_acts]
+    if changed_edu_acts.shape[0] > 0:
+        print('Changed EDU acts:',
+              changed_edu_acts.shape[0], '/', seg_acts_spect.shape[0])
+        print(changed_edu_acts[
+            ['doc', 'turn_id', 'turn_span_beg', 'turn_span_end',
+             'subdoc_x', 'global_id_x', 'text_x',
+             'surface_act_x', 'addressee_x',
+             'subdoc_y', 'global_id_y', 'text_y',
+             'surface_act_y', 'addressee_y']
+        ][:15])
+    else:
+        print('No changed EDU acts')
