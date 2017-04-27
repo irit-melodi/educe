@@ -541,7 +541,7 @@ def read_corpus_as_dataframes(version='situated', split='all',
 if __name__ == '__main__':
     # situated games that are still incomplete, so should be excluded
     not_ready = ['s2-league3-game5', 's2-league4-game2']
-    sel_games = None  # ['pilot20', 'pilot21']
+    sel_games = None  # ['pilot14']
     # read the situated version
     turns_situ, dlgs_situ, segs_situ, acts_situ, schms_situ, schm_mbrs_situ, rels_situ, res_situ, pref_situ = read_corpus_as_dataframes(version='situated', split='all', sel_games=sel_games, exc_games=not_ready)
     print(segs_situ[:5])
@@ -577,27 +577,55 @@ if __name__ == '__main__':
                               how='inner')
     seg_acts_situ = pd.merge(segs_situ, acts_situ, on=['global_id'],
                              how='inner')
-    common_edus = pd.merge(
-        seg_acts_situ, seg_acts_spect,
+    seg_acts_union = pd.merge(
+        seg_acts_spect, seg_acts_situ,
         on=['doc', 'turn_id', 'turn_span_beg', 'turn_span_end'],
-        how='inner'
+        how='outer',
+        indicator=True
     )
-    print('Common EDUs:',
-          common_edus.shape[0], '/', seg_acts_spect.shape[0])
-    print('>>>>>>>>>>><<<<<<<<<<<')
-    print(common_edus[:5])
-    diff_acts = ((common_edus['surface_act_x'] != common_edus['surface_act_y']) &
-                 (common_edus['addressee_x'] != common_edus['addressee_y']))
-    changed_edu_acts = common_edus[diff_acts]
-    if changed_edu_acts.shape[0] > 0:
-        print('Changed EDU acts:',
-              changed_edu_acts.shape[0], '/', seg_acts_spect.shape[0])
-        print(changed_edu_acts[
-            ['doc', 'turn_id', 'turn_span_beg', 'turn_span_end',
-             'subdoc_x', 'global_id_x', 'text_x',
-             'surface_act_x', 'addressee_x',
-             'subdoc_y', 'global_id_y', 'text_y',
-             'surface_act_y', 'addressee_y']
-        ][:15])
-    else:
-        print('No changed EDU acts')
+    # find EDUs that exist in both, only in _spect, only in _situ
+    seg_acts_both = seg_acts_union[
+        seg_acts_union['_merge'] == 'both']
+    seg_acts_spect_only = seg_acts_union[
+        seg_acts_union['_merge'] == 'left_only']
+    seg_acts_situ_only = seg_acts_union[
+        seg_acts_union['_merge'] == 'right_only']
+    print('#EDUs: common / _spect only / _situ only:',
+          seg_acts_both.shape[0],
+          seg_acts_spect_only.shape[0],
+          seg_acts_situ_only.shape[0])
+    # focus on different EDUs on common turns
+    print('EDUs in _spect only')
+    print(seg_acts_spect_only)
+    print('vs their counterparts in _situ')
+    # set of common turns, as tuples (doc, turn_id), where segments differ
+    diff_turn_segs = set(
+        tuple(x) for x in seg_acts_spect_only[['doc', 'turn_id']].values)
+    # 
+    diff_situ_mask = seg_acts_situ_only.apply(
+        lambda x: tuple(x[['doc', 'turn_id']].values) in diff_turn_segs,
+        axis=1
+    )
+    print(seg_acts_situ_only[diff_situ_mask])
+    print('Differing turns', diff_turn_segs)
+    raise ValueError("hop")
+
+    # RESUME HERE
+    if False:
+        print('>>>>>>>>>>><<<<<<<<<<<')
+        print(common_edus[:5])
+        diff_acts = ((common_edus['surface_act_x'] != common_edus['surface_act_y']) &
+                     (common_edus['addressee_x'] != common_edus['addressee_y']))
+        changed_edu_acts = common_edus[diff_acts]
+        if changed_edu_acts.shape[0] > 0:
+            print('Changed EDU acts:',
+                  changed_edu_acts.shape[0], '/', seg_acts_spect.shape[0])
+            print(changed_edu_acts[
+                ['doc', 'turn_id', 'turn_span_beg', 'turn_span_end',
+                 'subdoc_x', 'global_id_x', 'text_x',
+                 'surface_act_x', 'addressee_x',
+                 'subdoc_y', 'global_id_y', 'text_y',
+                 'surface_act_y', 'addressee_y']
+            ][:15])
+        else:
+            print('No changed EDU acts')
