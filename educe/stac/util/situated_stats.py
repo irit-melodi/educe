@@ -544,7 +544,7 @@ if __name__ == '__main__':
     sel_games = None  # ['pilot14']
     # read the situated version
     turns_situ, dlgs_situ, segs_situ, acts_situ, schms_situ, schm_mbrs_situ, rels_situ, res_situ, pref_situ = read_corpus_as_dataframes(version='situated', split='all', sel_games=sel_games, exc_games=not_ready)
-    print(segs_situ[:5])
+    # print(segs_situ[:5])
     if False:
         print(dlgs_situ[:5])
         print(segs_situ[:5])
@@ -561,7 +561,7 @@ if __name__ == '__main__':
 
     # read the spect version
     turns_spect, dlgs_spect, segs_spect, acts_spect, schms_spect, schm_mbrs_spect, rels_spect, res_spect, pred_spect = read_corpus_as_dataframes(version='ling', split='all', sel_games=games_situ)
-    print(segs_spect[:5])
+    # print(segs_spect[:5])
     if False:
         print(dlgs_spect[:5])
         print(acts_spect[:5])
@@ -594,7 +594,7 @@ if __name__ == '__main__':
           seg_acts_both.shape[0],
           seg_acts_spect_only.shape[0],
           seg_acts_situ_only.shape[0])
-    # focus on different EDUs on common turns
+    # focus on different EDUs in common turns
     print('EDUs in _spect only')
     print(seg_acts_spect_only)
     print('vs their counterparts in _situ')
@@ -608,24 +608,25 @@ if __name__ == '__main__':
     )
     print(seg_acts_situ_only[diff_situ_mask])
     print('Differing turns', diff_turn_segs)
-    raise ValueError("hop")
+    # same EDUs but different dialogue acts
+    print('-------------------------')
+    diff_acts_mask = (
+        (seg_acts_both['surface_act_x'] != seg_acts_both['surface_act_y']) &
+        (seg_acts_both['addressee_x'] != seg_acts_both['addressee_y'])
+    )
+    diff_acts = seg_acts_both[diff_acts_mask]
+    sel_cols = [
+        'doc', 'turn_id', 'turn_span_beg', 'turn_span_end',
+        'subdoc_x', 'global_id_x', 'text_x',
+        'surface_act_x', 'addressee_x',
+        'subdoc_y', 'global_id_y', 'text_y',
+        'surface_act_y', 'addressee_y'
+    ]
+    if diff_acts.shape[0] > 0:
+        print('Changed EDU acts: {} / {}'.format(
+            diff_acts.shape[0], seg_acts_both.shape[0]))
+        print(diff_acts[sel_cols][:15])
+    else:
+        print('No changed EDU acts')
 
-    # RESUME HERE
-    if False:
-        print('>>>>>>>>>>><<<<<<<<<<<')
-        print(common_edus[:5])
-        diff_acts = ((common_edus['surface_act_x'] != common_edus['surface_act_y']) &
-                     (common_edus['addressee_x'] != common_edus['addressee_y']))
-        changed_edu_acts = common_edus[diff_acts]
-        if changed_edu_acts.shape[0] > 0:
-            print('Changed EDU acts:',
-                  changed_edu_acts.shape[0], '/', seg_acts_spect.shape[0])
-            print(changed_edu_acts[
-                ['doc', 'turn_id', 'turn_span_beg', 'turn_span_end',
-                 'subdoc_x', 'global_id_x', 'text_x',
-                 'surface_act_x', 'addressee_x',
-                 'subdoc_y', 'global_id_y', 'text_y',
-                 'surface_act_y', 'addressee_y']
-            ][:15])
-        else:
-            print('No changed EDU acts')
+    raise ValueError("hop")
