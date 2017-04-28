@@ -27,9 +27,19 @@ class Reader(educe.corpus.Reader):
     def __init__(self, corpusdir):
         educe.corpus.Reader.__init__(self, corpusdir)
 
-    def files(self):
+    def files(self, doc_glob=None):
+        """Gather files for docs whose folder name matches `doc_glob`.
+
+        Parameters
+        ----------
+        doc_glob : str, optional
+            Glob expression for document (folder) names ; if `None`,
+            it uses the wildcard '*' to match all strings.
+        """
+        if doc_glob is None:
+            doc_glob = '*'
         corpus = OrderedDict()
-        full_glob = os.path.join(self.rootdir, '*')
+        full_glob = os.path.join(self.rootdir, doc_glob)
         anno_glob = '*.aa'
 
         def register(stage, annotator, anno_file):
@@ -100,9 +110,19 @@ class LiveInputReader(Reader):
     def __init__(self, corpusdir):
         Reader.__init__(self, corpusdir)
 
-    def files(self):
+    def files(self, doc_glob=None):
+        """
+        Parameters
+        ----------
+        doc_glob : str, optional
+            Glob expression for document (folder) names ; if `None`, it
+            uses the wildcard '*' for file basenames.
+        """
+        if doc_glob is None:
+            doc_glob = '*'
         corpus = {}
-        for anno_file in glob(os.path.join(self.rootdir, '*.aa')):
+        for anno_file in glob(os.path.join(
+                self.rootdir, '{doc_glob}.aa'.format(doc_glob=doc_glob))):
             prefix = os.path.splitext(anno_file)[0]
             pair = (anno_file, prefix + '.ac')
             k = educe.corpus.FileId(doc=os.path.basename(prefix),

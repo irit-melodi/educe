@@ -127,9 +127,9 @@ class Reader:
     data-set, eg. `educe.stac.Reader` instead
     """
     def __init__(self, dir):
-        self.rootdir=dir
+        self.rootdir = dir
 
-    def files(self):
+    def files(self, doc_glob=None):
         """
         Return a dictionary from FileId to (tuples of) filepaths.
         The tuples correspond to files that are considered to 'belong'
@@ -137,26 +137,39 @@ class Reader:
         the text file and its annotations
 
         Derived classes
+
+        Parameters
+        ----------
+        doc_glob : str, optional
+            Glob expression for names of game folders ; if `None`,
+            subclasses are expected to use the wildcard '*' that matches
+            all strings.
         """
 
-    def slurp(self, cfiles=None, verbose=False):
+    def slurp(self, cfiles=None, doc_glob=None, verbose=False):
         """
         Read the entire corpus if `cfiles` is `None` or else the
         subset specified by `cfiles`.
 
         Return a dictionary from FileId to `educe.Annotation.Document`
 
-        :param cfiles: a dictionary like what `Corpus.files` would return
-        :type  cfiles: dict
+        Parameters
+        ----------
+        cfiles : dict, optional
+            Dict of files like what `Corpus.files()` would return.
 
-        :param verbose: print what we're reading to stderr
-        :type  verbose: bool
+        doc_glob : str, optional
+            Glob pattern for doc (folder) names ; ignored if `cfiles`
+            is not None.
+
+        verbose : boolean, defaults to False
+            If True, print what we're reading to stderr.
         """
         if cfiles is None:
-            subcorpus=self.files()
+            subcorpus = self.files(doc_glob=doc_glob)
         else:
-            subcorpus=cfiles
-        return self.slurp_subcorpus(subcorpus, verbose)
+            subcorpus = cfiles
+        return self.slurp_subcorpus(subcorpus, verbose=verbose)
 
     def slurp_subcorpus(self, cfiles, verbose=False):
         """

@@ -9,7 +9,7 @@ import codecs
 import csv
 import os
 
-import stac.csv
+import stac.util.stac_csv_format
 import stac.keys
 
 from ..args import\
