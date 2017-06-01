@@ -46,11 +46,21 @@ class CoreNlpToken(postag.Token):
 
     Attributes
     ----------
-    features: dict(string, string)
+    features : dict from str to str
         Additional info found by corenlp about the token
         (eg. `x.features['lemma']`)
     """
     def __init__(self, t, offset, origin=None):
+        """
+        Parameters
+        ----------
+        t : dict
+            Token from corenlp's XML output.
+        offset : int
+            Offset from the span of the corenlp token to the document.
+        origin : FileId, optional
+            Identifier for the document.
+        """
         extent = t['extent']
         word = t['word']
         tag = t['POS']
@@ -69,7 +79,7 @@ class CoreNlpToken(postag.Token):
 
 
 class CoreNlpWrapper(object):
-    """Wrapper for the CoreNLP parsing system"""
+    """Wrapper for the CoreNLP parsing system."""
 
     def __init__(self, corenlp_dir):
         """Setup common attributes"""

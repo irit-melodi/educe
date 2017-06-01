@@ -33,6 +33,7 @@ class EduceXmlException(Exception):
     def __init__(self, *args, **kw):
         Exception.__init__(self, *args, **kw)
 
+
 def on_single_element(root, default, f, name):
     """
     Return
@@ -41,16 +42,19 @@ def on_single_element(root, default, f, name):
        * f(the node) if one element
        * an exception if more than one
     """
-    nodes=root.findall(name)
+    nodes = root.findall(name)
     if len(nodes) == 0:
         if default is None:
-            raise EduceXmlException("Expected but did not find any nodes with name %s" % name)
+            raise EduceXmlException("Expected but did not find any nodes "
+                                    "with name %s" % name)
         else:
             return default
     elif len(nodes) > 1:
-        raise EduceXmlException("Found more than one node with name %s" % name)
+        raise EduceXmlException("Found more than one node with "
+                                "name %s" % name)
     else:
         return f(nodes[0])
+
 
 def linebreak_xml(elem):
     """
@@ -71,6 +75,7 @@ def linebreak_xml(elem):
     else:
         if not elem.tail or not elem.tail.strip():
             elem.tail = i
+
 
 def indent_xml(elem, level=0):
     """

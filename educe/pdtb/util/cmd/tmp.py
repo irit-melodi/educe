@@ -9,9 +9,7 @@ from __future__ import print_function
 import collections
 import sys
 
-from ..args import\
-    add_usual_input_args,\
-    read_corpus
+from ..args import add_usual_input_args, read_corpus
 
 NAME = 'tmp'
 
@@ -26,11 +24,14 @@ def config_argparser(parser):
     add_usual_input_args(parser)
     parser.set_defaults(func=main)
 
+
 def sentence_nums(arg):
     return [x.parts[0] for x in arg.gorn]
 
+
 def is_multisentential(args):
     return len(frozenset(sentence_nums(args))) > 1
+
 
 def main(args):
     """
@@ -50,9 +51,9 @@ def main(args):
         print("--------------------" * 3)
         print()
         for rel in corpus[k]:
-            #if (len(rel.arg1.span) > 2 or len(rel.arg2.span) > 2):
-            #    print(unicode(rel).encode('utf-8'))
-            #    print()
+            # if (len(rel.arg1.span) > 2 or len(rel.arg2.span) > 2):
+            #     print(unicode(rel).encode('utf-8'))
+            #     print()
             if is_multisentential(rel.arg1):
                 counts[k] += 1
             if is_multisentential(rel.arg2):
@@ -64,5 +65,6 @@ def main(args):
         total += counts[k]
         total_args += num_args[k]
     for k in sorted(corpus):
-        print("%s: %d/%d multisentential args" % (k.doc, counts[k], num_args[k]))
+        print("%s: %d/%d multisentential args" % (
+            k.doc, counts[k], num_args[k]))
     print("altogether: %d/%d multisentential args" % (total, total_args))

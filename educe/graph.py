@@ -102,8 +102,9 @@ import textwrap
 
 import pydot
 import pygraph.classes.hypergraph as gr
-import pygraph.classes.digraph    as dgr
+import pygraph.classes.digraph as dgr
 from pygraph.algorithms import accessibility
+
 
 # pylint: disable=too-few-public-methods, star-args
 
@@ -112,6 +113,7 @@ class DuplicateIdException(Exception):
     def __init__(self, duplicate):
         self.duplicate = duplicate
         Exception.__init__(self, "Duplicate node id: %s" % duplicate)
+
 
 class AttrsMixin():
     """
@@ -194,6 +196,7 @@ class AttrsMixin():
         else:
             return self.mirror(x)
 
+
 class Graph(gr.hypergraph, AttrsMixin):
     """
     Hypergraph representation of discourse structure.
@@ -274,7 +277,7 @@ class Graph(gr.hypergraph, AttrsMixin):
         nodes = []
         edges = []
 
-        edus = [x for x in doc.units   if x.local_id() in included and pred(x)]
+        edus = [x for x in doc.units if x.local_id() in included and pred(x)]
         rels = [x for x in doc.relations if pred(x)]
         cdus = [s for s in doc.schemas if pred(s)]
 
@@ -334,7 +337,7 @@ class Graph(gr.hypergraph, AttrsMixin):
         else:
             nodes_wanted = set(nodeset)
 
-        cdus = [ x for x in nodes_wanted if self.is_cdu(x) ]
+        cdus = [x for x in nodes_wanted if self.is_cdu(x)]
         for x in cdus:
             nodes_wanted.update(self.cdu_members(x, deep=True))
 
@@ -352,7 +355,7 @@ class Graph(gr.hypergraph, AttrsMixin):
             for e in edges_remaining:
                 if is_wanted_edge(e):
                     edges_wanted.add(e)
-                    nodes_wanted.add(self.mirror(e)) # obligatory node mirror
+                    nodes_wanted.add(self.mirror(e))  # obligatory node mirror
                     edges_remaining.remove(e)
                     keep_growing = True
 
@@ -360,15 +363,15 @@ class Graph(gr.hypergraph, AttrsMixin):
             if n in nodes_wanted:
                 g.add_node(n)
                 for kv in self.node_attributes(n):
-                    g.add_node_attribute(n,kv)
+                    g.add_node_attribute(n, kv)
 
         for e in self.hyperedges():
             if e in edges_wanted:
                 g.add_hyperedge(e)
                 for kv in self.edge_attributes(e):
-                    g.add_edge_attribute(e,kv)
+                    g.add_edge_attribute(e, kv)
                 for l in self.links(e):
-                    g.link(l,e)
+                    g.link(l, e)
 
         return g
 
@@ -424,7 +427,8 @@ class Graph(gr.hypergraph, AttrsMixin):
         elif self.has_node(x):
             return self.node_attributes_dict(x)
         else:
-            raise Exception('Tried to get attributes of non-existing object ' + str(x))
+            raise Exception("Tried to get attributes of non-existing object"
+                            " " + str(x))
 
     def relations(self):
         """
@@ -562,7 +566,7 @@ class Graph(gr.hypergraph, AttrsMixin):
         return self._mk_node(anno, 'CDU', mirrored=True)
 
     def _rel_edge(self, anno):
-        members = [ anno.span.t1, anno.span.t2 ]
+        members = [anno.span.t1, anno.span.t2]
         return self._mk_edge(anno, 'rel', members, mirrored=True)
 
     def _schema_edge(self, anno):
@@ -580,19 +584,21 @@ class Graph(gr.hypergraph, AttrsMixin):
         """Ipython magic: show SVG representation of the graph"""
         dot_string = self._repr_dot_()
         try:
-            process = subprocess.Popen(['dot', '-Tsvg'], stdin=subprocess.PIPE,
-                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            process = subprocess.Popen(
+                ['dot', '-Tsvg'], stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         except OSError:
             raise Exception('Cannot find the dot binary from Graphviz package')
         out, err = process.communicate(dot_string)
         if err:
-            raise Exception('Cannot create svg representation by running dot from string\n:%s' % dot_string)
+            raise Exception("Cannot create svg representation by running "
+                            "dot from string\n:%s" % dot_string)
         return out
+
 
 # ---------------------------------------------------------------------
 # visualisation
 # ---------------------------------------------------------------------
-
 class DotGraph(pydot.Dot):
     """
     A dot representation of this graph for visualisation.
@@ -626,8 +632,8 @@ class DotGraph(pydot.Dot):
             {'label': self._rel_label(anno),
              'style': 'dotted',
              'fontcolor': 'blue'}
-        attrs1 = {'arrowhead' : 'tee',
-                  'arrowsize' : '0.5'}
+        attrs1 = {'arrowhead': 'tee',
+                  'arrowsize': '0.5'}
         attrs2 = {}
         return (midpoint_attrs, attrs1, attrs2)
 
@@ -698,7 +704,7 @@ class DotGraph(pydot.Dot):
             elif self.core.has_edge(proxy_target):
                 proxy_target = self.core.mirror(proxy_target)
             proxy_target = self._dot_id(proxy_target)
-            res = (proxy_target, {key:dot_target})
+            res = (proxy_target, {key: dot_target})
 
         return res
 
@@ -827,9 +833,10 @@ class DotGraph(pydot.Dot):
 
     def __init__(self, anno_graph):
         """
-        Args
-
-            anno_graph (Graph):  abstract annotation graph
+        Parameters
+        ----------
+        anno_graph : Graph
+            Abstract annotation graph.
         """
         self.core = anno_graph
         self.doc = self.core.doc
@@ -851,7 +858,7 @@ class DotGraph(pydot.Dot):
                     self.complex_rels.add(e2)
 
         # CDUs which overlap other CDUs
-        #self.complex_cdus = self.core.cdus()
+        # self.complex_cdus = self.core.cdus()
         self.complex_cdus = set()
         for e in self.core.cdus():
             members = self.core.cdu_members(e)
@@ -878,8 +885,8 @@ class DotGraph(pydot.Dot):
         # Add nodes that have some sort of error condition or another
         for edge in (self.core.relations() | self.core.cdus()):
             for node in self.core.links(edge):
-                if not (self.core.is_edu(node) or\
-                        self.core.is_relation(node) or\
+                if not (self.core.is_edu(node) or
+                        self.core.is_relation(node) or
                         self.core.is_cdu(node)):
                     self._add_edu(node)
 
@@ -897,10 +904,10 @@ class DotGraph(pydot.Dot):
             else:
                 self._add_simple_cdu(edge)
 
+
 # ---------------------------------------------------------------------
 # enclosure graphs
 # ---------------------------------------------------------------------
-
 class EnclosureGraph(dgr.digraph, AttrsMixin):
     """
     Caching mechanism for span enclosure. Given an iterable of Annotation,
@@ -1003,9 +1010,9 @@ class EnclosureGraph(dgr.digraph, AttrsMixin):
     def _mk_node(self, anno):
         # a node is mirrored if there is a also an edge
         # corresponding to the same object
-        node_id  = self._mk_node_id(anno)
+        node_id = self._mk_node_id(anno)
         attrs = {'type': anno.type,
-                 'annotation' : anno}
+                 'annotation': anno}
         return (node_id, attrs)
 
     def _add_edge(self, anno1, anno2):
@@ -1041,10 +1048,10 @@ class EnclosureGraph(dgr.digraph, AttrsMixin):
 class EnclosureDotGraph(pydot.Dot):
 
     def _add_unit(self, node):
-        anno  = self.core.annotation(node)
+        anno = self.core.annotation(node)
         label = self._unit_label(anno)
-        attrs = {'label' : textwrap.fill(label, 30),
-                 'shape' : 'plaintext'}
+        attrs = {'label': textwrap.fill(label, 30),
+                 'shape': 'plaintext'}
         self.add_node(pydot.Node(node, **attrs))
 
     def _add_edge(self, edge):

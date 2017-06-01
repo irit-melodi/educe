@@ -8,11 +8,9 @@ Convert to our PDTBX format
 from __future__ import print_function
 
 from educe.pdtb import pdtbx
-from ..args import\
-    add_usual_input_args, add_usual_output_args,\
-    get_output_dir, mk_output_path,\
-    announce_output_dir,\
-    read_corpus
+from ..args import (add_usual_input_args, add_usual_output_args,
+                    get_output_dir, mk_output_path, announce_output_dir,
+                    read_corpus)
 
 NAME = 'xml'
 
@@ -41,6 +39,6 @@ def main(args):
     for k in sorted(corpus):
         opath = mk_output_path(output_dir, k) + '.pdtbx'
         pdtbx.write_pdtbx_file(opath, corpus[k])
-        #readback = pdtbx.read_pdtbx_file(opath)
-        #assert(corpus[k] == readback)
+        # readback = pdtbx.read_pdtbx_file(opath)
+        # assert(corpus[k] == readback)
     announce_output_dir(output_dir)

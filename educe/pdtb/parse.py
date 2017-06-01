@@ -37,8 +37,8 @@ function on some sample relations and print the resulting objects.
 
 import codecs
 import re
-import funcparserlib.parser   as fp
 import sys
+import funcparserlib.parser as fp
 
 if sys.version > '3':
     from functools import reduce
@@ -46,13 +46,13 @@ if sys.version > '3':
 else:
     from StringIO import StringIO
 
+
 # ---------------------------------------------------------------------
 # parse results
 # ---------------------------------------------------------------------
-
 class PdtbItem(object):
     @classmethod
-    def _prefered_order(self):
+    def _prefered_order(cls):
         """
         Preferred order for printing key/value pairs
         """
@@ -63,10 +63,10 @@ class PdtbItem(object):
                 'arg1', 'arg2']
 
     def _substr(self):
-        d   = self.__dict__
-        ks1 = [ k for k in self._prefered_order() if k in d     ]
-        ks2 = [ k for k in d if k not in self._prefered_order() ]
-        return '\n '.join('%s = %s' % (k,d[k]) for k in ks1 + ks2)
+        d = self.__dict__
+        ks1 = [k for k in self._prefered_order() if k in d]
+        ks2 = [k for k in d if k not in self._prefered_order()]
+        return '\n '.join('%s = %s' % (k, d[k]) for k in ks1 + ks2)
 
     def __str__(self):
         return '%s(%s)' % (self.__class__.__name__, self._substr())
@@ -82,29 +82,32 @@ class PdtbItem(object):
     def __ne__(self, other):
         return not self == other
 
+
 class GornAddress(PdtbItem):
     def __init__(self, parts):
         self.parts = parts
 
     def __str__(self):
-        return '.'.join(map(str,self.parts))
+        return '.'.join(map(str, self.parts))
+
 
 class Attribution(PdtbItem):
     def __init__(self, source, type, polarity, determinacy, selection=None):
-        self.source      = source
-        self.type        = type
-        self.polarity    = polarity
+        self.source = source
+        self.type = type
+        self.polarity = polarity
         self.determinacy = determinacy
-        self.selection   = selection
+        self.selection = selection
 
     def _substr(self):
         selStr = '@ %s' % self.selection._substr() if self.selection else ''
         return '%s %s %s %s%s' %\
             (self.source, self.type, self.polarity, self.determinacy, selStr)
 
+
 class InferenceSite(PdtbItem):
     def __init__(self, strpos, sentnum):
-        self.strpos  = strpos
+        self.strpos = strpos
         self.sentnum = sentnum
 
     def _substr(self):
@@ -113,6 +116,7 @@ class InferenceSite(PdtbItem):
     @classmethod
     def _init_copy(cls, self, other):
         cls.__init__(self, other.strpos, other.sentnum)
+
 
 class Selection(PdtbItem):
     def __init__(self, span, gorn, text):
@@ -130,6 +134,7 @@ class Selection(PdtbItem):
     def _init_copy(cls, self, other):
         cls.__init__(self, other.span, other.gorn, other.text)
 
+
 class Connective(PdtbItem):
     def __init__(self, text, semclass1, semclass2=None):
         self.text = text
@@ -145,6 +150,7 @@ class Connective(PdtbItem):
             fields.append(self.semclass2._substr())
         return ' | '.join(fields)
 
+
 class SemClass(PdtbItem):
     def __init__(self, klass):
         self.klass = klass
@@ -152,9 +158,11 @@ class SemClass(PdtbItem):
     def _substr(self):
         return '.'.join(self.klass)
 
+
 class Sup(Selection):
     def __init__(self, selection):
         Selection._init_copy(self, selection)
+
 
 class Arg(Selection):
     def __init__(self, selection, attribution=None, sup=None):
@@ -162,20 +170,24 @@ class Arg(Selection):
         if attribution:
             assert(isinstance(attribution, Attribution))
         if sup:
-            assert(isinstance(sup        , Sup))
+            assert(isinstance(sup, Sup))
         self.attribution = attribution
-        self.sup         = sup
+        self.sup = sup
 
     def _substr(self):
         sup_str = ' + %s' % self.sup if self.sup else ''
-        return '%s | %s%s' % (Selection._substr(self), self.attribution, sup_str)
+        return '%s | %s%s' % (
+            Selection._substr(self), self.attribution, sup_str)
+
 
 class Relation(PdtbItem):
     """
-    Fields:
-
-        * self.arg1
-        * self.arg2
+    Attributes
+    ----------
+    arg1 : TODO
+        TODO
+    arg2 : TODO
+        TODO
     """
     def __init__(self, args):
         if len(args) == 4:
@@ -183,23 +195,26 @@ class Relation(PdtbItem):
             self.arg1 = Arg(arg1, arg1.attribution, sup1) if sup1 else arg1
             self.arg2 = Arg(arg2, arg2.attribution, sup2) if sup2 else arg2
         elif len(args) == 2:
-            self.arg1, self.arg2   = args
+            self.arg1, self.arg2 = args
         else:
-            raise Exception('Was expecting either 2 or 4 arguments, but got: %d\n%s' % (len(xs), xs))
+            raise Exception('Was expecting either 2 or 4 arguments, '
+                            'but got: %d\n%s' % (len(xs), xs))
 
     def _substr(self):
         return PdtbItem._substr(self)
 
+
 class ExplicitRelationFeatures(PdtbItem):
     def __init__(self, attribution, connhead):
         assert(isinstance(attribution, Attribution))
-        assert(isinstance(connhead,    Connective))
+        assert(isinstance(connhead, Connective))
         self.attribution = attribution
-        self.connhead    = connhead
+        self.connhead = connhead
 
     @classmethod
     def _init_copy(cls, self, other):
         cls.__init__(self, other.attribution, other.connhead)
+
 
 class ImplicitRelationFeatures(PdtbItem):
     def __init__(self, attribution, connective1, connective2=None):
@@ -216,6 +231,7 @@ class ImplicitRelationFeatures(PdtbItem):
         cls.__init__(self, other.attribution,
                      other.connective1, other.connective2)
 
+
 class AltLexRelationFeatures(PdtbItem):
     def __init__(self, attribution, semclass1, semclass2):
         assert(isinstance(attribution, Attribution))
@@ -223,12 +239,13 @@ class AltLexRelationFeatures(PdtbItem):
         if semclass2:
             assert(isinstance(semclass2, SemClass))
         self.attribution = attribution
-        self.semclass1   = semclass1
-        self.semclass2   = semclass2
+        self.semclass1 = semclass1
+        self.semclass2 = semclass2
 
     @classmethod
     def _init_copy(cls, self, other):
         cls.__init__(self, other.attribution, other.semclass1, other.semclass2)
+
 
 class ExplicitRelation(Selection, ExplicitRelationFeatures, Relation):
     def __init__(self, selection, features, args):
@@ -247,7 +264,8 @@ class ImplicitRelation(InferenceSite, ImplicitRelationFeatures, Relation):
         ImplicitRelationFeatures._init_copy(self, features)
 
     def _substr(self):
-         return Relation._substr(self)
+        return Relation._substr(self)
+
 
 class AltLexRelation(Selection, AltLexRelationFeatures, Relation):
     def __init__(self, selection, features, args):
@@ -256,7 +274,8 @@ class AltLexRelation(Selection, AltLexRelationFeatures, Relation):
         AltLexRelationFeatures._init_copy(self, features)
 
     def _substr(self):
-         return Relation._substr(self)
+        return Relation._substr(self)
+
 
 class EntityRelation(InferenceSite, Relation):
     def __init__(self, infsite, args):
@@ -264,7 +283,8 @@ class EntityRelation(InferenceSite, Relation):
         InferenceSite._init_copy(self, infsite)
 
     def _substr(self):
-         return Relation._substr(self)
+        return Relation._substr(self)
+
 
 class NoRelation(InferenceSite, Relation):
     def __init__(self, infsite, args):
@@ -272,12 +292,13 @@ class NoRelation(InferenceSite, Relation):
         InferenceSite._init_copy(self, infsite)
 
     def _substr(self):
-         return Relation._substr(self)
+        return Relation._substr(self)
+
 
 # ---------------------------------------------------------------------
 # not-quite-lexing
 # ---------------------------------------------------------------------
-
+#
 # FIXME
 # funcparserlib works on a stream of arbitrary tokens, eg. the output of
 # a lexer. At the time of this writing, I didn't trust any of the fancy
@@ -287,12 +308,12 @@ class NoRelation(InferenceSite, Relation):
 # the raw text bits eg. `r'#### Text ####\n(.*?)\n##############'`; and
 # provide some abstractions over tokens, we could maybe simplify the
 # parser a lot... which could in turn make it faster?
-
+#
 class _Char(object):
     def __init__(self, value, abspos, line, relpos):
-        self.value  = value
+        self.value = value
         self.abspos = abspos
-        self.line   = line
+        self.line = line
         self.relpos = relpos
 
     def __eq__(self, other):
@@ -307,10 +328,13 @@ class _Char(object):
             char = 'SP'
         elif self.value == '\t':
             char = 'TAB'
-        return '[%s] %d (line: %d col: %d)' % (char, self.abspos, self.line, self.relpos)
+        return '[%s] %d (line: %d col: %d)' % (
+            char, self.abspos, self.line, self.relpos)
+
 
 def _annotate_production(s):
     return s
+
 
 def _annotate_debug(s):
     """
@@ -318,39 +342,44 @@ def _annotate_debug(s):
     """
     def tokens():
         line = 1
-        col  = 1
-        pos  = 1
+        col = 1
+        pos = 1
         for c in StringIO(s).read():
             yield _Char(c, pos, line, col)
             pos += 1
             if c == '\n':
                 line += 1
-                col   = 1
+                col = 1
             else:
                 col += 1
     return list(tokens())
 
+
 # ---------------------------------------------------------------------
 # funcparserlib utilities
 # ---------------------------------------------------------------------
+_DEBUG = 0  # turn this on to get line number hints
+_const = lambda x: lambda _: x
+_unarg = lambda f: lambda x: f(*x)
 
-_DEBUG = 0 # turn this on to get line number hints
-_const  = lambda x: lambda _: x
-_unarg  = lambda f: lambda x: f(*x)
 
 def _cons(pair):
     head, tail = pair
     return [head] + tail
 
+
 def _mkstr_debug(x):
     return "".join(c.value for c in x)
+
 
 def _mkstr_production(x):
     return "".join(x)
 
-_any  = fp.some(_const(True))
 
-def _intersperse(d,xs):
+_any = fp.some(_const(True))
+
+
+def _intersperse(d, xs):
     """
     a -> [a] -> [a]
     """
@@ -361,6 +390,7 @@ def _intersperse(d,xs):
         xs2.append(d)
         xs2.append(x)
     return xs2
+
 
 def _not_followed_by(p):
     """Parser(a, b) -> Parser(a, b)
@@ -380,6 +410,7 @@ def _not_followed_by(p):
     _helper.name = u'not_followed_by{ %s }' % p.name
     return _helper
 
+
 def _skipto(p):
     """Parser(a, b) -> Parser(a, [a])
 
@@ -391,7 +422,7 @@ def _skipto(p):
     def _helper(tokens, s):
         """Iterative implementation preventing the stack overflow."""
         res = []
-        s2  = s
+        s2 = s
         while s2.pos < len(tokens):
             try:
                 (v, s3) = p.run(tokens, s2)
@@ -405,26 +436,34 @@ def _skipto(p):
     _helper.name = u'{ skip_to %s }' % p.name
     return _helper
 
+
 def _skipto_mkstr(p):
     return _skipto(p) >> _mkstr
 
+
 def _satisfies_debug(fn):
-    return fp.some(lambda t:fn(t.value))
+    return fp.some(lambda t: fn(t.value))
+
 
 def _satisfies_production(fn):
     return fp.some(fn)
 
+
 def _oneof(xs):
     return _satisfies(lambda x: x in xs)
+
 
 def _sepby(delim, p):
     return p + fp.many(fp.skip(delim) + p) >> _cons
 
+
 def _sequence(ps):
     return reduce(lambda x, y: x + y, ps)
 
+
 def _many_char(fn):
     return fp.many(_satisfies(fn)) >> _mkstr
+
 
 def _noise(xs):
     """String -> Parser(a, ())
@@ -436,15 +475,15 @@ def _noise(xs):
         """Iterative implementation preventing the stack overflow."""
         res = []
         start = s.pos
-        end   = start + len(xs)
-        toks = tokens[start : end]
+        end = start + len(xs)
+        toks = tokens[start:end]
         if _DEBUG:
-            vals = [ t.value for t in toks ]
+            vals = [t.value for t in toks]
         else:
             vals = toks
         if vals == xs:
             pos = s.pos + len(xs)
-            s2  = fp.State(pos, max(pos, s.max))
+            s2 = fp.State(pos, max(pos, s.max))
             return fp._Ignored(()), s2
         else:
             raise fp.NoParseError(u'Did not match literal ' + xs, s)
@@ -452,29 +491,32 @@ def _noise(xs):
     _helper.name = u'{ literal %s }' % xs
     return _helper
 
+
 if _DEBUG:
-    _annotate  = _annotate_debug
-    _mkstr     = _mkstr_debug
+    _annotate = _annotate_debug
+    _mkstr = _mkstr_debug
     _satisfies = _satisfies_debug
 else:
-    _annotate  = _annotate_production
-    _mkstr     = _mkstr_production
+    _annotate = _annotate_production
+    _mkstr = _mkstr_production
     _satisfies = _satisfies_production
+
 
 # ---------------------------------------------------------------------
 # elementary parts
 # ---------------------------------------------------------------------
-
-_nat   = fp.oneplus(_satisfies(lambda c: c.isdigit())) >> (lambda x:int(_mkstr(x)))
-_nl    = fp.skip(_oneof("\r\n"))
+_nat = fp.oneplus(_satisfies(lambda c: c.isdigit())) >> (
+    lambda x: int(_mkstr(x)))
+_nl = fp.skip(_oneof("\r\n"))
 _comma = fp.skip(_oneof(","))
 _semicolon = fp.skip(_oneof(";"))
-_fullstop  = fp.skip(_oneof("."))
+_fullstop = fp.skip(_oneof("."))
 # horizontal only
-_sp    = fp.skip(_many_char(lambda x:x not in "\r\n" and x.isspace()))
-_allsp = fp.skip(_many_char(lambda x:x.isspace()))
-_alphanum_str = _many_char(lambda x:x.isalnum())
-_eof   = fp.skip(fp.finished)
+_sp = fp.skip(_many_char(lambda x: x not in "\r\n" and x.isspace()))
+_allsp = fp.skip(_many_char(lambda x: x.isspace()))
+_alphanum_str = _many_char(lambda x: x.isalnum())
+_eof = fp.skip(fp.finished)
+
 
 class _OptionalBlock:
     """
@@ -487,13 +529,15 @@ class _OptionalBlock:
     """
     def __init__(self, p, avoid=None):
         self.avoid = avoid
-        self.p     = p
+        self.p = p
+
 
 def _words(ps):
     """
     Ignore horizontal whitespace between elements
     """
     return _sequence(_intersperse(_sp, ps))
+
 
 def _lines(ps):
     if not ps:
@@ -505,41 +549,44 @@ def _lines(ps):
         return _nl + y
 
     def _next(y, prefix=_prefix_nl):
-        if isinstance(y,_OptionalBlock):
+        if isinstance(y, _OptionalBlock):
             if y.avoid:
                 # stop parsing if we see the distractor
                 distractor = prefix(y.avoid)
-                p_next     = _not_followed_by(distractor) + prefix(y.p)
+                p_next = _not_followed_by(distractor) + prefix(y.p)
             else:
-                p_next     = prefix(y.p)
+                p_next = prefix(y.p)
             return fp.maybe(p_next)
         else:
             return prefix(y)
 
-    def _combine(x,y):
+    def _combine(x, y):
         return x + _next(y)
 
     return reduce(_combine, ps)
 
+
 def _section_begin(t):
     return _noise('____' + t + '____')
+
 
 def _subsection_begin(t):
     return _noise('#### ' + t + ' ####')
 
+
 _subsection_end = _noise('##############')
-_bar            = _noise('_' * 56)
+_bar = _noise('_' * 56)
 
 _span = _nat + _noise('..') + _nat >> tuple
 _gorn = _sepby(_comma, _nat) >> GornAddress
 _StringPosition = _nat
 _SentenceNumber = _nat
 
+
 # ---------------------------------------------------------------------
 # selections - funcparserlib
 # ---------------------------------------------------------------------
-
-_SpanList        = _sepby(_semicolon, _span)
+_SpanList = _sepby(_semicolon, _span)
 _GornAddressList = _sepby(_semicolon, _gorn)
 _RawText = _lines([_subsection_begin('Text'),
                    _skipto_mkstr(_nl + _subsection_end)])
@@ -550,13 +597,13 @@ _selection =\
 _inferenceSite =\
         _lines([_StringPosition, _SentenceNumber]) >> _unarg(InferenceSite)
 
+
 # ---------------------------------------------------------------------
 # features
 # ---------------------------------------------------------------------
-
-_Source      = _alphanum_str
-_Type        = _alphanum_str
-_Polarity    = _alphanum_str
+_Source = _alphanum_str
+_Type = _alphanum_str
+_Polarity = _alphanum_str
 _Determinacy = _alphanum_str
 
 _attributionCoreFeatures =\
@@ -570,45 +617,56 @@ _attributionFeatures =\
 
 # Expansion.Alternative.Chosen alternative =>
 # Expansion / Alternative / "Chosen alternative "
-_SemanticClassWord = _many_char(lambda x:x in [' ', '-'] or x.isalnum())
+_SemanticClassWord = _many_char(lambda x: x in [' ', '-'] or x.isalnum())
 _SemanticClassN = _sepby(_fullstop, _SemanticClassWord) >> SemClass
 _SemanticClass1 = _SemanticClassN
 _SemanticClass2 = _SemanticClassN
-_semanticClass  = _SemanticClass1 + fp.maybe(_sp + _comma + _sp + _SemanticClass2)
+_semanticClass = _SemanticClass1 + fp.maybe(_sp + _comma + _sp +
+                                            _SemanticClass2)
 
 # always followed by a comma (yeah, a bit clunky)
 _ConnHead = _skipto_mkstr(_comma)
-_Conn1    = _ConnHead
-_Conn2    = _ConnHead
+_Conn1 = _ConnHead
+_Conn2 = _ConnHead
 
-def _mkConnective(c,semclasses):
+
+def _mkConnective(c, semclasses):
     return Connective(c, *semclasses)
 
-_connHeadSemanticClass = _ConnHead + _sp + _semanticClass >> _unarg(_mkConnective)
-_conn1SemanticClass    = _Conn1    + _sp + _semanticClass >> _unarg(_mkConnective)
-_conn2SemanticClass    = _Conn2    + _sp + _semanticClass >> _unarg(_mkConnective)
+
+_connHeadSemanticClass = _ConnHead + _sp + _semanticClass >> _unarg(
+    _mkConnective)
+_conn1SemanticClass = _Conn1 + _sp + _semanticClass >> _unarg(
+    _mkConnective)
+_conn2SemanticClass = _Conn2 + _sp + _semanticClass >> _unarg(
+    _mkConnective)
+
 
 # ---------------------------------------------------------------------
 # arguments and supplementary information
 # ---------------------------------------------------------------------
-
 def _Arg(name):
     return _section_begin(name.capitalize())
 
+
 def _Sup(name):
     return _section_begin(name.capitalize())
+
 
 def _arg(name):
     p = _lines([_Arg(name), _selection, _attributionFeatures]) >> _unarg(Arg)
     return p
 
+
 def _arg_no_features(name):
     p = _lines([_Arg(name), _selection]) >> Arg
     return p
 
+
 def _sup(name):
     p = _lines([_Sup(name), _selection]) >> Sup
     return p
+
 
 # this is a bit yucky because I don't really know how to express
 # optional first blocks and make sure I handle the intervening
@@ -619,29 +677,30 @@ def _mk_args_and_sups():
             _OptionalBlock(_sup('sup2'))]
 
     with_sup1 = _lines([_sup('sup1')] + rest) >> tuple
-    sans_sup1 = _lines(rest) >> (lambda xs : tuple([None] + list(xs)))
-    return with_sup1 | sans_sup1 # yuck :-(
+    sans_sup1 = _lines(rest) >> (lambda xs: tuple([None] + list(xs)))
+    return with_sup1 | sans_sup1  # yuck :-(
+
 
 _args_and_sups = _mk_args_and_sups()
 _args_only =\
         _lines([_arg_no_features('arg1'),
                 _arg_no_features('arg2')]) >> tuple
 
+
 # ---------------------------------------------------------------------
 # relations
 # ---------------------------------------------------------------------
-
 __Explicit = 'Explicit'
-__Implict  = 'Implicit'
-__AltLex   = 'AltLex'
-__EntRel   = 'EntRel'
-__NoRel    = 'NoRel'
+__Implict = 'Implicit'
+__AltLex = 'AltLex'
+__EntRel = 'EntRel'
+__NoRel = 'NoRel'
 
 _Explicit = _section_begin(__Explicit)
-_Implict  = _section_begin(__Implict)
-_AltLex   = _section_begin(__AltLex)
-_EntRel   = _section_begin(__EntRel)
-_NoRel    = _section_begin(__NoRel)
+_Implict = _section_begin(__Implict)
+_AltLex = _section_begin(__AltLex)
+_EntRel = _section_begin(__EntRel)
+_NoRel = _section_begin(__NoRel)
 
 _explicitRelationFeatures =\
         _lines([_attributionFeatures, _connHeadSemanticClass])\
@@ -649,7 +708,7 @@ _explicitRelationFeatures =\
 
 _altLexRelationFeatures =\
         _lines([_attributionFeatures, _semanticClass])\
-        >> (lambda x:AltLexRelationFeatures(x[0], *x[1]))
+        >> (lambda x: AltLexRelationFeatures(x[0], *x[1]))
 
 _afterImplicitRelationFeatures =\
         _section_begin('Arg1') | _section_begin('Sup1')
@@ -681,44 +740,49 @@ _noRelation =\
         _lines([_inferenceSite, _args_only])\
         >> _unarg(NoRelation)
 
-_relationParts=\
-        [(__Explicit, _explicitRelation),
-         (__Implict,  _implicitRelation),
-         (__AltLex,   _altLexRelation),
-         (__EntRel,   _entityRelation),
-         (__NoRel,    _noRelation),
-         ]
+_relationParts = [
+    (__Explicit, _explicitRelation),
+    (__Implict, _implicitRelation),
+    (__AltLex, _altLexRelation),
+    (__EntRel, _entityRelation),
+    (__NoRel, _noRelation),
+]
+
 
 def _relationBody(ty, core):
     return _lines([_section_begin(ty), core])
+
 
 def _orRels(rs):
     """
     R1 or R2 or .. RN
     """
-    cores = [ _relationBody(*r) for r in rs ]
+    cores = [_relationBody(*r) for r in rs]
     return _lines([_bar,
                    reduce(lambda x, y: x | y, cores),
                    _bar])
 
+
 def _oneRel(ty, core):
     return _lines([_bar, _relationBody(ty, core), _bar])
 
-_relation     = _orRels(_relationParts)
+
+_relation = _orRels(_relationParts)
 
 _relationList = _sepby(_nl, _relation)
-_pdtbRelation = _relation     + _allsp + _eof
-_pdtbFile     = _relationList + _allsp + _eof
+_pdtbRelation = _relation + _allsp + _eof
+_pdtbFile = _relationList + _allsp + _eof
+
 
 # ---------------------------------------------------------------------
 # tests and examples
 # ---------------------------------------------------------------------
-
 def split_relations(s):
     frame = r'________________________________________________________\n' +\
             r'.*?' +\
             r'________________________________________________________'
     return re.findall(frame, s, re.DOTALL)
+
 
 def parse_relation(s):
     """
@@ -733,16 +797,26 @@ def parse_relation(s):
     parser = _oneRel(rtype, rules[rtype]) + _eof
     return parser.parse(_annotate(s))
 
+
 def parse(path):
     """
     Parse a single .pdtb file and return the list of relations found
     within
 
-    :rtype: [Relation]
+    Parameters
+    ----------
+    path : str
+        Path to the .pdtb file (?)
+
+    Returns
+    -------
+    res : list of Relation
+        List of relations found within the file.
+
     """
-    doc     = codecs.open(path, 'r', 'iso8859-1').read()
+    doc = codecs.open(path, 'r', 'iso8859-1').read()
     return _pdtbFile.parse(_annotate(doc))
     # alternatively: using a regular expression to split into relations
     # and parsing each relation separately - perhaps more robust?
-    #splits  = split_relations(doc)
-    #return [ parse_relation(s) for s in splits  ]
+    # splits  = split_relations(doc)
+    # return [ parse_relation(s) for s in splits  ]

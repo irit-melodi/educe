@@ -105,7 +105,8 @@ def glozz_annotation_to_xml(self, tag='annotation',
     elif tag == 'schema':
         span_elm = glozz_schema_to_span_xml(self)
     else:
-        raise Exception("Don't know how to emit XML for non unit/relation annotations (%s)" % tag)
+        raise Exception("Don't know how to emit XML for non unit/relation "
+                        "annotations (%s)" % tag)
     elm.extend([meta_elm, char_elm, span_elm])
     return elm
 

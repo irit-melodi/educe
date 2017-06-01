@@ -19,6 +19,7 @@ Corpus management
 
 import sys
 
+
 class FileId:
     """
     Information needed to uniquely identify an annotation file.
@@ -49,14 +50,14 @@ class FileId:
     :type annotator: string
     """
     def __init__(self, doc, subdoc, stage, annotator):
-       self.doc=doc
-       self.subdoc=subdoc
-       self.stage=stage
-       self.annotator=annotator
+        self.doc = doc
+        self.subdoc = subdoc
+        self.stage = stage
+        self.annotator = annotator
 
     def __str__(self):
-        return "%s [%s] %s %s" % (self.doc, self.subdoc, self.stage, self.annotator)
-
+        return "%s [%s] %s %s" % (
+            self.doc, self.subdoc, self.stage, self.annotator)
 
     def _tuple(self):
         """
@@ -95,6 +96,7 @@ class FileId:
         parts = [self.doc, self.subdoc, local_id]
         return "_".join(p for p in parts if p is not None)
 
+
 class Reader:
     """
     `Reader` provides little more than dictionaries from `FileId`
@@ -112,7 +114,7 @@ class Reader:
 
         reader    = Reader(corpus_dir)
         files     = reader.files()
-        subfiles  = { k:v in files.items() if k.annotator in [ 'Bob', 'Alice' ] }
+        subfiles  = {k: v in files.items() if k.annotator in ['Bob', 'Alice']}
         corpus    = reader.slurp(subfiles)
 
     Alternatively, having read in the entire corpus, you might be doing
@@ -183,5 +185,4 @@ class Reader:
 
             { k:v for k,v in d.items() if pred(k) }
         """
-        return dict([(k,v) for k,v in d.items() if pred(k)])
-
+        return dict([(k, v) for k, v in d.items() if pred(k)])
