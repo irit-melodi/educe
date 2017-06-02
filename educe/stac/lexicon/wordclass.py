@@ -40,7 +40,8 @@ class LexEntry(namedtuple("LexEntry",
     def __new__(cls, word, lex_class, pos, subclass):
         pos = pos if pos != '??' else None
         subclass = subclass or None
-        return super(LexEntry, cls).__new__(cls, word, lex_class, pos, subclass)
+        return super(LexEntry, cls).__new__(
+            cls, word, lex_class, pos, subclass)
 
     @classmethod
     def read_entry(cls, line):

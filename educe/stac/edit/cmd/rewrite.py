@@ -8,10 +8,9 @@ Read and write back without changing anything else; potentially reformats XML
 
 import copy
 
-from educe.stac.util.args import\
-    add_usual_input_args,\
-    read_corpus,\
-    get_output_dir, announce_output_dir
+from educe.stac.util.args import (
+    add_usual_input_args, read_corpus, get_output_dir, announce_output_dir
+)
 from educe.stac.util.output import save_document
 from educe.stac.context import sorted_first_widest
 

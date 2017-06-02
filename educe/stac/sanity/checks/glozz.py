@@ -190,8 +190,8 @@ def duplicate_annotations(inputs, k):
     annos = defaultdict(list)
     for anno in doc.annotations():
         annos[anno.local_id()].append(anno)
-    return [DuplicateItem(doc, contexts, k, v)
-            for k, v in annos.items() if len(v) > 1]
+    return [DuplicateItem(doc, contexts, ek, ev)
+            for ek, ev in annos.items() if len(ev) > 1]
 
 # ----------------------------------------------------------------------
 # overlaps

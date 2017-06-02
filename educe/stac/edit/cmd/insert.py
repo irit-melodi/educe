@@ -11,14 +11,12 @@ import sys
 import educe.stac
 
 from educe.stac.util.annotate import show_diff
-from educe.stac.util.args import\
-    (add_usual_input_args,
-     add_usual_output_args,
-     announce_output_dir,
-     get_output_dir)
+from educe.stac.util.args import (
+    add_usual_input_args, add_usual_output_args, announce_output_dir,
+    get_output_dir
+)
 from educe.stac.util.output import save_document
-from educe.stac.util.doc import\
-    compute_renames, move_portion
+from educe.stac.util.doc import compute_renames, move_portion
 from .move import is_requested
 
 

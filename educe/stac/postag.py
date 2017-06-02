@@ -111,6 +111,20 @@ def read_tags(corpus, root_dir):
     educe.annotation.Standoff objects.
 
     Return a dictionary mapping 'FileId's to sets of tokens.
+
+    Parameters
+    ----------
+    corpus : dict(FileId, GlozzDocument)
+        Dictionary of documents keyed by their FileId.
+    root_dir : str
+        Path to the directory containing the output of the POS tagger,
+        one file per document.
+
+    Returns
+    -------
+    pos_tags : dict(FileId, list(Token))
+        Map from each document id to the list of tokens predicted by a
+        POS tagger.
     """
     pos_tags = {}
     for k in corpus:

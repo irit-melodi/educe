@@ -108,7 +108,7 @@ def display_violations(res):
             tres.append([row_name]
                         + list(res[(col_name, table_name, row_name)]
                                for col_name in col_names))
-        print(tabulate(tres, headers=[table_name]+col_names)+'\n')
+        print(tabulate(tres, headers=[table_name]+col_names) + '\n')
 
 
 def display_power(res):

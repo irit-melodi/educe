@@ -10,29 +10,26 @@ Extract 'resource NPs' from all EDUs in the documents
 
 from __future__ import print_function
 from collections import defaultdict, namedtuple
-from itertools import chain
 import csv
 import sys
 
 from educe.stac import postag, corenlp
 from educe.stac.annotation import is_edu
-from educe.stac.learning import features
-from educe.util import\
-     add_corpus_filters, fields_without, mk_is_interesting,\
-     concat, concat_l
+from educe.stac.learning.features import (
+    mk_env, get_players, enclosed_trees, is_nplike, FeatureInput, LexWrapper
+)
+from educe.util import (
+    add_corpus_filters, fields_without, mk_is_interesting, concat, concat_l
+)
 import educe.corpus
 import educe.glozz
 import educe.learning.keys
 import educe.stac
 
-from ..features import\
-    mk_env, get_players, enclosed_trees, is_nplike,\
-    FeatureInput
-
 
 NAME = 'resource-nps'
 
-LEXICON = features.LexWrapper('domain', 'stac_domain.txt', True)
+LEXICON = LexWrapper('domain', 'stac_domain.txt', True)
 
 
 def nplike_trees(current, edu):
@@ -130,10 +127,10 @@ def config_argparser(parser):
     add_corpus_filters(parser, fields=fields_without(["stage"]))
     parser.set_defaults(func=main)
 
+
 # ---------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------
-
 def _read_corpus_inputs(args):
     """
     Read and filter the part of the corpus we want features for

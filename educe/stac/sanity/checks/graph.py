@@ -196,8 +196,8 @@ def search_graph_cdu_overlap(inputs, k, gra):
         for mem in gra.cdu_members(cdu):
             edu_anno = gra.annotation(mem)
             containers[edu_anno].append(cdu_anno)
-    return [CduOverlapItem(doc, contexts, k, v)
-            for k, v in containers.items() if len(v) > 1]
+    return [CduOverlapItem(doc, contexts, ek, ev)
+            for ek, ev in containers.items() if len(ev) > 1]
 
 
 def is_arrow_inversion(gra, _, rel):

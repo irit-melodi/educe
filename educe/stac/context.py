@@ -133,14 +133,8 @@ class Context(object):
         (may not be present): tokens contained within this EDU
     """
     # pylint: disable=too-many-arguments
-    def __init__(self,
-                 turn,
-                 tstar,
-                 turn_edus,
-                 dialogue,
-                 dialogue_turns,
-                 doc_turns,
-                 tokens=None):
+    def __init__(self, turn, tstar, turn_edus, dialogue, dialogue_turns,
+                 doc_turns, tokens=None):
         self.turn = turn
         self.tstar = tstar
         self.turn_edus = turn_edus
@@ -221,14 +215,12 @@ class Context(object):
 
     @classmethod
     def for_edus(cls, doc, postags=None):
-        """
-        Return a dictionary of context objects for each EDU in the document
+        """Get a dictionary of context objects for each EDU in the doc.
 
         Returns
         -------
         contexts: dict(educe.glozz.Unit, Context)
-
-            A dictionary with a context For each EDU in the document
+            A dictionary with a context for each EDU in the document.
         """
         if postags:
             egraph = EnclosureGraph(doc, postags)
