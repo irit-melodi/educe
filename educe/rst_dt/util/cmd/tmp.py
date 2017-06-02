@@ -8,9 +8,8 @@ Experimental noodling (ignore)
 from __future__ import print_function
 
 from educe.internalutil import treenode
-from ..args import\
-    add_usual_input_args, add_usual_output_args,\
-    read_corpus, get_output_dir, announce_output_dir
+from ..args import (add_usual_input_args, add_usual_output_args,
+                    read_corpus, get_output_dir, announce_output_dir)
 
 NAME = 'tmp'
 

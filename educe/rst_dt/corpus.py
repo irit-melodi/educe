@@ -284,3 +284,22 @@ class RstRelationConverter(object):
                 # replace old rel with new rel
                 node.rel = conv_lbl(node.rel)
         return rst_tree
+
+    def convert_dtree(self, dtree):
+        """Change relation labels in an RstDepTree using the label mapping.
+
+        See attribute `self.convert_label`.
+
+        Parameters
+        ----------
+        dtree : RstDepTree
+            RST dtree
+
+        Returns
+        -------
+        dtree : RstDepTree
+            RST dtree with mapped labels.
+        """
+        conv_lbl = self.convert_label
+        dtree.labels[1:] = [conv_lbl(x) for x in dtree.labels[1:]]
+        return dtree

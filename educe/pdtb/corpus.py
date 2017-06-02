@@ -13,10 +13,10 @@ from educe.corpus import FileId
 import educe.corpus
 from . import parse
 
+
 # ---------------------------------------------------------------------
 # Corpus
 # ---------------------------------------------------------------------
-
 class Reader(educe.corpus.Reader):
     """
     See `educe.corpus.Reader` for details
@@ -56,7 +56,7 @@ class Reader(educe.corpus.Reader):
                                  (counter, len(cfiles)))
             fname = cfiles[k]
             annotations = parse.parse(fname)
-            #annotations.set_origin(k)
+            # annotations.set_origin(k)
             corpus[k] = annotations
             counter = counter+1
         if verbose:

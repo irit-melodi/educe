@@ -781,8 +781,8 @@ def shift_dialogues(doc_src, doc_res, updates, gen):
         gturn_idc_end = np.array(
             [i - 1 for i in gturn_idc[1:]] + [len(turns_src) - 1])
         # ... and finally
-        gturn_src_tid_beg = turns_src_tid[gturn_idc_beg]
-        gturn_src_tid_end = turns_src_tid[gturn_idc_end]
+        # gturn_src_tid_beg = turns_src_tid[gturn_idc_beg]
+        # gturn_src_tid_end = turns_src_tid[gturn_idc_end]
 
         # 2. get the identifier of the first and last turn of each dialogue
         # in _res: these turns and those in between must end up in the same

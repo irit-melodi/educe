@@ -200,34 +200,57 @@ class RelSpan(object):
 
 # pylint: disable=no-self-use
 class Standoff(object):
-    """
-    A standoff object ultimately points to some piece of text.
-    The pointing is not necessarily direct though
+    """A standoff object ultimately points to some piece of text.
+
+    The pointing is not necessarily direct though.
+
+    Attributes
+    ----------
+    origin : educe.corpus.FileId, optional
+        FileId of the document supporting this standoff.
     """
     def __init__(self, origin=None):
         self.origin = origin
 
     def _members(self):
-        """
-        Any annotations contained within this annotation.
+        """Any annotations contained within this annotation.
 
         Must return None if is a terminal annotation (not the same
-        meaning as returning the empty list)
+        meaning as returning the empty list).
+        Non-terminal annotations must override this.
+
+        Returns
+        -------
+        res : list of Standoff or None
+            Annotations contained within this annotation ; None for
+            terminal annotations.
         """
         return None
 
     def _terminals(self, seen=None):
-        """
+        """Terminal annotations contained within this annotation.
+
         For terminal annotations, this is just the annotation itself.
         For non-terminal annotations, this recursively fetches the
-        terminals
+        terminals.
+
+        Parameters
+        ----------
+        seen : optional
+            List of already annotations that have already been seen, so
+            as to avoid returning duplicates.
+
+        Returns
+        -------
+        res : list of Standoff
+            List of terminal annotations for this annotation.
         """
         my_members = self._members()
         seen = seen or []
         if my_members is None:
             return [self]
         else:
-            return chain.from_iterable([m._terminals(seen + my_members)
+            return chain.from_iterable([m._terminals(seen=seen + my_members)
                                         for m in my_members if m not in seen])
 
     def text_span(self):
@@ -236,7 +259,15 @@ class Standoff(object):
         to the latest.
 
         Corner case: if this is an empty non-terminal (which would be a very
-        weird thing indeed), return None
+        weird thing indeed), return None.
+
+        Returns
+        -------
+        res : Span or None
+            Span from the first character of the earliest terminal
+            annotation contained here, to the last character of the
+            latest terminal annotation ; None if this annotation has no
+            terminal.
         """
         terminals = list(self._terminals())
         if len(terminals) > 0:
@@ -248,34 +279,73 @@ class Standoff(object):
 
     def encloses(self, other):
         """
-        True if this annotations's span encloses the span of the other.
+        True if this annotation's span encloses the span of the other.
 
         `s1.encloses(s2)` is shorthand for
         `s1.text_span().encloses(s2.text_span())`
+
+        Parameters
+        ----------
+        other : Standoff
+            Other annotation.
+
+        Returns
+        -------
+        res : boolean
+            True if this annotation's span encloses the span of the
+            other.
         """
         return self.text_span().encloses(other.text_span())
 
     def overlaps(self, other):
         """
-        True if this annotations's span encloses the span of the other.
+        True if this annotations's span overlaps with the span of the other.
 
         `s1.overlaps(s2)` is shorthand for
         `s1.text_span().overlaps(s2.text_span())`
+
+        Parameters
+        ----------
+        other : Standoff
+            Other annotation.
+
+        Returns
+        -------
+        res : boolean
+            True if this annotation's span overlaps with the span of the
+            other.
         """
         return self.text_span().overlaps(other.text_span())
 # pylint: enable=no-self-use
 
 
 class Annotation(Standoff):
-    """
-    Any sort of annotation. Annotations tend to have
+    """Any sort of annotation.
 
+    Annotations tend to have:
     * span:     some sort of location (what they are annotating)
     * type:     some key label (we call a type)
     * features: an attribute to value dictionary
     """
-    def __init__(self, anno_id, span, atype, features,
-                 metadata=None, origin=None):
+    def __init__(self, anno_id, span, atype, features, metadata=None,
+                 origin=None):
+        """Init method.
+
+        Parameters
+        ----------
+        anno_id : TODO
+            Identifier for this annotation.
+        span : Span
+            Coordinates of the annotated span.
+        atype : str
+            Annotation type.
+        features : dict from str to str
+            Feature as a dict from feature_name to feature_value.
+        metadata : dict from str to str, optional
+            Metadata for the annotation, eg. author, creation date...
+        origin : FileId, optional
+            FileId of the document that supports this annotation.
+        """
         Standoff.__init__(self, origin)
         self.origin = origin
         self._anno_id = anno_id
@@ -293,14 +363,16 @@ class Annotation(Standoff):
                 (self.identifier(), self.type, self.span, feats))
 
     def local_id(self):
-        """
-        An identifier which is sufficient to pick out this annotation within a
-        single annotation file
+        """Local identifier.
+
+        An identifier which is sufficient to pick out this annotation
+        within a single annotation file.
         """
         return self._anno_id
 
     def identifier(self):
-        """
+        """Global identifier if possible, else local identifier.
+
         String representation of an identifier that should be unique
         to this corpus at least.
 
@@ -313,7 +385,7 @@ class Annotation(Standoff):
         * and the id from the XML file
 
         If we don't have an origin we fall back to just the id provided
-        by the XML file
+        by the XML file.
 
         See also `position` as potentially a safer alternative to this
         (and what we mean by safer)
@@ -326,11 +398,14 @@ class Annotation(Standoff):
 
 
 class Unit(Annotation):
+    """Unit annotation.
+
+    An annotation over a span of text.
+
     """
-    An annotation over a span of text
-    """
-    def __init__(self, unit_id, span, utype, features,
-                 metadata=None, origin=None):
+
+    def __init__(self, unit_id, span, utype, features, metadata=None,
+                 origin=None):
         Annotation.__init__(self, unit_id, span, utype, features,
                             metadata, origin)
 
@@ -351,13 +426,15 @@ class Unit(Annotation):
 
         **position vs identifier**
 
-        This is a trade-off.  One the hand, you can see the position as being
-        a safer way to identify a unit, because it obviates having to worry
-        about your naming mechanism guaranteeing stability across the board
-        (eg. two annotators stick an annotation in the same place; does it have
-        the same name). On the *other* hand, it's a bit harder to uniquely
-        identify objects that may coincidentally fall in the same span.  So
-        how much do you trust your IDs?
+        This is a trade-off.
+        On the one hand, you can see the position as being a safer way
+        to identify a unit, because it obviates having to worry about
+        your naming mechanism guaranteeing stability across the board
+        (eg. two annotators stick an annotation in the same place; does
+        it have the same name).
+        On the *other* hand, it's a bit harder to uniquely identify
+        objects that may coincidentally fall in the same span.
+        So how much do you trust your IDs?
         """
         if self.origin is None:
             ostuff = []
@@ -379,20 +456,24 @@ class Relation(Annotation):
     `fleshout` is called (corpus slurping normally fleshes out
     documents and thus their relations).
 
-    Parameters
-    ----------
-    rel_id : string
-        Relation id
-    span : RelSpan
-        Pair of units connected by this relation
-    rtype : string
-        Relation type
-    features : dict
-        Features
-    metadata : TODO
-        TODO
     """
+
     def __init__(self, rel_id, span, rtype, features, metadata=None):
+        """Init method.
+
+        Parameters
+        ----------
+        rel_id : string
+            Relation id
+        span : RelSpan
+            Pair of units connected by this relation
+        rtype : string
+            Relation type
+        features : dict
+            Features
+        metadata : dict from str to str, optional
+            Metadata for this annotation.
+        """
         Annotation.__init__(self, rel_id, span, rtype, features, metadata)
         self.source = None  # to be defined in fleshout
         'source annotation; will be defined by fleshout'

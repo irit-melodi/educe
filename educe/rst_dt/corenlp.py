@@ -14,11 +14,11 @@ import os.path
 
 import nltk.tree
 
-from educe.external.corenlp import (CoreNlpToken, CoreNlpDocument)
-from educe.external.coref import (Chain, Mention)
-from educe.external.parser import (ConstituencyTree, DependencyTree)
+from educe.external.corenlp import CoreNlpToken, CoreNlpDocument
+from educe.external.coref import Chain, Mention
+from educe.external.parser import ConstituencyTree, DependencyTree
 from educe.external.stanford_xml_reader import PreprocessingSource
-from educe.ptb.annotation import (transform_tree, strip_subcategory)
+from educe.ptb.annotation import transform_tree, strip_subcategory
 from educe.ptb.head_finder import find_lexical_heads
 
 

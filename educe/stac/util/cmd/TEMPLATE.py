@@ -5,8 +5,7 @@
 Put subcommand help text here
 """
 
-from ..args import\
-    add_usual_input_args, add_usual_output_args
+from ..args import add_usual_input_args, add_usual_output_args
 
 NAME = 'insert-name-here'
 

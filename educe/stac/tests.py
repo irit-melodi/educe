@@ -16,9 +16,9 @@ import unittest
 
 import educe.stac.graph as stac_gr
 from educe import annotation, corpus, stac
+from educe.corpus import FileId
 from educe.stac import fake_graph
 from educe.stac.rfc import BasicRfc, ThreadedRfc
-from educe.corpus import FileId
 from educe.stac.util.output import mk_parent_dirs
 
 
@@ -39,10 +39,8 @@ class FakeCDU(annotation.Schema):
         edus = set(x.local_id() for x in members if isinstance(x, FakeEDU))
         cdus = set(x.local_id() for x in members if isinstance(x, FakeCDU))
         rels = set()
-        annotation.Schema.__init__(self, schema_id,
-                                   edus, rels, cdus,
-                                   'Complex_discourse_unit',
-                                   {}, {})
+        annotation.Schema.__init__(self, schema_id, edus, rels, cdus,
+                                   'Complex_discourse_unit', {}, {})
 
 
 class FakeDocument(annotation.Document):

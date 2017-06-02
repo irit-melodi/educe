@@ -7,7 +7,7 @@ import itertools as itr
 
 from educe import stac
 from educe.stac.context import Context
-from .annotation import (is_subordinating)
+from .annotation import is_subordinating
 
 
 # pylint: disable=too-few-public-methods, no-self-use
@@ -154,8 +154,9 @@ class BasicRfc(object):
                 if not self._is_incoming_to(new_node, lnk):
                     continue
                 src_node, _ = graph.rel_links(lnk)
-                if ((last_node is None
-                     or not self._is_on_frontier(last_node, src_node))):
+                if (last_node is None
+                    or not self._is_on_frontier(last_node, src_node)):
+                    # add link to set of violations
                     violations.append(lnk)
 
         return violations

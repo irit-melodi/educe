@@ -6,11 +6,11 @@ Dump text stored in RST trees
 """
 
 from __future__ import print_function
+
 import os
 
-from ..args import\
-    add_usual_input_args, add_usual_output_args,\
-    read_corpus, get_output_dir, announce_output_dir
+from ..args import (add_usual_input_args, add_usual_output_args,
+                    read_corpus, get_output_dir, announce_output_dir)
 
 NAME = 'text'
 

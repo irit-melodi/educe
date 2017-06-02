@@ -20,14 +20,16 @@ from educe import glozz
 
 
 class CDU:
-    """A CDU contains one or more discourse units, and tracks relation
+    """Complex Discourse Unit.
+
+    A CDU contains one or more discourse units, and tracks relation
     instances between its members.
     Both CDU and EDU are discourse units.
 
     Attributes
     ----------
     members : list of Unit or Scheme
-        Immediate members of this CDU.
+        Immediate member units (EDUs and CDUs) of this CDU.
 
     rel_insts : list of Relation
         Relation instances between immediate members of this CDU.
@@ -75,7 +77,7 @@ def debug_du_to_tree(m):
         rtype_str = list(rtypes)[0] if len(rtypes) == 1 else str(rtypes)
         return Tree(rtype_str, [debug_du_to_tree(x) for x in m.members])
     else:
-        raise Exception("Don't know how to deal with non CDU/EDU")
+        raise ValueError("Don't know how to deal with non CDU/EDU")
 
 
 def rst_to_glozz_sdrt(rst_tree, annotator='ldc'):
@@ -187,20 +189,20 @@ def rst_to_sdrt(tree):
     if len(tree) == 1:  # pre-terminal
         edu = tree[0]
         if not isinstance(edu, rst.EDU):
-            raise Exception("Pre-terminal with non-EDU leaf: %s" % edu)
+            raise ValueError("Pre-terminal with non-EDU leaf: %s" % edu)
         return edu
     else:
         nuclei = [x for x in tree if x.label().is_nucleus()]
         satellites = [x for x in tree if x.label().is_satellite()]
         if len(nuclei) + len(satellites) != len(tree):
-            raise Exception("Nodes that are neither Nuclei nor "
-                            "Satellites\n%s" % tree)
+            raise ValueError("Nodes that are neither Nuclei nor "
+                             "Satellites\n%s" % tree)
 
         if len(nuclei) == 0:
-            raise Exception("No nucleus:\n%s" % tree)
+            raise ValueError("No nucleus:\n%s" % tree)
         elif len(nuclei) > 1:  # multi-nuclear chain
             if satellites:
-                raise Exception("Multinuclear with satellites:\n%s" % tree)
+                raise ValueError("Multinuclear with satellites:\n%s" % tree)
             c_nucs = [rst_to_sdrt(x) for x in nuclei]
             rtype = nuclei[0].label().rel
             rel_insts = set(RelInst(n1, n2, rtype)

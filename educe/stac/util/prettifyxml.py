@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-'''Function to "prettify" XML: courtesy of http://www.doughellmann.com/PyMOTW/xml/etree/ElementTree/create.html
+'''Function to "prettify" XML: courtesy of
+http://www.doughellmann.com/PyMOTW/xml/etree/ElementTree/create.html
 '''
 
 from __future__ import print_function
@@ -18,6 +19,6 @@ def prettify(elem, indent=""):
     return reparsed.toprettyxml(indent=indent)
 
 if __name__ == '__main__':
-    TREE = ElementTree.parse(sys.argv[1])
-    ROOT = TREE.getroot()
-    print(prettify(ROOT))
+    tree = ElementTree.parse(sys.argv[1])
+    root = tree.getroot()
+    print(prettify(root))

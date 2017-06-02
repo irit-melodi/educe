@@ -103,7 +103,7 @@ def _screen_args(args):
                  % (args.nudge_start, args.nudge_end))
     if not args.allow_shove and (args.annotator or args.stage):
         sys.exit("Use --allow-shove if you really mean to limit "
-                 + "--stage or --annotator")
+                 "--stage or --annotator")
     if args.stage:
         if args.stage != 'unannotated' and not args.annotator:
             sys.exit("--annotator is required unless --stage is unannotated")

@@ -10,8 +10,8 @@ import re
 
 import numpy as np
 
-from .base import DocumentPlusPreprocessor
 from educe.ptb.annotation import strip_punctuation, syntactic_node_seq
+from educe.rst_dt.learning.base import DocumentPlusPreprocessor
 from educe.rst_dt.lecsie import (load_lecsie_feats,
                                  LINE_FORMAT as LECSIE_LINE_FORMAT)
 from educe.stac.lexicon.pdtb_markers import (load_pdtb_markers_lexicon,
@@ -566,7 +566,8 @@ def extract_pair_sent(doc, edu_info1, edu_info2, edu_info_bwn):
         # abs_dist does not seem to work well for inter-sent
 
         # rel dist
-        yield ('dist_sent', sent_id1 - sent_id2)
+        dist_sent = sent_id1 - sent_id2
+        yield ('dist_sent', dist_sent)
 
         # L/R booleans
         if sent_id1 < sent_id2:  # right attachment (gov < dep)
@@ -574,15 +575,16 @@ def extract_pair_sent(doc, edu_info1, edu_info2, edu_info_bwn):
         elif sent_id1 > sent_id2:  # left attachment
             yield ('sent_left', True)
 
-        yield ('sentence_id_diff_div3', (sent_id1 - sent_id2) / 3)
+        yield ('sentence_id_diff_div3', dist_sent / 3)
 
     # offset features
     offset1 = edu_info1['edu_idx_in_sent']
     offset2 = edu_info2['edu_idx_in_sent']
     if offset1 is not None and offset2 is not None:
         # offset diff
-        yield ('offset_diff', offset1 - offset2)
-        yield ('offset_diff_div3', (offset1 - offset2) / 3)
+        offset_diff = offset1 - offset2
+        yield ('offset_diff', offset_diff)
+        yield ('offset_diff_div3', offset_diff / 3)
         # offset pair
         yield ('offset_div3_pair', (offset1 / 3, offset2 / 3))
 
@@ -590,8 +592,9 @@ def extract_pair_sent(doc, edu_info1, edu_info2, edu_info_bwn):
     rev_offset1 = edu_info1['edu_rev_idx_in_sent']
     rev_offset2 = edu_info2['edu_rev_idx_in_sent']
     if rev_offset1 is not None and rev_offset2 is not None:
-        yield ('rev_offset_diff', rev_offset1 - rev_offset2)
-        yield ('rev_offset_diff_div3', (rev_offset1 - rev_offset2) / 3)
+        rev_offset_diff = rev_offset1 - rev_offset2
+        yield ('rev_offset_diff', rev_offset_diff)
+        yield ('rev_offset_diff_div3', rev_offset_diff / 3)
         yield ('rev_offset_div3_pair', (rev_offset1 / 3, rev_offset2 / 3))
 
     # revSentenceID
@@ -631,10 +634,11 @@ def extract_pair_syntax(doc, edu_info1, edu_info2, edu_info_bwn):
         edu_info_l = edu_info2
         edu_info_r = edu_info1
 
-    # intra-sentential case only
     if tree_idx1 == tree_idx2:
-        ptree = doc.tkd_trees[tree_idx1]
-        pheads = doc.lex_heads[tree_idx1]
+        # intra-sentential
+        tree_idx = tree_idx1
+        ptree = doc.tkd_trees[tree_idx]
+        pheads = doc.lex_heads[tree_idx]
 
         # * DS-LST features
         # find the head node of EDU1

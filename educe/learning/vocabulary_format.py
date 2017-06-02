@@ -3,6 +3,7 @@
 
 import codecs
 
+
 def _dump_vocabulary(vocabulary, f):
     """Actually do dump"""
     line_pattern = u'{fn}\t{fx}\n'

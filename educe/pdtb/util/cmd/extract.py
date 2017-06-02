@@ -3,6 +3,9 @@
 
 """
 Extract features
+
+2017-01-27 this code is broken ; it relies on stac.keys.KeyGroupWriter
+which was deprecated and removed a while back (MM to self: way to go!).
 """
 
 import codecs
