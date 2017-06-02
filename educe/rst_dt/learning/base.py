@@ -107,7 +107,7 @@ def lowest_common_parent(treepositions):
 
     Parameters
     ----------
-    treepositions : list of tree positions
+    treepositions : :obj:`list` of tree positions
         see nltk.tree.Tree.treepositions()
 
     Returns
@@ -265,8 +265,7 @@ class DocumentPlusPreprocessor(object):
                                    (toks_beg < para_end,
                                     toks_end > para_beg,
                                     toks_beg >= tree_beg,
-                                    toks_end <= tree_end)
-                            )
+                                    toks_end <= tree_end))
                         )[0]
                         overtoks = [tokens[i] for i in overtoks_idc]
                         syn_node_seq = syntactic_node_seq(

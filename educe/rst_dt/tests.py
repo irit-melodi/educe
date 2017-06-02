@@ -58,20 +58,20 @@ TSTR1 = """
 )
 """
 
-TEXT1 = " ".join(
-    [" ORGANIZING YOUR MATERIALS ",
-     (" Once you've decided on the kind of paneling you want to install "
-      "--- and the pattern ---"),
+TEXT1 = " ".join([
+    " ORGANIZING YOUR MATERIALS ",
+    (" Once you've decided on the kind of paneling you want to install "
+     "--- and the pattern ---"),
 
-     "some preliminary steps remain",
-     "before you climb into your working clothes. ",
-     " You'll need to measure the wall or room to be paneled,",
-     "estimate the amount of paneling you'll need,",
-     "buy the paneling,",
-     ("gather the necessary tools and equipment (see illustration "
-      "on page 87),"),
+    "some preliminary steps remain",
+    "before you climb into your working clothes. ",
+    " You'll need to measure the wall or room to be paneled,",
+    "estimate the amount of paneling you'll need,",
+    "buy the paneling,",
+    ("gather the necessary tools and equipment (see illustration "
+     "on page 87),"),
 
-     "and even condition certain types of paneling before installation. "
+    "and even condition certain types of paneling before installation. "
 ])
 
 
@@ -117,20 +117,21 @@ class RSTTest(unittest.TestCase):
             self.assertTrue(annotation.is_binary(bin_tree))
 
     def test_rst_to_dt(self):
-        lw_trees = ["(R:rel (S x) (N y))",
+        lw_trees = [
+            "(R:rel (S x) (N y))",
 
-                    """
-                    (R:rel
-                        (S x)
-                        (N:rel (N h) (S t)))
-                    """,
+            """
+            (R:rel
+                (S x)
+                (N:rel (N h) (S t)))
+            """,
 
-                    """
-                    (R:r
-                        (S x)
-                        (N:r (N:r (S t1) (N h))
-                             (S t2)))
-                    """
+            """
+            (R:r
+                (S x)
+                (N:r (N:r (S t1) (N h))
+                     (S t2)))
+            """
         ]
 
         for lstr in lw_trees:
@@ -151,27 +152,28 @@ class RSTTest(unittest.TestCase):
                              "edu span equality on " + name)
 
     def test_dt_to_rst_order(self):
-        lw_trees = ["(R:r (N:r (N h) (S r1)) (S r2))",
-                    "(R:r (S:r (S l2) (N l1)) (N h))",
-                    "(R:r (N:r (S l1) (N h)) (S r1))",
-                    """
-                    (R:r
-                      (N:r
-                        (N:r (S l2)
-                             (N:r (S l1)
-                                  (N h)))
-                        (S r1))
-                      (S r2))
-                    """,  # ((l2 <- l1 <- h) -> r1 -> r2)
-                    """
-                    (R:r
-                      (N:r
-                        (S l2)
-                        (N:r (N:r (S l1)
-                                  (N h))
-                             (S r1)))
-                      (S r2))
-                    """,  # (l2 <- ((l1 <- h) -> r1)) -> r2
+        lw_trees = [
+            "(R:r (N:r (N h) (S r1)) (S r2))",
+            "(R:r (S:r (S l2) (N l1)) (N h))",
+            "(R:r (N:r (S l1) (N h)) (S r1))",
+            """
+            (R:r
+              (N:r
+                (N:r (S l2)
+                     (N:r (S l1)
+                          (N h)))
+                (S r1))
+              (S r2))
+            """,  # ((l2 <- l1 <- h) -> r1 -> r2)
+            """
+            (R:r
+              (N:r
+                (S l2)
+                (N:r (N:r (S l1)
+                          (N h))
+                     (S r1)))
+              (S r2))
+            """,  # (l2 <- ((l1 <- h) -> r1)) -> r2
         ]
 
         for lstr in lw_trees:
@@ -185,10 +187,12 @@ class RSTTest(unittest.TestCase):
             dep_b = copy.deepcopy(dep)
             dep_b.deps(0).reverse()
             rst2b = deptree_to_simple_rst_tree(dep_b)
+            # TODO assertion on rst2b?
 
             dep_c = copy.deepcopy(dep)
             random.shuffle(dep_c.deps(0))
             rst2c = deptree_to_simple_rst_tree(dep_c)
+            # TODO assertion on rst2c?
 
     def test_rst_to_dt_nuclearity_loss(self):
         """
@@ -229,3 +233,4 @@ class RSTTest(unittest.TestCase):
         dep1 = RstDepTree.from_simple_rst_tree(rst1)
         rev1 = deptree_to_simple_rst_tree(dep1)  # was:, ['r'])
         # self.assertEqual(rst0, rev1, "same structure " + tricky)
+        # TODO restore a meaningful assertion
