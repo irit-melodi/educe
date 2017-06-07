@@ -7,12 +7,10 @@ to this library
 """
 
 from __future__ import absolute_import, print_function
-from collections import defaultdict, namedtuple
+from collections import defaultdict, namedtuple, Sequence
 from functools import wraps
-from itertools import chain
-import collections
 import copy
-import itertools as itr
+import itertools
 import os
 import re
 import sys
@@ -20,22 +18,17 @@ import sys
 from nltk.corpus import verbnet as vnet
 from soundex import Soundex
 
-from educe.annotation import (Span)
-from educe.external.parser import\
-    SearchableTree,\
-    ConstituencyTree
-from educe.learning.keys import (MagicKey, Key, KeyGroup, MergedKeyGroup)
+from educe.annotation import Span
+from educe.external.parser import SearchableTree, ConstituencyTree
+from educe.learning.keys import MagicKey, Key, KeyGroup, MergedKeyGroup
 from educe.stac import postag, corenlp
 from educe.stac.annotation import speaker, addressees, is_relation_instance
-from educe.stac.context import (enclosed,
-                                edus_in_span,
-                                turns_in_span)
-from educe.stac.corpus import (twin_key)
-from educe.learning.educe_csv_format import tune_for_csv
+from educe.stac.context import enclosed, edus_in_span, turns_in_span
+from educe.stac.corpus import twin_key
+from educe.learning.educe_csv_format import SparseDictReader, tune_for_csv
 from educe.learning.util import tuple_feature, underscore
 import educe.corpus
 import educe.glozz
-import educe.learning.educe_csv_format as educe_csv
 import educe.stac
 import educe.stac.lexicon.pdtb_markers as pdtb_markers
 import educe.stac.graph as stac_gr
@@ -43,8 +36,7 @@ import educe.util
 
 from ..annotation import turn_id
 from ..lexicon.wordclass import Lexicon
-from ..fusion import (Dialogue, ROOT, FakeRootEDU,
-                      fuse_edus)
+from ..fusion import Dialogue, ROOT, FakeRootEDU, fuse_edus
 
 
 class CorpusConsistencyException(Exception):
@@ -62,8 +54,6 @@ class CorpusConsistencyException(Exception):
 # ---------------------------------------------------------------------
 # lexicon configuration
 # ---------------------------------------------------------------------
-
-
 class LexWrapper(object):
     """
     Configuration options for a given lexicon: where to find it,
@@ -142,11 +132,10 @@ def strip_cdus(corpus, mode):
         graph = stac_gr.Graph.from_doc(corpus, key)
         graph.strip_cdus(sloppy=True, mode=mode)
 
+
 # ---------------------------------------------------------------------
 # relation queries
 # ---------------------------------------------------------------------
-
-
 def emoticons(tokens):
     "Given some tokens, return just those which are emoticons"
     return frozenset(token for token in tokens if token.tag == 'E')
@@ -154,7 +143,7 @@ def emoticons(tokens):
 
 def is_just_emoticon(tokens):
     "Return true if a sequence of tokens consists of a single emoticon"
-    if not isinstance(tokens, collections.Sequence):
+    if not isinstance(tokens, Sequence):
         raise TypeError("tokens must form a sequence")
     return bool(emoticons(tokens)) and len(tokens) == 1
 
@@ -239,7 +228,7 @@ def has_pdtb_markers(markers, tokens):
     Given a sequence of tagged tokens, return True
     if any of the given PDTB markers appears within the tokens
     """
-    if not isinstance(tokens, collections.Sequence):
+    if not isinstance(tokens, Sequence):
         raise TypeError("tokens must form a sequence")
     words = [t.word for t in tokens]
     return pdtb_markers.Marker.any_appears_in(markers, words)
@@ -293,8 +282,8 @@ def subject_lemmas(span, trees):
 
     def good(tree):
         "is within the search span"
-        return tree.link == "nsubj" and\
-            span.encloses(tree.label().text_span())
+        return (tree.link == "nsubj" and
+                span.encloses(tree.label().text_span()))
 
     subtrees = map_topdown(good, prunable, trees)
     return [tree.label().features["lemma"] for tree in subtrees]
@@ -304,7 +293,7 @@ def map_topdown(good, prunable, trees):
     """
     Do topdown search on all these trees, concatenate results.
     """
-    return list(chain.from_iterable(
+    return list(itertools.chain.from_iterable(
         tree.topdown(good, prunable)
         for tree in trees if isinstance(tree, SearchableTree)))
 
@@ -323,10 +312,10 @@ def enclosed_trees(span, trees):
 
     return map_topdown(good, prunable, trees)
 
+
 # ---------------------------------------------------------------------
 # feature extraction
 # ---------------------------------------------------------------------
-
 # The comments on these named tuples can be docstrings in Python3,
 # or we can wrap the class, but eh...
 
@@ -348,11 +337,10 @@ DocumentPlus = namedtuple('DocumentPlus',
                            'players',
                            'parses'])
 
+
 # ---------------------------------------------------------------------
 # feature decorators
 # ---------------------------------------------------------------------
-
-
 def type_text(wrapped):
     """
     Given a feature that emits text, clean its output up so to work
@@ -386,8 +374,6 @@ def edu_text_feature(wrapped):
 # ---------------------------------------------------------------------
 #
 # ---------------------------------------------------------------------
-
-
 def clean_dialogue_act(act):
     """
     Knock out temporary markers used during corpus annotation
@@ -403,8 +389,6 @@ def clean_dialogue_act(act):
 # ---------------------------------------------------------------------
 # single EDU non-lexical features
 # ---------------------------------------------------------------------
-
-
 def feat_id(_, edu):
     "some sort of unique identifier for the EDU"
     return edu.identifier()
@@ -489,8 +473,8 @@ def lemma_subject(current, edu):
 
 def is_nplike(anno):
     "is some sort of NP annotation from a parser"
-    return isinstance(anno, ConstituencyTree)\
-        and anno.label() in ['NP', 'WHNP', 'NNP', 'NNPS']
+    return (isinstance(anno, ConstituencyTree)
+            and anno.label() in ['NP', 'WHNP', 'NNP', 'NNPS'])
 
 
 def has_FOR_np(current, edu):
@@ -498,29 +482,31 @@ def has_FOR_np(current, edu):
 
     def is_prep_for(anno):
         "is a node representing for as the prep in a PP"
-        return isinstance(anno, ConstituencyTree)\
-            and anno.label() == 'IN'\
-            and len(anno.children) == 1\
-            and anno.children[0].features["lemma"] == "for"
+        return (isinstance(anno, ConstituencyTree)
+                and anno.label() == 'IN'
+                and len(anno.children) == 1
+                and anno.children[0].features["lemma"] == "for")
 
     def is_for_pp_with_np(anno):
         "is a for PP node (see above) with some NP-like descendant"
-        return any(is_prep_for(child) for child in anno.children)\
-            and anno.topdown(is_nplike, None)
+        return (any(is_prep_for(child) for child in anno.children)
+                and anno.topdown(is_nplike, None))
 
     trees = enclosed_trees(edu.text_span(),
                            current.parses.trees)
     return bool(map_topdown(is_for_pp_with_np, None, trees))
 
 
-QUESTION_WORDS = ["what",
-                  "which",
-                  "where",
-                  "when",
-                  "who",
-                  "how",
-                  "why",
-                  "whose"]
+QUESTION_WORDS = [
+    "what",
+    "which",
+    "where",
+    "when",
+    "who",
+    "how",
+    "why",
+    "whose"
+]
 
 
 def is_question(current, edu):
@@ -528,8 +514,8 @@ def is_question(current, edu):
 
     def is_sqlike(anno):
         "is some sort of question"
-        return isinstance(anno, ConstituencyTree)\
-            and anno.label() in ['SBARQ', 'SQ']
+        return (isinstance(anno, ConstituencyTree)
+                and anno.label() in ['SBARQ', 'SQ'])
 
     doc = current.doc
     span = edu.text_span()
@@ -595,8 +581,8 @@ def speaker_started_the_dialogue(_, edu):
 def speaker_already_spoken_in_dialogue(_, edu):
     "if the speaker for this EDU is the same as that of a\
  previous turn in the dialogue"
-    return position_of_speaker_first_turn(edu) <\
-        edu.dialogue_turns.index(edu.turn)
+    return (position_of_speaker_first_turn(edu)
+            < edu.dialogue_turns.index(edu.turn))
 
 
 def speakers_first_turn_in_dialogue(_, edu):
@@ -604,17 +590,14 @@ def speakers_first_turn_in_dialogue(_, edu):
  speaker for this EDU first spoke"
     return 1 + position_of_speaker_first_turn(edu)
 
+
 # ---------------------------------------------------------------------
 # pair features
 # ---------------------------------------------------------------------
-
-
-#pylint: disable=unused-argument
 def feat_annotator(current, edu1, edu2):
     "annotator for the subdoc"
     anno = current.doc.origin.annotator
     return "none" if anno is None or anno is "" else anno
-#pylint: enable=unused-argument
 
 
 @tuple_feature(underscore)  # decorator does the pairing boilerplate
@@ -632,7 +615,6 @@ def dialogue_act_pairs(current, _, edu):
 EduGap = namedtuple("EduGap", "sf_cache inner_edus turns_between")
 
 
-#pylint: disable=unused-argument
 def num_edus_between(_current, gap, _edu1, _edu2):
     "number of intervening EDUs (0 if adjacent)"
     return len(gap.inner_edus)
@@ -673,7 +655,6 @@ def has_inner_question(current, gap, _edu1, _edu2):
     "if there is an intervening EDU that is a question"
     return any(gap.sf_cache[x]["is_question"]
                for x in gap.inner_edus)
-#pylint: enable=unused-argument
 
 
 def same_speaker(current, _, edu1, edu2):
@@ -689,8 +670,6 @@ def same_turn(current, _, edu1, edu2):
 # ---------------------------------------------------------------------
 # single EDU lexical features
 # ---------------------------------------------------------------------
-
-
 class LexKeyGroup(KeyGroup):
     """
     The idea here is to provide a feature per lexical class in the
@@ -860,11 +839,10 @@ class MergedLexKeyGroup(MergedKeyGroup):
     Single-EDU features based on lexical lookup.
     """
     def __init__(self, inputs):
-        groups =\
-            [LexKeyGroup(l) for l in inputs.lexicons] +\
-            [PdtbLexKeyGroup(inputs.pdtb_lex),
-             InquirerLexKeyGroup(inputs.inquirer_lex),
-             VerbNetLexKeyGroup(inputs.verbnet_entries)]
+        groups = ([LexKeyGroup(l) for l in inputs.lexicons] +
+                  [PdtbLexKeyGroup(inputs.pdtb_lex),
+                   InquirerLexKeyGroup(inputs.inquirer_lex),
+                   VerbNetLexKeyGroup(inputs.verbnet_entries)])
         description = "lexical features"
         super(MergedLexKeyGroup, self).__init__(description, groups)
 
@@ -877,8 +855,6 @@ class MergedLexKeyGroup(MergedKeyGroup):
 # ---------------------------------------------------------------------
 # single EDU non-lexical feature groups
 # ---------------------------------------------------------------------
-
-
 class SingleEduSubgroup(KeyGroup):
     """
     Abstract keygroup for subgroups of the merged SingleEduKeys.
@@ -917,16 +893,18 @@ class SingleEduSubgroup_Token(SingleEduSubgroup):
     """
     def __init__(self):
         desc = self.__doc__.strip()
-        keys =\
-            [MagicKey.continuous_fn(num_tokens),
-             MagicKey.discrete_fn(word_first),
-             MagicKey.discrete_fn(word_last),
-             MagicKey.discrete_fn(has_player_name_exact)]
+        keys = [
+            MagicKey.continuous_fn(num_tokens),
+            MagicKey.discrete_fn(word_first),
+            MagicKey.discrete_fn(word_last),
+            MagicKey.discrete_fn(has_player_name_exact)
+        ]
         if not sys.version > '3':
             keys.append(MagicKey.discrete_fn(has_player_name_fuzzy))
-        keys2 =\
-            [MagicKey.discrete_fn(feat_has_emoticons),
-             MagicKey.discrete_fn(feat_is_emoticon_only)]
+        keys2 = [
+            MagicKey.discrete_fn(feat_has_emoticons),
+            MagicKey.discrete_fn(feat_is_emoticon_only)
+        ]
         keys.extend(keys2)
         super(SingleEduSubgroup_Token, self).__init__(desc, keys)
 
@@ -936,10 +914,11 @@ class SingleEduSubgroup_Punct(SingleEduSubgroup):
 
     def __init__(self):
         desc = self.__doc__.strip()
-        keys =\
-            [MagicKey.discrete_fn(has_correction_star),
-             MagicKey.discrete_fn(ends_with_bang),
-             MagicKey.discrete_fn(ends_with_qmark)]
+        keys = [
+            MagicKey.discrete_fn(has_correction_star),
+            MagicKey.discrete_fn(ends_with_bang),
+            MagicKey.discrete_fn(ends_with_qmark)
+        ]
         super(SingleEduSubgroup_Punct, self).__init__(desc, keys)
 
 
@@ -959,7 +938,8 @@ class SingleEduSubgroup_Chat(SingleEduSubgroup):
             MagicKey.discrete_fn(turn_follows_gap),
             MagicKey.continuous_fn(position_in_dialogue),
             MagicKey.continuous_fn(position_in_game),
-            MagicKey.continuous_fn(edu_position_in_turn)]
+            MagicKey.continuous_fn(edu_position_in_turn)
+        ]
         super(SingleEduSubgroup_Chat, self).__init__(desc, keys)
 
 
@@ -970,10 +950,11 @@ class SingleEduSubgroup_Parser(SingleEduSubgroup):
 
     def __init__(self):
         desc = "parser features"
-        keys =\
-            [MagicKey.discrete_fn(lemma_subject),
-             MagicKey.discrete_fn(has_FOR_np),
-             MagicKey.discrete_fn(is_question)]
+        keys = [
+            MagicKey.discrete_fn(lemma_subject),
+            MagicKey.discrete_fn(has_FOR_np),
+            MagicKey.discrete_fn(is_question)
+        ]
         super(SingleEduSubgroup_Parser, self).__init__(desc, keys)
 
 
@@ -987,8 +968,7 @@ class SingleEduKeys(MergedKeyGroup):
                   SingleEduSubgroup_Punct(),
                   SingleEduSubgroup_Parser(),
                   MergedLexKeyGroup(inputs)]
-        super(SingleEduKeys, self).__init__("single EDU features",
-                                            groups)
+        super(SingleEduKeys, self).__init__("single EDU features", groups)
 
     def fill(self, current, edu, target=None):
         """
@@ -1030,9 +1010,10 @@ class PairSubgroup_Tuple(PairSubgroup):
         self.corpus = inputs.corpus
         self.sf_cache = sf_cache
         desc = self.__doc__.strip()
-        keys =\
-            [MagicKey.discrete_fn(is_question_pairs),
-             MagicKey.discrete_fn(dialogue_act_pairs)]
+        keys = [
+            MagicKey.discrete_fn(is_question_pairs),
+            MagicKey.discrete_fn(dialogue_act_pairs)
+        ]
         super(PairSubgroup_Tuple, self).__init__(desc, keys)
 
     def fill(self, current, edu1, edu2, target=None):
@@ -1050,13 +1031,14 @@ class PairSubgroup_Gap(PairSubgroup):
     def __init__(self, sf_cache):
         self.sf_cache = sf_cache
         desc = "the gap between EDUs"
-        keys =\
-            [MagicKey.continuous_fn(num_edus_between),
-             MagicKey.continuous_fn(num_speakers_between),
-             MagicKey.continuous_fn(num_nonling_tstars_between),
-             MagicKey.discrete_fn(same_speaker),
-             MagicKey.discrete_fn(same_turn),
-             MagicKey.discrete_fn(has_inner_question)]
+        keys = [
+            MagicKey.continuous_fn(num_edus_between),
+            MagicKey.continuous_fn(num_speakers_between),
+            MagicKey.continuous_fn(num_nonling_tstars_between),
+            MagicKey.discrete_fn(same_speaker),
+            MagicKey.discrete_fn(same_turn),
+            MagicKey.discrete_fn(has_inner_question)
+        ]
         super(PairSubgroup_Gap, self).__init__(desc, keys)
 
     def fill(self, current, edu1, edu2, target=None):
@@ -1098,8 +1080,7 @@ class PairKeys(MergedKeyGroup):
             self.edu1 = None  # will be filled out later
             self.edu2 = None  # from the feature cache
 
-        super(PairKeys, self).__init__("pair features",
-                                       groups)
+        super(PairKeys, self).__init__("pair features", groups)
 
     def one_hot_values_gen(self, suffix=''):
         for pair in super(PairKeys, self).one_hot_values_gen():
@@ -1117,11 +1098,10 @@ class PairKeys(MergedKeyGroup):
         for group in self.groups:
             group.fill(current, edu1, edu2, vec)
 
+
 # ---------------------------------------------------------------------
 # (single) feature cache
 # ---------------------------------------------------------------------
-
-
 class FeatureCache(dict):
     """
     Cache for single edu features.
@@ -1151,11 +1131,10 @@ class FeatureCache(dict):
         if edu in self:
             del self[edu]
 
+
 # ---------------------------------------------------------------------
 # extraction generators
 # ---------------------------------------------------------------------
-
-
 def _get_unit_key(inputs, key):
     """
     Given the key for what is presumably a discourse level or
@@ -1278,7 +1257,7 @@ def _mk_high_level_dialogues(current):
     for dia in dialogues:
         d_edus = edus_in_dialogues[dia]
         d_relations = {}
-        for pair in itr.product([FakeRootEDU] + d_edus, d_edus):
+        for pair in itertools.product([FakeRootEDU] + d_edus, d_edus):
             rel = relations.get(_id_pair(pair))
             if rel is not None:
                 d_relations[pair] = rel
@@ -1320,11 +1299,10 @@ def extract_pair_features(inputs, stage):
             for edu1, edu2 in dia.edu_pairs():
                 yield _extract_pair(env, edu1, edu2)
 
+
 # ---------------------------------------------------------------------
 # extraction generators (single edu)
 # ---------------------------------------------------------------------
-
-
 def extract_single_features(inputs, stage):
     """
     Return a dictionary for each EDU
@@ -1340,11 +1318,10 @@ def extract_single_features(inputs, stage):
             vec.fill(env.current, edu)
             yield vec
 
+
 # ---------------------------------------------------------------------
 # input readers
 # ---------------------------------------------------------------------
-
-
 def read_pdtb_lexicon(args):
     """
     Read and return the local PDTB discourse marker lexicon.
@@ -1359,7 +1336,7 @@ def _read_inquirer_lexicon(args):
     """
     inq_txt_file = os.path.join(args.resources, INQUIRER_BASENAME)
     with open(inq_txt_file) as cin:
-        creader = educe_csv.SparseDictReader(cin, delimiter='\t')
+        creader = SparseDictReader(cin, delimiter='\t')
         words = defaultdict(list)
         for row in creader:
             for k in row:

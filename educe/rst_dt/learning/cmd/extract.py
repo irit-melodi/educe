@@ -9,8 +9,8 @@ Extract features to CSV files
 """
 
 from __future__ import print_function
-import os
 import itertools
+import os
 
 import educe.corpus
 import educe.glozz
@@ -160,9 +160,17 @@ def main(args):
 
     # align EDUs with sentences, tokens and trees from PTB
     def open_plus(doc):
-        """Open and fully load a document
+        """Open and fully load a document.
 
-        doc is an educe.corpus.FileId
+        Parameters
+        ----------
+        doc : educe.corpus.FileId
+            Document key.
+
+        Returns
+        -------
+        doc : DocumentPlus
+            Rich representation of the document.
         """
         # create a DocumentPlus
         doc = rst_reader.decode(doc)

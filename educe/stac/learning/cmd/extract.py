@@ -9,32 +9,29 @@ Extract features to CSV files
 """
 
 from __future__ import print_function
-from os import path as fp
 import os
+from os import path as fp
 import sys
 
-from educe.learning.keygroup_vectorizer import (KeyGroupVectorizer)
-from educe.stac.annotation import (DIALOGUE_ACTS,
-                                   SUBORDINATING_RELATIONS,
-                                   COORDINATING_RELATIONS)
-from educe.stac.learning import features
 import educe.corpus
+import educe.glozz
 from educe.learning.edu_input_format import (dump_all,
                                              labels_comment,
                                              dump_svmlight_file,
                                              dump_edu_input_file)
+from educe.learning.keygroup_vectorizer import (KeyGroupVectorizer)
 from educe.learning.vocabulary_format import (dump_vocabulary,
                                               load_vocabulary)
-import educe.glozz
 import educe.stac
+from educe.stac.annotation import (DIALOGUE_ACTS,
+                                   SUBORDINATING_RELATIONS,
+                                   COORDINATING_RELATIONS)
+from educe.stac.learning.doc_vectorizer import (
+    DialogueActVectorizer, LabelVectorizer, mk_high_level_dialogues,
+    extract_pair_features, extract_single_features, strip_cdus)
+from educe.stac.learning.features import read_corpus_inputs
 import educe.util
 
-from ..doc_vectorizer import (DialogueActVectorizer,
-                              LabelVectorizer)
-from ..features import (strip_cdus,
-                        mk_high_level_dialogues,
-                        extract_pair_features,
-                        extract_single_features)
 
 NAME = 'extract'
 
@@ -84,7 +81,7 @@ def config_argparser(parser):
 
 def main_single(args):
     """Extract feature vectors for single EDUs in the corpus."""
-    inputs = features.read_corpus_inputs(args)
+    inputs = read_corpus_inputs(args)
     stage = 'unannotated' if args.parsing else 'units'
     dialogues = list(mk_high_level_dialogues(inputs, stage))
     # these paths should go away once we switch to a proper dumper
@@ -120,7 +117,7 @@ def main_single(args):
 
 def main_pairs(args):
     """Extract feature vectors for pairs of EDUs in the corpus."""
-    inputs = features.read_corpus_inputs(args)
+    inputs = read_corpus_inputs(args)
     stage = 'units' if args.parsing else 'discourse'
     dialogues = list(mk_high_level_dialogues(inputs, stage))
     # these paths should go away once we switch to a proper dumper
@@ -132,7 +129,7 @@ def main_pairs(args):
                        COORDINATING_RELATIONS)
 
     # pylint: disable=invalid-name
-    # scikit-convention
+    # X, y follow the naming convention in sklearn
     feats = extract_pair_features(inputs, stage)
     vzer = KeyGroupVectorizer()
     if args.parsing or args.vocabulary:

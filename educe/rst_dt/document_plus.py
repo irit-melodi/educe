@@ -400,14 +400,31 @@ class DocumentPlus(object):
         return self
 
     def all_edu_pairs(self):
-        """Generate all EDU pairs of a document"""
+        """Generate all EDU pairs of a document.
+
+        Returns
+        -------
+        all_pairs: [(EDU, EDU)]
+            All pairs of EDUs in this document.
+        """
         edus = self.edus
         all_pairs = [epair for epair in itertools.product(edus, edus[1:])
                      if epair[0] != epair[1]]
         return all_pairs
 
     def relations(self, edu_pairs):
-        """Get the relation that holds in each of the edu_pairs"""
+        """Get the relation that holds in each of the edu_pairs.
+
+        Parameters
+        ----------
+        edu_pairs : [(DU, DU)]
+            List of DU pairs.
+
+        Returns
+        -------
+        erels : :obj:`list` of :obj:`str`
+            Relation for each pair of EDUs.
+        """
         if not self.deptree:
             return [None for epair in edu_pairs]
 

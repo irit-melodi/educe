@@ -260,8 +260,8 @@ def parse_lightweight_tree(tstr):
 
             match = _lw_type_re.match(treenode(subtree))
             if not match:
-                raise RSTTreeException("Missing nuclearity annotation in ",
-                                       subtree)
+                raise RSTTreeException(
+                    "Missing nuclearity annotation in " + str(subtree))
             nuclearity = _lw_nuc_map[match.group("nuc")]
             rel = match.group("rel") or "leaf"
             edu_span = (start.edu, posinfo.edu - 1)

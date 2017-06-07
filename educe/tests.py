@@ -89,9 +89,9 @@ class NullAnno(Span, Annotation):
         return str(self)
 
     def __eq__(self, other):
-        return (self.char_start == other.char_start
-                and self.char_end == other.char_end
-                and self.type == other.type)
+        return (self.char_start == other.char_start and
+                self.char_end == other.char_end and
+                self.type == other.type)
 
     def __ne__(self, other):
         return not self == other
@@ -170,7 +170,6 @@ class EnclosureTest(unittest.TestCase):
 # ---------------------------------------------------------------------
 # annotations
 # ---------------------------------------------------------------------
-
 class TestUnit(Unit):
     def __init__(self, id, start, end):
         Unit.__init__(self, id, Span(start, end), '', {})
@@ -234,13 +233,18 @@ class FakeGraph(educe.Graph):
         self.doc = None
 
     def _add_fake_node(self, anno_id, type):
-        attrs = {'type': type}
+        attrs = {
+            'type': type
+        }
         self.add_node(anno_id)
         for x in attrs.items():
             self.add_node_attribute(anno_id, x)
 
     def _add_fake_edge(self, anno_id, type, members):
-        attrs = {'type': type, 'mirror': anno_id}
+        attrs = {
+            'type': type,
+            'mirror': anno_id
+        }
         self.add_node(anno_id)
         self.add_edge(anno_id)
         for x in attrs.items():

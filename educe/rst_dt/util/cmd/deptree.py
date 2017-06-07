@@ -8,15 +8,13 @@ Convert to dependency tree representation
 from __future__ import print_function
 import os
 
-from educe.rst_dt.deptree import RstDepTree
+from educe.rst_dt.annotation import SimpleRSTTree
 from educe.rst_dt.dep2con import deptree_to_simple_rst_tree
-import educe.rst_dt
+from educe.rst_dt.deptree import RstDepTree
 
-from ..args import\
-    add_usual_input_args, add_usual_output_args,\
-    read_corpus, get_output_dir, announce_output_dir
-from .reltypes import\
-    empty_counts, walk_and_count
+from ..args import (add_usual_input_args, add_usual_output_args,
+                    read_corpus, get_output_dir, announce_output_dir)
+from .reltypes import empty_counts, walk_and_count
 
 NAME = 'deptree'
 
@@ -49,7 +47,7 @@ def convert(corpus, multinuclear, odir):
     for k in corpus:
         suffix = os.path.splitext(k.doc)[0]
 
-        stree = educe.rst_dt.SimpleRSTTree.from_rst_tree(corpus[k])
+        stree = SimpleRSTTree.from_rst_tree(corpus[k])
         with open(os.path.join(bin_dir, suffix), 'w') as fout:
             fout.write(str(stree))
 

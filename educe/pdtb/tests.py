@@ -8,6 +8,7 @@ import educe.pdtb.parse as p
 import educe.pdtb.pdtbx as x
 from educe.internalutil import indent_xml
 
+
 ex_txt = """#### Text ####
 federal thrift
 
@@ -115,7 +116,7 @@ class PdtbParseTest(unittest.TestCase):
 
     def test_gorn(self):
         expected = p.GornAddress([0, 1, 5, 3])
-        txt = ','.join(map(str, expected.parts))
+        txt = ','.join(str(x) for x in expected.parts)
         self.assertParse(p._gorn, expected, txt)
 
     def test_span_list(self):

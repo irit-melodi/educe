@@ -29,6 +29,16 @@ class DialogueActVectorizer(object):
         """Learn the label encoder and return a vector of labels
 
         There is one label per instance extracted from raw_documents.
+
+        Parameters
+        ----------
+        raw_documents : list of `educe.stac.fusion.Dialogue`
+            List of dialogues.
+
+        Yields
+        ------
+        inst_lbl : int
+            (Integer) label for the next instance.
         """
         # run through documents to generate y
         for doc in raw_documents:
@@ -48,7 +58,7 @@ class LabelVectorizer(object):
         instance_generator : function that enumerates instances from doc
             Function that given a ? enumerates its candidate instances.
 
-        labels : iterable of string
+        labels : iterable of str
             Set of domain labels. If it is provided as a sequence, the
             order of labels is preserved ; otherwise its elements are
             sorted before storage. This guarantees a stable behaviour
@@ -72,6 +82,16 @@ class LabelVectorizer(object):
         """Learn the label encoder and return a vector of labels
 
         There is one label per instance extracted from raw_documents.
+
+        Parameters
+        ----------
+        raw_documents : list of ?
+            Raw documents.
+
+        Yields
+        ------
+        inst_lbl : int
+            (Integer) label for the next instance.
         """
         zlabel = UNK if self._zero else UNRELATED
         # run through documents to generate y

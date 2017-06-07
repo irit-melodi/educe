@@ -30,7 +30,7 @@ extraction.
 
 from __future__ import print_function
 import copy
-import itertools as itr
+import itertools
 
 from educe.annotation import (Span, Unit)
 from educe.stac.annotation import (is_edu, speaker, turn_id, twin_from)
@@ -89,7 +89,7 @@ class Dialogue(object):
                 num2 = numedu2[0]
                 return num2 <= num1
                 # pylint: enable=cell-var-from-loop
-            for _, edu2 in itr.dropwhile(is_before, i_edus):
+            for _, edu2 in itertools.dropwhile(is_before, i_edus):
                 yield (edu1, edu2)
                 yield (edu2, edu1)
 

@@ -21,7 +21,7 @@ class DummyNuclearityClassifier(object):
 
     Parameters
     ----------
-    strategy: str
+    strategy : str
         Strategy to use to generate predictions.
 
         * "unamb_else_most_frequent": predicts multinuclear when the
@@ -161,11 +161,10 @@ class InsideOutAttachmentRanker(object):
         return self
 
     def predict(self, X):
-        """Produce a ranking.
+        """Predict order between modifiers of the same head.
 
-        This keeps the alternation of left and right modifiers as it is
-        in `targets` but possibly re-orders dependents on either side to
-        guarantee inside-out traversal.
+        The predicted order should guarantee inside-out traversal on
+        either side of a head.
 
         Parameters
         ----------
@@ -450,6 +449,15 @@ def deptree_to_simple_rst_tree(dtree, allow_forest=False):
 
 
     (and so on, until all we have left is a single RST tree).
+
+    TODO
+    ----
+    * [ ] fix the signature of this function: change name or arguments
+          or return type, because the current implementation returns
+          either a SimpleRSTTree if allow_forest=False, or a list of
+          SimpleRSTTree if allow_forest=True. This is a likely source of
+          errors because SimpleRSTTrees are list-like, ie. tree[i]
+          returns the i-th child of a tree node...
     """
 
     def mk_leaf(edu):
