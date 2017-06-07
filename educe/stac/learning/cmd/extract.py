@@ -27,9 +27,10 @@ from educe.stac.annotation import (DIALOGUE_ACTS,
                                    SUBORDINATING_RELATIONS,
                                    COORDINATING_RELATIONS)
 from educe.stac.learning.doc_vectorizer import (
-    DialogueActVectorizer, LabelVectorizer, mk_high_level_dialogues,
-    extract_pair_features, extract_single_features, strip_cdus)
-from educe.stac.learning.features import read_corpus_inputs
+    DialogueActVectorizer, LabelVectorizer)
+from educe.stac.learning.features import (
+    extract_pair_features, extract_single_features,
+    mk_high_level_dialogues, read_corpus_inputs, strip_cdus)
 import educe.util
 
 
