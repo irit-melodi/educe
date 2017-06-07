@@ -25,7 +25,8 @@ from educe.stac import postag, corenlp
 from educe.stac.annotation import speaker, addressees, is_relation_instance
 from educe.stac.context import enclosed, edus_in_span, turns_in_span
 from educe.stac.corpus import twin_key
-from educe.learning.educe_csv_format import SparseDictReader, tune_for_csv
+from educe.stac.lexicon.inquirer import read_inquirer_lexicon
+from educe.learning.educe_csv_format import tune_for_csv
 from educe.learning.util import tuple_feature, underscore
 import educe.corpus
 import educe.glozz
@@ -1330,23 +1331,6 @@ def read_pdtb_lexicon(args):
     return pdtb_markers.read_lexicon(pdtb_lex_file)
 
 
-def _read_inquirer_lexicon(args):
-    """
-    Read and return the local PDTB discourse marker lexicon.
-    """
-    inq_txt_file = os.path.join(args.resources, INQUIRER_BASENAME)
-    with open(inq_txt_file) as cin:
-        creader = SparseDictReader(cin, delimiter='\t')
-        words = defaultdict(list)
-        for row in creader:
-            for k in row:
-                word = row["Entry"].lower()
-                word = re.sub(r'#.*$', r'', word)
-                if k in INQUIRER_CLASSES:
-                    words[k].append(word)
-    return words
-
-
 def mk_is_interesting(args, single):
     """
     Return a function that filters corpus keys to pick out the ones
@@ -1432,7 +1416,11 @@ def read_corpus_inputs(args):
     for lex in LEXICONS:
         lex.read(args.resources)
     pdtb_lex = read_pdtb_lexicon(args)
-    inq_lex = {}  # _read_inquirer_lexicon(args)
+
+    # inquirer lexicon (disabled)
+    inq_txt_file = os.path.join(args.resources, INQUIRER_BASENAME)
+    inq_classes = INQUIRER_CLASSES
+    inq_lex = {}  # read_inquirer_lexicon(inq_txt_file, inq_classes)
 
     verbnet_entries = [VerbNetEntry(x, frozenset(vnet.lemmas(x)))
                        for x in VERBNET_CLASSES]
