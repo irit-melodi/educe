@@ -35,7 +35,7 @@ def _read_GornAddressList(attr):
 
 
 def _read_SpanList(attr):
-    return [tuple(map(int, x.split('..'))) for x in attr.split(';')]
+    return [tuple([int(y) for y in x.split('..')]) for x in attr.split(';')]
 
 
 def _read_SemClass(attr):
@@ -74,7 +74,7 @@ def _read_Attribution(node):
                           determinacy=attr['determinacy'],
                           type=attr['type'],
                           source=attr['source'],
-                          selection=None if selection is () else selection)
+                          selection=(None if selection is () else selection))
 
 
 def _read_Sup(node):
@@ -86,8 +86,8 @@ def _read_Arg(node):
     attribution = on_single_element(
         node, (), _read_Attribution, 'attribution')
     return ty.Arg(selection=_read_Selection(node),
-                  attribution=None if attribution is () else attribution,
-                  sup=None if sup is () else sup)
+                  attribution=(None if attribution is () else attribution),
+                  sup=(None if sup is () else sup))
 
 
 def _read_Args(node):
@@ -95,7 +95,7 @@ def _read_Args(node):
     if len(args) != 2:
         raise EduceXmlException('Was expecting exactly two arguments '
                                 '(got %d)' % len(args))
-    return tuple(map(_read_Arg, args))
+    return tuple([_read_Arg(x) for x in args])
 
 
 def _read_ExplicitRelationFeatures(node):
@@ -217,15 +217,15 @@ def _InferenceSite_xml(itm, name='inferenceSite'):
 
 
 def _GornAddressList_xml(itm):
-    return ";".join(map(_GornAddress_xml, itm))
+    return ";".join([_GornAddress_xml(x) for x in itm])
 
 
 def _SpanList_xml(itm):
-    return ";".join(map(_Span_xml, itm))
+    return ";".join([_Span_xml(x) for x in itm])
 
 
 def _GornAddress_xml(itm):
-    return ",".join(map(str, itm.parts))
+    return ",".join([str(x) for x in itm.parts])
 
 
 def _Span_xml(itm):
@@ -334,11 +334,12 @@ def Relation_xml(itm):
 
 def Relations_xml(itms):
     elm = ET.Element('relations')
-    elm.extend(map(Relation_xml, itms))
+    elm.extend([Relation_xml(x) for x in itms])
     return elm
 
 
 def write_pdtbx_file(filename, relations):
     xml = Relations_xml(relations)
     indent_xml(xml)
-    ET.ElementTree(xml).write(filename, encoding='utf-8', xml_declaration=True)
+    ET.ElementTree(xml).write(filename, encoding='utf-8',
+                              xml_declaration=True)

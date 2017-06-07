@@ -17,8 +17,6 @@ Corpus management
 # the above. Give us a mapping from FileId to filepaths and we
 # do the rest.
 
-import sys
-
 
 class FileId:
     """
@@ -103,7 +101,7 @@ class Reader:
     to data.
 
     :param rootdir: the top directory of the corpus
-    :type  rootdir: string
+    :type rootdir: str
 
     A potentially useful pattern to apply here is to take a slice of
     these dictionaries for processing. For example, you might not want
@@ -112,24 +110,24 @@ class Reader:
 
     .. code-block:: python
 
-        reader    = Reader(corpus_dir)
-        files     = reader.files()
-        subfiles  = {k: v in files.items() if k.annotator in ['Bob', 'Alice']}
-        corpus    = reader.slurp(subfiles)
+        reader = Reader(corpus_dir)
+        files = reader.files()
+        subfiles = {k: v in files.items() if k.annotator in ['Bob', 'Alice']}
+        corpus = reader.slurp(subfiles)
 
     Alternatively, having read in the entire corpus, you might be doing
     processing on various slices of it at a time
 
     .. code-block:: python
 
-        corpus    = reader.slurp()
-        subcorpus = { k:v in corpus.items() if k.doc == 'pilot14' }
+        corpus = reader.slurp()
+        subcorpus = {k: v in corpus.items() if k.doc == 'pilot14'}
 
     This is an abstract class; you should use the version from a
     data-set, eg. `educe.stac.Reader` instead
     """
-    def __init__(self, dir):
-        self.rootdir = dir
+    def __init__(self, root):
+        self.rootdir = root
 
     def files(self, doc_glob=None):
         """

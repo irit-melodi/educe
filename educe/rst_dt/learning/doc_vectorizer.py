@@ -1,5 +1,7 @@
 """This submodule implements document vectorizers"""
 
+from __future__ import print_function
+
 import itertools
 import numbers
 
@@ -18,6 +20,7 @@ class DocumentLabelExtractor(object):
 
     labelset_ : dict
         A mapping of labels to indices.
+
     """
 
     def __init__(self, instance_generator,
@@ -589,7 +592,7 @@ class DocumentCountVectorizer(object):
         Yields
         ------
         row : (row, (tgt, src))
-            TODO
+            Feature vector for the next instance.
         """
         if not hasattr(self, 'vocabulary_'):
             self._validate_vocabulary()

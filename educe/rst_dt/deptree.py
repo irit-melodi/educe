@@ -42,7 +42,17 @@ DEFAULT_RANK = 0
 
 
 class RstDepTree(object):
-    """RST dependency tree"""
+    """RST dependency tree
+
+    Attributes
+    ----------
+    edus : list of EDU
+        List of the EDUs of this document.
+
+    origin : Document?, optional
+        TODO
+
+    """
 
     def __init__(self, edus=[], origin=None):
         # FIXME find a clean way to avoid generating a new left padding EDU
@@ -214,7 +224,13 @@ class RstDepTree(object):
         return self.deps(_ROOT_HEAD)
 
     def set_origin(self, origin):
-        """Update the origin of this annotation"""
+        """Update the origin of this annotation.
+
+        Parameters
+        ----------
+        origin : FileId
+            File identifier of the origin of this annotation.
+        """
         self.origin = origin
 
     def spans(self):

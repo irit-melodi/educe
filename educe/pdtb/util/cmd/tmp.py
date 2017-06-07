@@ -7,7 +7,6 @@ One-off experiments
 
 from __future__ import print_function
 import collections
-import sys
 
 from ..args import add_usual_input_args, read_corpus
 

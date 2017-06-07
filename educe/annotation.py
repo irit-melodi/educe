@@ -246,12 +246,11 @@ class Standoff(object):
             List of terminal annotations for this annotation.
         """
         my_members = self._members()
-        seen = seen or []
         if my_members is None:
             return [self]
-        else:
-            return chain.from_iterable([m._terminals(seen=seen + my_members)
-                                        for m in my_members if m not in seen])
+        seen = seen or []
+        return chain.from_iterable([m._terminals(seen=seen + my_members)
+                                    for m in my_members if m not in seen])
 
     def text_span(self):
         """

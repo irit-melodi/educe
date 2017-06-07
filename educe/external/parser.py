@@ -149,11 +149,12 @@ class ConstituencyTree(SearchableTree, Standoff):
         def step(t):
             """Recursive helper for tree building"""
             if not isinstance(t, nltk.tree.Tree):
-                if toks:
-                    return toks.popleft()
-                else:
+                # leaf
+                if not toks:
                     raise Exception('Must have same number of input tokens '
                                     'as leaves in the tree')
+                return toks.popleft()
+            # internal node, recurse to kids
             return cls(t.label(), [step(kid) for kid in t])
         return step(tree)
 

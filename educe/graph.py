@@ -106,7 +106,7 @@ import pygraph.classes.digraph as dgr
 from pygraph.algorithms import accessibility
 
 
-# pylint: disable=too-few-public-methods, star-args
+# pylint: disable=too-few-public-methods
 
 class DuplicateIdException(Exception):
     '''Condition that arises in inconsistent corpora'''
@@ -628,10 +628,11 @@ class DotGraph(pydot.Dot):
         Return attributes for
         (midpoint, to midpoint, from midpoint)
         """
-        midpoint_attrs =\
-            {'label': self._rel_label(anno),
-             'style': 'dotted',
-             'fontcolor': 'blue'}
+        midpoint_attrs = {
+            'label': self._rel_label(anno),
+            'style': 'dotted',
+            'fontcolor': 'blue'
+        }
         attrs1 = {'arrowhead': 'tee',
                   'arrowsize': '0.5'}
         attrs2 = {}

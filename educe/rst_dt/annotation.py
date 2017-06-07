@@ -18,6 +18,9 @@ import os
 import subprocess
 import tempfile
 
+# nltk.draw for rendering in PS, PDF, PNG ; see RSTTree.to_ps()
+from nltk.draw.tree import tree_to_treesegment
+from nltk.draw.util import CanvasFrame
 from nltk.internals import find_binary
 
 from educe.annotation import Standoff, Span
@@ -81,9 +84,7 @@ class EDU(Standoff):
     """
     _SUMMARY_LEN = 20
 
-    def __init__(self, num, span, text,
-                 context=None,
-                 origin=None):
+    def __init__(self, num, span, text, context=None, origin=None):
         super(EDU, self).__init__(origin)
 
         self.num = num
@@ -109,6 +110,11 @@ class EDU(Standoff):
     def set_origin(self, origin):
         """
         Update the origin of this annotation and any contained within
+
+        Parameters
+        ----------
+        origin : FileId
+            File identifier of the origin of this annotation.
         """
         self.origin = origin
 
@@ -191,8 +197,7 @@ class Node(object):
     A node in an `RSTTree` or `SimpleRSTTree`.
     """
 
-    def __init__(self, nuclearity, edu_span, span, rel,
-                 context=None):
+    def __init__(self, nuclearity, edu_span, span, rel, context=None):
         self.nuclearity = nuclearity
         "one of Nucleus, Satellite, Root"
 
@@ -257,8 +262,7 @@ class RSTTree(SearchableTree, Standoff):
     raw RST discourse treebank one.
     """
 
-    def __init__(self, node, children,
-                 origin=None):
+    def __init__(self, node, children, origin=None):
         """
         See `educe.rst_dt.parse` to build trees from strings
         """
@@ -266,8 +270,12 @@ class RSTTree(SearchableTree, Standoff):
         Standoff.__init__(self, origin)
 
     def set_origin(self, origin):
-        """
-        Update the origin of this annotation and any contained within
+        """Update the origin of this annotation and any contained within
+
+        Parameters
+        ----------
+        origin : FileId
+            File identifier of the origin of this annotation.
         """
         self.origin = origin
         for child in self:
@@ -317,8 +325,6 @@ class RSTTree(SearchableTree, Standoff):
 
         This function is used by `_repr_png_`.
         """
-        from nltk.draw.tree import tree_to_treesegment
-        from nltk.draw.util import CanvasFrame
         _canvas_frame = CanvasFrame()
         # WIP customization of visual appearance
         # NB: conda-provided python and tk cannot access most fonts on the
@@ -396,9 +402,13 @@ class SimpleRSTTree(SearchableTree, Standoff):
         Standoff.__init__(self, origin)
 
     def set_origin(self, origin):
-        """
-        Recursively update the origin for this annotation, ie.
-        a little link to the document metadata for this annotation
+        """Recursively update the origin for this annotation, ie.
+        a little link to the document metadata for this annotation.
+
+        Parameters
+        ----------
+        origin : FileId
+            File identifier of the origin of this annotation.
         """
         self.origin = origin
         for child in self:
@@ -490,15 +500,18 @@ class SimpleRSTTree(SearchableTree, Standoff):
 
         Parameters
         ----------
-        tree: SimpleRSTTree
+        tree : SimpleRSTTree
             SimpleRSTTree to convert
 
-        rel: string, optional
-            Relation that must decorate the root node of the output
+        rel : string, optional
+            Relation for the root node of the output
+
+        nuc : string, optional
+            Nuclearity for the root node of the output
 
         Returns
         -------
-        rtree: RSTTree
+        rtree : RSTTree
             The (binary) RSTTree that corresponds to the given
             SimpleRSTTree
         """
@@ -507,11 +520,7 @@ class SimpleRSTTree(SearchableTree, Standoff):
             node.rel = rel
             return RSTTree(node, tree, tree.origin)
         else:
-            # left = tree[0]
-            # right = tree[1]
             node = copy.copy(treenode(tree))
-            # lnode = treenode(left)
-            # rnode = treenode(right)
             # standard RST trees mark relations on the satellite
             # child (mononuclear relations) or on each nucleus
             # child (multinuclear relations)

@@ -13,7 +13,8 @@ from .svmlight_format import dump_svmlight_file
 
 # pylint: disable=invalid-name
 # a lot of the names here are chosen deliberately to
-# go with scikit convention
+# go with sklearn convention
+
 
 # EDUs
 def _dump_edu_input_file(docs, f):

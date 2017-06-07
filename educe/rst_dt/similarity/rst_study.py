@@ -231,14 +231,14 @@ if __name__ == '__main__':
             for gov_idx, dep_idx in itertools.combinations(
                     range(len(dtree.edus)), 2):
                 if (doc_key, gov_idx, dep_idx) in edu_pairs_rel:
-                    lbl = edu_pairs_rel[(doc_key, gov_idx, dep_idx)]
-                    kept_pair = (doc_key, gov_idx, dep_idx, lbl)
+                    kept_pair = (doc_key, gov_idx, dep_idx,
+                                 edu_pairs_rel[(doc_key, gov_idx, dep_idx)])
                 elif (doc_key, dep_idx, gov_idx) in edu_pairs_rel:
-                    lbl = edu_pairs_rel[(doc_key, dep_idx, gov_idx)]
-                    kept_pair = (doc_key, dep_idx, gov_idx, lbl)
+                    kept_pair = (doc_key, dep_idx, gov_idx,
+                                 edu_pairs_rel[(doc_key, dep_idx, gov_idx)])
                 else:
-                    lbl = 'UNRELATED'
-                    kept_pair = (doc_key, gov_idx, dep_idx, lbl)
+                    kept_pair = (doc_key, gov_idx, dep_idx,
+                                 'UNRELATED')
                 edu_pairs[-1].append(kept_pair)
 
     # transform local index of EDU in doc into global index in the list

@@ -38,13 +38,14 @@ function on some sample relations and print the resulting objects.
 import codecs
 import re
 import sys
-import funcparserlib.parser as fp
 
 if sys.version > '3':
     from functools import reduce
     from io import StringIO
 else:
     from StringIO import StringIO
+
+import funcparserlib.parser as fp
 
 
 # ---------------------------------------------------------------------
@@ -88,7 +89,7 @@ class GornAddress(PdtbItem):
         self.parts = parts
 
     def __str__(self):
-        return '.'.join(map(str, self.parts))
+        return '.'.join(str(x) for x in self.parts)
 
 
 class Attribution(PdtbItem):
@@ -138,9 +139,9 @@ class Selection(PdtbItem):
 class Connective(PdtbItem):
     def __init__(self, text, semclass1, semclass2=None):
         self.text = text
-        assert(isinstance(semclass1, SemClass))
+        assert isinstance(semclass1, SemClass)
         if semclass2:
-            assert(isinstance(semclass2, SemClass))
+            assert isinstance(semclass2, SemClass)
         self.semclass1 = semclass1
         self.semclass2 = semclass2
 
@@ -168,9 +169,9 @@ class Arg(Selection):
     def __init__(self, selection, attribution=None, sup=None):
         Selection._init_copy(self, selection)
         if attribution:
-            assert(isinstance(attribution, Attribution))
+            assert isinstance(attribution, Attribution)
         if sup:
-            assert(isinstance(sup, Sup))
+            assert isinstance(sup, Sup)
         self.attribution = attribution
         self.sup = sup
 
@@ -197,8 +198,8 @@ class Relation(PdtbItem):
         elif len(args) == 2:
             self.arg1, self.arg2 = args
         else:
-            raise Exception('Was expecting either 2 or 4 arguments, '
-                            'but got: %d\n%s' % (len(xs), xs))
+            raise ValueError('Was expecting either 2 or 4 arguments, '
+                             'but got: %d\n%s' % (len(args), args))
 
     def _substr(self):
         return PdtbItem._substr(self)
@@ -206,8 +207,8 @@ class Relation(PdtbItem):
 
 class ExplicitRelationFeatures(PdtbItem):
     def __init__(self, attribution, connhead):
-        assert(isinstance(attribution, Attribution))
-        assert(isinstance(connhead, Connective))
+        assert isinstance(attribution, Attribution)
+        assert isinstance(connhead, Connective)
         self.attribution = attribution
         self.connhead = connhead
 
@@ -218,10 +219,10 @@ class ExplicitRelationFeatures(PdtbItem):
 
 class ImplicitRelationFeatures(PdtbItem):
     def __init__(self, attribution, connective1, connective2=None):
-        assert(isinstance(attribution, Attribution))
-        assert(isinstance(connective1, Connective))
+        assert isinstance(attribution, Attribution)
+        assert isinstance(connective1, Connective)
         if connective2:
-            assert(isinstance(connective2, Connective))
+            assert isinstance(connective2, Connective)
         self.attribution = attribution
         self.connective1 = connective1
         self.connective2 = connective2
@@ -234,10 +235,10 @@ class ImplicitRelationFeatures(PdtbItem):
 
 class AltLexRelationFeatures(PdtbItem):
     def __init__(self, attribution, semclass1, semclass2):
-        assert(isinstance(attribution, Attribution))
-        assert(isinstance(semclass1, SemClass))
+        assert isinstance(attribution, Attribution)
+        assert isinstance(semclass1, SemClass)
         if semclass2:
-            assert(isinstance(semclass2, SemClass))
+            assert isinstance(semclass2, SemClass)
         self.attribution = attribution
         self.semclass1 = semclass1
         self.semclass2 = semclass2
@@ -799,9 +800,7 @@ def parse_relation(s):
 
 
 def parse(path):
-    """
-    Parse a single .pdtb file and return the list of relations found
-    within
+    """Retrieve the list of relations found in a single .pdtb file.
 
     Parameters
     ----------
@@ -810,9 +809,8 @@ def parse(path):
 
     Returns
     -------
-    res : list of Relation
-        List of relations found within the file.
-
+    relations : list of Relation
+        List of relations found.
     """
     doc = codecs.open(path, 'r', 'iso8859-1').read()
     return _pdtbFile.parse(_annotate(doc))
