@@ -84,9 +84,6 @@ def main_single(args):
     inputs = read_corpus_inputs(args)
     stage = 'unannotated' if args.parsing else 'units'
     dialogues = list(mk_high_level_dialogues(inputs, stage))
-    # these paths should go away once we switch to a proper dumper
-    out_file = fp.join(args.output,
-                       fp.basename(args.corpus) + '.dialogue-acts.sparse')
     instance_generator = lambda x: x.edus[1:]  # drop fake root
 
     # pylint: disable=invalid-name
@@ -96,22 +93,34 @@ def main_single(args):
     # TODO? just transform() if args.parsing or args.vocabulary?
     X_gen = vzer.fit_transform(feats)
     # pylint: enable=invalid-name
-    labtor = DialogueActVectorizer(instance_generator, DIALOGUE_ACTS)
+    labels = DIALOGUE_ACTS
+    labtor = DialogueActVectorizer(instance_generator, labels)
     y_gen = labtor.transform(dialogues)
 
-    if not fp.exists(args.output):
-        os.makedirs(args.output)
+    # create directory structure: {output}/
+    outdir = args.output
+    if not fp.exists(outdir):
+        os.makedirs(outdir)
+
+    corpus_name = fp.basename(args.corpus)
 
     # list dialogue acts
     comment = labels_comment(labtor.labelset_)
 
     # dump: EDUs, pairings, vectorized pairings with label
-    edu_input_file = out_file + '.edu_input'
+    # these paths should go away once we switch to a proper dumper
+    out_file = fp.join(
+        outdir,
+        '{corpus_name}.dialogue-acts.sparse'.format(
+            corpus_name=corpus_name))
+    edu_input_file = '{out_file}.edu_input'.format(out_file=out_file)
     dump_edu_input_file(dialogues, edu_input_file)
     dump_svmlight_file(X_gen, y_gen, out_file, comment=comment)
 
     # dump vocabulary
-    vocab_file = out_file + '.vocab'
+    vocab_file = fp.join(outdir,
+                         '{corpus_name}.dialogue-acts.sparse.vocab'.format(
+                             corpus_name=corpus_name))
     dump_vocabulary(vzer.vocabulary_, vocab_file)
 
 
@@ -120,9 +129,6 @@ def main_pairs(args):
     inputs = read_corpus_inputs(args)
     stage = 'units' if args.parsing else 'discourse'
     dialogues = list(mk_high_level_dialogues(inputs, stage))
-    # these paths should go away once we switch to a proper dumper
-    out_file = fp.join(args.output,
-                       fp.basename(args.corpus) + '.relations.sparse')
     instance_generator = lambda x: x.edu_pairs()
 
     labels = frozenset(SUBORDINATING_RELATIONS +
@@ -142,17 +148,24 @@ def main_pairs(args):
                              zero=args.parsing)
     y_gen = labtor.transform(dialogues)
 
-    if not fp.exists(args.output):
-        os.makedirs(args.output)
+    # create directory structure
+    outdir = args.output
+    if not fp.exists(outdir):
+        os.makedirs(outdir)
 
-    dump_all(X_gen,
-             y_gen,
-             out_file,
-             labtor.labelset_,
-             dialogues,
+    corpus_name = fp.basename(args.corpus)
+    # these paths should go away once we switch to a proper dumper
+    out_file = fp.join(
+        outdir,
+        '{corpus_name}.relations.sparse'.format(
+            corpus_name=corpus_name))
+
+    dump_all(X_gen, y_gen, out_file, labtor.labelset_, dialogues,
              instance_generator)
     # dump vocabulary
-    vocab_file = out_file + '.vocab'
+    vocab_file = fp.join(outdir,
+                         '{corpus_name}.relations.sparse.vocab'.format(
+                             corpus_name=corpus_name))
     dump_vocabulary(vzer.vocabulary_, vocab_file)
 
 
