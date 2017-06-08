@@ -572,7 +572,7 @@ def is_binary(tree):
         return all(is_binary(x) for x in tree)
 
 
-def _binarize(tree):
+def _binarize(tree, branching='right_mixed'):
     """
     Slightly rearrange an RST tree as a binary tree.  The non-trivial
     cases here are
@@ -591,14 +591,28 @@ def _binarize(tree):
 
       For example, given `X(List:N1, List:N2, List:N3)`, we would
       return `X(List:N1, List:N(List:N2, List:N3))`
+
+    Parameters
+    ----------
+    branching : str, one of {'left', 'right', 'right_mixed'}
+        Direction of the branching ; defaults to 'right_mixed', which
+        transforms n-ary multinuclear relations to a cascade of
+        right-branching binary trees, and SNS n-ary nodes into
+        left-branching binary trees.
     """
+    branching_vals = ('left', 'right', 'right_mixed')
+    if branching not in branching_vals:
+        raise ValueError("branching must be one of {{}}".format(
+            branching_vals))
+
     if isinstance(tree, EDU):
         return tree
     elif len(tree) == 1 and not isinstance(tree[0], EDU):
         raise RSTTreeException("Ill-formed RST tree? Unary non-terminal: " +
                                str(tree))
     elif len(tree) <= 2:
-        return RSTTree(treenode(tree), [_binarize(x) for x in tree],
+        return RSTTree(treenode(tree),
+                       [_binarize(x, branching=branching) for x in tree],
                        origin=tree.origin)
     else:
         # convenient string representation of what the children look like
@@ -616,13 +630,21 @@ def _binarize(tree):
         elif len(nuclei) > 1:  # multi-nuclear chain
             if satellites:
                 raise Exception("Multinuclear with satellites:\n%s" % tree)
-            kids = [_binarize(x) for x in tree]
-            left = kids[0]
-            right = _chain_to_binary(treenode(left).rel, kids[1:])
+            kids = [_binarize(x, branching=branching) for x in tree]
+            if branching in ('right', 'right_mixed'):  # right-branching
+                left = kids[0]
+                right = _chain_to_binary(treenode(left).rel, kids[1:])
+            else:  # left-branching
+                right = kids[-1]
+                left = _chain_to_binary(treenode(right).rel, kids[:-1])
             return RSTTree(treenode(tree), [left, right], origin=tree.origin)
         elif nscode == 'SNS':
-            left = _chain_to_binary('span', tree[:2])
-            right = _binarize(tree[2])
+            if branching in ('left', 'right_mixed'):  # left-branching
+                left = _chain_to_binary('span', tree[:2])
+                right = _binarize(tree[2], branching=branching)
+            else:  # right-branching
+                left = _binarize(tree[0], branching=branching)
+                right = _chain_to_binary('span', tree[1:])
             return RSTTree(treenode(tree), [left, right], origin=tree.origin)
         else:
             raise RSTTreeException(
