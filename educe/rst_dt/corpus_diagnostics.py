@@ -359,6 +359,11 @@ def load_spans(coarse_rtree_ref):
             kid_nucs = ''.join(('N' if kid.label().nuclearity == 'Nucleus'
                                 else 'S')
                                for kid in node)
+            # 2016-09-15 quick n dirty check for n-ary nodes with >1 S
+            cnt_nucs = Counter(kid_nucs)
+            if cnt_nucs['S'] > 1:
+                print(node.origin.doc, node_label.edu_span, kid_nucs)
+            # end n-ary nodes with >1 S
         else:  # missing values, for pre-terminals (pre-EDUs)
             kid_rels = None
             kid_nucs = None

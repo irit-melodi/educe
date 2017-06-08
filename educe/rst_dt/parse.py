@@ -240,8 +240,6 @@ def parse_lightweight_tree(tstr):
     examples
     """
     _lw_type_re = re.compile(r'(?P<nuc>[RSN])(:(?P<rel>.*)|$)')
-    _lw_nuc_map = dict((nuc[0], nuc)
-                       for nuc in ["Root", "Nucleus", "Satellite"])
     # pylint: disable=C0103
     PosInfo = collections.namedtuple("PosInfo", "text edu")
     # pylint: enable=C0103
@@ -254,25 +252,28 @@ def parse_lightweight_tree(tstr):
         if isinstance(subtree, Tree):
             start = copy.copy(posinfo)
             children = []
+            nuc_kids = []
             for kid in subtree:
-                tree, posinfo = walk(kid, posinfo)
+                tree, posinfo, nuc_kid = walk(kid, posinfo)
                 children.append(tree)
+                nuc_kids.append(nuc_kid)
+            nuclearity = ''.join(x for x in nuc_kids)
 
             match = _lw_type_re.match(treenode(subtree))
             if not match:
                 raise RSTTreeException(
                     "Missing nuclearity annotation in " + str(subtree))
-            nuclearity = _lw_nuc_map[match.group("nuc")]
+            nuc = match.group("nuc")
             rel = match.group("rel") or "leaf"
             edu_span = (start.edu, posinfo.edu - 1)
             span = Span(start.text, posinfo.text)
             node = Node(nuclearity, edu_span, span, rel)
-            return SimpleRSTTree(node, children), posinfo
+            return SimpleRSTTree(node, children), posinfo, nuc
         else:
             text = subtree
             start = posinfo.text
             end = start + len(text)
             posinfo2 = PosInfo(text=end, edu=posinfo.edu+1)
-            return EDU(posinfo.edu, Span(start, end), text), posinfo2
+            return EDU(posinfo.edu, Span(start, end), text), posinfo2, "leaf"
 
     return walk(Tree.fromstring(tstr))[0]

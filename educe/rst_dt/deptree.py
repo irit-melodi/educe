@@ -12,13 +12,8 @@ import itertools
 
 import numpy as np
 
-from .annotation import EDU
+from .annotation import EDU, _binarize, NUC_N, NUC_S  # , NUC_R
 from ..internalutil import treenode
-
-
-NUC_N = "Nucleus"
-NUC_S = "Satellite"
-NUC_R = "Root"
 
 
 class RstDtException(Exception):
@@ -282,7 +277,7 @@ class RstDepTree(object):
                 rel = treenode(tree).rel
                 left = tree[0]
                 right = tree[1]
-                nscode = "".join(treenode(kid).nuclearity[0] for kid in tree)
+                nscode = treenode(tree).nuclearity
                 lhead = walk(left)
                 rhead = walk(right)
 
