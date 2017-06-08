@@ -267,12 +267,39 @@ class RSTTree(SearchableTree, Standoff):
     raw RST discourse treebank one.
     """
 
-    def __init__(self, node, children, origin=None):
+    def __init__(self, node, children, origin=None, verbose=False):
         """
         See `educe.rst_dt.parse` to build trees from strings
         """
         SearchableTree.__init__(self, node, children)
         Standoff.__init__(self, origin)
+        # WIP 2016-11-10 store num of head in node
+        if len(children) == 1 and isinstance(children[0], EDU):
+            # pre-terminal: head is num of terminal (EDU)
+            node.head = children[0].num
+        else:
+            # internal node
+            kids_nuclei = [i for i, kid in enumerate(children)
+                           if kid.label().nuclearity == NUC_N]
+            if len(kids_nuclei) == 1:
+                # 1 nucleus, 1-n satellites: n mono-nuc relations
+                pass
+            elif len(kids_nuclei) == len(children):
+                # all children are nuclei: 1 multi-nuc relation
+                kid_rels = [kid.label().rel for kid in children]
+                if len(set(kid_rels)) > 1:
+                    if verbose:
+                        err_msg = ('W: More than one label in multi-nuclear'
+                                   ' relation {}'.format(children))
+                        print(err_msg)
+            else:
+                # corner case, should not happen
+                err_msg = 'E: Unknown pattern in children'
+                print(err_msg)
+            # its head is the head of its leftmost nucleus child
+            lnuc = children[kids_nuclei[0]]
+            node.head = lnuc.label().head
+        # end WIP head
 
     def set_origin(self, origin):
         """Update the origin of this annotation and any contained within
@@ -405,6 +432,14 @@ class SimpleRSTTree(SearchableTree, Standoff):
         """
         SearchableTree.__init__(self, node, children)
         Standoff.__init__(self, origin)
+        # WIP 2016-11-10 store num of head in node
+        if len(children) == 1 and isinstance(children[0], EDU):
+            node.head = children[0].num
+        else:
+            # head is head of the leftmost nucleus child
+            lnuc_idx = node.nuclearity.index('N')
+            node.head = children[lnuc_idx].label().head
+        # end WIP head
 
     def set_origin(self, origin):
         """Recursively update the origin for this annotation, ie.
