@@ -397,6 +397,50 @@ class RSTTree(SearchableTree, Standoff):
         """
         return treenode(self).edu_span
 
+    def get_spans(self, subtree_filter=None, exclude_root=False,
+                  span_type='edus'):
+        """Get the spans of a constituency tree.
+
+        Each span is described by a triplet (edu_span, nuclearity,
+        relation).
+
+        Parameters
+        ----------
+        subtree_filter : function, defaults to None
+            Function to filter all local trees.
+
+        exclude_root : boolean, defaults to False
+            If True, exclude the span of the root node. This cannot be
+            expressed with `subtree_filter` because the latter is limited
+            to properties local to each subtree in isolation. Or maybe I
+            just missed something.
+
+        span_type : one of {'edus', 'chars'}
+            Whether each span is expressed on EDU or character indices.
+            Character indices are useful to compare spans from trees
+            whose EDU segmentation differs.
+
+        Returns
+        -------
+        spans: list of tuple((int, int), str, str)
+            List of tuples, each describing a span with a tuple
+            ((edu_start, edu_end), nuclearity, relation).
+        """
+        tnodes = [x.label() for x in self.subtrees(filter=subtree_filter)
+                  if isinstance(x, RSTTree)]
+        if exclude_root:
+            tnodes = tnodes[1:]
+        # 2016-11-10 add a 4th element: head
+        # 2017-04-12 enable char spans
+        if span_type == 'chars':
+            spans = [((tn.span.char_start, tn.span.char_end),
+                      tn.nuclearity, tn.rel, tn.head)
+                     for tn in tnodes]
+        else:
+            spans = [(tn.edu_span, tn.nuclearity, tn.rel, tn.head)
+                     for tn in tnodes]
+        return spans
+
     def text(self):
         """
         Return the text corresponding to this RST subtree.
@@ -459,6 +503,50 @@ class SimpleRSTTree(SearchableTree, Standoff):
 
     def _members(self):
         return list(self)  # children
+
+    def get_spans(self, subtree_filter=None, exclude_root=False,
+                  span_type='edus'):
+        """Get the spans of a constituency tree.
+
+        Each span is described by a triplet (edu_span, nuclearity,
+        relation).
+
+        Parameters
+        ----------
+        subtree_filter : function, defaults to None
+            Function to filter all local trees.
+
+        exclude_root : boolean, defaults to False
+            If True, exclude the span of the root node. This cannot be
+            expressed with `subtree_filter` because the latter is limited
+            to properties local to each subtree in isolation. Or maybe I
+            just missed something.
+
+        span_type : one of {'edus', 'chars'}
+            Whether each span is expressed on EDU or character indices.
+            Character indices are useful to compare spans from trees
+            whose EDU segmentation differs.
+
+        Returns
+        -------
+        spans: list of tuple((int, int), str, str)
+            List of tuples, each describing a span with a tuple
+            ((edu_start, edu_end), nuclearity, relation).
+        """
+        tnodes = [x.label() for x in self.subtrees(filter=subtree_filter)
+                  if isinstance(x, SimpleRSTTree)]
+        if exclude_root:
+            tnodes = tnodes[1:]
+        # 2016-11-10 add a 4th element: head
+        # 2017-04-12 enable char spans
+        if span_type == 'chars':
+            spans = [((tn.span.char_start, tn.span.char_end),
+                      tn.nuclearity, tn.rel, tn.head)
+                     for tn in tnodes]
+        else:
+            spans = [(tn.edu_span, tn.nuclearity, tn.rel, tn.head)
+                     for tn in tnodes]
+        return spans
 
     @classmethod
     def from_rst_tree(cls, tree):
