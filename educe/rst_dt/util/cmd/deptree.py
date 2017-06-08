@@ -55,7 +55,7 @@ def convert(corpus, multinuclear, odir):
         with open(os.path.join(dt_dir, suffix), 'w') as fout:
             fout.write(str(dtree))
 
-        stree2 = deptree_to_simple_rst_tree(dtree, multinuclear)
+        stree2 = deptree_to_simple_rst_tree(dtree)
         with open(os.path.join(rst2_dir, suffix), 'w') as fout:
             fout.write(str(stree2))
 

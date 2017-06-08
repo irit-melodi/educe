@@ -28,6 +28,11 @@ from educe.external.parser import SearchableTree
 from ..internalutil import treenode
 
 
+# nuclearities
+NUC_N = "Nucleus"
+NUC_S = "Satellite"
+NUC_R = "Root"
+
 # ghostscript parameters to generate images in different formats
 _GS_PARAMS = {
     'png': '-sDEVICE=png16m -r90 -dTextAlphaBits=4 -dGraphicsAlphaBits=4',
@@ -226,7 +231,7 @@ class Node(object):
     def __str__(self):
         return "%s %s %s" % (
             "%s-%s" % self.edu_span,
-            self.nuclearity[0],
+            self.nuclearity,
             self.rel)
 
     def __eq__(self, other):
@@ -246,13 +251,13 @@ class Node(object):
         can only either be nucleus/satellite or much more rarely,
         root.
         """
-        return self.nuclearity == 'Nucleus'
+        return self.nuclearity == NUC_N
 
     def is_satellite(self):
         """
         A node can either be a nucleus, a satellite, or a root node.
         """
-        return self.nuclearity == 'Satellite'
+        return self.nuclearity == NUC_S
 
 
 # pylint: disable=R0904, E1103
@@ -438,6 +443,7 @@ class SimpleRSTTree(SearchableTree, Standoff):
         if len(tree) == 1:
             node = copy.copy(treenode(tree))
             node.rel = "leaf"
+            node.nuclearity = "leaf"  # WIP
             return SimpleRSTTree(node, tree, tree.origin)
         else:
             left = tree[0]
@@ -446,6 +452,9 @@ class SimpleRSTTree(SearchableTree, Standoff):
             lnode = treenode(left)
             rnode = treenode(right)
             node.rel = rnode.rel if rnode.is_satellite() else lnode.rel
+            # WIP move nuclearity up too
+            node.nuclearity = ''.join(x.label().nuclearity[0] for x in tree)
+            # end WIP
             kids = [cls._from_binary_rst_tree(kid) for kid in tree]
             return SimpleRSTTree(node, kids, tree.origin)
 
@@ -489,7 +498,7 @@ class SimpleRSTTree(SearchableTree, Standoff):
             return SimpleRSTTree(node, kids, tree.origin)
 
     @classmethod
-    def to_binary_rst_tree(cls, tree, rel='ROOT'):
+    def to_binary_rst_tree(cls, tree, rel='---', nuc=NUC_R):
         """
         Build and return a binary `RSTTree` from a `SimpleRSTTree`.
 
@@ -518,26 +527,33 @@ class SimpleRSTTree(SearchableTree, Standoff):
         if len(tree) == 1:
             node = copy.copy(treenode(tree))
             node.rel = rel
+            node.nuclearity = nuc
             return RSTTree(node, tree, tree.origin)
         else:
             node = copy.copy(treenode(tree))
             # standard RST trees mark relations on the satellite
             # child (mononuclear relations) or on each nucleus
             # child (multinuclear relations)
-            sat_idx = [i for i, kid in enumerate(tree)
-                       if treenode(kid).is_satellite()]
+            sat_idx = [i for i, nuc0 in enumerate(node.nuclearity)
+                       if nuc0 == NUC_S[0]]
             if sat_idx:
                 # mononuclear
-                kids = [(cls.to_binary_rst_tree(kid, rel=node.rel)
-                         if treenode(kid).is_satellite() else
-                         cls.to_binary_rst_tree(kid, rel='span'))
-                        for kid in tree]
+                kids = [
+                    cls.to_binary_rst_tree(
+                        kid,
+                        rel=(node.rel if node.nuclearity[i] == NUC_S[0]
+                             else 'span'),
+                        nuc=(NUC_S if node.nuclearity[i] == NUC_S[0]
+                             else NUC_N))
+                    for i, kid in enumerate(tree)
+                ]
             else:
                 # multinuclear
-                kids = [cls.to_binary_rst_tree(kid, rel=node.rel)
+                kids = [cls.to_binary_rst_tree(kid, rel=node.rel, nuc=NUC_N)
                         for kid in tree]
-            # update the rel in the current node
+            # update the rel and nuc in the current node
             node.rel = rel
+            node.nuclearity = nuc
             return RSTTree(node, kids, tree.origin)
 
 
@@ -555,7 +571,7 @@ def _chain_to_binary(rel, kids):
         rnode = treenode(right)
         edu_span = (lnode.edu_span[0], rnode.edu_span[1])
         span = lnode.span.merge(rnode.span)
-        newnode = Node('Nucleus', edu_span, span, rel)
+        newnode = Node(NUC_N, edu_span, span, rel)
         return RSTTree(newnode, [left, right], origin=left.origin)
     return functools.reduce(builder, kids[::-1])
 
