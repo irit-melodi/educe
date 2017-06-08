@@ -47,9 +47,16 @@ class RstDepTree(object):
     origin : Document?, optional
         TODO
 
+    nary_enc : one of {'chain', 'tree'}, optional
+        Type of encoding used for n-ary relations: 'chain' or 'tree'.
+        This determines for example how fragmented EDUs are resolved.
     """
 
-    def __init__(self, edus=[], origin=None):
+    def __init__(self, edus=[], origin=None, nary_enc='chain'):
+        # WIP 2016-07-20 nary_enc to resolve fragmented EDUs
+        if nary_enc not in ['chain', 'tree']:
+            raise ValueError("nary_enc must be in {'tree', 'chain'}")
+        self.nary_enc = nary_enc
         # FIXME find a clean way to avoid generating a new left padding EDU
         # here
         _lpad = EDU.left_padding()
@@ -261,7 +268,9 @@ class RstDepTree(object):
     def from_simple_rst_tree(cls, rtree):
         """Converts a ̀SimpleRSTTree` to an `RstDepTree`"""
         edus = sorted(rtree.leaves(), key=lambda x: x.span.char_start)
-        dtree = cls(edus)
+        # building a SimpleRSTTree requires to binarize the original
+        # RSTTree first, so 'chain' is the only possibility
+        dtree = cls(edus, nary_enc='chain')
 
         def walk(tree):
             """
@@ -306,10 +315,19 @@ class RstDepTree(object):
         return dtree
 
     @classmethod
-    def from_rst_tree(cls, rtree):
-        """Converts an ̀RSTTree` to an `RstDepTree`"""
+    def from_rst_tree(cls, rtree, nary_enc='tree'):
+        """Converts an ̀RSTTree` to an `RstDepTree`.
+
+        Parameters
+        ----------
+        nary_enc : one of {'chain', 'tree'}
+            If 'chain', the given RSTTree is binarized first.
+        """
         edus = sorted(rtree.leaves(), key=lambda x: x.span.char_start)
-        dtree = cls(edus)
+        # if 'chain', binarize the tree first
+        if nary_enc == 'chain':
+            rtree = _binarize(rtree)
+        dtree = cls(edus, nary_enc=nary_enc)
 
         def walk(tree):
             """
