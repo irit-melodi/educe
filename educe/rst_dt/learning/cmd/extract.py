@@ -94,6 +94,11 @@ def config_argparser(parser):
     parser.add_argument('--experimental', action='store_true',
                         help='Enable experimental features '
                              '(currently none)')
+    # 2016-09-12 nary_enc: chain vs tree transform
+    parser.add_argument('--nary_enc', default='chain',
+                        choices=['chain', 'tree'],
+                        help='Encoding for n-ary nodes')
+    # end nary_enc
     parser.set_defaults(func=main)
 
 
@@ -117,6 +122,7 @@ def main(args):
     rst_reader = RstDtParser(args.corpus, args,
                              coarse_rels=args.coarse,
                              fix_pseudo_rels=args.fix_pseudo_rels,
+                             nary_enc=args.nary_enc,
                              exclude_file_docs=exclude_file_docs)
     rst_corpus = rst_reader.corpus
     # TODO: change educe.corpus.Reader.slurp*() so that they return an object
