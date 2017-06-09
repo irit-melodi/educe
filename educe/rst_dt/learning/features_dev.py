@@ -237,6 +237,17 @@ def extract_single_sentence(doc, edu_info, para_info):
     except KeyError:
         pass
 
+
+def extract_single_para(doc, edu_info, para_info):
+    """paragraph features for the EDU"""
+    # position of DU in paragraph
+    try:
+        offset_para = edu_info['edu_idx_in_para']
+        if offset_para is not None:
+            yield ('num_edus_from_para_start', offset_para)
+    except KeyError:
+        pass
+
     try:
         rev_offset_para = edu_info['edu_rev_idx_in_para']
         if rev_offset_para is not None:
@@ -244,9 +255,6 @@ def extract_single_sentence(doc, edu_info, para_info):
     except KeyError:
         pass
 
-
-def extract_single_para(doc, edu_info, para_info):
-    """paragraph features for the EDU"""
     # position of paragraph in doc
     # * from beginning
     try:
@@ -621,6 +629,9 @@ def extract_pair_syntax(doc, edu_info1, edu_info2, edu_info_bwn):
 
     edu1 = edu_info1['edu']
     edu2 = edu_info2['edu']
+    # nums
+    edu1_num = edu1.num
+    edu2_num = edu2.num
 
     # determine the linear order of {EDU_1, EDU_2}
     if edu1.num < edu2.num:
