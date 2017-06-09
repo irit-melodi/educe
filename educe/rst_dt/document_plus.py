@@ -412,13 +412,19 @@ class DocumentPlus(object):
                      if epair[0] != epair[1]]
         return all_pairs
 
-    def relations(self, edu_pairs):
+    def relations(self, edu_pairs, lbl_type='rel'):
         """Get the relation that holds in each of the edu_pairs.
+
+        As of 2016-09-30, this function has a unique caller:
+        doc_vectorizer.DocumentLabelExtractor._extract_labels() .
 
         Parameters
         ----------
         edu_pairs : [(DU, DU)]
             List of DU pairs.
+
+        lbl_type : one of {'rel', 'rel+nuc'}
+            Type of label.
 
         Returns
         -------
@@ -429,7 +435,8 @@ class DocumentPlus(object):
             return [None for epair in edu_pairs]
 
         rels = {(src, tgt): rel
-                for src, tgt, rel in self.deptree.get_dependencies()}
+                for src, tgt, rel
+                in self.deptree.get_dependencies(lbl_type=lbl_type)}
         erels = [rels.get(epair, 'UNRELATED')
                  for epair in edu_pairs]
         return erels

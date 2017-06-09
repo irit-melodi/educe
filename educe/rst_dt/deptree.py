@@ -221,17 +221,31 @@ class RstDepTree(object):
             # common rank
             self.ranks[_idx_dep] = rank
 
-    def get_dependencies(self):
+    def get_dependencies(self, lbl_type='rel'):
         """Get the list of dependencies in this dependency tree.
 
         Each dependency is a 3-uple (gov, dep, label),
         gov and dep being EDUs.
+
+        Parameters
+        ----------
+        lbl_type: one of {'rel', 'rel+nuc'} (TODO 'rel+nuc+rnk'?)
+            Type of the labels.
         """
+        if lbl_type not in ['rel', 'rel+nuc']:
+            raise ValueError("lbl_type needs to be one of {'rel', 'rel+nuc'}")
+
         edus = self.edus
 
         deps = self.edus[1:]
         gov_idxs = self.heads[1:]
-        labels = self.labels[1:]
+        if lbl_type == 'rel':
+            labels = self.labels[1:]
+        elif lbl_type == 'rel+nuc':
+            labels = list(zip(self.labels[1:],
+                              ['N' + nuc[0] for nuc in self.nucs[1:]]))
+        else:
+            raise NotImplementedError("WIP")
 
         result = [(edus[gov_idx], dep, lbl)
                   for gov_idx, dep, lbl
