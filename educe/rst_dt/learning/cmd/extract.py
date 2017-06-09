@@ -99,6 +99,11 @@ def config_argparser(parser):
                         choices=['chain', 'tree'],
                         help='Encoding for n-ary nodes')
     # end nary_enc
+    # 2016-09-30 enable to choose between unordered and ordered pairs
+    parser.add_argument('--unordered_pairs',
+                        action='store_true',
+                        help=("Instances are unordered pairs: "
+                              "(src, tgt) == (tgt, src)"))
     parser.set_defaults(func=main)
 
 
@@ -206,7 +211,8 @@ def main(args):
     # to iterate over a stable (sorted) list of FileIds
     docs = [open_plus(doc) for doc in sorted(rst_corpus)]
     # instance generator
-    instance_generator = lambda doc: doc.all_edu_pairs()
+    ordered_pairs = not args.unordered_pairs  # 2016-09-30
+    instance_generator = lambda doc: doc.all_edu_pairs(ordered=ordered_pairs)
     split_feat_space = 'dir_sent'
     # extract vectorized samples
     if args.vocabulary is not None:
@@ -231,6 +237,7 @@ def main(args):
     elif args.labels is not None:
         labelset = load_labels(args.labels)
         labtor = DocumentLabelExtractor(instance_generator,
+                                        ordered_pairs=ordered_pairs,
                                         labelset=labelset)
         labtor.fit(docs)
         y_gen = labtor.transform(docs)
