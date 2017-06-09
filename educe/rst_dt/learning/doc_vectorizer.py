@@ -283,41 +283,44 @@ class DocumentCountVectorizer(object):
         sf_cache = dict()
 
         for edu1, edu2 in edu_pairs:
+            edu1_num = edu1.num
+            edu2_num = edu2.num
             # WIP interval
-            if edu1.num < edu2.num:
-                edul_num = edu1.num
-                edur_num = edu2.num
+            if edu1_num < edu2_num:
+                edul_num = edu1_num
+                edur_num = edu2_num
             else:
-                edul_num = edu2.num
-                edur_num = edu1.num
+                edul_num = edu2_num
+                edur_num = edu1_num
             bwn_nums = range(edul_num + 1, edur_num)
             # end WIP interval
 
             feat_dict = dict()
             # retrieve info for each EDU
-            edu_info1 = edu_infos[edu1.num]
-            edu_info2 = edu_infos[edu2.num]
+            edu_info1 = edu_infos[edu1_num]
+            edu_info2 = edu_infos[edu2_num]
             # NEW paragraph info
             try:
-                para_info1 = para_infos[edu2para[edu1.num]]
+                para_info1 = para_infos[edu2para[edu1_num]]
             except TypeError:
                 para_info1 = None
             try:
-                para_info2 = para_infos[edu2para[edu2.num]]
+                para_info2 = para_infos[edu2para[edu2_num]]
             except TypeError:
                 para_info2 = None
             # ... and for the EDUs in between (WIP interval)
-            edu_info_bwn = [edu_infos[x] for x in bwn_nums]
+            edu_info_bwn = [edu_infos[i] for i in bwn_nums]
+
             # gov EDU
-            if edu1.num not in sf_cache:
-                sf_cache[edu1.num] = dict(sing_extract(
+            if edu1_num not in sf_cache:
+                sf_cache[edu1_num] = dict(sing_extract(
                     doc, edu_info1, para_info1))
-            feat_dict['EDU1'] = dict(sf_cache[edu1.num])
+            feat_dict['EDU1'] = dict(sf_cache[edu1_num])
             # dep EDU
-            if edu2.num not in sf_cache:
-                sf_cache[edu2.num] = dict(sing_extract(
+            if edu2_num not in sf_cache:
+                sf_cache[edu2_num] = dict(sing_extract(
                     doc, edu_info2, para_info2))
-            feat_dict['EDU2'] = dict(sf_cache[edu2.num])
+            feat_dict['EDU2'] = dict(sf_cache[edu2_num])
             # pair + in between
             feat_dict['pair'] = dict(pair_extract(
                 doc, edu_info1, edu_info2, edu_info_bwn))
