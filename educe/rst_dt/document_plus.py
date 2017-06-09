@@ -399,8 +399,14 @@ class DocumentPlus(object):
 
         return self
 
-    def all_edu_pairs(self):
+    def all_edu_pairs(self, ordered=True):
         """Generate all EDU pairs of a document.
+
+        Parameters
+        ----------
+        ordered: boolean, defaults to True
+            If True, generate all ordered pairs of EDUs, otherwise
+            (half as many) unordered pairs.
 
         Returns
         -------
@@ -408,11 +414,14 @@ class DocumentPlus(object):
             All pairs of EDUs in this document.
         """
         edus = self.edus
-        all_pairs = [epair for epair in itertools.product(edus, edus[1:])
-                     if epair[0] != epair[1]]
+        if ordered:
+            all_pairs = [epair for epair in itertools.product(edus, edus[1:])
+                         if epair[0] != epair[1]]
+        else:
+            all_pairs = list(itertools.combinations(edus, 2))
         return all_pairs
 
-    def relations(self, edu_pairs, lbl_type='rel'):
+    def relations(self, edu_pairs, lbl_type='rel', ordered=True):
         """Get the relation that holds in each of the edu_pairs.
 
         As of 2016-09-30, this function has a unique caller:
@@ -426,6 +435,11 @@ class DocumentPlus(object):
         lbl_type : one of {'rel', 'rel+nuc'}
             Type of label.
 
+        ordered : boolean, defaults to True
+            If True, du_pairs are considered ordered, otherwise the
+            label of either (edu1, edu2) or (edu2, edu1) is returned (if
+            not None).
+
         Returns
         -------
         erels : :obj:`list` of :obj:`str`
@@ -434,12 +448,48 @@ class DocumentPlus(object):
         if not self.deptree:
             return [None for epair in edu_pairs]
 
-        rels = {(src, tgt): rel
-                for src, tgt, rel
-                in self.deptree.get_dependencies(lbl_type=lbl_type)}
-        erels = [rels.get(epair, 'UNRELATED')
-                 for epair in edu_pairs]
+        if ordered:
+            rels = {(src, tgt): rel
+                    for src, tgt, rel
+                    in self.deptree.get_dependencies(lbl_type=lbl_type)}
+        else:
+            # on unordered pairs, if dep < gov we need to invert the
+            # nuclearity so that it encodes direction of attachment:
+            # NS/NN for right attachment, SN for left
+            rels = dict()
+            for src, tgt, rel in self.deptree.get_dependencies(
+                    lbl_type=lbl_type):
+                if src.num < tgt.num:
+                    # right attachment
+                    u_pair = (src, tgt)
+                    new_rel = rel
+                else:
+                    # left attachment
+                    u_pair = (tgt, src)
+                    new_rel = ((rel[0], rel[1][1] + rel[1][0])
+                               if lbl_type == 'nuc+rel'
+                               else rel)
+                rels[u_pair] = new_rel
+
+        erels = [rels.get(epair, 'UNRELATED') for epair in edu_pairs]
         return erels
+
+    def same_unit_candidates(self):
+        """Generate all EDU pairs that could be a same-unit.
+
+        We use the following filters:
+        * right-attachment: i < j,
+        * same sentence: edu2sent[i] == edu2sent[j],
+        * len > 1: i + 1 < j
+        """
+        edus = self.edus
+        edu2sent = self.edu2sent
+        # combinations() generates right-attachment candidates only
+        su_cands = [(edus[i], edus[j]) for i, j
+                    in itertools.combinations(range(0, len(edus)), 2)
+                    if (i + 1 < j
+                        and edu2sent[i] == edu2sent[j])]
+        return su_cands
 
     def set_syn_ctrees(self, tkd_trees, lex_heads=None):
         """Set syntactic constituency trees for this document.

@@ -18,14 +18,14 @@ class KeyGroupVectorizer(object):
     def __init__(self):
         self.vocabulary_ = None  # FIXME should be set in fit()
 
-    def _count_vocab(self, vectors, fixed_vocab):
+    def _count_vocab(self, vectors, fixed_vocab=False):
         """Create sparse feature matrix and vocabulary.
 
         Parameters
         ----------
-        vectors : ?
+        vectors : list of KeyGroup
             List of feature vectors, one vector per sample.
-        fixed_vocab : boolean
+        fixed_vocab : boolean, defaults to False
             If True, use the vocabulary that hopefully has already been
             set during `fit()`.
 

@@ -103,7 +103,13 @@ def labels_comment(class_mapping):
 
 
 def _load_labels(f):
-    """Actually read the label set"""
+    """Actually read the label set.
+
+    Parameters
+    ----------
+    f : str
+        Features file, whose first line is a comment with the list of labels.
+    """
     line = f.readline()
     seq = line[1:].split()[1:]
     labels = {lbl: idx for idx, lbl in enumerate(seq, start=1)}
@@ -112,34 +118,43 @@ def _load_labels(f):
 
 
 def load_labels(f):
-    """Read label set (from a features file) into a dictionary mapping labels
-    to indices and index"""
+    """Read label set into a dictionary mapping labels to indices"""
     with codecs.open(f, 'r', 'utf-8') as f:
         return _load_labels(f)
 
 
 def dump_all(X_gen, y_gen, f, class_mapping, docs, instance_generator):
-    """Dump a whole dataset: features (in svmlight) and EDU pairs
+    """Dump a whole dataset: features (in svmlight) and EDU pairs.
 
-    class_mapping is a mapping from label to int
+    Parameters
+    ----------
+    X_gen : iterable of int arrays
+        Feature vectors.
 
-    :type X_gen: iterable of int arrays
-    :type y_gen: iterable of int
-    :param f: output features file path
-    :param class_mapping: dict(string, int)
-    :param instance_generator: function that returns an iterable
-                               of pairs given a document
+    y_gen : iterable of int
+        Ground truth labels.
+
+    f : str
+        Output features file path
+
+    class_mapping : dict(str, int)
+        Mapping from label to int.
+
+    docs : list of DocumentPlus
+        Documents
+
+    instance_generator : function from doc to iterable of pairs
+        TODO
     """
-    # the labelset will be written in a comment at the beginning of the
-    # svmlight file
-    comment = labels_comment(class_mapping)
-
-    # dump: EDUs, pairings, vectorized pairings with label
+    # dump EDUs
     edu_input_file = f + '.edu_input'
     dump_edu_input_file(docs, edu_input_file)
-
+    # dump EDU pairings
     pairings_file = f + '.pairings'
     dump_pairings_file((instance_generator(doc) for doc in docs),
                        pairings_file)
-
+    # dump vectorized pairings with label
+    # the labelset will be written in a comment at the beginning of the
+    # svmlight file
+    comment = labels_comment(class_mapping)
     dump_svmlight_file(X_gen, y_gen, f, comment=comment)
