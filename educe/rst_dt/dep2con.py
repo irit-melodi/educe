@@ -124,9 +124,9 @@ class DummyNuclearityClassifier(object):
 class InsideOutAttachmentRanker(object):
     """Rank modifiers, from the inside out on either side.
 
-    Given a dependency tree node and its children, return the list
-    of children but *stably* sorted to fulfill an inside-out
-    traversal on either side.
+    Given a dependency tree node and its children, return an order on
+    the list of children, that should fulfill an inside-out traversal
+    on either side.
 
     Let's back up a little bit for some background on this criterion.
     We assume that dependency tree nodes can be characterised and
@@ -151,34 +151,25 @@ class InsideOutAttachmentRanker(object):
     - 'lrlrlr': alternating directions, left first,
     - 'rlrlrl': alternating directions, right first.
 
-    TRICKY SORTING! The current implementation of the 'id' strategy was
-    reached through a bit of trial and error, so you may want to modify
-    with caution.
-
-    Most of the trickiness in the 'id' strategy is in making this a
-    *stable* sort, ie. we want to preserve the original order of
-    the targets as much as possible because this allows us to have
-    round trip conversions from RST to DT and back. This essentially
-    means preserving the interleaving of left/right nodes. The basic
-    logic in the implementation is to traverse our target list as
-    a series of LEFT or RIGHT slots, filling the slots in an
-    inside-out order. So for example, if we saw a target list
-    `l3 r1 r3 l2 l1 r2`, we would treat it as the slots `L R R L L R`
-    and fill them out as `l1 r1 r2 l2 l3 r3`
     """
 
-    def __init__(self, strategy='id', prioritize_same_unit=False):
+    def __init__(self, strategy='id', prioritize_same_unit=False,
+                 order='weak'):
         if strategy not in ['id',
                             'lllrrr', 'rrrlll',
                             'lrlrlr', 'rlrlrl',
                             'closest-lr', 'closest-rl',
                             'closest-intra-lr-inter-lr',
                             'closest-intra-rl-inter-rl',
-                            'closest-intra-rl-inter-lr']:
+                            'closest-intra-rl-inter-lr',
+                            'sdist-edist-lr', 'sdist-edist-rl']:
             raise ValueError('Unknown transformation strategy '
                              '{stg}'.format(stg=strategy))
         self.strategy = strategy
         self.prioritize_same_unit = prioritize_same_unit
+        if order not in ['weak', 'strict']:
+            raise ValueError("Order must be one of {'weak', 'strict'}")
+        self.order = order
 
     def fit(self, X, y):
         """Here a no-op."""
@@ -209,6 +200,10 @@ class InsideOutAttachmentRanker(object):
         """
         strategy = self.strategy
 
+        if strategy == 'id':  # radical oracle: use gold rank as is
+            # we know the true order, it is stored in dtree.ranks
+            return [dtree.ranks for dtree in X]
+
         dt_ranks = []
         for dtree in X:
             # for each RstDepTree, the result will be an array of ranks
@@ -216,175 +211,299 @@ class InsideOutAttachmentRanker(object):
 
             unique_heads = set(dtree.heads[1:])  # exclude head of fake root
             for head in unique_heads:
+                rank_idx = 1  # init rank
+
                 targets = [i for i, hd in enumerate(dtree.heads)
                            if hd == head]
-                # what follows should be well-tested code
-                sorted_nodes = sorted(
-                    [head] + targets,
-                    key=lambda x: dtree.edus[x].span.char_start)
-                centre = sorted_nodes.index(head)
+                if self.prioritize_same_unit:
+                    # gobble everything between the head and the rightmost
+                    # "same-unit"
+                    # FIXME weak order: fragments of an n-ary "same-unit"
+                    # should get the same order
+                    same_unit_tgts = [tgt for tgt in targets
+                                      if dtree.labels[tgt] == 'same-unit']
+                    if same_unit_tgts:
+                        # take first all dependents between the head
+                        # and the rightmost same-unit
+                        last_same_unit_tgt = same_unit_tgts[-1]
+                        priority_tgts = [tgt for tgt in targets
+                                         if (tgt > head and
+                                             tgt <= last_same_unit_tgt)]
+                        for tgt in priority_tgts:
+                            ranks[tgt] = rank_idx
+                            rank_idx += 1
+                        # remove them from the remaining targets
+                        targets = [tgt for tgt in targets
+                                   if tgt not in priority_tgts]
+
                 # elements to the left and right of the node respectively
                 # these are stacks (outside ... inside)
-                left = sorted_nodes[:centre]
-                right = list(reversed(sorted_nodes[centre+1:]))
+                left = [i for i in targets if i < head]
+                right = [i for i in targets if i > head]
+                right = list(reversed(right))
 
-                # special strategy: 'id' (we know the true targets)
-                if strategy == 'id':
-                    result = [left.pop() if (tree in left) else right.pop()
-                              for tree in targets]
+                if strategy in ['lllrrr', 'rrrlll']:
+                    # one side then the other
+                    # FIXME weak order
+                    sides = ([left, right] if strategy == 'lllrrr'
+                             else [right, left])
+                    for side in sides:
+                        for tgt in side:
+                            ranks[tgt] = rank_idx
+                            rank_idx += 1
 
-                # strategies that try to guess the order of attachment
+                elif strategy in ['lrlrlr', 'rlrlrl']:
+                    # alternating sides
+                    sides = ([left, right] if strategy == 'lrlrlr'
+                             else [right, left])
+                    while any(sides):
+                        for side in sides:
+                            if not side:
+                                continue
+                            dep_cur = side.pop()
+                            ranks[dep_cur] = rank_idx
+                            # weakly-ordered: consecutive nuclei with
+                            # same label are assumed to be part of a
+                            # multinuclear relation => same rank
+                            lbl_cur = dtree.labels[dep_cur]
+                            nuc_cur = dtree.nucs[dep_cur]
+                            if self.order == 'weak' and nuc_cur == NUC_N:
+                                while (side
+                                       and dtree.labels[side[-1]] == lbl_cur
+                                       and dtree.nucs[side[-1]] == nuc_cur):
+                                    # give same rank
+                                    dep_cur = side.pop()
+                                    ranks[dep_cur] = rank_idx
+                            # increment rank
+                            rank_idx += 1
+
+                elif strategy in ['closest-lr', 'closest-rl']:
+                    # take closest dependents first, break ties using the
+                    # side: lr to take left over right, rl to take right
+                    # over left
+                    sides = ([left, right] if strategy == 'closest-lr'
+                             else [right, left])
+                    while any(sides):
+                        if left and right:
+                            dist_left = abs(left[-1] - head)
+                            dist_right = abs(right[-1] - head)
+                            if dist_left == dist_right:
+                                side = sides[0]
+                            elif dist_left < dist_right:
+                                side = left
+                            else:
+                                side = right
+                        else:  # one side is empty
+                            side = left if left else right
+                        # same code as lrlrlr/rlrlrl above ; make into
+                        # helper function?
+                        dep_cur = side.pop()
+                        ranks[dep_cur] = rank_idx
+                        # weakly-ordered: consecutive nuclei with
+                        # same label are assumed to be part of a
+                        # multinuclear relation => same rank
+                        lbl_cur = dtree.labels[dep_cur]
+                        nuc_cur = dtree.nucs[dep_cur]
+                        if self.order == 'weak' and nuc_cur == NUC_N:
+                            while (side
+                                   and dtree.labels[side[-1]] == lbl_cur
+                                   and dtree.nucs[side[-1]] == nuc_cur):
+                                # give same rank
+                                dep_cur = side.pop()
+                                ranks[dep_cur] = rank_idx
+                        # increment rank
+                        rank_idx += 1
+
                 else:
-                    result = []
-
-                    if self.prioritize_same_unit:
-                        # gobble everything between the head and the rightmost
-                        # "same-unit"
-                        same_unit_tgts = [tgt for tgt in targets
-                                          if dtree.labels[tgt] == 'same-unit']
-                        if same_unit_tgts:
-                            # take first all dependents between the head
-                            # and the rightmost same-unit
-                            last_same_unit_tgt = same_unit_tgts[-1]
-                            priority_tgts = [tgt for tgt in targets
-                                             if (tgt > head and
-                                                 tgt <= last_same_unit_tgt)]
-                            # prepend to the result
-                            result.extend(priority_tgts)
-                            # remove from the remaining targets
-                            targets = [tgt for tgt in targets
-                                       if tgt not in priority_tgts]
-
-                    if strategy == 'lllrrr':
-                        result.extend(left.pop() if left else right.pop()
-                                      for _ in targets)
-
-                    elif strategy == 'rrrlll':
-                        result.extend(right.pop() if right else left.pop()
-                                      for _ in targets)
-
-                    elif strategy == 'lrlrlr':
-                        # reverse lists of left and right modifiers
-                        # these are queues (inside ... outside)
-                        left_io = list(reversed(left))
-                        right_io = list(reversed(right))
-                        lrlrlr_gen = itertools.chain.from_iterable(
-                            itertools.izip_longest(left_io, right_io))
-                        result.extend(x for x in lrlrlr_gen
-                                      if x is not None)
-
-                    elif strategy == 'rlrlrl':
-                        # reverse lists of left and right modifiers
-                        # these are queues (inside ... outside)
-                        left_io = list(reversed(left))
-                        right_io = list(reversed(right))
-                        rlrlrl_gen = itertools.chain.from_iterable(
-                            itertools.izip_longest(right_io, left_io))
-                        result.extend(x for x in rlrlrl_gen
-                                      if x is not None)
-
-                    elif strategy == 'closest-rl':
-                        # take closest dependents first, take right over
-                        # left to break ties
-                        sort_key = lambda e: (abs(e - head),
-                                              1 if e > head else 2)
-                        result.extend(sorted(targets, key=sort_key))
-
-                    elif strategy == 'closest-lr':
-                        # take closest dependents first, take left over
-                        # right to break ties
-                        sort_key = lambda e: (abs(e - head),
-                                              2 if e > head else 1)
-                        result.extend(sorted(targets, key=sort_key))
-
                     # strategies that depend on intra/inter-sentential info
-                    # NB: the way sentential info is stored is expected to
-                    # change at some point
+                    # NB: the way sentential info is stored is a dirty hack ;
+                    # this should be fixed at some point
+                    if not hasattr(dtree, 'sent_idx'):
+                        raise ValueError(('Strategy {stg} depends on '
+                                          'sentential information which is '
+                                          'missing here'
+                                          '').format(stg=strategy))
+
+                    # sent_idx for all EDUs that need to be locally
+                    # ranked (+ their head)
+                    # FIXME write a clean imputation procedure
+                    # that is global to all EDUs in the document
+                    loc_edus = sorted(targets + [head])
+                    sent_idc = [dtree.sent_idx[x] for x in loc_edus
+                                if dtree.sent_idx[x] is not None]
+                    if len(sent_idc) != len(loc_edus):
+                        # missing sent_idx => (pseudo-)imputation ;
+                        # this is a very local, and dirty, workaround
+                        # * left dependents + head
+                        sent_idc_left = []
+                        sent_idx_cur = min(sent_idc) if sent_idc else 0
+                        for x in loc_edus:
+                            if x > head:
+                                break
+                            sent_idx_x = dtree.sent_idx[x]
+                            if sent_idx_x is not None:
+                                sent_idx_cur = sent_idx_x
+                            sent_idc_left.append(sent_idx_cur)
+                        # * right dependents
+                        sent_idc_right = []
+                        sent_idx_cur = max(sent_idc) if sent_idc else 0
+                        for x in reversed(targets):
+                            if x <= head:
+                                break
+                            sent_idx_x = dtree.sent_idx[x]
+                            if sent_idx_x is not None:
+                                sent_idx_cur = sent_idx_x
+                            sent_idc_right.append(sent_idx_cur)
+                        # * replace sent_idc with the result of the
+                        # pseudo-imputation
+                        sent_idc = (sent_idc_left +
+                                    list(reversed(sent_idc_right)))
+                    # build this into a dict
+                    sent_idx_loc = {e: s_idx for e, s_idx
+                                    in zip(loc_edus, sent_idc)}
+
+                    # intra/inter strategies
+                    if strategy in ['closest-intra-rl-inter-lr',
+                                    'closest-intra-rl-inter-rl',
+                                    'closest-intra-lr-inter-lr',
+                                    'closest-intra-lr-inter-rl']:
+                        # best: closest-intra-rl-inter-lr (2016-07-??)
+                        # current: closest-intra-rl-inter-rl (2016-09-13)
+
+                        # intra
+                        left_intra = [tgt for tgt in left
+                                      if sent_idx_loc[tgt] == sent_idx_loc[head]]
+                        right_intra = [tgt for tgt in right
+                                       if sent_idx_loc[tgt] == sent_idx_loc[head]]
+                        sides = ([right_intra, left_intra]
+                                 if strategy in ['closest-intra-rl-inter-lr',
+                                                 'closest-intra-rl-inter-rl']
+                                 else [left_intra, right_intra])
+                        # same code as 'closest-*' above
+                        while any(sides):
+                            if left_intra and right_intra:
+                                dist_left = abs(left_intra[-1] - head)
+                                dist_right = abs(right_intra[-1] - head)
+                                if dist_left == dist_right:
+                                    side = sides[0]
+                                elif dist_left < dist_right:
+                                    side = left_intra
+                                else:
+                                    side = right_intra
+                            else:  # one side is empty
+                                side = (left_intra if left_intra
+                                        else right_intra)
+                            # same code as lrlrlr/rlrlrl above ; make into
+                            # helper function?
+                            dep_cur = side.pop()
+                            ranks[dep_cur] = rank_idx
+                            # weakly-ordered: consecutive nuclei with
+                            # same label are assumed to be part of a
+                            # multinuclear relation => same rank
+                            lbl_cur = dtree.labels[dep_cur]
+                            nuc_cur = dtree.nucs[dep_cur]
+                            if self.order == 'weak' and nuc_cur == NUC_N:
+                                while (side
+                                       and dtree.labels[side[-1]] == lbl_cur
+                                       and dtree.nucs[side[-1]] == nuc_cur):
+                                    # give same rank
+                                    dep_cur = side.pop()
+                                    ranks[dep_cur] = rank_idx
+                            # increment rank
+                            rank_idx += 1
+
+                        # inter
+                        left_inter = [tgt for tgt in left
+                                      if sent_idx_loc[tgt] != sent_idx_loc[head]]
+                        right_inter = [tgt for tgt in right
+                                       if sent_idx_loc[tgt] != sent_idx_loc[head]]
+                        sides = ([right_inter, left_inter]
+                                 if strategy in ['closest-intra-lr-inter-rl',
+                                                 'closest-intra-rl-inter-rl']
+                                 else [left_inter, right_inter])
+                        # same code as 'closest-*' above
+                        while any(sides):
+                            if left_inter and right_inter:
+                                dist_left = abs(left_inter[-1] - head)
+                                dist_right = abs(right_inter[-1] - head)
+                                if dist_left == dist_right:
+                                    side = sides[0]
+                                elif dist_left < dist_right:
+                                    side = left_inter
+                                else:
+                                    side = right_inter
+                            else:  # one side is empty
+                                side = (left_inter if left_inter
+                                        else right_inter)
+                            # same code as lrlrlr/rlrlrl above ; make into
+                            # helper function?
+                            dep_cur = side.pop()
+                            ranks[dep_cur] = rank_idx
+                            # weakly-ordered: consecutive nuclei with
+                            # same label are assumed to be part of a
+                            # multinuclear relation => same rank
+                            lbl_cur = dtree.labels[dep_cur]
+                            nuc_cur = dtree.nucs[dep_cur]
+                            if self.order == 'weak' and nuc_cur == NUC_N:
+                                while (side
+                                       and dtree.labels[side[-1]] == lbl_cur
+                                       and dtree.nucs[side[-1]] == nuc_cur):
+                                    # give same rank
+                                    dep_cur = side.pop()
+                                    ranks[dep_cur] = rank_idx
+                            # increment rank
+                            rank_idx += 1
+
+                    elif strategy in ['sdist-edist-lr', 'sdist-edist-rl']:
+                        # used 2016-09-13: sdist-edist-rl
+                        # distance in sentences, then in EDUs, then pick
+                        # side to break ties
+                        sides = ([left, right] if strategy == 'sdist-edist-lr'
+                                 else [right, left])
+                        while any(sides):
+                            if left and right:
+                                # distances: in sentences, EDUs
+                                # * next candidate on the left
+                                sdist_left = abs(sent_idx_loc[left[-1]]
+                                                 - sent_idx_loc[head])
+                                edist_left = abs(left[-1] - head)
+                                dist_left = (sdist_left, edist_left)
+                                # * next candidate on the right
+                                sdist_right = abs(sent_idx_loc[right[-1]]
+                                                  - sent_idx_loc[head])
+                                edist_right = abs(right[-1] - head)
+                                dist_right = (sdist_right, edist_right)
+                                # * compare
+                                if dist_left == dist_right:
+                                    side = sides[0]
+                                elif dist_left < dist_right:
+                                    side = left
+                                else:
+                                    side = right
+                            else:  # one side is empty
+                                side = left if left else right
+                            # same code as lrlrlr/rlrlrl above ; make into
+                            # helper function?
+                            dep_cur = side.pop()
+                            ranks[dep_cur] = rank_idx
+                            # weakly-ordered: consecutive nuclei with
+                            # same label are assumed to be part of a
+                            # multinuclear relation => same rank
+                            lbl_cur = dtree.labels[dep_cur]
+                            nuc_cur = dtree.nucs[dep_cur]
+                            if self.order == 'weak' and nuc_cur == NUC_N:
+                                while (side
+                                       and dtree.labels[side[-1]] == lbl_cur
+                                       and dtree.nucs[side[-1]] == nuc_cur):
+                                    # give same rank
+                                    dep_cur = side.pop()
+                                    ranks[dep_cur] = rank_idx
+                            # increment rank
+                            rank_idx += 1
+
                     else:
-                        if not hasattr(dtree, 'sent_idx'):
-                            raise ValueError(('Strategy {stg} depends on '
-                                              'sentential information which is'
-                                              ' missing here'
-                                              '').format(stg=strategy))
-
-                        if strategy == 'closest-intra-rl-inter-lr':
-                            # current best
-                            # take closest dependents first, take right over
-                            # left to break ties
-                            sort_key = lambda e: (
-                                1 if dtree.sent_idx[e] == dtree.sent_idx[head] else 2,
-                                abs(e - head),
-                                1 if ((e > head and
-                                       dtree.sent_idx[e] == dtree.sent_idx[head]) or
-                                      (e < head and
-                                       dtree.sent_idx[e] != dtree.sent_idx[head])) else 2
-                            )
-                            result.extend(sorted(targets, key=sort_key))
-
-                        elif strategy == 'closest-intra-rl-inter-rl':  # current used
-                            # sent_idx for all EDUs that need to be locally
-                            # ranked (+ their head)
-                            loc_edus = sorted(targets + [head])
-                            sent_idc = [dtree.sent_idx[x] for x in loc_edus
-                                        if dtree.sent_idx[x] is not None]
-                            if len(sent_idc) != len(loc_edus):
-                                # missing sent_idx => (pseudo-)imputation ;
-                                # this is a very local, and dirty, workaround
-                                # * left dependents + head
-                                sent_idc_left = []
-                                sent_idx_cur = min(sent_idc) if sent_idc else 0
-                                for x in loc_edus:
-                                    if x > head:
-                                        break
-                                    sent_idx_x = dtree.sent_idx[x]
-                                    if sent_idx_x is not None:
-                                        sent_idx_cur = sent_idx_x
-                                    sent_idc_left.append(sent_idx_cur)
-                                # * right dependents
-                                sent_idc_right = []
-                                sent_idx_cur = max(sent_idc) if sent_idc else 0
-                                for x in reversed(targets):
-                                    if x <= head:
-                                        break
-                                    sent_idx_x = dtree.sent_idx[x]
-                                    if sent_idx_x is not None:
-                                        sent_idx_cur = sent_idx_x
-                                    sent_idc_right.append(sent_idx_cur)
-                                # * replace sent_idc with the result of the
-                                # pseudo-imputation
-                                sent_idc = (sent_idc_left +
-                                            list(reversed(sent_idc_right)))
-                            # build this into a dict
-                            sent_idx_loc = {e: s_idx for e, s_idx
-                                            in zip(loc_edus, sent_idc)}
-
-                            # take closest dependents first, break ties by
-                            # choosing right first, then left
-                            sort_key = lambda e: (
-                                abs(sent_idx_loc[e] - sent_idx_loc[head]),
-                                abs(e - head),
-                                1 if e > head else 2
-                            )
-                            result.extend(sorted(targets, key=sort_key))
-
-                        elif strategy == 'closest-intra-lr-inter-lr':
-                            # take closest dependents first, take left over
-                            # right to break ties
-                            sort_key = lambda e: (
-                                1 if dtree.sent_idx[e] == dtree.sent_idx[head] else 2,
-                                abs(e - head),
-                                2 if e > head else 1
-                            )
-                            result.extend(sorted(targets, key=sort_key))
-
-                        else:
-                            raise RstDtException('Unknown transformation strategy'
-                                                 ' {stg}'.format(stg=strategy))
-
-                # update array of ranks for this deptree
-                # ranks are 1-based
-                for i, tgt in enumerate(result, start=1):
-                    ranks[tgt] = i
+                        raise RstDtException('Unknown transformation strategy'
+                                             ' {stg}'.format(stg=strategy))
 
             dt_ranks.append(ranks)
         return dt_ranks
