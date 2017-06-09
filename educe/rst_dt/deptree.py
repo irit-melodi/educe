@@ -36,6 +36,46 @@ DEFAULT_NUC = NUC_N
 DEFAULT_RANK = 0
 
 
+# helper function for conversion from binary to nary relations
+def binary_to_nary(nary_enc, pairs):
+    """Retrieve nary relations from a set of binary relations.
+
+    Parameters
+    ----------
+    nary_enc: one of {"chain", "tree"}
+        Encoding from n-ary to binary relations.
+    pairs: iterable of pairs of identifier (ex: integer, string...)
+        Binary relations.
+
+    Return
+    ------
+    nary_rels: list of tuples of identifiers
+        Nary relations.
+    """
+    nary_rels = []
+    open_ends = []  # companion to nary_rels: open end
+    for gov_idx, dep_idx in pairs:
+        try:
+            # search for an existing fragmented EDU this same-unit
+            # could belong to
+            open_frag = open_ends.index(gov_idx)
+        except ValueError:
+            # start a new fragmented EDU
+            nary_rels.append([gov_idx, dep_idx])
+            if nary_enc == 'chain':
+                open_ends.append(dep_idx)
+            else:  # 'tree'
+                open_ends.append(gov_idx)
+        else:
+            # append dep_idx to an existing fragmented EDU
+            nary_rels[open_frag].append(dep_idx)
+            # NB: if "tree", no need to update the open end
+            if nary_enc == 'chain':
+                open_ends[open_frag] = dep_idx
+    nary_rels = [tuple(x) for x in nary_rels]
+    return nary_rels
+
+
 class RstDepTree(object):
     """RST dependency tree
 
@@ -220,6 +260,26 @@ class RstDepTree(object):
                              if self.heads[i] == gov_idx)
         sorted_deps = [i for rk, i in ranked_deps]
         return sorted_deps
+
+    def fragmented_edus(self):
+        """Get the fragmented EDUs in this RST tree.
+
+        Fragmented EDUs are made of two or more EDUs linked by
+        "same-unit" relations.
+
+        Returns
+        -------
+        frag_edus: list of tuple of int
+            Each fragmented EDU is given as a tuple of the indices of
+            the fragments.
+        """
+        nary_enc = self.nary_enc
+        su_deps = [(gov_idx, dep_idx) for dep_idx, (gov_idx, lbl)
+                   in enumerate(zip(self.heads[1:], self.labels[1:]),
+                                start=1)
+                   if lbl.lower() == 'same-unit']
+        frag_edus = binary_to_nary(nary_enc, su_deps)
+        return frag_edus
 
     def real_roots_idx(self):
         """Get the list of the indices of the real roots"""
