@@ -21,9 +21,6 @@ from educe.stac.corpus import Reader as StacReader
 from educe.stac.graph import Graph
 
 
-# local path
-STAC_DATA_DIR = '/home/mmorey/melodi/stac/svn-stac/data'
-
 # naming schemes for games in each season
 GAME_GLOBS = {
     'pilot': ['pilot*'],
@@ -579,13 +576,15 @@ def read_game_as_dataframes(game_folder, sel_annotator=None, thorough=True,
             df_rels, df_res, df_pref)
 
 
-def read_corpus_as_dataframes(version='situated', split='all',
+def read_corpus_as_dataframes(stac_data_dir, version='situated', split='all',
                               strip_cdus=False, attach_len=False,
                               sel_games=None, exc_games=None):
     """Read the entire corpus as dataframes.
 
     Parameters
     ----------
+    stac_data_dir : str
+        Path to the STAC data folder, eg. `/path/to/stac/svn/data`.
     version : one of {'ling', 'situated'}, defaults to 'situated'
         Version of the corpus we want to examine.
     split : one of {'all', 'train', 'test'}, defaults to 'all'
@@ -625,7 +624,7 @@ def read_corpus_as_dataframes(version='situated', split='all',
     else:
         sel_globs = all_globs['TEST']
 
-    sel_globs = [os.path.join(STAC_DATA_DIR, base_dir, x) for x in sel_globs]
+    sel_globs = [os.path.join(stac_data_dir, base_dir, x) for x in sel_globs]
     game_folders = list(chain.from_iterable(glob(x) for x in sel_globs))
     # map games to their folders
     game_dict = {os.path.basename(x): x for x in game_folders}
