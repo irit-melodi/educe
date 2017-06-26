@@ -5,6 +5,7 @@ respect to the purely linguistic (spect) version.
 
 from __future__ import absolute_import, print_function
 
+import copy
 from glob import glob
 from itertools import chain
 import os
@@ -12,9 +13,12 @@ import warnings
 
 import pandas as pd
 
-from educe.stac.annotation import (is_dialogue, is_edu, is_paragraph,
-                                   is_preference, is_resource, is_turn)
+from educe.stac.annotation import (
+    is_dialogue, is_edu, is_paragraph, is_preference, is_relation_instance,
+    is_resource, is_turn, SUBORDINATING_RELATIONS, COORDINATING_RELATIONS
+)
 from educe.stac.corpus import Reader as StacReader
+from educe.stac.graph import Graph
 
 
 # local path
@@ -82,7 +86,11 @@ TURN_COLS = UNIT_COLS + [
     'comments',
 ]
 
-SEG_COLS = UNIT_COLS
+SEG_COLS = UNIT_COLS + [
+    'seg_idx',
+    'eeu_idx',
+    'edu_idx',
+]
 
 ACT_COLS = [
     'global_id',  # foreign key to SEG
@@ -152,22 +160,83 @@ REL_COLS = [
 ]
 
 
-def read_game_as_dataframes(game_folder, sel_annotator=None, thorough=True):
+def compute_rel_attributes(seg_df, rel_df):
+    """Compute additional attributes on relations.
+
+    Parameters
+    ----------
+    seg_df : DataFrame
+        Segments from a game.
+    rel_df : DataFrame
+        Relations from a game.
+
+    Returns
+    -------
+    rel_df : DataFrame
+        Modified relations.
+    """
+    discrel_types = frozenset(SUBORDINATING_RELATIONS +
+                              COORDINATING_RELATIONS)
+    len_segs = []
+    len_edus = []
+    len_eeus = []
+    for _, row in rel_df[['source', 'target', 'type']].iterrows():
+        if row['type'] in discrel_types:
+            # discourse relations
+            seg_src = seg_df[
+                (seg_df['global_id'] == row['source'])
+            ]
+            seg_tgt = seg_df[
+                (seg_df['global_id'] == row['target'])
+            ]
+            # compute length of attachment
+            try:
+                len_seg = (seg_tgt['seg_idx'].values[0] -
+                           seg_src['seg_idx'].values[0])
+            except IndexError:
+                print(row)
+                print('tgt', seg_tgt)
+                print('src', seg_src)
+                raise
+            len_segs.append(len_seg)
+            len_edu = (seg_tgt['edu_idx'].values[0] -
+                       seg_src['edu_idx'].values[0])
+            len_edus.append(len_edu)
+            len_eeu = (seg_tgt['eeu_idx'].values[0] -
+                       seg_src['eeu_idx'].values[0])
+            len_eeus.append(len_eeu)
+        else:
+            # non-discourse relations, eg. anaphoric :
+            # don't compute length for the moment
+            len_segs.append(None)
+            len_edus.append(None)
+            len_eeus.append(None)
+    rel_df['len_seg'] = pd.Series(len_segs)
+    rel_df['len_edu'] = pd.Series(len_edus)
+    rel_df['len_eeu'] = pd.Series(len_eeus)
+    return rel_df
+
+
+def read_game_as_dataframes(game_folder, sel_annotator=None, thorough=True,
+                            strip_cdus=False, attach_len=False):
     """Read an annotated game as dataframes.
 
     Parameters
     ----------
     game_folder : path
         Path to the game folder.
-
     sel_annotator : str, optional
         Identifier of the annotator whose version we want. If `None`,
         the existing metal annotator will be used (BRONZE|SILVER|GOLD).
-
     thorough : boolean, defaults to True
         If True, check that annotations in 'units' and 'unannotated'
         that are expected to have a strict equivalent in 'dialogue'
         actually do.
+    strip_cdus : boolean, defaults to False
+        If True, strip CDUs with the "head" strategy and sloppy=True.
+    attach_len : boolean, defaults to False
+        If True, compute attachment length. This requires
+        strip_cdus=True.
 
     Returns
     -------
@@ -190,6 +259,10 @@ def read_game_as_dataframes(game_folder, sel_annotator=None, thorough=True):
     print(game_folder)  # DEBUG
     game_upfolder, game_name = os.path.split(game_folder)
     game_corpus = StacReader(game_upfolder).slurp(doc_glob=game_name)
+    # give integer indices to segments, and EDUs in particular
+    seg_idx = 0
+    eeu_idx = 0
+    edu_idx = 0
     for doc_key, doc_val in sorted(game_corpus.items()):
         doc = doc_key.doc
         subdoc = doc_key.subdoc
@@ -205,7 +278,7 @@ def read_game_as_dataframes(game_folder, sel_annotator=None, thorough=True):
         # print(doc, subdoc, stage, annotator)  # verbose
         doc_text = doc_val.text()
         # print(doc_text)
-        for anno in doc_val.units:
+        for anno in sorted(doc_val.units, key=lambda x: x.span):
             # attributes common to all units
             unit_dict = {
                 # identification
@@ -253,6 +326,16 @@ def read_game_as_dataframes(game_folder, sel_annotator=None, thorough=True):
                 if stage == 'discourse':
                     if anno.features:
                         raise ValueError('Wow, a discourse segment has *features*')
+                    # assign index among segments, across the whole doc
+                    unit_dict['seg_idx'] = seg_idx
+                    seg_idx += 1
+                    if anno.type == 'NonplayerSegment':  # EEU
+                        unit_dict['eeu_idx'] = eeu_idx
+                        eeu_idx += 1
+                    else:  # EDU
+                        unit_dict['edu_idx'] = edu_idx
+                        edu_idx += 1
+                    #
                     df_segs.append(unit_dict)
                 elif stage == 'units':
                     # each entry (should) correspond to an entry in df_segs
@@ -369,11 +452,50 @@ def read_game_as_dataframes(game_folder, sel_annotator=None, thorough=True):
                 df_schm_mbrs.append(member_dict)
             # TODO post-verification: check that all members do exist
             # (should be useless as stac-check should catch it)
+
+        # RELATIONS
+        # * rewrite endpoints of relations if strip_cdus
+        if strip_cdus:
+            endpts = dict()  # map relation ids to (src_id, tgt_id)
+            dgr = Graph.from_doc(game_corpus, doc_key)
+            dgraph = copy.deepcopy(dgr)
+            dgraph.strip_cdus(sloppy=True, mode='head')
+            for edge in dgraph.relations():
+                if "asoubeille_1414085458642" in edge:
+                    print('Wop', edge)
+                    raise ValueError('gni')
+                links = dgraph.links(edge)
+                # get the identifiers of the relation and its endpoints
+                # to replace CDU ids with segment indices
+                anno_rel = dgraph.annotation(edge)
+                # as of 2017-06-24, anno_rel has no origin (why?) at
+                # this point
+                anno_rel.origin = doc_key  # temporary(?) fix
+                #
+                anno_src = dgraph.annotation(links[0])
+                anno_tgt = dgraph.annotation(links[1])
+                gid_rel = anno_rel.identifier()
+                if gid_rel.endswith('_0'):
+                    # strip_cdus appends an integer to each copy of
+                    # the relation ; with mode="head", we only expect
+                    # one such copy per relation so "_0" should be a
+                    # sufficient match, which we can cut off for the
+                    # mapping
+                    gid_rel = gid_rel[:-2]
+                gid_src = anno_src.identifier()
+                gid_tgt = anno_tgt.identifier()
+                endpts[gid_rel] = (gid_src, gid_tgt)
+        # * process relations
         for anno in doc_val.relations:
             # attributes common to all(?) types of annotations
+            # * global ids of the relation and its endpoints
+            gid_rel = anno.identifier()
+            gid_src = anno.source.identifier()
+            gid_tgt = anno.target.identifier()
+            # * build dict
             rel_dict = {
                 # identification
-                'global_id': anno.identifier(),
+                'global_id': gid_rel,
                 'doc': doc,
                 'subdoc': subdoc,
                 'stage': stage,
@@ -393,13 +515,18 @@ def read_game_as_dataframes(game_folder, sel_annotator=None, thorough=True):
                     str(doc_key), anno.identifier()
                 )
                 warnings.warn(w_msg)
+            # if strip_cdus, replace endpoints of *discourse* relations
+            # with segment ids
+            if strip_cdus and is_relation_instance(anno):
+                gid_src, gid_tgt = endpts[gid_rel]
+
             rel_dict.update({
                 # features
                 'arg_scope': anno.features.get('Argument_scope', None), # req
                 'comments': anno.features.get('Comments', None),  # opt
                 # endpoints
-                'source': anno.source.identifier(),
-                'target': anno.target.identifier(),
+                'source': gid_src,
+                'target': gid_tgt,
             })
             df_rels.append(rel_dict)
 
@@ -444,12 +571,16 @@ def read_game_as_dataframes(game_folder, sel_annotator=None, thorough=True):
 
     seg_turn_cols = df_segs.apply(get_seg_turn_cols, axis=1)
     df_segs = pd.concat([df_segs, seg_turn_cols], axis=1)
+    # * length of attachments
+    if strip_cdus and attach_len:
+        df_rels = compute_rel_attributes(df_segs, df_rels)
 
     return (df_turns, df_dlgs, df_segs, df_acts, df_schms, df_schm_mbrs,
             df_rels, df_res, df_pref)
 
 
 def read_corpus_as_dataframes(version='situated', split='all',
+                              strip_cdus=False, attach_len=False,
                               sel_games=None, exc_games=None):
     """Read the entire corpus as dataframes.
 
@@ -457,14 +588,16 @@ def read_corpus_as_dataframes(version='situated', split='all',
     ----------
     version : one of {'ling', 'situated'}, defaults to 'situated'
         Version of the corpus we want to examine.
-
     split : one of {'all', 'train', 'test'}, defaults to 'all'
         Split of the corpus.
-
+    strip_cdus : boolean, defaults to False
+        If True, strip CDUs with sloppy=True, mode='head'.
+    attach_len : boolean, defaults to False
+        If True, compute attachment length for relations. Currently
+        requires strip_cdus=True.
     sel_games : list of str, optional
         List of selected games. If `None`, all games for the selected
         version and split.
-
     exc_games : list of str, optional
         List of excluded games. If `None`, all games for the selected
         version and split. Applies after, hence overrides, `sel_games`.
@@ -515,7 +648,18 @@ def read_corpus_as_dataframes(version='situated', split='all',
     res_dfs = []
     pref_dfs = []
     for game_name, game_folder in game_dict.items():
-        game_dfs = read_game_as_dataframes(game_folder)
+        # TMP 2017-06-23 skip unfinished games
+        if (version == 'situated' and
+            (game_folder.endswith('s2-league5-game2') or
+             game_folder.endswith('s2-league8-game2') or
+             game_folder.endswith('s2-practice3') or
+             game_folder.endswith('s2-practice4'))):
+            # skip for now
+            continue
+        # end TMP
+
+        game_dfs = read_game_as_dataframes(
+            game_folder, strip_cdus=strip_cdus, attach_len=attach_len)
         turn_dfs.append(game_dfs[0])
         dlg_dfs.append(game_dfs[1])
         seg_dfs.append(game_dfs[2])
@@ -540,7 +684,7 @@ def read_corpus_as_dataframes(version='situated', split='all',
 
 if __name__ == '__main__':
     # situated games that are still incomplete, so should be excluded
-    not_ready = ['s2-league3-game5', 's2-league4-game2']
+    not_ready = []  # ['s2-league3-game5', 's2-league4-game2']
     sel_games = None  # ['pilot14']
     # read the situated version
     turns_situ, dlgs_situ, segs_situ, acts_situ, schms_situ, schm_mbrs_situ, rels_situ, res_situ, pref_situ = read_corpus_as_dataframes(version='situated', split='all', sel_games=sel_games, exc_games=not_ready)
