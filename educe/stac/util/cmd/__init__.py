@@ -10,6 +10,7 @@ stac-util subcommands
 from . import (count,
                count_rfc,
                count_shapes,
+               dump,
                filter,
                filter_graph,
                graph,
@@ -19,16 +20,22 @@ from . import (count,
 # subcommands into sections, but maybe we can wait for it to grow such
 # a feature, or write our own formatter class, or just abuse the command
 # epilog
-SUBCOMMAND_SECTIONS =\
-    [('Querying',
-      [text,
-       count,
-       count_rfc,
-       count_shapes,
-       graph]),
-     ('Filters',
-      [filter,
-       filter_graph])]
+SUBCOMMAND_SECTIONS = [
+    ('Querying', [
+        text,
+        count,
+        count_rfc,
+        count_shapes,
+        graph
+    ]),
+    ('Filters', [
+        filter,
+        filter_graph
+    ]),
+    ('Dump', [
+        dump,
+    ]),
+]
 
 SUBCOMMANDS = []
 for descr, section in SUBCOMMAND_SECTIONS:

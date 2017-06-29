@@ -55,6 +55,11 @@ SPLIT_GLOBS_SPECT = {
                      GAME_GLOBS.values()))]
 }
 
+# list of DataFrames (names)
+DF_NAMES = ['turns', 'dlgs', 'segs', 'acts', 'schms', 'schm_mbrs',
+            'disc_rels', 'res', 'pref', 'unit_rels']
+
+# column names for the DataFrames
 UNIT_COLS = [
     # identification
     'global_id',
@@ -160,6 +165,9 @@ REL_COLS = [
 def compute_rel_attributes(seg_df, rel_df):
     """Compute additional attributes on relations.
 
+    As of 2017-06-29, this only works for relations from the "discourse"
+    stage, not "units".
+
     Parameters
     ----------
     seg_df : DataFrame
@@ -178,36 +186,37 @@ def compute_rel_attributes(seg_df, rel_df):
     len_edus = []
     len_eeus = []
     for _, row in rel_df[['source', 'target', 'type']].iterrows():
-        if row['type'] in discrel_types:
-            # discourse relations
-            seg_src = seg_df[
-                (seg_df['global_id'] == row['source'])
-            ]
-            seg_tgt = seg_df[
-                (seg_df['global_id'] == row['target'])
-            ]
-            # compute length of attachment
-            try:
-                len_seg = (seg_tgt['seg_idx'].values[0] -
-                           seg_src['seg_idx'].values[0])
-            except IndexError:
-                print(row)
-                print('tgt', seg_tgt)
-                print('src', seg_src)
-                raise
-            len_segs.append(len_seg)
-            len_edu = (seg_tgt['edu_idx'].values[0] -
-                       seg_src['edu_idx'].values[0])
-            len_edus.append(len_edu)
-            len_eeu = (seg_tgt['eeu_idx'].values[0] -
-                       seg_src['eeu_idx'].values[0])
-            len_eeus.append(len_eeu)
-        else:
+        if row['type'] not in discrel_types:
             # non-discourse relations, eg. anaphoric :
             # don't compute length for the moment
-            len_segs.append(None)
-            len_edus.append(None)
-            len_eeus.append(None)
+            # len_segs.append(None)
+            # len_edus.append(None)
+            # len_eeus.append(None)
+            raise ValueError("Unable to compute the length of a "
+                             "non-discourse relation: {}".format(row['type']))
+        # discourse relations
+        seg_src = seg_df[
+            (seg_df['global_id'] == row['source'])
+        ]
+        seg_tgt = seg_df[
+            (seg_df['global_id'] == row['target'])
+        ]
+        # compute length of attachment
+        try:
+            len_seg = (seg_tgt['seg_idx'].values[0] -
+                       seg_src['seg_idx'].values[0])
+        except IndexError:
+            print(row)
+            print('tgt', seg_tgt)
+            print('src', seg_src)
+            raise
+        len_segs.append(len_seg)
+        len_edu = (seg_tgt['edu_idx'].values[0] -
+                   seg_src['edu_idx'].values[0])
+        len_edus.append(len_edu)
+        len_eeu = (seg_tgt['eeu_idx'].values[0] -
+                   seg_src['eeu_idx'].values[0])
+        len_eeus.append(len_eeu)
     rel_df['len_seg'] = pd.Series(len_segs)
     rel_df['len_edu'] = pd.Series(len_edus)
     rel_df['len_eeu'] = pd.Series(len_eeus)
@@ -248,10 +257,11 @@ def read_game_as_dataframes(game_folder, sel_annotator=None, thorough=True,
     df_dlgs = []  # dialogues
     df_schms = []  # schemas: CDUs
     df_schm_mbrs = []  # schema members
-    df_rels = []  # relations
+    df_disc_rels = []  # discourse relations
     df_acts = []  # dialogue acts
     df_res = []  # resources
     df_pref = []  # preferences
+    df_unit_rels = []  # relations from the "units" stage (anaphora)
 
     print(game_folder)  # DEBUG
     game_upfolder, game_name = os.path.split(game_folder)
@@ -525,7 +535,14 @@ def read_game_as_dataframes(game_folder, sel_annotator=None, thorough=True,
                 'source': gid_src,
                 'target': gid_tgt,
             })
-            df_rels.append(rel_dict)
+            if stage == 'discourse':
+                df_disc_rels.append(rel_dict)
+            elif stage == 'units':
+                df_unit_rels.append(rel_dict)
+            else:
+                raise ValueError(
+                    "relation from stage not in {'units', 'discourse'}")
+            
 
     # create dataframes
     df_turns = pd.DataFrame(df_turns, columns=TURN_COLS)
@@ -534,7 +551,8 @@ def read_game_as_dataframes(game_folder, sel_annotator=None, thorough=True,
     df_acts = pd.DataFrame(df_acts, columns=ACT_COLS)
     df_schms = pd.DataFrame(df_schms, columns=SCHM_COLS)
     df_schm_mbrs = pd.DataFrame(df_schm_mbrs, columns=SCHM_MBRS_COLS)
-    df_rels = pd.DataFrame(df_rels, columns=REL_COLS)
+    df_disc_rels = pd.DataFrame(df_disc_rels, columns=REL_COLS)
+    df_unit_rels = pd.DataFrame(df_unit_rels, columns=REL_COLS)
     df_res = pd.DataFrame(df_res, columns=RES_COLS)
     df_pref = pd.DataFrame(df_pref, columns=PREF_COLS)
 
@@ -569,11 +587,12 @@ def read_game_as_dataframes(game_folder, sel_annotator=None, thorough=True,
     seg_turn_cols = df_segs.apply(get_seg_turn_cols, axis=1)
     df_segs = pd.concat([df_segs, seg_turn_cols], axis=1)
     # * length of attachments
+    # 2017-06-29 restricted to *discourse* relations, for the time being
     if strip_cdus and attach_len:
-        df_rels = compute_rel_attributes(df_segs, df_rels)
+        df_disc_rels = compute_rel_attributes(df_segs, df_disc_rels)
 
     return (df_turns, df_dlgs, df_segs, df_acts, df_schms, df_schm_mbrs,
-            df_rels, df_res, df_pref)
+            df_disc_rels, df_res, df_pref, df_unit_rels)
 
 
 def read_corpus_as_dataframes(stac_data_dir, version='situated', split='all',
@@ -643,7 +662,8 @@ def read_corpus_as_dataframes(stac_data_dir, version='situated', split='all',
     act_dfs = []
     schm_dfs = []
     schm_mbr_dfs = []
-    rel_dfs = []
+    disc_rel_dfs = []
+    unit_rel_dfs = []
     res_dfs = []
     pref_dfs = []
     for game_name, game_folder in game_dict.items():
@@ -665,9 +685,10 @@ def read_corpus_as_dataframes(stac_data_dir, version='situated', split='all',
         act_dfs.append(game_dfs[3])
         schm_dfs.append(game_dfs[4])
         schm_mbr_dfs.append(game_dfs[5])
-        rel_dfs.append(game_dfs[6])
+        disc_rel_dfs.append(game_dfs[6])
         res_dfs.append(game_dfs[7])
         pref_dfs.append(game_dfs[8])
+        unit_rel_dfs.append(game_dfs[9])
     # concatenate each list into a single dataframe
     turns = pd.concat(turn_dfs, ignore_index=True)
     dlgs = pd.concat(dlg_dfs, ignore_index=True)
@@ -675,10 +696,82 @@ def read_corpus_as_dataframes(stac_data_dir, version='situated', split='all',
     acts = pd.concat(act_dfs, ignore_index=True)
     schms = pd.concat(schm_dfs, ignore_index=True)
     schm_mbrs = pd.concat(schm_mbr_dfs, ignore_index=True)
-    rels = pd.concat(rel_dfs, ignore_index=True)
+    disc_rels = pd.concat(disc_rel_dfs, ignore_index=True)
+    unit_rels = pd.concat(unit_rel_dfs, ignore_index=True)
     res = pd.concat(res_dfs, ignore_index=True)
     pref = pd.concat(pref_dfs, ignore_index=True)
-    return turns, dlgs, segs, acts, schms, schm_mbrs, rels, res, pref
+    return (turns, dlgs, segs, acts, schms, schm_mbrs, disc_rels, res, pref,
+            unit_rels)
+
+
+def load_corpus_dataframes(base_dir, dump_fmt='csv'):
+    """Load the dataframes from a corpus dump.
+
+    Parameters
+    ----------
+    base_dir : str
+        Path to the base folder for the dump.
+    dump_fmt : str, one of {'csv', 'pickle'}
+        Format of the dump ; determines the exact path as base_dir/subdir.
+
+    Returns
+    -------
+    corpus_dfs : tuple of DataFrame
+        Corpus DataFrames.
+    """
+    if dump_fmt not in ('csv', 'pickle'):
+        raise ValueError("dump_fmt must be one of {'csv', 'pickle'}")
+    base_dir = os.path.abspath(base_dir)
+    dump_dir = os.path.join(base_dir, dump_fmt)
+    if not os.path.exists(dump_dir) or not os.path.isdir(dump_dir):
+        raise ValueError("Unable to find data at {}".format(dump_dir))
+    # loading function
+    load_fns = {
+        'csv': lambda p: pd.DataFrame.from_csv(p, sep='\t', encoding='utf-8'),
+        'pickle': lambda p: pd.read_pickle(p),
+    }
+    load_fn = load_fns[dump_fmt]
+    #
+    dfs = []
+    for df_name in DF_NAMES:
+        fname = os.path.join(dump_dir, df_name)
+        df = load_fn(fname)
+        dfs.append(df)
+    return tuple(dfs)
+
+
+def dump_corpus_dataframes(corpus_dfs, out_dir, out_fmt='csv'):
+    """Dump the dataframes for a corpus to a folder.
+
+    Parameters
+    ----------
+    corpus_dfs : tuple of DataFrame
+        Corpus DataFrames, assumed to be in order: turns, dlgs, segs,
+        acts, schms, schm_mbrs, rels, res, pref.
+    out_dir : str
+        Output folder.
+    out_fmt : one of {'csv', 'pickle', 'feather'}
+        Output format.
+    """
+    # dump function
+    dump_fns = {
+        'csv': lambda x, p: x.to_csv(path_or_buf=p, sep='\t',
+                                     encoding='utf-8'),
+        'pickle': lambda x, p: x.to_pickle(p),
+        'feather': lambda x, p: x.to_feather(p),
+    }
+    if out_fmt not in dump_fns.keys():
+        raise ValueError('out_fmt needs to be one of {}'.format(
+            out_fmts.keys()))
+    dump_fn = dump_fns[out_fmt]  # dump function
+    # output dir
+    out_dir = os.path.abspath(os.path.join(out_dir, out_fmt))
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+    # do dump
+    for df_name, df in zip(DF_NAMES, corpus_dfs):
+        out_path = os.path.join(out_dir, df_name)
+        dump_fn(df, out_path)
 
 
 if __name__ == '__main__':
