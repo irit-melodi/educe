@@ -421,15 +421,15 @@ class DocumentPlus(object):
             all_pairs = list(itertools.combinations(edus, 2))
         return all_pairs
 
-    def relations(self, edu_pairs, lbl_type='rel', ordered=True):
-        """Get the relation that holds in each of the edu_pairs.
+    def relations(self, du_pairs, lbl_type='rel', ordered=True):
+        """Get the relation that holds in each of the DU pairs.
 
         As of 2016-09-30, this function has a unique caller:
         doc_vectorizer.DocumentLabelExtractor._extract_labels() .
 
         Parameters
         ----------
-        edu_pairs : [(DU, DU)]
+        du_pairs : [(DU, DU)]
             List of DU pairs.
 
         lbl_type : one of {'rel', 'rel+nuc'}
@@ -443,10 +443,10 @@ class DocumentPlus(object):
         Returns
         -------
         erels : :obj:`list` of :obj:`str`
-            Relation for each pair of EDUs.
+            Relation for each pair of DUs.
         """
         if not self.deptree:
-            return [None for epair in edu_pairs]
+            return [None for epair in du_pairs]
 
         if ordered:
             rels = {(src, tgt): rel
@@ -471,7 +471,7 @@ class DocumentPlus(object):
                                else rel)
                 rels[u_pair] = new_rel
 
-        erels = [rels.get(epair, 'UNRELATED') for epair in edu_pairs]
+        erels = [rels.get(epair, 'UNRELATED') for epair in du_pairs]
         return erels
 
     def same_unit_candidates(self):

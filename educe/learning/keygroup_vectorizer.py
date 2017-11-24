@@ -33,7 +33,6 @@ class KeyGroupVectorizer(object):
         -------
         vocabulary : dict(str, int)
             Mapping from features to integers.
-
         X : list of list of tuple(int, float)
             List of feature vectors.
         """

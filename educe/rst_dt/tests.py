@@ -5,12 +5,14 @@ import random
 import unittest
 import copy
 
+from educe.corpus import FileId
 from educe.rst_dt import annotation, parse, SimpleRSTTree
 from educe.rst_dt.dep2con import deptree_to_simple_rst_tree
 from educe.rst_dt.deptree import RstDepTree
 from educe.rst_dt.parse import (parse_lightweight_tree,
                                 parse_rst_dt_tree,
                                 read_annotation_file)
+from educe.rst_dt.pseudo_relations import merge_same_units
 from ..internalutil import treenode
 
 # ---------------------------------------------------------------------
@@ -234,3 +236,38 @@ class RSTTest(unittest.TestCase):
         rev1 = deptree_to_simple_rst_tree(dep1)  # was:, ['r'])
         # self.assertEqual(rst0, rev1, "same structure " + tricky)
         # TODO restore a meaningful assertion
+
+
+# 2017-06-22 test merge Same-Unit
+def test_merge_same_units():
+    """Test pseudo_relations.merge_same_units()"""
+    tstr_su = """
+    ( Root (span 1 5)
+      ( Nucleus (span 1 4) (rel2par Problem-Solution)
+        ( Nucleus (span 1 3) (rel2par Same-Unit)
+          ( Nucleus (leaf 1) (rel2par span) (text _!There, kids_!) )
+          ( Satellite (span 2 3) (rel2par elaboration-object-attribute-e)
+            ( Nucleus (leaf 2) (rel2par List) (text _!who skipped classes_!) )
+            ( Nucleus (leaf 3) (rel2par List) (text _!and refused to participate_!) )
+          )
+        )
+        ( Nucleus (leaf 4) (rel2par Same-Unit) (text _!were asked to solve incredibly hard problems.<P>_!) )
+      )
+      ( Nucleus (leaf 5) (rel2par Problem-Solution) (text _!A new class was setup to help them get up to speed._!) )
+    )
+    """
+    tstr_merged = """
+    ( Root (span 1 2)
+      ( Nucleus (leaf 1) (rel2par Problem-Solution) (text _!There, kids who skipped classes and refused to participate were asked to solve incredibly hard problems.<P>_!) )
+      ( Nucleus (leaf 2) (rel2par Problem-Solution) (text _!A new class was setup to help them get up to speed._!) )
+    )
+    """
+    key_su = FileId("fake", None, None, None)  # mockup doc key
+    t_su = parse_rst_dt_tree(tstr_su)
+    merge_same_units(key_su, t_su)
+    t_merged_ref = parse_rst_dt_tree(tstr_merged)
+    # assert t_su == t_merged_ref
+    assert t_su.get_spans() == t_merged_ref.get_spans()
+    # assert t_su.leaves() == t_merged_ref.leaves()
+    assert ([x.__dict__ for x in t_su.leaves()] ==
+            [x.__dict__ for x in t_merged_ref.leaves()])
